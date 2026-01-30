@@ -48,8 +48,13 @@ getNonZeroElems <- function(x) {
 
 
 
-standardizeMatrix <- function(x) {
-  apply(x, MARGIN = 2, FUN = standardizeAtomic)
+standardizeMatrix <- function(x, cluster = NULL) {
+  z <- apply(x, MARGIN = 2, FUN = standardizeAtomic)
+
+  notcluster <- !colnames(x) %in% cluster
+  x[,notcluster] <- z[,notcluster]
+
+  x
 }
 
 
@@ -168,4 +173,14 @@ cov2cor <- function(vcov) {
 
   D <- diag(1 / sd)
   structure(D %*% vcov %*% D, dimnames = dimnames(vcov))
+}
+
+
+stopif <- function(cond, ...) {
+  if (isTRUE(cond)) stop(...)
+}
+
+
+warnif <- function(cond, ...) {
+  if (isTRUE(cond)) stop(...)
 }

@@ -94,8 +94,11 @@ plslmer <- function(lme4.syntax, plsModel, consistent = TRUE, cluster = NULL) {
       varCorrFit[[c]] <- fixMatNames(varCorrFit[[c]], dep = dep)
      
       if (consistent) {
+        vcPars <- rownames(varCorrFit[[c]])
+        vcCorrection <- DCorrectionTerms[vcPars, vcPars, drop = FALSE]
+
         coefFit[[c]] <- coefFit[[c]] %*% correctionTerms
-        varCorrFit[[c]] <- DCorrectionTerms %*% varCorrFit[[c]] %*% DCorrectionTerms
+        varCorrFit[[c]] <- vcCorrection %*% varCorrFit[[c]] %*% vcCorrection 
       }
 
       attr(varCorrFit[[c]], "stddev") <- sqrt(diag(varCorrFit[[c]]))

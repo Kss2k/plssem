@@ -28,5 +28,11 @@ getParTableEstimates <- function(model) {
     ci.upper = ci.upper
   )
 
-  plssemParTable(parTable)
+  plssemParTable(removeTempOV_RowsParTable(parTable))
+}
+
+
+removeTempOV_RowsParTable <- function(parTable) {
+  tmp <- startsWith(parTable$lhs, TEMP_OV_PREFIX) | startsWith(parTable$rhs, TEMP_OV_PREFIX)
+  parTable[!tmp, , drop = FALSE]
 }

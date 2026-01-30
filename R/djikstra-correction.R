@@ -36,7 +36,9 @@ getReliabilityCoefs <- function(model) {
   S <- model$matrices$S
   P <- vector("numeric", length(lVs))
   names(P) <- lVs
+
   for (lV in lVs) {
+
     if (grepl(":", lV)) {
       intPair <- model$info$interactionPairs[[lV]]
       subS <- covProdInds(indsLvs[[intPair[[1]]]], 
@@ -46,9 +48,16 @@ getReliabilityCoefs <- function(model) {
       # standardize wq
       wq <- wq <- wq / as.vector(sqrt(t(wq) %*% subS %*% wq))
     } else {
-      wq <- lambda[indsLvs[[lV]], lV]
-      subS <- S[indsLvs[[lV]], indsLvs[[lV]]]
+
+      wq <- lambda[indsLvs[[lV]], lV, drop = FALSE]
+      subS <- S[indsLvs[[lV]], indsLvs[[lV]], drop = FALSE]
     }
+
+    if (length(wq) <= 1L) {
+      P[[lV]] <- 1
+      next
+    }
+
     A <- subS
     diag(A) <- 0
     B <- wq %*% t(wq)
@@ -58,9 +67,11 @@ getReliabilityCoefs <- function(model) {
     s <- (t(wq) %*% wq) ^ 2
     P[[lV]] <- s * D / N
   }
+
   # for (intTerm in names(model$info$interactionPairs)) {
   #   intPair <- model$info$interactionPairs[[intTerm]]
   #   P[[intTerm]] <- P[[intPair[[1]]]] * P[[intPair[[2]]]]
   # }
+
   P
 }

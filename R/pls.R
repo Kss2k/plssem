@@ -14,7 +14,7 @@ pls <- function(syntax,
     data <- as.matrix(data)
 
   if (standardize)
-    data <- standardizeMatrix(data)
+    data <- standardizeMatrix(data, cluster = cluster)
   
   # Define model
   model <- specifyModel(

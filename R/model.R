@@ -3,7 +3,11 @@ OP_REGEX <- "(=\\~)|(\\~\\~)|(\\~)"
 
 
 specifyModel <- function(syntax, data, cluster = NULL, consistent = TRUE) {
-  pt <- modsem::modsemify(syntax)
+  parsed <- parseModelArguments(syntax = syntax, data = data)
+  syntax <- parsed$syntax
+  data   <- parsed$data
+  pt     <- parsed$parTable
+
   matricesAndInfo <- initMatrices(pt)
   matrices        <- matricesAndInfo$matrices
 
@@ -66,7 +70,7 @@ initMatrices <- function(pt) {
     allInds <- c(allInds, indsLv)
     indsLvs[[lV]] <- indsLv
   }
-  
+
   # Lamdba ---------------------------------------------------------------------
   lambda <- matrix(0, nrow = length(allInds), ncol = length(lVs),
                    dimnames = list(allInds, lVs))
@@ -166,10 +170,9 @@ getFit <- function(model, consistent = FALSE) {
 
   # Covariance matrix 
   fitCovXi  <- model$matrices$C[xis, xis, drop = FALSE]
+  fitCov    <- model$matrices$C
   fitCovRes <- diag2(t(fitStructural) %*% model$matrices$C %*% fitStructural)
-  fitCovEta <- fitCovRes[etas, etas, drop = FALSE]
-  fitCov <- diagPartitioned(fitCovXi, fitCovEta)
-
+  fitCov[etas, etas] <- fitCovRes[etas, etas]
   
   list(
     fitMeasurement = plssemMatrix(fitMeasurement),

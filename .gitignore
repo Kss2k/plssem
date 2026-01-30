@@ -1,0 +1,12 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+modsem.Rproj
+src/*.o
+src/*.so
+src/*.dll
+tests/testthat/mplusResults*
+sketches/
+inst/doc
+docs

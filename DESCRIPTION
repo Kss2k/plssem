@@ -2,12 +2,28 @@ Package: plssem
 Type: Package
 Title: Estimate complex Structural Equation Models (SEMs) using the PLS-SEM framework.
 Version: 0.1.0
-Author: Kjell S Slupphaug
-Maintainer: The package maintainer <slupphaug.kjell@gmail.com>
-Description: Estimate complex Structural Equation Models (SEMs) using the 
-  PLS-SEM framework. This package expands the PLS-SEM (and PLSc-SEM) framework
-  to handle categorical data, non-linear models, and multilevel structures.
-Depends: modsem, lme4
-License: What license is it under?
+Authors@R: 
+    c(person(given = "Kjell", family = "Solem Slupphaug", 
+             email = "slupphaugkjell@gmail.com", role = c("aut", "cre"),
+             comment = c(ORCID = "0009-0005-8324-2834")),
+      person(given = "Mehmet", family="Mehmetoglu",
+             email = "mehmetm@ntnu.no", role=c("ctb"),
+             comment = c(ORCID="0000-0002-6092-8551")),
+      person(given = "Matthias", family="Mittner",
+             email = "matthias.mittner@uit.no", role=c("ctb"),
+             comment = c(ORCID="0000-0003-0205-7353")))
+Maintainer: Kjell Solem Slupphaug <slupphaugkjell@gmail.com>
+Description:
+    Estimate complex Structural Equation Models (SEMs) using the 
+    PLS-SEM framework. This package expands the PLS-SEM (and PLSc-SEM) framework
+    to handle categorical data, non-linear models, and multilevel structures.
+License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
+RoxygenNote: 7.3.3
+Imports: stats, modsem, lme4
+Depends: 
+    R (>= 4.1.0)
+URL: https://github.com/kss2k/plssem
+Suggests: knitr, rmarkdown
+VignetteBuilder: knitr

@@ -16,6 +16,7 @@ devtools::install_github("kss2k/plssem")
 ```
 
 ## Example
+### Linear Model
 ```r
 library(plssem)
 
@@ -35,6 +36,21 @@ tpb <- '
 fit <- pls(tpb, modsem::TPB, consistent = TRUE, 
            bootstrap = TRUE, sample = 500)
 summary(fit)
+```
+
+### Multilevel Model
+```r
+pls.syntax <- "
+  X =~ x1 + x2 + x3
+  Z =~ z1 + z2 + z3
+  Y =~ y1 + y2 + y3
+  Y ~ X + Z #+ X:Z
+"
+
+lme4.syntax <- "Y ~ X + Z + (1 + X + Z | cluster)"
+
+fit <- pls(pls.syntax, data = randomSlopes, lme4.syntax = lme4.syntax,
+           cluster = "cluster", consistent = TRUE)
 ```
 
 ## TODO

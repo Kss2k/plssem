@@ -36,3 +36,18 @@ fit <- pls(tpb, modsem::TPB, consistent = TRUE,
            bootstrap = TRUE, sample = 500)
 summary(fit)
 ```
+
+## TODO
+
+1. Add handling of ordinal data
+2. Add handling of multilevel models
+3. Add handling of missing data (multiple imputation)
+4. Add handling of ordinal data in multilevel models
+5. Add handling of interaction effects
+6. Add handling of ordinal data with interaction effects
+7. Add `parameter_estimates()` function.
+8. Add `coef()` function.
+9. Add `vcov()` function.
+10. Finish `summary()` function.
+    - Add fit measures
+    - Add `R^2` and `R^2-adj`

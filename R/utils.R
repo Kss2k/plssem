@@ -118,3 +118,16 @@ diagPartitioned <- function(X, Y) {
   rownames(out) <- c(rownames(X), rownames(Y)) 
   out
 }
+
+
+diag2 <- function(X) {
+  Y <- diag(diag(X))
+  dimnames(Y) <- dimnames(X)
+  Y
+}
+
+
+printf <- function(...) {
+  cat(sprintf(...))
+  flush.console()
+}

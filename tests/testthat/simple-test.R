@@ -1,6 +1,6 @@
+devtools::load_all()
 library(modsem)
 library(cSEM)
-devtools::load_all()
 
 tpb <- ' 
 # Outer Model (Based on Hagger et al., 2007)
@@ -14,19 +14,23 @@ tpb <- '
   INT ~ ATT + SN + PBC
   BEH ~ INT + PBC 
 '
+est <- pls(tpb, modsem::TPB, consistent = TRUE, 
+           standardize = TRUE, convergence = 1e-10, 
+           bootstrap = TRUE, sample = 50)
+print(summary(est))
 
 # cSEM -------------------------------------------------------------------------
 start1 <- Sys.time()
 est_cSEM <- csem(.data = modsem::TPB, .model = tpb, 
                  .approach_weights = "PLS-PM", 
-                 .disattenuate = FALSE, 
-                 .resample_method = "bootstrap", .R = 3000)
+                 .disattenuate = TRUE, 
+                 .resample_method = "bootstrap", .R = 50)
 time1 <- Sys.time() - start1
 summarize(est_cSEM)
 
 start2 <- Sys.time()
 est <- pls(tpb, modsem::TPB, consistent = TRUE, 
-           standardize = FALSE, convergence = 1e-10, 
+           standardize = TRUE, convergence = 1e-10, 
            bootstrap = FALSE, sample = 3000)
 time2 <- Sys.time() - start2
 est$fit

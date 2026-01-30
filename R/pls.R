@@ -1,3 +1,4 @@
+#' @export
 pls <- function(syntax,
                 data,
                 standardize = TRUE,
@@ -32,6 +33,8 @@ pls <- function(syntax,
     model$boot <- bootstrap(model, n = sample)
     model$params$se <- model$boot$se
   }
+  
+  model$parTable <- getParTableEstimates(model)
 
   if (!is.null(lme4.syntax)) {
     warning("lme4.syntax argument is not implemented yet!")
@@ -41,6 +44,7 @@ pls <- function(syntax,
     }
   }
 
+  class(model) <- "plssem"
   model 
 }
 
@@ -56,11 +60,16 @@ estimatePLS <- function(model, max.iter = 100, standardize = TRUE) {
       step4() |>
       step5() 
 
-    if (model$convergence >= max.iter) {
+    if (model$info$convergence) {
+      break
+
+    } else if (i >= max.iter) {
       warning("Convergence reached. Stopping.")
       break
     }
   }
 
-  model 
+  model$info$iterations <- i
+
+  model
 }

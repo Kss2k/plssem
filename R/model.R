@@ -1,25 +1,46 @@
+OPERATORS <- c("=~", "~~", "~")
+OP_REGEX <- "(=\\~)|(\\~\\~)|(\\~)"
+
+
 specifyModel <- function(syntax, data) {
   pt <- modsem::modsemify(syntax)
   matricesAndInfo <- initMatrices(pt)
-  matrices <- matricesAndInfo$matrices
-  sortedData <- sortData(data, matricesAndInfo$info$allInds) 
-  matrices$S <- cov(as.data.frame(sortedData))
-  matrices$C <- diag(nrow(matrices$gamma))
-  dimnames(matrices$C) <- dimnames(matrices$gamma)
-  matrices$SC <- rbind(cbind(matrices$S, matrix(0, nrow = nrow(matrices$S), 
-                                          ncol = nrow(matrices$C))),
-                       cbind(matrix(0, nrow = nrow(matrices$C), 
-                                   ncol = nrow(matrices$S)), matrices$C))
-  colnames(matrices$SC) <- rownames(matrices$SC) <- c(colnames(matrices$S), 
-                                                      colnames(matrices$C))
-                
+  matrices        <- matricesAndInfo$matrices
+  sortedData      <- sortData(data, matricesAndInfo$info$allInds) 
+  matrices$S      <- cov(as.data.frame(sortedData))
+  matrices$C      <- diag(nrow(matrices$gamma))
 
-  model <- list(pt = pt, matrices = matrices, data = sortedData, 
-                factorScores = NULL,
-                info = matricesAndInfo$info,
-                params = NULL, fit = NULL)
-  model$params <- list(names = getParamVecNames(model), 
-                       values = rep(NA, length(getParamVecNames(model))))
+  dimnames(matrices$C) <- dimnames(matrices$gamma)
+  matrices$SC <- rbind(
+    cbind(matrices$S, matrix(0, nrow = nrow(matrices$S), ncol = nrow(matrices$C))),
+    cbind(matrix(0, nrow = nrow(matrices$C), ncol = nrow(matrices$S)), matrices$C)
+  )
+
+  colnames(matrices$SC) <- rownames(matrices$SC) <- c(
+    colnames(matrices$S), 
+    colnames(matrices$C)
+  )
+
+  model <- list(
+    parTable.input = pt,
+    parTable       = NULL,
+    matrices       = matrices,
+    data           = sortedData, 
+    factorScores   = NULL,
+    info           = matricesAndInfo$info,
+    params         = NULL,
+    fit            = NULL
+  )
+
+  parnames <- getParamVecNames(model)
+  k        <- length(parnames)
+
+  model$params <- list(
+    names  = parnames, 
+    values = rep(NA_real_, k),
+    se     = rep(NA_real_, k)
+  )
+
   model
 }
 
@@ -72,9 +93,13 @@ initMatrices <- function(pt) {
 
   # Covariance Matrix xis ------------------------------------------------------
   xis <- lVs[!lVs %in% pt[pt$op == "~", "lhs"]]
-  selectCovXis <- matrix(FALSE, nrow = length(xis), ncol = length(xis),
-                   dimnames = list(xis, xis))
-  selectCovXis[lower.tri(selectCovXis)] <- TRUE
+  selectCov <- matrix(
+    FALSE, nrow = length(lVs), ncol = length(lVs),
+    dimnames = list(lVs, lVs)
+  )
+
+  diag(selectCov) <- TRUE
+  selectCov[xis, xis][lower.tri(selectCov[xis, xis])] <- TRUE
   
   # Selection Matric Indicators ------------------------------------------------
   Ip <- diag(nrow = nrow(lambda))
@@ -86,7 +111,7 @@ initMatrices <- function(pt) {
                    outerWeights = getNonZeroElems(lambda), 
                    Ip = Ip, 
                    selectLambda = selectLambda, selectGamma = selectGamma,
-                   selectCovXis = selectCovXis)
+                   selectCov = selectCov)
   info <- list(indsLvs = indsLvs, allInds = allInds, lVs = lVs,
                interactionPairs = interactionPairs)
   list(matrices = matrices, info = info)
@@ -101,7 +126,7 @@ getFit <- function(model, consistent = FALSE) {
   preds <- model$matrices$preds
   lVs <- model$info$lVs
   indsLvs <- model$info$indsLvs
-  pt <- model$pt
+  pt <- model$parTable.input
   SC <- model$matrices$SC
   etas <- pt[pt$op == "~", "lhs"] |> unique()
   xis <- lVs[!lVs %in% etas]
@@ -133,9 +158,17 @@ getFit <- function(model, consistent = FALSE) {
   }
 
   # Covariance matrix 
-  fitCov <- model$matrices$C[xis, xis]
+  fitCovXi  <- model$matrices$C[xis, xis, drop = FALSE]
+  fitCovRes <- diag2(t(fitStructural) %*% model$matrices$C %*% fitStructural)
+  fitCovEta <- fitCovRes[etas, etas, drop = FALSE]
+  fitCov <- diagPartitioned(fitCovXi, fitCovEta)
+
   
-  list(fitMeasurement = fitMeasurement, fitStructural = fitStructural, fitCov = fitCov)
+  list(
+    fitMeasurement = plssemMatrix(fitMeasurement),
+    fitStructural  = plssemMatrix(fitStructural),
+    fitCov         = plssemMatrix(fitCov, symmetric = TRUE)
+  )
 }
 
 
@@ -163,41 +196,41 @@ getInteractionPairs <- function(pt) {
 
 getParamVecNames <- function(model) {
   selectLambda <- model$matrices$selectLambda
-  lambda <- model$matrices$lambda 
-  for (j in colnames(lambda)) {
-    for (i in rownames(lambda)) {
-      lambda[i, j] <- paste0(j, " =~ ", i)
-    }
-  }
+  lambda       <- selectLambda
+
+  for (j in colnames(lambda)) for (i in rownames(lambda))
+    lambda[i, j] <- paste0(j, "=~", i)
 
   selectGamma <- model$matrices$selectGamma
-  gamma <- model$matrices$gamma
-  for (j in colnames(gamma)) {
-    for (i in rownames(gamma)) {
-      gamma[i, j] <- paste0(j, " ~ ", i)
-    }
-  }
-  
-  selectCov <- model$matrices$selectCovXis
-  covXis <- selectCov
-  for (j in colnames(covXis)) {
-    for (i in rownames(covXis)) {
-      covXis[i, j] <- paste0(j, " ~~ ", i)
-    }
-  }
+  gamma       <- selectGamma
 
-  c(lambda[selectLambda], gamma[selectGamma], covXis[selectCov]) 
+  for (j in colnames(gamma)) for (i in rownames(gamma))
+    gamma[i, j] <- paste0(j, "~", i)
+  
+  selectCov <- model$matrices$selectCov
+  psi       <- selectCov
+
+  for (j in colnames(psi)) for (i in rownames(psi))
+    psi[i, j] <- paste0(j, "~~", i)
+
+  c(lambda[selectLambda], gamma[selectGamma], psi[selectCov]) 
 }
 
 
 extractCoefs <- function(model) {
   fit <- model$fit 
-  lambda <- fit$fitMeasurement
-  selectLambda <- model$matrices$selectLambda
-  gamma <- fit$fitStructural 
-  selectGamma <- model$matrices$selectGamma
-  fitCov <- fit$fitCov
-  selectCov <- model$matrices$selectCovXis
 
-  c(lambda[selectLambda], gamma[selectGamma], fitCov[selectCov])
+  lambda       <- fit$fitMeasurement
+  selectLambda <- model$matrices$selectLambda
+
+  gamma       <- fit$fitStructural 
+  selectGamma <- model$matrices$selectGamma
+
+  fitCov    <- fit$fitCov
+  selectCov <- model$matrices$selectCov
+
+  out <- c(lambda[selectLambda], gamma[selectGamma], fitCov[selectCov])
+  names(out) <- model$params$names
+
+  plssemVector(out)
 }

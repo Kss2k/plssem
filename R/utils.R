@@ -1,6 +1,33 @@
-sortData <- function(data, indicators) {
-  if (!is.matrix(data)) data <- as.matrix(data)
-  data[, indicators]
+prepData <- function(data, indicators, cluster = NULL, consistent = TRUE) {
+  vars <- c(indicators, cluster)
+  missing <- !vars %in% colnames(data)
+
+  if (any(missing))
+    stop("Missing variables: ", paste0(vars[missing], collapse = ", "))
+
+  data <- as.data.frame(data)[vars]
+
+  missingCases <- !complete.cases(data)
+  if (any(missingCases)) {
+    warning("Removing missing data list wise for factor scores.\n",
+            "Removing missing data pair wise in covariance matrix.\n",
+            "TODO: Add multiple imputation")
+  }
+ 
+  if (consistent) use <- "pairwise.complete.obs"
+  else            use <- "everything"
+
+  S <- stats::cov(data[indicators], use = use)
+  X <- as.matrix(data[indicators])
+
+  if (!is.null(cluster)) {
+    if (!is.character(cluster))
+      stop("`cluster` must be a character string, if lme4.syntax is provided!")
+
+    attr(X, "cluster") <- data[, cluster, drop = FALSE]
+  }
+
+  list(X = X, S = S)
 }
 
 
@@ -130,4 +157,15 @@ diag2 <- function(X) {
 printf <- function(...) {
   cat(sprintf(...))
   flush.console()
+}
+
+
+cov2cor <- function(vcov) {
+  if (is.null(vcov))
+    return(NULL)
+
+  sd <- sqrt(abs(diag(vcov))) # use `abs()`, in case some variances are negative
+
+  D <- diag(1 / sd)
+  structure(D %*% vcov %*% D, dimnames = dimnames(vcov))
 }

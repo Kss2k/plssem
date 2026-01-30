@@ -2,12 +2,19 @@ OPERATORS <- c("=~", "~~", "~")
 OP_REGEX <- "(=\\~)|(\\~\\~)|(\\~)"
 
 
-specifyModel <- function(syntax, data) {
+specifyModel <- function(syntax, data, cluster = NULL, consistent = TRUE) {
   pt <- modsem::modsemify(syntax)
   matricesAndInfo <- initMatrices(pt)
   matrices        <- matricesAndInfo$matrices
-  sortedData      <- sortData(data, matricesAndInfo$info$allInds) 
-  matrices$S      <- cov(as.data.frame(sortedData))
+
+  preppedData <- prepData(
+    data       = data,
+    indicators = matricesAndInfo$info$allInds,
+    consistent = consistent,
+    cluster    = cluster
+  ) 
+
+  matrices$S      <- preppedData$S
   matrices$C      <- diag(nrow(matrices$gamma))
 
   dimnames(matrices$C) <- dimnames(matrices$gamma)
@@ -25,7 +32,7 @@ specifyModel <- function(syntax, data) {
     parTable.input = pt,
     parTable       = NULL,
     matrices       = matrices,
-    data           = sortedData, 
+    data           = preppedData$X, 
     factorScores   = NULL,
     info           = matricesAndInfo$info,
     params         = NULL,
@@ -233,4 +240,13 @@ extractCoefs <- function(model) {
   names(out) <- model$params$names
 
   plssemVector(out)
+}
+
+
+getFactorScores <- function(model) {
+  matrices <- model$matrices
+  W <- model$matrices$lambda
+  X <- model$data
+
+  X %*% W
 }

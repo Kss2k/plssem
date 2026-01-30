@@ -7,6 +7,7 @@ pls <- function(syntax,
                 bootstrap = FALSE,
                 sample = 50,
                 lme4.syntax = NULL,
+                cluster = NULL,
                 ...) {
   # preprocess data
   if (!is.matrix(data))
@@ -16,7 +17,12 @@ pls <- function(syntax,
     data <- standardizeMatrix(data)
   
   # Define model
-  model <- specifyModel(syntax, data) 
+  model <- specifyModel(
+    syntax     = syntax,
+    data       = data,
+    consistent = consistent,
+    cluster    = cluster
+  ) 
 
   # Fit model
   model <- estimatePLS(model, max.iter = max.iter, standardize = standardize)
@@ -35,13 +41,11 @@ pls <- function(syntax,
   }
   
   model$parTable <- getParTableEstimates(model)
+  model$factorScores <- getFactorScores(model)
 
   if (!is.null(lme4.syntax)) {
-    warning("lme4.syntax argument is not implemented yet!")
-
-    if (bootstrap) {
-      warning("lme4.syntax with bootstrap argument is not implemented yet!")
-    }
+    return(plslmer(lme4.syntax, plsModel = model, cluster = cluster,
+                   consistent = consistent))
   }
 
   class(model) <- "plssem"

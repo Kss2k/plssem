@@ -1,12 +1,13 @@
-Package: RESPLS
+Package: plssem
 Type: Package
-Title: What the Package Does (Title Case)
+Title: Estimate complex Structural Equation Models (SEMs) using the PLS-SEM framework.
 Version: 0.1.0
-Author: Who wrote it
-Maintainer: The package maintainer <yourself@somewhere.net>
-Description: More about what it does (maybe more than one line)
-    Use four spaces when indenting paragraphs within the Description.
-Depends: modsem
+Author: Kjell S Slupphaug
+Maintainer: The package maintainer <slupphaug.kjell@gmail.com>
+Description: Estimate complex Structural Equation Models (SEMs) using the 
+  PLS-SEM framework. This package expands the PLS-SEM (and PLSc-SEM) framework
+  to handle categorical data, non-linear models, and multilevel structures.
+Depends: modsem, lme4
 License: What license is it under?
 Encoding: UTF-8
 LazyData: true

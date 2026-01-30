@@ -14,13 +14,3 @@ step2 <- function(model) {
   dimnames(model$matrices$SC) <- dimnames(SC)
   model
 }
-
-
-step2_old <- function(model) {
-  lVs <- model$info$lVs
-  factorScores <- model$factorScores
-  gamma <- model$matrices$gamma
-  factorScores <- factorScores %*% gamma
-  model$factorScores <- factorScores
-  model
-}

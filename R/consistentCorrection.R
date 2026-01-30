@@ -1,5 +1,6 @@
 getConsistenCorrMat <- function(model, P) {
   C <- model$matrices$C
+
   for (i in seq_len(nrow(C))) {
     for (j in seq_len(i - 1)) {
       x <- rownames(C)[[i]]
@@ -7,6 +8,7 @@ getConsistenCorrMat <- function(model, P) {
       C[x, y] <- C[y, x] <- C[x, y] / sqrt(P[[x]] * P[[y]])
     }
   }
+
   C
 }
 
@@ -14,11 +16,13 @@ getConsistenCorrMat <- function(model, P) {
 getConsistentLoadings <- function(model, P) {
   lVs <- model$info$lVs
   indsLvs <- model$info$indsLvs
-  lambda <- model$matrices$lambda 
+  lambda <- model$matrices$lambda
+
   for (lV in lVs) {
     wq <- lambda[indsLvs[[lV]], lV]
     lambda[indsLvs[[lV]], lV] <- wq %*% (sqrt(P[[lV]]) / t(wq) %*% wq)
   }
+
   lambda
 }
 

@@ -15,15 +15,17 @@ model <- '
 var_f      <- 1
 var_ov     <- 1
 
-beta_f      <- 0
+beta_f      <- 1.4
+zeta_fw     <- 0.4
+zeta_fb     <- 0.2
 gamma_f_x1  <- 0.3
 gamma_f_x2  <- 0.2
 gamma_f_x3  <- 0.1
 gamma_f_w1  <- 0.15
 gamma_f_w2  <- 0.1
 
-cov_x1_x2 <- 0.2
-cov_x1_x3 <- 0.3
+cov_x1_x2 <- 0.1
+cov_x1_x3 <- 0.0
 cov_x2_x3 <- 0.1
 
 cov_w1_w2 <- 0.4
@@ -37,8 +39,8 @@ epsilon    <- 0.2
 beta_1     <- 1.2
 beta_2     <- 0.8
 beta_3     <- 1.5
-n          <- 2500
-k          <- 5 # number of categories in cluster
+n          <- 10000
+k          <- 400 # number of categories in cluster
 
 sim_data <- function(N = n, K = k) {
   residual <- function(epsilon) rnorm(N, sd = sqrt(epsilon))
@@ -61,26 +63,31 @@ sim_data <- function(N = n, K = k) {
   
   cluster <- sample(K, N, replace = TRUE)
 
+  x1 <- x1 - ave(x1, cluster)
+  x2 <- x2 - ave(x2, cluster)
+  x3 <- x3 - ave(x3, cluster)
   w1 <- rnorm(K, mean = 0, sd = sqrt(var_ov))[cluster]
   w2 <- rnorm(K, mean = 0, sd = sqrt(var_ov))[cluster]
  
-  browser()
-  f <- gamma_f_x1 * x1 + gamma_f_x2 * x2 + gamma_f_x3 * x3 +
-    gamma_f_w1 * w1 + gamma_f_w2 * w2
+  fw <- beta_f + gamma_f_x1 * x1 + gamma_f_x2 * x2 + gamma_f_x3 * x3 + residual(zeta_fw)
 
+  fb <- rep(0, N)
   for (i in unique(cluster)) {
     cond <- cluster == i
-    dbeta <- beta_f + rnorm(1L, mean = 0, sd = sqrt(var_beta_f))
-    
-    f[cond] <- f[cond] + dbeta
+
+     
+    dbeta <- rnorm(1L, mean = 0, sd = sqrt(var_beta_f))
+    fb[cond] <- fb[cond] + dbeta + gamma_f_w1 * w1[cond] + gamma_f_w2 * w2[cond] + rnorm(1L, mean = 0, sqrt(zeta_fb))
   }
 
-  zeta_f <- 1 - var(f) # empirical solution
-  f <- f + residual(zeta_f)
+  f <- fw + fb
 
+  y1 <- lambda_1 * f + residual(epsilon)
+  y2 <- lambda_2 * f + residual(epsilon)
+  y3 <- lambda_3 * f + residual(epsilon)
   
   data <- data.frame(
-    x1, x2, x3, w1, w2,
+    y1, y2, y3, x1, x2, x3, w1, w2,
     cluster
   )
 
@@ -89,16 +96,27 @@ sim_data <- function(N = n, K = k) {
     cluster
   )
 
+  data.lv.std <- as.data.frame(lapply(data.lv, FUN = standardizeAtomic))
+
   cat("Unstandardized results:\n")
   print(
     lmer('f ~ x1 + x2 + x3 + w1 + w2 + (1 | cluster)', data = data.lv)
   )
-  # 
-  # cat("Standardized results:\n")
-  # print(
-  #   lmer('Y ~ X + Z + (1 + X + Z | cluster)',
-  #        data = data.frame(X=std1(X), Z=std1(Z), Y=std1(Y), cluster))
-  # )
+  #> Fixed Effects:
+  #> (Intercept)           x1           x2  
+  #>     1.47350      0.29505      0.20201  
+  #>          x3           w1           w2  
+  #>     0.09237      0.15636      0.11234  
+  
+  cat("Standardized results:\n")
+  print(
+    lmer('f ~ x1 + x2 + x3 + w1 + w2 + (1 | cluster)', data = data.lv.std)
+  )
+  #> Fixed Effects:
+  #> (Intercept)           x1           x2  
+  #>    -0.01216      0.23596      0.16155  
+  #>          x3           w1           w2  
+  #>     0.07467      0.12640      0.09235  
   data
 }
 
@@ -106,4 +124,5 @@ sim_data <- function(N = n, K = k) {
 set.seed(2308257)
 randomIntercepts <- sim_data()
 
-save(randomSlopes, file = "data/randomSlopes.Rda")
+
+save(randomIntercepts, file = "data/randomIntercepts.Rda")

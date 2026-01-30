@@ -18,3 +18,24 @@
 #'            cluster = "cluster")
 #' summary(fit)
 NULL
+
+
+#' randomIntercepts
+#'
+#' @name randomIntercepts
+#' @docType data
+#' @description A simulated dataset.
+#' @examples
+#'
+#' pls.syntax <- "
+#'   f =~ y1 + y2 + y3
+#'   f ~ x1 + x2 + x3 + w1 + w2
+#' "
+#' 
+#' lme4.syntax <- "f ~ x1 + x2 + x3 + w1 + w2 + (1 | cluster)"
+#' 
+#' 
+#' fit <- pls(model.pls, data = randomIntercepts,
+#'            lme4.syntax = lmer.syntax, cluster = "cluster")
+#' summary(fit)
+NULL

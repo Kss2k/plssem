@@ -18,7 +18,7 @@ pls.syntax <- "
 
 lme4.syntax <- "Y ~ X + Z + (1 + X + Z | cluster)"
 
-fit <- plssem(pls.syntax, data = randomSlopes, lme4.syntax = lme4.syntax,
-              cluster = "cluster")
+fit <- pls(pls.syntax, data = randomSlopes, lme4.syntax = lme4.syntax,
+           cluster = "cluster")
 summary(fit)
 }

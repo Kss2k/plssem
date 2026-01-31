@@ -38,25 +38,52 @@ fit <- pls(tpb, modsem::TPB, consistent = TRUE,
 summary(fit)
 ```
 
-### Multilevel Model
+### Multilevel Random Intercepts Model
 ```r
+library(plssem)
+
+model.pls <- "
+  f =~ y1 + y2 + y3
+  f ~ x1 + x2 + x3 + w1 + w2
+"
+
+lmer.syntax <- "
+  f ~ x1 + x2 + x3 + w1 + w2 + (1 | cluster)
+"
+
+fit <- pls(model.pls, data = randomIntercepts,
+           consistent = TRUE, lme4.syntax = lmer.syntax,
+           cluster = "cluster", bootstrap = TRUE)
+summary(fit)
+```
+
+### Multilevel Random Slopes Model
+```r
+library(plssem)
+
 pls.syntax <- "
   X =~ x1 + x2 + x3
   Z =~ z1 + z2 + z3
   Y =~ y1 + y2 + y3
+  W =~ w1 + w2 + w3
   Y ~ X + Z
+  W ~ X + Z
 "
 
-lme4.syntax <- "Y ~ X + Z + (1 + X + Z | cluster)"
+lme4.syntax <- "
+  Y ~ X + Z + (1 + X + Z | cluster)
+  W ~ X + Z + (1 + X + Z | cluster)
+"
 
-fit <- pls(pls.syntax, data = randomSlopes, lme4.syntax = lme4.syntax,
-           cluster = "cluster", consistent = TRUE)
+fit <- pls(pls.syntax, data = randomSlopes,
+           lme4.syntax = lme4.syntax, cluster = "cluster",
+           consistent = TRUE, bootstrap = TRUE)
+summary(fit)
 ```
 
 ## TODO
 
 1. Add handling of ordinal data
-2. Add handling of multilevel models
 3. Add handling of missing data (multiple imputation)
 4. Add handling of ordinal data in multilevel models
 5. Add handling of interaction effects

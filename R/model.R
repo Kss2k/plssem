@@ -1,8 +1,6 @@
 OPERATORS <- c("=~", "~~", "~")
-OP_REGEX <- "(=\\~)|(\\~\\~)|(\\~)"
 
-
-specifyModel <- function(syntax, data, cluster = NULL, consistent = TRUE) {
+specifyModel <- function(syntax, data, cluster = NULL, consistent = TRUE, lme4.syntax = NULL) {
   parsed <- parseModelArguments(syntax = syntax, data = data)
   syntax <- parsed$syntax
   data   <- parsed$data
@@ -10,6 +8,12 @@ specifyModel <- function(syntax, data, cluster = NULL, consistent = TRUE) {
 
   matricesAndInfo <- initMatrices(pt)
   matrices        <- matricesAndInfo$matrices
+  info            <- matricesAndInfo$info
+
+  info$lme4.syntax   <- lme4.syntax
+  info$is.multilevel <- !is.null(lme4.syntax)
+  info$cluster       <- cluster
+  info$consistent    <- consistent
 
   preppedData <- prepData(
     data       = data,
@@ -18,8 +22,8 @@ specifyModel <- function(syntax, data, cluster = NULL, consistent = TRUE) {
     cluster    = cluster
   ) 
 
-  matrices$S      <- preppedData$S
-  matrices$C      <- diag(nrow(matrices$gamma))
+  matrices$S <- preppedData$S
+  matrices$C <- diag(nrow(matrices$gamma))
 
   dimnames(matrices$C) <- dimnames(matrices$gamma)
   matrices$SC <- rbind(
@@ -38,7 +42,7 @@ specifyModel <- function(syntax, data, cluster = NULL, consistent = TRUE) {
     matrices       = matrices,
     data           = preppedData$X, 
     factorScores   = NULL,
-    info           = matricesAndInfo$info,
+    info           = info,
     params         = NULL,
     fit            = NULL
   )
@@ -58,9 +62,11 @@ specifyModel <- function(syntax, data, cluster = NULL, consistent = TRUE) {
 
 # badly named function -- since if also returns some useful info
 initMatrices <- function(pt) {
-  lVs <- pt[pt$op == "=~", "lhs"] |> unique()
+  lVs <- unique(pt[pt$op == "=~", "lhs"])
   # add interaction terms at the end
   lVs <- c(lVs, pt[grepl(":", pt$rhs), "rhs", drop = TRUE] |> unique())
+  etas <- unique(pt[pt$op == "~", "lhs"])
+  xis  <- lVs[!lVs %in% etas]
 
   allInds <- vector("character", 0)
   indsLvs <- vector("list", length(lVs))
@@ -124,32 +130,29 @@ initMatrices <- function(pt) {
                    selectLambda = selectLambda, selectGamma = selectGamma,
                    selectCov = selectCov)
   info <- list(indsLvs = indsLvs, allInds = allInds, lVs = lVs,
-               interactionPairs = interactionPairs)
+               interactionPairs = interactionPairs, etas = etas, xis = xis)
   list(matrices = matrices, info = info)
 }
 
 
-getFit <- function(model, consistent = FALSE) {
+getFitPLSModel <- function(model, consistent = TRUE) {
   model$matrices$C <- model$matrices$C
    
-  lambda <- model$matrices$lambda
-  gamma <- model$matrices$gamma
-  preds <- model$matrices$preds
-  lVs <- model$info$lVs
+  lambda  <- model$matrices$lambda
+  gamma   <- model$matrices$gamma
+  preds   <- model$matrices$preds
+  etas    <- model$info$etas
+  xis     <- model$info$xis
+  lVs     <- model$info$lVs
   indsLvs <- model$info$indsLvs
-  pt <- model$parTable.input
-  SC <- model$matrices$SC
-  etas <- pt[pt$op == "~", "lhs"] |> unique()
-  xis <- lVs[!lVs %in% etas]
+  ptl     <- model$parTable.input
+  SC      <- model$matrices$SC
   
   # measurement model 
   fitMeasurement <- lambda
   fitMeasurement[TRUE] <- 0
-  for (lV in model$info$lVs) {
-    for (indsLv in indsLvs[[lV]]) {
-      fitMeasurement[indsLv, lV] <- SC[indsLv, lV]
-    }
-  }
+  for (lV in lVs) for (indsLv in indsLvs[[lV]])
+    fitMeasurement[indsLv, lV] <- SC[indsLv, lV]
 
   # Caluculate consistent weights, based on measurement model
   if (consistent) {
@@ -159,13 +162,13 @@ getFit <- function(model, consistent = FALSE) {
   }
   
   # structural model
-  fitStructural <- gamma
+  fitStructural       <- gamma
   fitStructural[TRUE] <- 0
-  for (lV in model$info$lVs) {
-    predsLv <- model$info$lVs[preds[ , lV, drop = TRUE]]
-    if (length(predsLv) > 0) {
+  for (lV in lVs) {
+    predsLv <- lVs[preds[ , lV, drop = TRUE]]
+
+    if (length(predsLv))
       fitStructural[predsLv, lV] <- getPathCoefs(lV, predsLv,  model$matrices$C)
-    }
   }
 
   # Covariance matrix 

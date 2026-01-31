@@ -23,16 +23,23 @@ gamma_Y_XZ <- 0 # exclude for now
 gamma_Y_ZZ <- 0 # exclude for now
 gamma_Y_XX <- 0 # exclude for now
 
+beta_W     <- 0
+gamma_W_X  <- 0.4
+gamma_W_Z  <- 0.2
+gamma_W_XZ <- 0 # exclude for now
+gamma_W_ZZ <- 0 # exclude for now
+gamma_W_XX <- 0 # exclude for now
+
 var_XZ     <- var_X*var_Z + cov_X_Z^2
-zeta_Y     <- 1 - (gamma_Y_X^2 * var_X +
-                   gamma_Y_Z^2 * var_Z +
-                   2 * gamma_Y_X*gamma_Y_Z * cov_X_Z +
-                   gamma_Y_XZ^2 * var_XZ)
 
 var_gamma_Y_X  <- 0.04
-var_gamma_Y_Z  <- 0.06
+var_gamma_Y_Z  <- 0.10
 var_gamma_Y_XZ <- 0
+var_gamma_W_X  <- 0.10
+var_gamma_W_Z  <- 0.15
+var_gamma_W_XZ <- 0
 var_beta_Y     <- 0.1
+var_beta_W     <- 0.1
 
 lambda_1   <- 1
 lambda_2   <- .7
@@ -42,8 +49,8 @@ epsilon    <- 0.2
 beta_1     <- 1.2
 beta_2     <- 0.8
 beta_3     <- 1.5
-n          <- 2500
-k          <- 5 # number of categories in cluster
+n          <- 5000
+k          <- 50 # number of categories in cluster
 
 sim_data <- function(N = n, K = k) {
   residual <- function(epsilon) rnorm(N, sd = sqrt(epsilon))
@@ -62,11 +69,7 @@ sim_data <- function(N = n, K = k) {
   Z <- XI[, 2]
   
   Y <- rep(0, N)
-    # gamma_Y_X * X + 
-    # gamma_Y_Z * Z + 
-    # gamma_Y_XZ * X * Z +
-    # gamma_Y_XX * X * X +
-    # gamma_Y_ZZ * Z * Z 
+  W <- rep(0, N)
   
   cluster <- sample(K, n, replace = TRUE)
 
@@ -80,10 +83,21 @@ sim_data <- function(N = n, K = k) {
     Y[cond] <- Y[cond] + dbeta + 
       dgammax * X[cond] + dgammaz * Z[cond] + 
       dgammaxz * (X * Z)[cond]
+    
+    dbeta <- beta_W + rnorm(1L, mean = 0, sd = sqrt(var_beta_W))
+    dgammax <- gamma_W_X + rnorm(1L, mean = 0, sd = sqrt(var_gamma_W_X))
+    dgammaz <- gamma_W_Z + rnorm(1L, mean = 0, sd = sqrt(var_gamma_W_Z))
+    dgammaxz <- gamma_W_XZ + rnorm(1L, mean = 0, sd = sqrt(var_gamma_W_XZ))
+    
+    W[cond] <- W[cond] + dbeta + 
+      dgammax * X[cond] + dgammaz * Z[cond] + 
+      dgammaxz * (X * Z)[cond]
   }
 
   zeta_Y <- 1 - var(Y) # empirical solution
+  zeta_W <- 1 - var(W) # empirical solution
   Y <- Y + residual(zeta_Y)
+  W <- W + residual(zeta_W)
 
   x1 <- create_ind(X, beta_1, lambda_1, epsilon)
   x2 <- create_ind(X, beta_2, lambda_2, epsilon)
@@ -96,11 +110,16 @@ sim_data <- function(N = n, K = k) {
   y1 <- create_ind(Y, beta_1, lambda_1, epsilon)
   y2 <- create_ind(Y, beta_2, lambda_2, epsilon)
   y3 <- create_ind(Y, beta_3, lambda_3, epsilon)
+
+  w1 <- create_ind(W, beta_1, lambda_1, epsilon)
+  w2 <- create_ind(W, beta_2, lambda_2, epsilon)
+  w3 <- create_ind(W, beta_3, lambda_3, epsilon)
   
   data <- data.frame(
     x1, x2, x3,
     z1, z2, z3,
     y1, y2, y3,
+    w1, w2, w3,
     cluster
   )
 
@@ -109,11 +128,15 @@ sim_data <- function(N = n, K = k) {
   #   lmer('Y ~ X + Z + (1 + X + Z | cluster)', data = data.frame(X, Z, Y, cluster))
   # )
   # 
-  # cat("Standardized results:\n")
-  # print(
-  #   lmer('Y ~ X + Z + (1 + X + Z | cluster)',
-  #        data = data.frame(X=std1(X), Z=std1(Z), Y=std1(Y), cluster))
-  # )
+  cat("Standardized results:\n")
+  print(
+    lmer('Y ~ X + Z + (1 + X + Z | cluster)',
+         data = data.frame(X=std1(X), Z=std1(Z), Y=std1(Y), cluster))
+  )
+  print(
+    lmer('W ~ X + Z + (1 + X + Z | cluster)',
+         data = data.frame(X=std1(X), Z=std1(Z), W=std1(W), cluster))
+  )
   data
 }
 

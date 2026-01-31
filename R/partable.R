@@ -3,14 +3,14 @@ CI_QUANTILE <- qnorm(0.05)
 
 getParTableEstimates <- function(model) {
   params <- model$params
-  names  <- model$params$names
   est    <- model$params$values
   se     <- model$params$se
+  names  <- names(est)
 
-  split    <- stringr::str_split_fixed(names, pattern = OP_REGEX, n = 2L)
-  lhs      <- split[, 1L]
-  rhs      <- split[, 2L]
-  op       <- stringr::str_extract(names, pattern = OP_REGEX)
+  split    <- splitParameterNames(names)
+  lhs      <- split$lhs
+  op       <- split$op
+  rhs      <- split$rhs
   z        <- est / se
   pvalue   <- 2 * stats::pnorm(-abs(z))
   ci.lower <- est - CI_QUANTILE * z
@@ -29,6 +29,29 @@ getParTableEstimates <- function(model) {
   )
 
   plssemParTable(removeTempOV_RowsParTable(parTable))
+}
+
+
+splitParameterNames <- function(names) {
+  hasBeenSplit <- logical(length(names))
+
+  lhs <- rep(NA_character_, length(names))
+  op  <- rep(NA_character_, length(names))
+  rhs <- rep(NA_character_, length(names))
+
+  for (OP in OPERATORS) { # go by precedence
+    split <- stringr::str_split_fixed(names, pattern = OP, n = 2L)
+    success <- split[, 2L] != ""
+
+    replace <- !hasBeenSplit & success
+    hasBeenSplit <- hasBeenSplit | success
+
+    lhs[replace] <- split[replace, 1L]
+    rhs[replace] <- split[replace, 2L]
+    op[replace]  <- OP
+  }
+
+  list(lhs = lhs, op = op, rhs = rhs)
 }
 
 

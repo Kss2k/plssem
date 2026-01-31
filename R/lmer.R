@@ -1,4 +1,8 @@
-plslmer <- function(lme4.syntax, plsModel, consistent = TRUE, cluster = NULL) {
+plslmer <- function(plsModel) {
+  lme4.syntax <- plsModel$info$lme4.syntax
+  cluster     <- plsModel$info$cluster
+  consistent  <- plsModel$info$consistent
+
   if (length(lme4.syntax) != 1L || !is.character(lme4.syntax))
     stop("`lme4.syntax` must be a character string of length 1!")
 
@@ -16,6 +20,7 @@ plslmer <- function(lme4.syntax, plsModel, consistent = TRUE, cluster = NULL) {
   X  <- cbind(Xf, Xx, Xc)
 
   lme4Lines <- stringr::str_split_1(lme4.syntax, pattern = "\n|;")
+  lme4Lines <- lme4Lines[grepl("\\~", lme4Lines)]
 
   getNames <- function(lhs, nm) {
     rhs <- stringr::str_replace_all(nm, pattern = "\\(Intercept\\)", replacement = "1")
@@ -28,10 +33,10 @@ plslmer <- function(lme4.syntax, plsModel, consistent = TRUE, cluster = NULL) {
     vec
   }
 
-  fixMatNames <- function(mat, dep) {
-    if (!is.null(rownames(mat)))
+  fixMatNames <- function(mat, dep, cols = TRUE, rows = TRUE) {
+    if (!is.null(rownames(mat)) && rows)
       rownames(mat) <- getNames(dep, rownames(mat))
-    if (!is.null(colnames(mat)))
+    if (!is.null(colnames(mat)) && cols)
       colnames(mat) <- getNames(dep, colnames(mat))
     mat
   }
@@ -41,12 +46,13 @@ plslmer <- function(lme4.syntax, plsModel, consistent = TRUE, cluster = NULL) {
   COEF    <- list()
   VCOV    <- list() 
   VARCORR <- list() 
+  SIGMA   <- list()
 
   for (line in lme4Lines) {
     lmerFit <- lme4::lmer(line, data = X)
     fterms  <- stats::terms(formula(line))
     vars    <- attr(fterms, "variables")
-    dep     <- vars[[2L]]
+    dep     <- as.character(vars[[2L]])
 
     fixefFit   <- fixVecNames(lme4::fixef(lmerFit), dep = dep)
     vcovFit    <- fixMatNames(vcov(lmerFit), dep = dep)
@@ -90,7 +96,7 @@ plslmer <- function(lme4.syntax, plsModel, consistent = TRUE, cluster = NULL) {
     }
 
     for (c in cluster) {
-      coefFit[[c]] <- fixMatNames(as.matrix(coefFit[[c]]), dep = dep)
+      coefFit[[c]] <- fixMatNames(as.matrix(coefFit[[c]]), dep = dep, rows = FALSE)
       varCorrFit[[c]] <- fixMatNames(varCorrFit[[c]], dep = dep)
      
       if (consistent) {
@@ -104,21 +110,48 @@ plslmer <- function(lme4.syntax, plsModel, consistent = TRUE, cluster = NULL) {
       attr(varCorrFit[[c]], "stddev") <- sqrt(diag(varCorrFit[[c]]))
       attr(varCorrFit[[c]], "correlation") <- cov2cor(varCorrFit[[c]])
     }
-
+ 
     FITS[[dep]]    <- lmerFit
     COEF[[dep]]    <- coefFit
     VCOV[[dep]]    <- vcovFit
     FIXEF[[dep]]   <- fixefFit
     VARCORR[[dep]] <- varCorrFit
+    SIGMA[[dep]]   <- getSigmaFromVarCorr(fit = lmerFit, varCorr = varCorrFit, dep = dep)
   }
 
+  valuesFixef <- unlist(unname(FIXEF))
+  valuesSigma <- unlist(unname(SIGMA))
+  values      <- c(valuesFixef, valuesSigma)
+
   list(
-    fits  = FITS,
-    coef  = COEF,
-    vcov  = VCOV,
-    fixef = FIXEF,
-    vcorr = VARCORR
+    pls    = plsModel,
+    fits   = FITS,
+    coef   = COEF,
+    vcov   = VCOV,
+    fixef  = FIXEF,
+    vcorr  = VARCORR,
+    values = values
   )
+}
+
+
+getSigmaFromVarCorr <- function(fit, varCorr, dep) {
+  rvdep  <- sprintf("%s~~%s", dep, dep)
+  sigma <- stats::setNames(getME(fit, "sigma"), nm = rvdep)
+
+  for (VC in varCorr) {
+    namesVC <- matrix("", nrow = NROW(VC), ncol = NCOL(VC))
+    for (i in seq_len(NROW(VC))) for (j in seq_len(i))
+      namesVC[i, j] <- sprintf("%s~~%s", rownames(VC)[i], colnames(VC)[j])
+
+    namesSigma <- namesVC[lower.tri(namesVC, diag = TRUE)]
+    valuesSigma <- VC[lower.tri(VC, diag = TRUE)]
+    names(valuesSigma) <- namesSigma
+
+    sigma <- c(sigma, valuesSigma)
+  }
+
+  sigma 
 }
 
 

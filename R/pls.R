@@ -18,42 +18,35 @@ pls <- function(syntax,
   
   # Define model
   model <- specifyModel(
-    syntax     = syntax,
-    data       = data,
-    consistent = consistent,
-    cluster    = cluster
+    syntax      = syntax,
+    data        = data,
+    consistent  = consistent,
+    cluster     = cluster,
+    lme4.syntax = lme4.syntax
   ) 
 
   # Fit model
-  model <- estimatePLS(model, max.iter = max.iter, standardize = standardize)
-
-  # Get Final fit 
-  model$fit.c <- getFit(model, consistent = TRUE)
-  model$fit.u <- getFit(model, consistent = FALSE)
-  model$fit   <- if (consistent) model$fit.c else model$fit.u
-
-  model$params$values <- extractCoefs(model)
+  model <- estimatePLS(
+    model       = model,
+    max.iter    = max.iter
+  )
 
   # Bootstrap
   if (bootstrap) {
-    model$boot <- bootstrap(model, n = sample)
+    model$boot <- bootstrap(model, R = sample)
     model$params$se <- model$boot$se
   }
-  
+
   model$parTable <- getParTableEstimates(model)
-  model$factorScores <- getFactorScores(model)
-
-  if (!is.null(lme4.syntax)) {
-    return(plslmer(lme4.syntax, plsModel = model, cluster = cluster,
-                   consistent = consistent))
-  }
-
   class(model) <- "plssem"
   model 
 }
 
 
-estimatePLS <- function(model, max.iter = 100, standardize = TRUE) {
+estimatePLS <- function(model,
+                        max.iter = 100) {
+  consistent <- model$info$consistent
+
   model <- step0(model)
 
   for (i in seq_len(max.iter)) {
@@ -71,6 +64,30 @@ estimatePLS <- function(model, max.iter = 100, standardize = TRUE) {
       warning("Convergence reached. Stopping.")
       break
     }
+  }
+  
+  # Get Final fit 
+  model$fit.c <- getFitPLSModel(model, consistent = TRUE)
+  model$fit.u <- getFitPLSModel(model, consistent = FALSE)
+  model$fit   <- if (consistent) model$fit.c else model$fit.u
+
+  model$params$values <- extractCoefs(model)
+  model$factorScores  <- getFactorScores(model)
+
+  if (model$info$is.multilevel) {
+    model$fit.lmer <- plslmer(model)
+
+    coefs.x <- model$params$values
+    coefs.y <- model$fit.lmer$values
+
+    common  <- intersect(names(coefs.x), names(coefs.y))
+    new     <- setdiff(names(coefs.y), names(coefs.x))
+
+    coefs.x[common] <- coefs.y[common]
+    coefs.all       <- c(coefs.x, coefs.y[new])
+
+    model$params$values <- plssemVector(coefs.all)
+    model$params$se     <- rep(NA_real_, length(coefs.all))
   }
 
   model$info$iterations <- i

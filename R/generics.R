@@ -1,3 +1,9 @@
+#' Summarize a fitted `plssem` model
+#'
+#' @param object An object of class `plssem`.
+#' @param ... Additional arguments passed to or from methods.
+#' @return A `SummaryPlsSem` object containing formatted parameter estimates.
+#'
 #' @export
 summary.plssem <- function(object, ...) {
   parTable    <- parameter_estimates(object)
@@ -15,6 +21,11 @@ summary.plssem <- function(object, ...) {
 }
 
 
+#' Print a `SummaryPlsSem` object
+#'
+#' @param x A `SummaryPlsSem` object as returned by [summary.plssem()].
+#' @param ... Additional arguments for compatibility with the generic.
+#'
 #' @export
 print.SummaryPlsSem <- function(x, ...) {
   printf("plssem (%s) ended normally after %i iterations\n",
@@ -23,6 +34,11 @@ print.SummaryPlsSem <- function(x, ...) {
 }
 
 
+#' Print a `plssem` object
+#'
+#' @param object An object of class `plssem`.
+#' @param ... Additional arguments for compatibility with the generic.
+#'
 #' @export
 print.plssem <- function(object, ...) {
   print(parameter_estimates(object))
@@ -30,6 +46,14 @@ print.plssem <- function(object, ...) {
 }
 
 
+#' Parameter estimates for `plssem` objects
+#'
+#' @param object An object of class `plssem`.
+#' @param colon.pi Logical; whether to replace labels for interaction terms with colon notation.
+#' @param label.renamed.prod Logical; whether renamed product labels should be retained when colon expansion occurs.
+#' @param ... Additional arguments (not used).
+#' @return A parameter table (data frame) describing the fitted model.
+#'
 #' @export
 parameter_estimates.plssem <- function(object,
                                        colon.pi = TRUE, 
@@ -65,6 +89,11 @@ parameter_estimates.plssem <- function(object,
 }
 
 
+#' Generic accessor for model parameter estimates
+#'
+#' @param object A fitted model object.
+#' @param ... Additional arguments passed to methods.
+#'
 #' @export
 parameter_estimates <- function(object, ...) {
   UseMethod("parameter_estimates")

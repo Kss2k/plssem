@@ -5,7 +5,7 @@ syntax <- '
   f ~ x1 + x2 + x3 + w1 + w2 + (1 | cluster)
 '
 
-fit <- pls(syntax, data = randomIntercepts, bootstrap = TRUE)
+fit <- pls(syntax, data = randomIntercepts, bootstrap = FALSE)
 summary(fit)
 
 

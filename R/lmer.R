@@ -106,7 +106,7 @@ plslmer <- function(plsModel) {
       attr(varCorrFit[[c]], "stddev") <- sqrt(diag(varCorrFit[[c]]))
       attr(varCorrFit[[c]], "correlation") <- cov2cor(varCorrFit[[c]])
     }
- 
+
     FITS[[dep]]    <- lmerFit
     COEF[[dep]]    <- coefFit
     VCOV[[dep]]    <- vcovFit
@@ -133,7 +133,7 @@ plslmer <- function(plsModel) {
 
 getSigmaFromVarCorr <- function(fit, varCorr, dep) {
   rvdep  <- sprintf("%s~~%s", dep, dep)
-  sigma <- stats::setNames(lme4::getME(fit, "sigma"), nm = rvdep)
+  sigma <- stats::setNames(lme4::getME(fit, "sigma")^2, nm = rvdep)
 
   for (VC in varCorr) {
     namesVC <- matrix("", nrow = NROW(VC), ncol = NCOL(VC))

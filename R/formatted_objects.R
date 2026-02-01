@@ -23,6 +23,7 @@ plssemMatrix <- function(mat, symmetric = isSymmetric(mat), is.public = FALSE) {
       keepCn <- rep(TRUE, length(cn))
       keepCn[isTempCn][isDupTempCn] <- FALSE
       mat <- mat[ , keepCn, drop = FALSE]
+    }
   }
 
   class(mat) <- unique(c("PlsSemMatrix", class(mat)))

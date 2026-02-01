@@ -46,13 +46,13 @@ plslmer <- function(plsModel) {
 
   for (line in lme4.syntax) {
     lmerFit <- lme4::lmer(line, data = X)
-    fterms  <- stats::terms(formula(line))
+    fterms  <- stats::terms(stats::formula(line))
     vars    <- attr(fterms, "variables")
     dep     <- as.character(vars[[2L]])
 
     fixefFit   <- fixVecNames(lme4::fixef(lmerFit), dep = dep)
     vcovFit    <- fixMatNames(vcov(lmerFit), dep = dep)
-    coefFit    <- coef(lmerFit)
+    coefFit    <- stats::coef(lmerFit)
     varCorrFit <- lme4::VarCorr(lmerFit)
 
     params <- names(fixefFit)

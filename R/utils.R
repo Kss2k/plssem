@@ -13,7 +13,7 @@ prepData <- function(data,
 
   data <- as.data.frame(data)[vars]
 
-  missingCases <- !complete.cases(data)
+  missingCases <- !stats::complete.cases(data)
   if (any(missingCases)) {
     warning("Removing missing data list wise for factor scores.\n",
             "Removing missing data pair wise in covariance matrix.\n",
@@ -50,21 +50,9 @@ prepData <- function(data,
 }
 
 
-simpleLm <- function(x, y) {
-  lm(y ~ x)
-}
-
-
-getCoefs <- function(lmObject) {
-  lmObject$coefficients[-1]
-}
-
-
 getNonZeroElems <- function(x) {
   as.vector(x[!is.na(x) & x != 0])
 }
-
-
 
 
 standardizeDataFrame <- function(data, cluster = NULL, subset = colnames(data)) {
@@ -77,47 +65,8 @@ standardizeDataFrame <- function(data, cluster = NULL, subset = colnames(data)) 
 }
 
 
-scaleMatrix <- function(x, weights) {
-  for (i in seq_len(ncol(x))) x[, i] <- scaleAtomic(x[, i], sd = weights[[i]])
-  x
-}
-
-
 standardizeAtomic <- function(x) {
-  (x - mean(x)) / sd(x)
-}
-
-
-scaleAtomic <- function(x, sd = 1, center = TRUE) {
-  if (center) x <- x - mean(x)
-  (x / sd(x)) * sd
-}
-
-
-getScalingSDs <- function(lVs, indsLvs, data) {
-  sds <- vector("numeric", length(lVs))
-  names(sds) <- lVs
-  for (lV in lVs) {
-    sds[[lV]] <- sd(data[, indsLvs[[lV]][[1]]])
-  }
-  sds
-}
-
-
-getAndRemoveResiudals <- function(sortedData) {
-  projData <- residuals <- matrix(0, nrow = nrow(sortedData), ncol = ncol(sortedData), 
-                      dimnames = dimnames(sortedData))
-  for (x in colnames(sortedData)) {
-    reg <- lm(as.data.frame(cbind(sortedData[, x], sortedData[, !grepl(x, colnames(sortedData))])))
-    residuals[, x] <- residuals(reg)
-    projData[, x] <- reg$fitted.values
-  }
-  list(projData = projData, residuals = residuals)
-}
-
-
-removeResidualsFactorScores <- function(items, factorScores) {
-  apply(items, 2, function(x) residuals(lm(as.data.frame(cbind(x,factorScores)))))
+  (x - mean(x)) / stats::sd(x)
 }
 
 
@@ -128,21 +77,6 @@ getPathCoefs <- function(y, X, C) {
   solve(C[X, X]) %*% C[X, y]
 }
 
-
-normalizeVec <- function(x) {
-  # return x with length = 1 
-  x / sqrt(t(x) %*% x)[[1]]
-}
-
-
-covProdInds <- function(x, y, data) {
-  combos <- as.data.frame(expand.grid(x, y))
-  colnames(combos) <- c("x", "y")
-  prodInds <- apply(combos, MARGIN = 1, FUN = function(row) 
-                    data[, row[[1]]] * data[, row[[2]]])
-  colnames(prodInds) <- paste0(combos$x, ":", combos$y)
-  cov(prodInds)
-}
 
 
 weightsProdInds <- function(wx, wy) {
@@ -180,7 +114,7 @@ diag2 <- function(X) {
 
 printf <- function(...) {
   cat(sprintf(...))
-  flush.console()
+  stats::flush.console()
 }
 
 

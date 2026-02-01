@@ -43,6 +43,6 @@ randomSlopesOrdered <- cut_data(randomSlopes)
 TPB_Ordered <- cut_data(modsem::TPB)
 
 
-save(randomSlopesOrdered, file = "data/randomSlopesOrdered.Rda")
-save(randomInterceptsOrdered, file = "data/randomInterceptsOrdered.Rda")
-save(TPB_Ordered, file = "data/TPB_Ordered.Rda")
+save(randomSlopesOrdered, file = "data/randomSlopesOrdered.rda")
+save(randomInterceptsOrdered, file = "data/randomInterceptsOrdered.rda")
+save(TPB_Ordered, file = "data/TPB_Ordered.rda")

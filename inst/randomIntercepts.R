@@ -125,4 +125,4 @@ set.seed(2308257)
 randomIntercepts <- sim_data()
 
 
-save(randomIntercepts, file = "data/randomIntercepts.Rda")
+save(randomIntercepts, file = "data/randomIntercepts.rda")

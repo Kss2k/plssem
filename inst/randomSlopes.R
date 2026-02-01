@@ -144,4 +144,4 @@ sim_data <- function(N = n, K = k) {
 set.seed(2308257)
 randomSlopes <- sim_data()
 
-save(randomSlopes, file = "data/randomSlopes.Rda")
+save(randomSlopes, file = "data/randomSlopes.rda")

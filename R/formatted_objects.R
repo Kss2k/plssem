@@ -13,11 +13,6 @@ plssemMatrix <- function(mat, symmetric = isSymmetric(mat), is.public = FALSE) {
       keepRn <- rep(TRUE, length(rn))
       keepRn[isTempRn][isDupTempRn] <- FALSE
       mat <- mat[keepRn, , drop = FALSE]
-
-      rownames(mat) <- stringr::str_replace_all(
-        string = rnClean[keepRn],
-        pattern = OP_REPLACEMENTS_INV
-      )
     }
 
     if (!is.null(cn)) {
@@ -28,12 +23,6 @@ plssemMatrix <- function(mat, symmetric = isSymmetric(mat), is.public = FALSE) {
       keepCn <- rep(TRUE, length(cn))
       keepCn[isTempCn][isDupTempCn] <- FALSE
       mat <- mat[ , keepCn, drop = FALSE]
-
-      colnames(mat) <- stringr::str_replace_all(
-        string = cnClean[keepCn],
-        pattern = OP_REPLACEMENTS_INV
-      )
-    }
   }
 
   class(mat) <- unique(c("PlsSemMatrix", class(mat)))
@@ -80,18 +69,6 @@ print.PlsSemMatrix <- function(x, digits = 3, shift = 0L, ...) {
 plssemParTable <- function(parTable, is.public = FALSE) {
   if (is.null(parTable)) return(parTable)
 
-  if (is.public) {
-    paramCols <- c("lhs", "op", "rhs", "label")
-    paramCols <- intersect(paramCols, colnames(parTable))
-
-    for (col in paramCols) {
-      parTable[[col]] <- stringr::str_replace_all(
-        string = parTable[[col]],
-        pattern = OP_REPLACEMENTS_INV
-      )
-    }
-  }
-
   rownames(parTable) <- NULL
   class(parTable) <- unique(c("PlsSemParTable", class(parTable)))
   parTable
@@ -115,11 +92,6 @@ plssemVector <- function(vec, is.public = FALSE) {
 
       vec <- stats::setNames(vec[keep], nm = clean[keep])
     }
-
-    names(vec) <- stringr::str_replace_all(
-      string = names(vec),
-      pattern = OP_REPLACEMENTS_INV
-    )
   }
 
   class(vec) <- unique(c("PlsSemVector", class(vec)))

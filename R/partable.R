@@ -41,7 +41,7 @@ splitParameterNames <- function(names) {
 
   for (OP in OPERATORS) { # go by precedence
     split <- stringr::str_split_fixed(names, pattern = stringr::coll(OP), n = 2L)
-    success <- split[, 2L] != ""
+    success <- stringr::str_detect(names, pattern = stringr::coll(OP))
 
     replace <- !hasBeenSplit & success
     hasBeenSplit <- hasBeenSplit | success

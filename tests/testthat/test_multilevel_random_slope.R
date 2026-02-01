@@ -9,9 +9,9 @@ syntax <- "
   W ~ X + Z + (1 + X + Z | cluster)
 "
 
-fit <- pls(syntax, data = randomSlopes,
+fit.c <- pls(syntax, data = randomSlopes,
            consistent = TRUE, bootstrap = TRUE)
-fit
+summary(fit.c)
 
 
 syntax <- "
@@ -23,6 +23,6 @@ syntax <- "
   W ~ X + Z + (1 + X + Z | cluster)
 "
 
-fit <- pls(syntax, data = randomSlopesOrdered,
+fit.o <- pls(syntax, data = randomSlopesOrdered,
            consistent = TRUE, bootstrap = TRUE)
-fit
+summary(fit.o)

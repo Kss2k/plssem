@@ -1,4 +1,4 @@
-OPERATORS <- c("=~", "~~", "~", "|", "<~")
+OPERATORS <- c("~~", "=~", "~1", "~", "|", "<~")
 
 specifyModel <- function(syntax,
                          data,

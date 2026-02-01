@@ -19,7 +19,7 @@ bootstrap <- function(model, R = 50L, zero.tol = 1e-10) {
     model$data       <- sampleData
 
     capture.output(type = "message", { # capture real time output
-      model <- estimatePLS(model)
+      model <- suppressWarnings(estimatePLS(model))
     })
 
     results[[i]] <- model$params$values
@@ -27,7 +27,9 @@ bootstrap <- function(model, R = 50L, zero.tol = 1e-10) {
 
   cli::cli_progress_done()
 
-  resultsMat <- do.call(rbind, results) 
+  suppressWarnings({ # TODO: Fix mismatching thresholds in bootstrapping
+    resultsMat <- do.call(rbind, results) 
+  })
   names(resultsMat) <- names(model$params$values)
 
   se <- apply(resultsMat, MARGIN = 2, FUN = stats::sd, na.rm = TRUE)

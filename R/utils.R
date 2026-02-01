@@ -190,7 +190,9 @@ cov2cor <- function(vcov) {
 
   sd <- sqrt(abs(diag(vcov))) # use `abs()`, in case some variances are negative
 
-  D <- diag(1 / sd)
+  if (length(sd) == 1L) D <- matrix(1 / sd, nrow = 1L, ncol = 1L)
+  else                  D <- diag(1 / sd)
+
   structure(D %*% vcov %*% D, dimnames = dimnames(vcov))
 }
 

@@ -16,5 +16,3 @@ syntax <- '
 
 fit <- pls(syntax, data = randomInterceptsOrdered, bootstrap = TRUE)
 summary(fit)
-
-

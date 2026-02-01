@@ -161,7 +161,7 @@ getPolyCorr <- function(data, ordered = NULL) {
 getThresholdsFromQuantiles <- function(X, variable) {
   x   <- X[, variable]
   pct <- table(x) / length(x)
-  tau <- qnorm(cumsum(pct)[-length(pct)])
+  tau <- stats::qnorm(cumsum(pct)[-length(pct)])
   lab <- paste0(variable, "|t", seq_along(tau))
 
   stats::setNames(tau, nm = lab)

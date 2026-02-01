@@ -155,7 +155,7 @@ estimatePLS_Step6 <- function(model) {
 
     for (xz in names) {
       model$factorScores[,xz] <- multiplyIndicatorsCpp(X[elems[[xz]]])
-      sigma <- sd(model$factorScores[,xz,drop=TRUE])
+      sigma <- stats::sd(model$factorScores[,xz,drop=TRUE])
       D.lv[xz, xz] <- D.ov[xz, xz] <- sigma
     }
 

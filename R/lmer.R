@@ -51,7 +51,7 @@ plslmer <- function(plsModel) {
     dep     <- as.character(vars[[2L]])
 
     fixefFit   <- fixVecNames(lme4::fixef(lmerFit), dep = dep)
-    vcovFit    <- fixMatNames(vcov(lmerFit), dep = dep)
+    vcovFit    <- fixMatNames(stats::vcov(lmerFit), dep = dep)
     coefFit    <- stats::coef(lmerFit)
     varCorrFit <- lme4::VarCorr(lmerFit)
 

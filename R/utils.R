@@ -28,12 +28,16 @@ prepData <- function(data,
 
   if (is.null(probit))
     probit <- length(ordered) > 0
+ 
+  if (standardize) {
+    data <- standardizeDataFrame(
+      data    = data,
+      cluster = cluster
+    )
+  }
 
   S <- getCorrMat(data[indicators], probit = probit, ordered = ordered)
   X <- as.matrix(data[indicators])
- 
-  if (standardize)
-    X <- standardizeMatrix(X, cluster = cluster)
 
   if (!is.null(cluster)) {
     if (!is.character(cluster))
@@ -63,13 +67,13 @@ getNonZeroElems <- function(x) {
 
 
 
-standardizeMatrix <- function(x, cluster = NULL) {
-  z <- apply(x, MARGIN = 2, FUN = standardizeAtomic)
+standardizeDataFrame <- function(data, cluster = NULL, subset = colnames(data)) {
+  subset <- setdiff(subset, cluster)
 
-  notcluster <- !colnames(x) %in% cluster
-  x[,notcluster] <- z[,notcluster]
+  Z <- lapply(data[subset], FUN = standardizeAtomic)
+  data[subset] <- Z
 
-  x
+  data
 }
 
 

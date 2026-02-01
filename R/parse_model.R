@@ -1,7 +1,34 @@
 TEMP_OV_PREFIX <- ".TEMP_OV__"
 
 
-parseModelArguments <- function(syntax, data) {
+parseModelArguments <- function(syntax,
+                                data,
+                                pi.match = NULL,
+                                pi.match.recycle = NULL) {
+  stopif(length(syntax) > 1L || !is.character(syntax),
+         "`syntax` must be a string of length 1!")
+
+  if (grepl(":", syntax)) {
+    modsemModel <- modsem::modsem_pi(
+      model.syntax        = syntax,
+      data                = data,
+      method              = "dblcent",
+      match               = pi.match,
+      match.recycle       = pi.match.recycle,
+      residual.cov.syntax = FALSE,
+      run                 = FALSE
+    )
+
+    indprods     <- setdiff(colnames(modsemModel$data), colnames(data))
+    intTermElems <- modsemModel$elementsInProdNames
+    syntax       <- modsemModel$syntax
+    data         <- modsemModel$data
+
+  } else {
+    indprods     <- NULL
+    intTermElems <- NULL
+  }
+
   parTable <- modsem::modsemify(syntax, parentheses.as.string = TRUE)
   data     <- as.data.frame(data)
 
@@ -57,7 +84,9 @@ parseModelArguments <- function(syntax, data) {
     parTable.pls = parTable.pls,
     parTable.all = parTable,
     cluster      = cluster,
-    lme4.syntax  = lme4.syntax
+    lme4.syntax  = lme4.syntax,
+    intTermElems = intTermElems,
+    indprods     = indprods
   )
 }
 

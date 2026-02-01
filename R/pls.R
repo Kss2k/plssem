@@ -131,9 +131,43 @@ estimatePLS_Step0_5 <- function(model, max.iter = 100) {
 
   model
 }
+
+
+estimatePLS_Step6 <- function(model) {
+  model$factorScores <- getFactorScores(model)
+
+  if (model$info$is.interaction.model) {
+    # Update variance and coefficients of interaction terms
+    elems <- model$info$intTermElems
+    names <- names(elems)
+    X     <- as.data.frame(model$factorScores)
+
+    SC <- model$matrices$SC
+    C  <- model$matrices$C
+    L  <- model$matrices$lambda
+    G  <- model$matrices$gamma
+
+    D.lv <- diag(NCOL(C))
+    D.ov <- diag(NCOL(SC))
+
+    dimnames(D.lv) <- dimnames(C)
+    dimnames(D.ov) <- dimnames(SC)
+
+    for (xz in names) {
+      model$factorScores[,xz] <- multiplyIndicatorsCpp(X[elems[[xz]]])
+      sigma <- sd(model$factorScores[,xz,drop=TRUE])
+      D.lv[xz, xz] <- D.ov[xz, xz] <- sigma
+    }
+
+    model$matrices$SC <- D.ov %*% SC %*% D.ov
+    model$matrices$C  <- D.lv %*%  C %*% D.lv
+  }
+
+  model
+}
  
 
-estimatePLS_Step6  <- function(model, max.iter = 100) {
+estimatePLS_Step7  <- function(model, max.iter = 100) {
   # Step 6 get baseline fit for correcting path coefficients in
   # multilevel model.
 
@@ -148,9 +182,9 @@ estimatePLS_Step6  <- function(model, max.iter = 100) {
       model$fit.u <- list(NULL)
       model$fit   <- model$fit.c
     } else {
-      model$fit.u <- list(NULL)
+      model$fit.c <- list(NULL)
       model$fit.u <- getFitPLSModel(model, consistent = FALSE)
-      model$fit   <- model$fit.c
+      model$fit   <- model$fit.u
     }
 
     return(model)
@@ -175,9 +209,8 @@ estimatePLS_Step6  <- function(model, max.iter = 100) {
 }
 
 
-estimatePLS_Step7 <- function(model) {
+estimatePLS_Step8 <- function(model) {
   model$params$values <- extractCoefs(model)
-  model$factorScores  <- getFactorScores(model)
 
   if (model$info$is.multilevel) {
     model$fit.lmer <- plslmer(model)
@@ -195,11 +228,12 @@ estimatePLS_Step7 <- function(model) {
     model$params$se     <- rep(NA_real_, length(coefs.all))
   }
 
+
   model
 }
 
 
-estimatePLS_Step8 <- function(model) {
+estimatePLS_Step9 <- function(model) {
   # Step 8. Finalize model object with any additionaly information
   ordered <- model$info$ordered
 
@@ -220,8 +254,9 @@ estimatePLS <- function(model, max.iter = 100) {
 
   model |>
     estimatePLS_Step0_5(max.iter = max.iter) |>
-    estimatePLS_Step6(max.iter = max.iter) |>
-    estimatePLS_Step7() |>
-    estimatePLS_Step8()
+    estimatePLS_Step6() |>
+    estimatePLS_Step7(max.iter = max.iter) |>
+    estimatePLS_Step8() |>
+    estimatePLS_Step9()
 
 }

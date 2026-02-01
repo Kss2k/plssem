@@ -6,12 +6,14 @@ specifyModel <- function(syntax,
                          standardize = TRUE,
                          ordered = NULL,
                          probit = NULL) {
-  parsed      <- parseModelArguments(syntax = syntax, data = data)
-  syntax      <- parsed$syntax
-  data        <- parsed$data
-  pt          <- parsed$parTable.pls
-  cluster     <- parsed$cluster
-  lme4.syntax <- parsed$lme4.syntax
+  parsed       <- parseModelArguments(syntax = syntax, data = data)
+  syntax       <- parsed$syntax
+  data         <- parsed$data
+  pt           <- parsed$parTable.pls
+  cluster      <- parsed$cluster
+  lme4.syntax  <- parsed$lme4.syntax
+  intTermElems <- parsed$intTermElems
+  indprods     <- parsed$indprods
 
   matricesAndInfo <- initMatrices(pt)
   matrices        <- matricesAndInfo$matrices
@@ -26,13 +28,16 @@ specifyModel <- function(syntax,
     ordered     = ordered,
     probit      = probit
   ) 
-  
+ 
   info$lme4.syntax   <- lme4.syntax
   info$is.multilevel <- !is.null(lme4.syntax)
   info$cluster       <- cluster
   info$consistent    <- consistent
   info$is.probit     <- preppedData$probit 
   info$ordered       <- preppedData$ordered
+  info$indprods      <- indprods
+  info$intTermElems  <- intTermElems
+  info$is.interaction.model <- length(intTermElems) > 0
 
   matrices$S <- preppedData$S
   matrices$C <- diag(nrow(matrices$gamma))
@@ -74,14 +79,13 @@ specifyModel <- function(syntax,
 
 # badly named function -- since if also returns some useful info
 initMatrices <- function(pt) {
-  lVs <- unique(pt[pt$op == "=~", "lhs"])
-  # add interaction terms at the end
-  lVs <- c(lVs, pt[grepl(":", pt$rhs), "rhs", drop = TRUE] |> unique())
+  lVs  <- unique(pt[pt$op == "=~", "lhs"])
   etas <- unique(pt[pt$op == "~", "lhs"])
   xis  <- lVs[!lVs %in% etas]
 
   allInds <- vector("character", 0)
   indsLvs <- vector("list", length(lVs))
+
   names(indsLvs) <- lVs
   for (lV in lVs) {
     indsLv <- pt[pt$lhs == lV & pt$op == "=~", "rhs"]
@@ -107,7 +111,7 @@ initMatrices <- function(pt) {
                   dimnames = list(lVs, lVs))
   # Predecessors and successors
   preds <- succs <- matrix(FALSE, nrow = length(lVs), ncol = length(lVs),
-                  dimnames = list(lVs, lVs))
+                           dimnames = list(lVs, lVs))
   for (lV in lVs) {
     predsLv <- pt[pt$lhs == lV & pt$op == "~", "rhs"]
     succsLv <- pt[pt$rhs == lV & pt$op == "~", "lhs"]
@@ -116,9 +120,6 @@ initMatrices <- function(pt) {
     # selectionmatrix 
     selectGamma[predsLv, lV] <- TRUE
   }
-
-  # Interaction effects 
-  interactionPairs <- getInteractionPairs(pt)
 
   # Covariance Matrix xis ------------------------------------------------------
   xis <- lVs[!lVs %in% pt[pt$op == "~", "lhs"]]
@@ -135,15 +136,30 @@ initMatrices <- function(pt) {
   colnames(Ip) <- rownames(Ip) <- rownames(lambda)
 
   # Create output lists --------------------------------------------------------
-  matrices <- list(lambda = lambda, gamma = gamma, 
-                   preds = preds, succs = succs, 
-                   outerWeights = getNonZeroElems(lambda), 
-                   Ip = Ip, 
-                   selectLambda = selectLambda, selectGamma = selectGamma,
-                   selectCov = selectCov)
-  info <- list(indsLvs = indsLvs, allInds = allInds, lVs = lVs,
-               interactionPairs = interactionPairs, etas = etas, xis = xis)
-  list(matrices = matrices, info = info)
+  matrices <- list(
+    lambda = lambda,
+    gamma = gamma, 
+    preds = preds,
+    succs = succs, 
+    outerWeights = getNonZeroElems(lambda), 
+    Ip = Ip, 
+    selectLambda = selectLambda,
+    selectGamma = selectGamma,
+    selectCov = selectCov
+  )
+
+  info <- list(
+    indsLvs = indsLvs,
+    allInds = allInds,
+    lVs = lVs,
+    etas = etas,
+    xis = xis
+  )
+
+  list(
+    matrices = matrices,
+    info = info
+  )
 }
 
 
@@ -194,28 +210,6 @@ getFitPLSModel <- function(model, consistent = TRUE) {
     fitStructural  = plssemMatrix(fitStructural),
     fitCov         = plssemMatrix(fitCov, symmetric = TRUE)
   )
-}
-
-
-getInteractionPairs <- function(pt) {
-  lVs <- pt[pt$op == "=~", "lhs"] |> unique()
-  allInds <- vector("character", 0)
-  indsLvs <- vector("list", length(lVs))
-  names(indsLvs) <- lVs
-  for (lV in lVs) {
-    indsLv <- pt[pt$lhs == lV & pt$op == "=~", "rhs"]
-    allInds <- c(allInds, indsLv)
-    indsLvs[[lV]] <- indsLv
-  }
-  
-  intTerms <- pt[grepl(":", pt$rhs), "rhs", drop = TRUE] |> unique()
-  interactionPairs <- vector("list", length(intTerms))
-  names(interactionPairs) <- intTerms 
-  for (int in intTerms) {
-    interactionPairs[[int]] <- 
-      as.vector(stringr::str_split_fixed(int, ":", n = 2))
-  }
-  interactionPairs
 }
 
 

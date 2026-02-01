@@ -6,6 +6,8 @@
 }
 
 
-parTableToSyntax <- .internalModsemAPI("parTableToSyntax")
-getOVs           <- .internalModsemAPI("getOVs")
-getStructOVs     <- .internalModsemAPI("getStructOVs")
+parTableToSyntax      <- .internalModsemAPI("parTableToSyntax")
+getOVs                <- .internalModsemAPI("getOVs")
+getStructOVs          <- .internalModsemAPI("getStructOVs")
+getParTableLabels     <- .internalModsemAPI("getParTableLabels")
+multiplyIndicatorsCpp <- .internalModsemAPI("multiplyIndicatorsCpp")

@@ -18,7 +18,7 @@ bootstrap <- function(model, R = 50L, zero.tol = 1e-10) {
     model$matrices$S <- getCorrMat(sampleData, ordered = ordered, probit = is.probit)
     model$data       <- sampleData
 
-    stats::capture.output(type = "message", { # capture real time output
+    utils::capture.output(type = "message", { # capture real time output
       model <- suppressWarnings(estimatePLS(model))
     })
 

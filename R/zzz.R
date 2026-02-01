@@ -6,7 +6,7 @@ getPackageVersion <- function(pkgname) {
     read.dcf(file = system.file("DESCRIPTION", package = pkgname),
              fields = "Version")
   }, error = function(e) {
-    warning2("Failed to get package version")
+    warning("Failed to get package version")
     "??" # replace this with a hard-coded value?
   })
 }

@@ -35,7 +35,6 @@
 #' @seealso [summary.plssem()], [print.plssem()]
 #'
 #' @examples
-#' \donttest{
 #' tpb <- '
 #' # Outer Model (Based on Hagger et al., 2007)
 #'   ATT =~ att1 + att2 + att3 + att4 + att5
@@ -49,7 +48,7 @@
 #'   BEH ~ INT + PBC
 #' '
 #'
-#' fit <- pls(tpb, data = modsem::TPB, bootstrap = FALSE)
+#' fit <- pls(tpb, data = modsem::TPB)
 #' summary(fit)
 #'
 #' syntax <- "
@@ -61,9 +60,8 @@
 #'   W ~ X + Z + (1 + X + Z | cluster)
 #' "
 #'
-#' fit <- pls(syntax, data = randomSlopesOrdered, bootstrap = FALSE)
+#' fit <- pls(syntax, data = randomSlopesOrdered)
 #' summary(fit)
-#' }
 #'
 #' @export
 pls <- function(syntax,

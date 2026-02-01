@@ -1,0 +1,45 @@
+name: 'pkgdown: Build and Deployment'
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  push-to-gh-pages:
+    runs-on: ubuntu-latest
+
+    container:
+      image: ghcr.io/kss2k/container-modsem:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GHCR_PAT }}
+
+    permissions:
+      contents: write
+      packages: write
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: build pkgdown site
+        run: |
+          git clone https://github.com/kss2k/modsem
+          cd modsem/vignettes
+          # make vignettes print their ouptut on the pkgdown site  
+          ls -A *.Rmd | xargs sed -i "s/EVAL_DEFAULT <- FALSE/EVAL_DEFAULT <- TRUE/"
+          cd ..
+          git clone https://github.com/kss2k/modsem --branch pkgdown docs
+          Rscript -e 'pkgdown::build_site(preview = FALSE, run_dont_run = TRUE)'
+      - name: Commit and push changes to pkgdown branch
+        run: |
+          git config --global user.name "${{ github.actor }}"
+          git config --global user.email "${{ github.actor }}@users.noreply.github.com"
+          cd modsem/docs
+          git add --all
+          git commit -m "Update pkgdown site [skip ci]" || echo "No changes to commit"
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+          git push origin pkgdown
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

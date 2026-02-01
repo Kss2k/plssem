@@ -36,13 +36,13 @@ print.SummaryPlsSem <- function(x, ...) {
 
 #' Print a `plssem` object
 #'
-#' @param object An object of class `plssem`.
+#' @param x An object of class `plssem`.
 #' @param ... Additional arguments for compatibility with the generic.
 #'
 #' @export
-print.plssem <- function(object, ...) {
-  print(parameter_estimates(object))
-  invisible(object)
+print.plssem <- function(x, ...) {
+  print(parameter_estimates(x))
+  invisible(x)
 }
 
 

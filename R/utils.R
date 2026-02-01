@@ -114,7 +114,7 @@ diag2 <- function(X) {
 
 printf <- function(...) {
   cat(sprintf(...))
-  stats::flush.console()
+  utils::flush.console()
 }
 
 

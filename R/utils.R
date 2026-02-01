@@ -1,4 +1,10 @@
-prepData <- function(data, indicators, cluster = NULL, consistent = TRUE) {
+prepData <- function(data,
+                     indicators,
+                     cluster = NULL,
+                     consistent = TRUE,
+                     standardize = TRUE,
+                     ordered = NULL,
+                     probit = NULL) {
   vars <- c(indicators, cluster)
   missing <- !vars %in% colnames(data)
 
@@ -13,12 +19,21 @@ prepData <- function(data, indicators, cluster = NULL, consistent = TRUE) {
             "Removing missing data pair wise in covariance matrix.\n",
             "TODO: Add multiple imputation")
   }
- 
-  if (consistent) use <- "pairwise.complete.obs"
-  else            use <- "everything"
 
-  S <- stats::cov(data[indicators], use = use)
+  is.ordered <- vapply(data, FUN.VALUE = logical(1L), FUN = is.ordered)
+  ordered    <- setdiff(union(ordered, vars[is.ordered]), cluster)
+
+  for (ord in ordered)
+    data[[ord]] <- as.integer(as.factor(data[[ord]]))
+
+  if (is.null(probit))
+    probit <- length(ordered) > 0
+
+  S <- getCorrMat(data[indicators], probit = probit, ordered = ordered)
   X <- as.matrix(data[indicators])
+ 
+  if (standardize)
+    X <- standardizeMatrix(X, cluster = cluster)
 
   if (!is.null(cluster)) {
     if (!is.character(cluster))
@@ -27,7 +42,7 @@ prepData <- function(data, indicators, cluster = NULL, consistent = TRUE) {
     attr(X, "cluster") <- data[, cluster, drop = FALSE]
   }
 
-  list(X = X, S = S)
+  list(X = X, S = S, probit = probit, ordered = ordered)
 }
 
 
@@ -183,4 +198,31 @@ stopif <- function(cond, ...) {
 
 warnif <- function(cond, ...) {
   if (isTRUE(cond)) stop(...)
+}
+
+
+getCorrMat <- function(data, probit = FALSE, ordered = NULL) {
+  if (probit) getPolyCorr(data, ordered = ordered)
+  else        getPearsonCorr(data)
+}
+
+
+getPearsonCorr <- function(data) {
+  stats::cor(as.data.frame(data), use = "pairwise.complete.obs")
+}
+
+
+getPolyCorr <- function(data, ordered = NULL) {
+  data <- as.data.frame(data)
+  lavaan::lavCor(data, ordered = ordered)
+}
+
+
+getThresholdsFromQuantiles <- function(X, variable) {
+  x   <- X[, variable]
+  pct <- table(x) / length(x)
+  tau <- qnorm(cumsum(pct)[-length(pct)])
+  lab <- paste0(variable, "|t", seq_along(tau))
+
+  stats::setNames(tau, nm = lab)
 }

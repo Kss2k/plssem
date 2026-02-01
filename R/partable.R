@@ -40,7 +40,7 @@ splitParameterNames <- function(names) {
   rhs <- rep(NA_character_, length(names))
 
   for (OP in OPERATORS) { # go by precedence
-    split <- stringr::str_split_fixed(names, pattern = OP, n = 2L)
+    split <- stringr::str_split_fixed(names, pattern = stringr::coll(OP), n = 2L)
     success <- split[, 2L] != ""
 
     replace <- !hasBeenSplit & success

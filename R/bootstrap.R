@@ -1,10 +1,12 @@
 bootstrap <- function(model, R = 50L, zero.tol = 1e-10) {
-  data    <- model$data 
-  cluster <- model$info$cluster
-  results <- vector("list", R)
+  data      <- model$data
+  cluster   <- model$info$cluster
+  is.probit <- model$info$is.probit
+  ordered   <- model$info$ordered
+  results   <- vector("list", R)
 
   cli::cli_progress_bar(
-    name  = "bootstrap",
+    name  = sprintf("bootstrap[%i]", R),
     type  = "iterator",
     total = R
   )
@@ -13,10 +15,13 @@ bootstrap <- function(model, R = 50L, zero.tol = 1e-10) {
     cli::cli_progress_update()
 
     sampleData       <- resample(data, cluster = cluster)
-    model$matrices$S <- stats::cov(as.data.frame(sampleData), use = "pairwise.complete.obs")
+    model$matrices$S <- getCorrMat(sampleData, ordered = ordered, probit = is.probit)
     model$data       <- sampleData
 
-    model <- estimatePLS(model)
+    capture.output(type = "message", { # capture real time output
+      model <- estimatePLS(model)
+    })
+
     results[[i]] <- model$params$values
   }
 
@@ -41,18 +46,25 @@ resample <- function(X, n.out = NROW(X), cluster = NULL, replace = TRUE) {
   stopif(length(cluster) > 1L, "bootstrapping of multiple cluster variables is not implemented (yet)!")
 
   cluster.vals <- attr(X, "cluster")[, cluster, drop = TRUE]
-  stopif(NROW(cluster.vals) != NROW(X), "Cluster must be of same lenght as data!")
+  stopif(NROW(cluster.vals) != NROW(X), "Cluster must be of same length as data!")
 
   clusters <- unique(cluster.vals)
   G <- length(clusters)
 
   clusters.sample <- sample(clusters, size = G, replace = replace)
 
-  .boot <- function(Z)
-    do.call(rbind, lapply(clusters.sample, FUN = \(ci) Z[cluster.vals==ci, , drop=FALSE]))
+  cluster.list <- lapply(clusters.sample, FUN = \(ci) X[cluster.vals==ci, , drop=FALSE])
+  # create new (fresh) cluster indices
+  # if we sample the same cluster twice, we want the model to treat them
+  # as different clusters
+  indices.list <- lapply(
+    X = seq_along(cluster.list),
+    FUN = \(idx) matrix(idx, nrow = NROW(cluster.list[[idx]]), ncol = 1L,
+                        dimnames = list(NULL, cluster))
+  )
 
-  Y <- .boot(X)
-  attr(Y, "cluster") <- .boot(attr(X, "cluster"))
+  Y <- do.call(rbind, cluster.list)
+  attr(Y, "cluster") <- do.call(rbind, indices.list)
 
   Y
 }

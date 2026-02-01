@@ -3,20 +3,17 @@
 #' @name randomSlopes
 #' @docType data
 #' @description A simulated dataset.
-#' @examples
-#'
-#' pls.syntax <- "
+#' syntax <- "
 #'   X =~ x1 + x2 + x3
 #'   Z =~ z1 + z2 + z3
 #'   Y =~ y1 + y2 + y3
-#'   Y ~ X + Z + X:Z
+#'   W =~ w1 + w2 + w3
+#'   Y ~ X + Z + (1 + X + Z | cluster)
+#'   W ~ X + Z + (1 + X + Z | cluster)
 #' "
 #' 
-#' lme4.syntax <- "Y ~ X + Z + (1 + X + Z | cluster)"
-#'
-#' fit <- pls(pls.syntax, data = randomSlopes, lme4.syntax = lme4.syntax,
-#'            cluster = "cluster")
-#' summary(fit)
+#' fit <- pls(syntax, data = randomSlopes, bootstrap = TRUE)
+#' fit
 NULL
 
 
@@ -27,15 +24,75 @@ NULL
 #' @description A simulated dataset.
 #' @examples
 #'
-#' pls.syntax <- "
+#' syntax <- '
 #'   f =~ y1 + y2 + y3
-#'   f ~ x1 + x2 + x3 + w1 + w2
+#'   f ~ x1 + x2 + x3 + w1 + w2 + (1 | cluster)
+#' '
+#' 
+#' fit <- pls(syntax, data = randomIntercepts, bootstrap = TRUE)
+#' summary(fit)
+NULL
+
+
+#' randomInterceptsOrdered
+#'
+#' @name randomInterceptsOrdered
+#' @docType data
+#' @description A simulated dataset.
+#' @examples
+#'
+#' syntax <- '
+#'   f =~ y1 + y2 + y3
+#'   f ~ x1 + x2 + x3 + w1 + w2 + (1 | cluster)
+#' '
+#' 
+#' fit <- pls(syntax, data = randomInterceptsOrdered, bootstrap = TRUE)
+#' summary(fit)
+NULL
+
+
+#' randomSlopesOrdered
+#'
+#' @name randomSlopesOrdered
+#' @docType data
+#' @description A simulated dataset.
+#' @examples
+#'
+#' syntax <- "
+#'   X =~ x1 + x2 + x3
+#'   Z =~ z1 + z2 + z3
+#'   Y =~ y1 + y2 + y3
+#'   W =~ w1 + w2 + w3
+#'   Y ~ X + Z + (1 + X + Z | cluster)
+#'   W ~ X + Z + (1 + X + Z | cluster)
 #' "
 #' 
-#' lme4.syntax <- "f ~ x1 + x2 + x3 + w1 + w2 + (1 | cluster)"
+#' fit <- pls(syntax, data = randomSlopesOrdered, bootstrap = TRUE)
+#' fit
+#' summary(fit)
+NULL
+
+
+#' TPB_Ordered 
+#'
+#' @name TPB_Ordered
+#' @docType data
+#' @description A simulated dataset.
+#' @examples
 #' 
+#' tpb <- ' 
+#' # Outer Model (Based on Hagger et al., 2007)
+#'   ATT =~ att1 + att2 + att3 + att4 + att5
+#'   SN =~ sn1 + sn2
+#'   PBC =~ pbc1 + pbc2 + pbc3
+#'   INT =~ int1 + int2 + int3
+#'   BEH =~ b1 + b2
 #' 
-#' fit <- pls(model.pls, data = randomIntercepts,
-#'            lme4.syntax = lmer.syntax, cluster = "cluster")
+#' # Inner Model (Based on Steinmetz et al., 2011)
+#'   INT ~ ATT + SN + PBC
+#'   BEH ~ INT + PBC 
+#' '
+#' 
+#' fit <- pls(tpb, TPB_Ordered, bootstrap = TRUE)
 #' summary(fit)
 NULL

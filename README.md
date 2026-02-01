@@ -9,16 +9,19 @@ to handle categorical data, non-linear models, and multilevel structures.
 of non-linear multilevel PLS-SEM (and PLSc-SEM) models with ordinal/categorical data. 
 
 ## Installation
-The package currently needs to be installed from `GitHub`.
+The package currently needs to be installed from `GitHub`. Currently, it
+also depends on the latest development version of `modsem`.
 
 ```r
+devtools::install_github("kss2k/modsem")
 devtools::install_github("kss2k/plssem")
 ```
 
-## Example
-### Linear Model
+## Examples
+### Linear Model with Continuous Data
 ```r
 library(plssem)
+library(modsem)
 
 tpb <- ' 
 # Outer Model (Based on Hagger et al., 2007)
@@ -33,64 +36,77 @@ tpb <- '
   BEH ~ INT + PBC 
 '
 
-fit <- pls(tpb, modsem::TPB, consistent = TRUE, 
-           bootstrap = TRUE, sample = 500)
+fit <- pls(tpb, TPB, bootstrap = TRUE)
 summary(fit)
 ```
 
-### Multilevel Random Intercepts Model
+### Linear Model with Ordered Data
 ```r
-library(plssem)
+tpb <- ' 
+# Outer Model (Based on Hagger et al., 2007)
+  ATT =~ att1 + att2 + att3 + att4 + att5
+  SN =~ sn1 + sn2
+  PBC =~ pbc1 + pbc2 + pbc3
+  INT =~ int1 + int2 + int3
+  BEH =~ b1 + b2
 
-model.pls <- "
-  f =~ y1 + y2 + y3
-  f ~ x1 + x2 + x3 + w1 + w2
-"
+# Inner Model (Based on Steinmetz et al., 2011)
+  INT ~ ATT + SN + PBC
+  BEH ~ INT + PBC 
+'
 
-lmer.syntax <- "
-  f ~ x1 + x2 + x3 + w1 + w2 + (1 | cluster)
-"
-
-fit <- pls(model.pls, data = randomIntercepts,
-           consistent = TRUE, lme4.syntax = lmer.syntax,
-           cluster = "cluster", bootstrap = TRUE)
+fit <- pls(tpb, TPB_Ordered, bootstrap = TRUE)
 summary(fit)
 ```
 
-### Multilevel Random Slopes Model
+### Multilevel Random Slopes Model with Continuous Data
 ```r
-library(plssem)
-
-pls.syntax <- "
+syntax <- "
   X =~ x1 + x2 + x3
   Z =~ z1 + z2 + z3
   Y =~ y1 + y2 + y3
   W =~ w1 + w2 + w3
-  Y ~ X + Z
-  W ~ X + Z
-"
-
-lme4.syntax <- "
   Y ~ X + Z + (1 + X + Z | cluster)
   W ~ X + Z + (1 + X + Z | cluster)
 "
 
-fit <- pls(pls.syntax, data = randomSlopes,
-           lme4.syntax = lme4.syntax, cluster = "cluster",
-           consistent = TRUE, bootstrap = TRUE)
+fit <- pls(syntax, data = randomSlopes, bootstrap = TRUE)
 summary(fit)
 ```
 
-## TODO
+### Multilevel Random Slopes Model with Ordered Data
+```r
+syntax <- "
+  X =~ x1 + x2 + x3
+  Z =~ z1 + z2 + z3
+  Y =~ y1 + y2 + y3
+  W =~ w1 + w2 + w3
+  Y ~ X + Z + (1 + X + Z | cluster)
+  W ~ X + Z + (1 + X + Z | cluster)
+"
 
-1. Add handling of ordinal data
-3. Add handling of missing data (multiple imputation)
-4. Add handling of ordinal data in multilevel models
-5. Add handling of interaction effects
-6. Add handling of ordinal data with interaction effects
-7. Add `parameter_estimates()` function.
-8. Add `coef()` function.
-9. Add `vcov()` function.
-10. Finish `summary()` function.
-    - Add fit measures
-    - Add `R^2` and `R^2-adj`
+fit <- pls(syntax, data = randomSlopesOrdered, bootstrap = TRUE)
+summary(fit)
+```
+
+### Multilevel Random Intercepts Model with Continuous Data
+```r
+syntax <- '
+  f =~ y1 + y2 + y3
+  f ~ x1 + x2 + x3 + w1 + w2 + (1 | cluster)
+'
+
+fit <- pls(syntax, data = randomIntercepts, bootstrap = TRUE)
+summary(fit)
+```
+
+### Multilevel Random Intercepts Model with Ordered Data
+```r
+syntax <- '
+  f =~ y1 + y2 + y3
+  f ~ x1 + x2 + x3 + w1 + w2 + (1 | cluster)
+'
+
+fit <- pls(syntax, data = randomInterceptsOrdered, bootstrap = TRUE)
+summary(fit)
+```

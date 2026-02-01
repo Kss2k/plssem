@@ -1,26 +1,38 @@
-OPERATORS <- c("=~", "~~", "~")
+OPERATORS <- c("=~", "~~", "~", "|", "<~")
 
-specifyModel <- function(syntax, data, cluster = NULL, consistent = TRUE, lme4.syntax = NULL) {
-  parsed <- parseModelArguments(syntax = syntax, data = data)
-  syntax <- parsed$syntax
-  data   <- parsed$data
-  pt     <- parsed$parTable
+specifyModel <- function(syntax,
+                         data,
+                         consistent = TRUE,
+                         standardize = TRUE,
+                         ordered = NULL,
+                         probit = NULL) {
+  parsed      <- parseModelArguments(syntax = syntax, data = data)
+  syntax      <- parsed$syntax
+  data        <- parsed$data
+  pt          <- parsed$parTable.pls
+  cluster     <- parsed$cluster
+  lme4.syntax <- parsed$lme4.syntax
 
   matricesAndInfo <- initMatrices(pt)
   matrices        <- matricesAndInfo$matrices
   info            <- matricesAndInfo$info
 
+  preppedData <- prepData(
+    data        = data,
+    indicators  = matricesAndInfo$info$allInds,
+    consistent  = consistent,
+    cluster     = cluster,
+    standardize = standardize,
+    ordered     = ordered,
+    probit      = probit
+  ) 
+  
   info$lme4.syntax   <- lme4.syntax
   info$is.multilevel <- !is.null(lme4.syntax)
   info$cluster       <- cluster
   info$consistent    <- consistent
-
-  preppedData <- prepData(
-    data       = data,
-    indicators = matricesAndInfo$info$allInds,
-    consistent = consistent,
-    cluster    = cluster
-  ) 
+  info$is.probit     <- preppedData$probit 
+  info$ordered       <- preppedData$ordered
 
   matrices$S <- preppedData$S
   matrices$C <- diag(nrow(matrices$gamma))
@@ -40,7 +52,7 @@ specifyModel <- function(syntax, data, cluster = NULL, consistent = TRUE, lme4.s
     parTable.input = pt,
     parTable       = NULL,
     matrices       = matrices,
-    data           = preppedData$X, 
+    data           = preppedData$X,
     factorScores   = NULL,
     info           = info,
     params         = NULL,

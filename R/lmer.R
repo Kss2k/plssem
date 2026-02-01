@@ -3,11 +3,10 @@ plslmer <- function(plsModel) {
   cluster     <- plsModel$info$cluster
   consistent  <- plsModel$info$consistent
 
-  if (length(lme4.syntax) != 1L || !is.character(lme4.syntax))
-    stop("`lme4.syntax` must be a character string of length 1!")
+  stopif(!is.character(lme4.syntax), "`lme4.syntax` must be a character vector!")
 
-  if (length(cluster) != 1L || !is.character(cluster))
-    stop("`cluster` must be a character string of length 1. If lme4.syntax is provided!")
+  stopif(length(cluster) != 1L || !is.character(cluster),
+         "`cluster` must be a character string of length 1. If lme4.syntax is provided!")
     
   fit.c <- plsModel$fit.c
   fit.u <- plsModel$fit.u
@@ -18,9 +17,6 @@ plslmer <- function(plsModel) {
   Xx <- as.data.frame(plsModel$data)
   Xc <- as.data.frame(attr(plsModel$data, "cluster"))
   X  <- cbind(Xf, Xx, Xc)
-
-  lme4Lines <- stringr::str_split_1(lme4.syntax, pattern = "\n|;")
-  lme4Lines <- lme4Lines[grepl("\\~", lme4Lines)]
 
   getNames <- function(lhs, nm) {
     rhs <- stringr::str_replace_all(nm, pattern = "\\(Intercept\\)", replacement = "1")
@@ -48,7 +44,7 @@ plslmer <- function(plsModel) {
   VARCORR <- list() 
   SIGMA   <- list()
 
-  for (line in lme4Lines) {
+  for (line in lme4.syntax) {
     lmerFit <- lme4::lmer(line, data = X)
     fterms  <- stats::terms(formula(line))
     vars    <- attr(fterms, "variables")
@@ -137,7 +133,7 @@ plslmer <- function(plsModel) {
 
 getSigmaFromVarCorr <- function(fit, varCorr, dep) {
   rvdep  <- sprintf("%s~~%s", dep, dep)
-  sigma <- stats::setNames(getME(fit, "sigma"), nm = rvdep)
+  sigma <- stats::setNames(lme4::getME(fit, "sigma"), nm = rvdep)
 
   for (VC in varCorr) {
     namesVC <- matrix("", nrow = NROW(VC), ncol = NCOL(VC))

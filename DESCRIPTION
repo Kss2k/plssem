@@ -1,6 +1,6 @@
 Package: plssem
 Type: Package
-Title: Estimate complex Structural Equation Models (SEMs) using the PLS-SEM framework.
+Title: Estimate complex Structural Equation Models (SEMs) using the PLS-SEM framework
 Version: 0.1.0
 Authors@R: 
     c(person(given = "Kjell", family = "Solem Slupphaug", 

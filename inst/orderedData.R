@@ -41,8 +41,10 @@ cut_data <- function(data, k = K, choose = NULL) {
 randomInterceptsOrdered <- cut_data(randomIntercepts)
 randomSlopesOrdered <- cut_data(randomSlopes)
 TPB_Ordered <- cut_data(modsem::TPB)
+oneIntOrdered <- cut_data(modsem::oneInt)
 
 
 save(randomSlopesOrdered, file = "data/randomSlopesOrdered.rda")
 save(randomInterceptsOrdered, file = "data/randomInterceptsOrdered.rda")
 save(TPB_Ordered, file = "data/TPB_Ordered.rda")
+save(oneIntOrdered, file = "data/oneIntOrdered.rda")

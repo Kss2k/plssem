@@ -1,7 +1,7 @@
 CI_QUANTILE <- qnorm(0.05)
 
 
-getParTableEstimates <- function(model) {
+getParTableEstimates <- function(model, rm.tmp = TRUE) {
   params <- model$params
   est    <- model$params$values
   se     <- model$params$se
@@ -28,7 +28,10 @@ getParTableEstimates <- function(model) {
     ci.upper = ci.upper
   )
 
-  plssemParTable(removeTempOV_RowsParTable(parTable))
+  if (rm.tmp)
+    parTable <- removeTempOV_RowsParTable(parTable)
+
+  plssemParTable(parTable)
 }
 
 
@@ -58,4 +61,31 @@ splitParameterNames <- function(names) {
 removeTempOV_RowsParTable <- function(parTable) {
   tmp <- startsWith(parTable$lhs, TEMP_OV_PREFIX) | startsWith(parTable$rhs, TEMP_OV_PREFIX)
   parTable[!tmp, , drop = FALSE]
+}
+  
+
+addColonPI_ParTable <- function(parTable, model, label.renamed.prod = FALSE) {
+  elems <- model$info$intTermElems
+
+  if (length(elems) && !"label" %in% colnames(parTable))
+    parTable$label <- ""
+
+  if (label.renamed.prod)
+    origLabels <- getParTableLabels(parTable, labelCol = "label")
+  else
+    origLabels <- parTable$label
+
+  for (xz in names(elems)) {
+    xzColon <- paste0(elems[[xz]], collapse = ":")
+    rmatch <- parTable$rhs == xz
+    lmatch <- parTable$lhs == xz
+
+    parTable[rmatch | lmatch, "label"] <- origLabels[rmatch | lmatch]
+
+    parTable[rmatch, "rhs"] <- xzColon
+    parTable[lmatch, "lhs"] <- xzColon # shouldn't be necessary, but just in case
+                                       # the user has done something weird...
+  }
+
+  parTable
 }

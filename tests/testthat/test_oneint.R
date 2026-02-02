@@ -8,6 +8,9 @@ m <- '
   Y ~ X + Z + X:Z
 '
 
-fit <- pls(m, modsem::oneInt, consistent = TRUE,
-           bootstrap = TRUE)
+fit <- pls(m, modsem::oneInt, bootstrap = TRUE)
+summary(fit)
+
+
+fit <- pls(m, oneIntOrdered, bootstrap = TRUE)
 summary(fit)

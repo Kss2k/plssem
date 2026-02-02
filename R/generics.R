@@ -13,7 +13,7 @@ summary.plssem <- function(object, ...) {
   out <- list(
     print = list(strParTable = strParTable),
     fit   = object,
-    info  = list(iterations = object$info$iterations)
+    info  = list(iterations = object$status$iterations)
   )
 
   class(out) <- "SummaryPlsSem"
@@ -61,29 +61,9 @@ parameter_estimates.plssem <- function(object,
                                        ...) {
   parTable <- object$parTable
   
-  if (colon.pi) {
-    elems <- object$info$intTermElems
-
-    if (length(elems) && !"label" %in% colnames(parTable))
-      parTable$label <- ""
-
-    if (label.renamed.prod)
-      origLabels <- getParTableLabels(parTable, labelCol = "label")
-    else
-      origLabels <- parTable$label
-
-    for (xz in names(elems)) {
-      xzColon <- paste0(elems[[xz]], collapse = ":")
-      rmatch <- parTable$rhs == xz
-      lmatch <- parTable$lhs == xz
-
-      parTable[rmatch | lmatch, "label"] <- origLabels[rmatch | lmatch]
-
-      parTable[rmatch, "rhs"] <- xzColon
-      parTable[lmatch, "lhs"] <- xzColon # shouldn't be necessary, but just in case
-                                         # the user has done something weird...
-    }
-  }
+  if (colon.pi)
+    parTable <- addColonPI_ParTable(parTable, model = object,
+                                    label.renamed.prod = label.renamed.prod)
 
   parTable
 }

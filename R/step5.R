@@ -1,9 +1,9 @@
-step5 <- function(model, convergence = 1e-5)  {
+step5 <- function(model)  {
   oldOuterWeights <- model$matrices$outerWeights
   newOuterWeights <- getNonZeroElems(model$matrices$lambda)
 
   weightDiff <- (oldOuterWeights - newOuterWeights) / oldOuterWeights
-  model$info$convergence <- all(abs(weightDiff) < convergence)
+  model$status$convergence <- all(abs(weightDiff) < model$status$tolerance)
 
   model$matrices$outerWeights <- newOuterWeights
   model

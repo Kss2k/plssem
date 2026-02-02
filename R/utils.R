@@ -1,10 +1,11 @@
-prepData <- function(data,
-                     indicators,
-                     cluster = NULL,
-                     consistent = TRUE,
-                     standardize = TRUE,
-                     ordered = NULL,
-                     probit = NULL) {
+getPLS_Data <- function(data,
+                        indicators,
+                        cluster = NULL,
+                        consistent = TRUE,
+                        standardize = TRUE,
+                        ordered = NULL,
+                        is.probit = NULL,
+                        is.cexp = NULL) {
   vars <- c(indicators, cluster)
   missing <- !vars %in% colnames(data)
 
@@ -19,15 +20,6 @@ prepData <- function(data,
             "Removing missing data pair wise in covariance matrix.\n",
             "TODO: Add multiple imputation")
   }
-
-  is.ordered <- vapply(data, FUN.VALUE = logical(1L), FUN = is.ordered)
-  ordered    <- setdiff(union(ordered, vars[is.ordered]), cluster)
-
-  for (ord in ordered)
-    data[[ord]] <- as.integer(as.factor(data[[ord]]))
-
-  if (is.null(probit))
-    probit <- length(ordered) > 0
  
   if (standardize) {
     data <- standardizeDataFrame(
@@ -36,7 +28,11 @@ prepData <- function(data,
     )
   }
 
-  S <- getCorrMat(data[indicators], probit = probit, ordered = ordered)
+  # TODO: Scale by is.cexp
+  if (is.cexp)
+    message("DEBUG: `is.cexp` argument is ignored in `getPLS_Data()`")
+
+  S <- getCorrMat(data[indicators], probit = is.probit, ordered = ordered)
   X <- as.matrix(data[indicators])
 
   if (!is.null(cluster)) {
@@ -46,7 +42,7 @@ prepData <- function(data,
     attr(X, "cluster") <- data[, cluster, drop = FALSE]
   }
 
-  list(X = X, S = S, probit = probit, ordered = ordered)
+  list(X = X, S = S)
 }
 
 

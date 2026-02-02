@@ -121,7 +121,21 @@ m <- '
   Y ~ X + Z + X:Z
 '
 
-fit <- pls(m, modsem::oneInt, consistent = TRUE)
+fit <- pls(m, modsem::oneInt, bootstrap = TRUE)
+summary(fit)
+```
+
+### Interaction Model with Ordered Data
+```r
+m <- '
+  X =~ x1 + x2 + x3
+  Z =~ z1 + z2 + z3
+  Y =~ y1 + y2 + y3
+
+  Y ~ X + Z + X:Z
+'
+
+fit <- pls(m, oneIntOrdered, bootstrap = TRUE)
 summary(fit)
 ```
 

@@ -5,39 +5,65 @@ specifyModel <- function(syntax,
                          consistent = TRUE,
                          standardize = TRUE,
                          ordered = NULL,
-                         probit = NULL) {
-  parsed       <- parseModelArguments(syntax = syntax, data = data)
-  syntax       <- parsed$syntax
-  data         <- parsed$data
-  pt           <- parsed$parTable.pls
-  cluster      <- parsed$cluster
-  lme4.syntax  <- parsed$lme4.syntax
-  intTermElems <- parsed$intTermElems
-  indprods     <- parsed$indprods
+                         probit = NULL,
+                         mc.reps = 1e5,
+                         tolerance = 1e-5,
+                         max.iter.0_5 = 100,
+                         max.iter.0_9 = 50) {
+  parsed <- parseModelArguments(
+    syntax = syntax,
+    data = data,
+    ordered = ordered
+  )
+
+  syntax               <- parsed$syntax
+  data                 <- parsed$data
+  pt                   <- parsed$parTable.pls
+  cluster              <- parsed$cluster
+  lme4.syntax          <- parsed$lme4.syntax
+  intTermElems         <- parsed$intTermElems
+  indprods             <- parsed$indprods
+  is.interaction.model <- parsed$is.interaction.model
+  modsemModel          <- parsed$modsemModel
+  ordered              <- parsed$ordered
+  is.probit            <- parsed$is.probit
+  is.cexp              <- parsed$is.cexp
 
   matricesAndInfo <- initMatrices(pt)
   matrices        <- matricesAndInfo$matrices
   info            <- matricesAndInfo$info
 
-  preppedData <- prepData(
-    data        = data,
-    indicators  = matricesAndInfo$info$allInds,
-    consistent  = consistent,
-    cluster     = cluster,
-    standardize = standardize,
-    ordered     = ordered,
-    probit      = probit
-  ) 
+  preppedData <- getPLS_Data(
+    data                 = data,
+    indicators           = matricesAndInfo$info$allInds,
+    consistent           = consistent,
+    cluster              = cluster,
+    standardize          = standardize,
+    ordered              = ordered,
+    is.probit            = is.probit,
+    is.cexp              = is.cexp
+  )
+
+  inds.x    <- info$inds.x
+  inds.y    <- info$inds.y
+  ordered.x <- intersect(inds.x, ordered)
+  ordered.y <- intersect(inds.y, ordered)
  
-  info$lme4.syntax   <- lme4.syntax
-  info$is.multilevel <- !is.null(lme4.syntax)
-  info$cluster       <- cluster
-  info$consistent    <- consistent
-  info$is.probit     <- preppedData$probit 
-  info$ordered       <- preppedData$ordered
-  info$indprods      <- indprods
-  info$intTermElems  <- intTermElems
-  info$is.interaction.model <- length(intTermElems) > 0
+  info$lme4.syntax          <- lme4.syntax
+  info$is.multilevel        <- !is.null(lme4.syntax)
+  info$cluster              <- cluster
+  info$consistent           <- consistent
+  info$is.probit            <- is.probit 
+  info$is.cexp              <- is.cexp
+  info$ordered              <- ordered
+  info$ordered.x            <- ordered.x
+  info$ordered.y            <- ordered.y
+  info$indprods             <- indprods
+  info$intTermElems         <- intTermElems
+  info$is.interaction.model <- is.interaction.model
+  info$mc.reps              <- mc.reps
+  info$rng.seed             <- floor(runif(1L) * 1e6)
+  info$modsemModel          <- modsemModel
 
   matrices$S <- preppedData$S
   matrices$C <- diag(nrow(matrices$gamma))
@@ -61,16 +87,30 @@ specifyModel <- function(syntax,
     factorScores   = NULL,
     info           = info,
     params         = NULL,
-    fit            = NULL
+    fit            = NULL,
+    fit.c          = NULL,
+    fit.u          = NULL,
+    params         = NULL,
+    status         = list(
+      finished       = FALSE,
+      convergence    = FALSE,
+      iterations     = 0L,
+      iterations.0_5 = 0L,
+      iterations.0_9 = 0L,
+      tolerance      = tolerance,
+      max.iter.0_9   = max.iter.0_9,
+      max.iter.0_5   = max.iter.0_5
+    )
   )
 
   parnames <- getParamVecNames(model)
   k        <- length(parnames)
 
   model$params <- list(
-    names  = parnames, 
-    values = rep(NA_real_, k),
-    se     = rep(NA_real_, k)
+    names      = parnames, 
+    values     = rep(NA_real_, k),
+    values.old = NULL,
+    se         = rep(NA_real_, k)
   )
 
   model
@@ -92,6 +132,9 @@ initMatrices <- function(pt) {
     allInds <- c(allInds, indsLv)
     indsLvs[[lV]] <- indsLv
   }
+
+  inds.x <- unique(unlist(indsLvs[xis]))
+  inds.y <- unique(unlist(indsLvs[etas]))
 
   # Lamdba ---------------------------------------------------------------------
   lambda <- matrix(0, nrow = length(allInds), ncol = length(lVs),
@@ -153,7 +196,9 @@ initMatrices <- function(pt) {
     allInds = allInds,
     lVs = lVs,
     etas = etas,
-    xis = xis
+    xis = xis,
+    inds.x = inds.x,
+    inds.y = inds.y
   )
 
   list(
@@ -202,7 +247,10 @@ getFitPLSModel <- function(model, consistent = TRUE) {
   # Covariance matrix 
   fitCovXi  <- model$matrices$C[xis, xis, drop = FALSE]
   fitCov    <- model$matrices$C
-  fitCovRes <- diag2(t(fitStructural) %*% model$matrices$C %*% fitStructural)
+  fitCovProj <- t(fitStructural) %*% model$matrices$C %*% fitStructural
+  fitCovRes  <- diag2(fitCov) - diag2(fitCovProj) # Removing diag2() might be better here
+                                                  # But I'm not sure the residual covariances
+                                                  # will be consistent estimates
   fitCov[etas, etas] <- fitCovRes[etas, etas]
   
   list(

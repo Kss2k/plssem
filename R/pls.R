@@ -67,31 +67,33 @@
 pls <- function(syntax,
                 data,
                 standardize = TRUE,
-                max.iter = 100, 
                 consistent = TRUE, 
                 bootstrap = FALSE,
-                sample = 50,
+                sample = 50L,
                 ordered = NULL,
                 probit = NULL,
+                tolerance = 1e-5,
+                max.iter.0_5 = 100L,
+                max.iter.0_9 = 50L,
                 ...) {
   # preprocess data
   data <- as.data.frame(data)
 
   # Define model
   model <- specifyModel(
-    syntax      = syntax,
-    data        = data,
-    consistent  = consistent,
-    standardize = standardize,
-    ordered     = ordered,
-    probit      = probit
+    syntax       = syntax,
+    data         = data,
+    consistent   = consistent,
+    standardize  = standardize,
+    ordered      = ordered,
+    probit       = probit,
+    tolerance    = tolerance,
+    max.iter.0_5 = max.iter.0_5,
+    max.iter.0_9 = max.iter.0_9
   ) 
 
   # Fit model
-  model <- estimatePLS(
-    model    = model,
-    max.iter = max.iter
-  )
+  model <- estimatePLS(model = model)
 
   # Bootstrap
   if (bootstrap) {
@@ -105,12 +107,21 @@ pls <- function(syntax,
 }
 
 
-estimatePLS_Step0_5 <- function(model, max.iter = 100) {
-  consistent <- model$info$consistent
+resetPLS_Model <- function(model) {
+  model$status$finished       <- FALSE 
+  model$status$convergence    <- FALSE
+  model$statsu$iterations.0_5 <- 0L
+
+  model
+}
+
+
+estimatePLS_Step0_5 <- function(model) {
+  max.iter.0_5 <- model$status$max.iter.0_5
 
   model <- step0(model)
 
-  for (i in seq_len(max.iter)) {
+  for (i in seq_len(max.iter.0_5)) {
     model <- model |> 
       step1() |>
       step2() |>
@@ -118,16 +129,16 @@ estimatePLS_Step0_5 <- function(model, max.iter = 100) {
       step4() |>
       step5() 
 
-    if (model$info$convergence) {
+    if (model$status$convergence) {
       break
 
-    } else if (i >= max.iter) {
+    } else if (i >= max.iter.0_5) {
       warning("Convergence reached. Stopping.")
       break
     }
   }
   
-  model$info$iterations <- i
+  model$status$iterations <- model$status$iterations + i
 
   model
 }
@@ -167,7 +178,7 @@ estimatePLS_Step6 <- function(model) {
 }
  
 
-estimatePLS_Step7  <- function(model, max.iter = 100) {
+estimatePLS_Step7  <- function(model) {
   # Step 6 get baseline fit for correcting path coefficients in
   # multilevel model.
 
@@ -188,7 +199,6 @@ estimatePLS_Step7  <- function(model, max.iter = 100) {
     }
 
     return(model)
-
   }
 
   model.c <- model
@@ -198,7 +208,7 @@ estimatePLS_Step7  <- function(model, max.iter = 100) {
   # factor scores only. 
   if (is.probit) {
     model.u$matrices$S <- getCorrMat(model.u$data, probit = FALSE)
-    model.u <- estimatePLS_Step0_5(model.u, max.iter = max.iter)
+    model.u <- estimatePLS_Step0_5(model.u)
   }
 
   model$fit.c <- getFitPLSModel(model.c, consistent = consistent)
@@ -211,6 +221,7 @@ estimatePLS_Step7  <- function(model, max.iter = 100) {
 
 estimatePLS_Step8 <- function(model) {
   model$params$values <- extractCoefs(model)
+  model$params$se     <- rep(NA_real_, length(model$params$values))
 
   if (model$info$is.multilevel) {
     model$fit.lmer <- plslmer(model)
@@ -234,16 +245,105 @@ estimatePLS_Step8 <- function(model) {
 
 
 estimatePLS_Step9 <- function(model) {
-  # Step 8. Finalize model object with any additionaly information
-  ordered <- model$info$ordered
+  # Handle ordered thresholds
+  ordered    <- model$info$ordered
+  ordered.x  <- model$info$ordered.x
+  ordered.y  <- model$info$ordered.y
+  is.probit  <- model$info$is.probit
+  is.cexp    <- model$info$is.cexp
+  mc.reps    <- model$info$mc.reps
+  is.ordered <- length(ordered) > 0
 
-  if (length(ordered)) {
+  model$status$finished <- TRUE
+  model$status$iterations.0_9 <- model$status$iterations.0_9 + 1L
+
+  if (model$status$iterations.0_9 >= model$status$max.iter.0_9) {
+    warning("Maximum number of 0 through 9 iterations reached!")
+    model$status$convergence <- FALSE
+    model$status$finished    <- TRUE
+    return(model)
+  }
+
+  if (is.ordered && is.probit) {
     for (ord in ordered) {
       tau <- getThresholdsFromQuantiles(X = model$data, variable = ord)
       model$params$values <- c(model$params$values, tau)
     }
 
     model$params$se <- rep(NA_real_, length(model$params$values))
+
+  } else if (length(ordered) && is.cexp) {
+    params.old <- model$params$values.old
+    params.new <- model$params$values
+    X          <- as.data.frame(model$data)
+
+    if (!is.null(params.old)) {
+      paths.new <- params.new[!grepl("\\||=~|~~|~1", names(params.new))]
+      paths.old <- params.old[!grepl("\\||=~|~~|~1", names(params.old))]
+
+      eps <- mean(abs(paths.new - paths.old))
+
+      converged <- eps <= model$status$tolerance
+      failed    <- is.na(eps)
+
+      if (failed) {
+        warning("NAs in estimated model parameters!")
+        model$status$convergence <- FALSE
+        model$status$finished    <- TRUE
+
+        return(model)
+
+      } else if (converged) {
+        model$status$convergence <- TRUE
+        model$status$finished    <- TRUE
+
+      } else {
+        model$status$convergence <- FALSE
+        model$status$finished    <- FALSE
+      }
+
+    } else {
+      model$status$finished <- FALSE
+    }
+
+    parTable <- getParTableEstimates(model = model, rm.tmp = FALSE)
+    parTable <- addColonPI_ParTable(parTable, model = model)
+    parTable <- parTable[!(parTable$op == "=~" & grepl(":", parTable$lhs)), , drop = FALSE]
+
+    sim.ov <- simulateDataParTable(
+      parTable = parTable,
+      N        = mc.reps,
+      seed     = model$info$rng.seed
+    )$OV[[1L]]
+
+    # We only need to update the thresholds for indicators of endogenous variables
+    # for now we just update everything
+    for (ord.x in ordered.x) {
+      message("DEBUG: Iterating through `ordered.x` in step 9. This can be moved to `prepData()`")
+      rescaled <- rescaleOrderedVariableAnalytic(
+        name = ord.x, data = X
+      )
+
+      model$params$values <- c(model$params$values, rescaled$thresholds)
+      X[[ord.x]] <- rescaled$values
+    }
+    
+    for (ord.y in ordered.y) {
+      rescaled <- rescaleOrderedVariableMonteCarlo(
+        name = ord.y, data = X, sim.ov = sim.ov
+      )
+      model$params$values <- c(model$params$values, rescaled$thresholds)
+      X[[ord.y]] <- rescaled$values
+    }
+   
+    model$params$se <- rep(NA_real_, length(model$params$values))
+
+    Z <- createProdInds(model$info$modsemModel, data = X)
+    X[colnames(Z)] <- Z
+
+    model$params$values.old <- model$params$values
+    model$data <- as.matrix(X)
+    model$matrices$S <- getCorrMat(X, ordered = NULL, probit = FALSE)
   }
 
   model
@@ -251,12 +351,19 @@ estimatePLS_Step9 <- function(model) {
 
 
 estimatePLS <- function(model, max.iter = 100) {
+  model$status$iterations     <- 0L
+  model$status$iterations.0_5 <- 0L
+  model$status$iterations.0_9 <- 0L
+  
+  while (!model$status$finished) {
+    model <- 
+      resetPLS_Model(model) |>
+      estimatePLS_Step0_5() |>
+      estimatePLS_Step6() |>
+      estimatePLS_Step7() |>
+      estimatePLS_Step8() |>
+      estimatePLS_Step9()
+  }
 
-  model |>
-    estimatePLS_Step0_5(max.iter = max.iter) |>
-    estimatePLS_Step6() |>
-    estimatePLS_Step7(max.iter = max.iter) |>
-    estimatePLS_Step8() |>
-    estimatePLS_Step9()
-
+  model
 }

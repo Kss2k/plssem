@@ -62,7 +62,7 @@ specifyModel <- function(syntax,
   info$intTermElems         <- intTermElems
   info$is.interaction.model <- is.interaction.model
   info$mc.reps              <- mc.reps
-  info$rng.seed             <- floor(runif(1L) * 1e6)
+  info$rng.seed             <- floor(stats::runif(1L) * 1e6)
   info$modsemModel          <- modsemModel
 
   matrices$S <- preppedData$S

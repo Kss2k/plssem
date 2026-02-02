@@ -12,7 +12,7 @@
 #'   W ~ X + Z + (1 + X + Z | cluster)
 #' "
 #' 
-#' fit <- pls(syntax, data = randomSlopes, bootstrap = TRUE)
+#' fit <- pls(syntax, data = randomSlopes)
 #' fit
 NULL
 
@@ -29,7 +29,7 @@ NULL
 #'   f ~ x1 + x2 + x3 + w1 + w2 + (1 | cluster)
 #' '
 #' 
-#' fit <- pls(syntax, data = randomIntercepts, bootstrap = TRUE)
+#' fit <- pls(syntax, data = randomIntercepts)
 #' summary(fit)
 NULL
 
@@ -46,7 +46,7 @@ NULL
 #'   f ~ x1 + x2 + x3 + w1 + w2 + (1 | cluster)
 #' '
 #' 
-#' fit <- pls(syntax, data = randomInterceptsOrdered, bootstrap = TRUE)
+#' fit <- pls(syntax, data = randomInterceptsOrdered)
 #' summary(fit)
 NULL
 
@@ -67,7 +67,7 @@ NULL
 #'   W ~ X + Z + (1 + X + Z | cluster)
 #' "
 #' 
-#' fit <- pls(syntax, data = randomSlopesOrdered, bootstrap = TRUE)
+#' fit <- pls(syntax, data = randomSlopesOrdered)
 #' fit
 #' summary(fit)
 NULL
@@ -93,6 +93,26 @@ NULL
 #'   BEH ~ INT + PBC 
 #' '
 #' 
-#' fit <- pls(tpb, TPB_Ordered, bootstrap = TRUE)
+#' fit <- pls(tpb, TPB_Ordered)
+#' summary(fit)
+NULL
+
+
+#' oneIntOrdered 
+#'
+#' @name oneIntOrdered 
+#' @docType data
+#' @description A simulated dataset.
+#' @examples
+#' 
+#' m <- '
+#'   X =~ x1 + x2 + x3
+#'   Z =~ z1 + z2 + z3
+#'   Y =~ y1 + y2 + y3
+#' 
+#'   Y ~ X + Z + X:Z
+#' '
+#' 
+#' fit <- pls(m, oneIntOrdered)
 #' summary(fit)
 NULL

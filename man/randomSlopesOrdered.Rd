@@ -18,7 +18,7 @@ syntax <- "
   W ~ X + Z + (1 + X + Z | cluster)
 "
 
-fit <- pls(syntax, data = randomSlopesOrdered, bootstrap = TRUE)
+fit <- pls(syntax, data = randomSlopesOrdered)
 fit
 summary(fit)
 }

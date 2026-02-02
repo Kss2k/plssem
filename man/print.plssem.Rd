@@ -4,10 +4,10 @@
 \alias{print.plssem}
 \title{Print a `plssem` object}
 \usage{
-\method{print}{plssem}(object, ...)
+\method{print}{plssem}(x, ...)
 }
 \arguments{
-\item{object}{An object of class `plssem`.}
+\item{x}{An object of class `plssem`.}
 
 \item{...}{Additional arguments for compatibility with the generic.}
 }

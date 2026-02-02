@@ -8,12 +8,14 @@ pls(
   syntax,
   data,
   standardize = TRUE,
-  max.iter = 100,
   consistent = TRUE,
   bootstrap = FALSE,
-  sample = 50,
+  sample = 50L,
   ordered = NULL,
   probit = NULL,
+  tolerance = 1e-05,
+  max.iter.0_5 = 100L,
+  max.iter.0_9 = 50L,
   ...
 )
 }
@@ -28,9 +30,6 @@ detected, but can also be supplied explicitly through `ordered`.}
 
 \item{standardize}{Logical; if `TRUE`, indicators are standardized before
 estimation so that factor scores have comparable scales.}
-
-\item{max.iter}{Maximum number of PLS iterations performed when estimating
-the measurement and structural models.}
 
 \item{consistent}{Logical; `TRUE` requests PLSc corrections, whereas `FALSE`
 fits the traditional PLS model.}
@@ -47,7 +46,19 @@ should be treated as ordered when computing polychoric correlations.}
 \item{probit}{Logical; overrides the automatic choice of probit factor scores
 that is based on whether ordered indicators are present.}
 
+\item{tolerance}{Numeric; Convergence criteria/tolerance.}
+
+\item{max.iter.0_5}{Maximum number of PLS iterations performed when estimating
+the measurement and structural models.}
+
+\item{max.iter.0_9}{Maximum number of PLS iterations performed when estimating
+the measurement and structural models. Only relevant for interaction
+models with ordered data.}
+
 \item{...}{Currently unused, reserved for future extensions.}
+
+\item{max.iter}{Maximum number of PLS iterations performed when estimating
+the measurement and structural models.}
 }
 \value{
 An object of class `plssem` containing the estimated parameters, fit

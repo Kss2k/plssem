@@ -9,23 +9,41 @@
 #' @param syntax Character string with `lavaan`-style model syntax describing
 #'   both measurement (`=~`) and structural (`~`) relations. Random effects are
 #'   specified with `(term | cluster)` statements.
+#'
 #' @param data A `data.frame` or coercible object containing the manifest
 #'   indicators referenced in `syntax`. Ordered factors are automatically
 #'   detected, but can also be supplied explicitly through `ordered`.
+#'
 #' @param standardize Logical; if `TRUE`, indicators are standardized before
 #'   estimation so that factor scores have comparable scales.
-#' @param max.iter Maximum number of PLS iterations performed when estimating
+#'
+#' @param max.iter.0_5 Maximum number of PLS iterations performed when estimating
 #'   the measurement and structural models.
+#'
+#' @param max.iter.0_9 Maximum number of PLS iterations performed when estimating
+#'   the measurement and structural models. Only relevant for interaction
+#'   models with ordered data.
+#'
 #' @param consistent Logical; `TRUE` requests PLSc corrections, whereas `FALSE`
 #'   fits the traditional PLS model.
+#'
 #' @param bootstrap Logical; if `TRUE`, nonparametric bootstrap standard errors
 #'   are computed with `sample` resamples.
+#'
 #' @param sample Integer giving the number of bootstrap resamples drawn when
 #'   `bootstrap = TRUE`.
+#'
+#' @param max.iter Maximum number of PLS iterations performed when estimating
+#'   the measurement and structural models.
+#'
 #' @param ordered Optional character vector naming manifest indicators that
 #'   should be treated as ordered when computing polychoric correlations.
+#'
 #' @param probit Logical; overrides the automatic choice of probit factor scores
 #'   that is based on whether ordered indicators are present.
+#'
+#' @param tolerance Numeric; Convergence criteria/tolerance.
+#'
 #' @param ... Currently unused, reserved for future extensions.
 #'
 #' @return An object of class `plssem` containing the estimated parameters, fit

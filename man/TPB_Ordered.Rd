@@ -22,6 +22,6 @@ tpb <- '
   BEH ~ INT + PBC 
 '
 
-fit <- pls(tpb, TPB_Ordered, bootstrap = TRUE)
+fit <- pls(tpb, TPB_Ordered)
 summary(fit)
 }

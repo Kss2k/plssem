@@ -125,10 +125,16 @@ pls <- function(syntax,
 }
 
 
-resetPLS_Model <- function(model) {
+resetPLS_Model <- function(model, hard.reset = FALSE) {
   model$status$finished       <- FALSE 
   model$status$convergence    <- FALSE
-  model$statsu$iterations.0_5 <- 0L
+  model$status$iterations.0_5 <- 0L
+
+  if (hard.reset) {
+    model$status$iterations     <- 0L
+    model$status$iterations.0_9 <- 0L
+    model$params$values.old     <- NULL
+  }
 
   model
 }
@@ -369,9 +375,7 @@ estimatePLS_Step9 <- function(model) {
 
 
 estimatePLS <- function(model, max.iter = 100) {
-  model$status$iterations     <- 0L
-  model$status$iterations.0_5 <- 0L
-  model$status$iterations.0_9 <- 0L
+  model <- resetPLS_Model(model, hard.reset = TRUE)
   
   while (!model$status$finished) {
     model <- 

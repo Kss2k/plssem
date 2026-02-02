@@ -10,6 +10,7 @@ parseModelArguments <- function(syntax,
   stopif(length(syntax) > 1L || !is.character(syntax),
          "`syntax` must be a string of length 1!")
 
+  message("DEBUG: Move ordered logic!")
   vars       <- colnames(data)
   is.ordered <- vapply(data, FUN.VALUE = logical(1L), FUN = is.ordered)
   ordered    <- union(ordered, vars[is.ordered])
@@ -17,33 +18,15 @@ parseModelArguments <- function(syntax,
   for (ord in ordered)
     data[[ord]] <- as.integer(as.ordered(data[[ord]]))
 
-  if (grepl(":", syntax)) {
-    modsemModel <- modsem::modsem_pi(
-      model.syntax        = syntax,
-      data                = data,
-      method              = "dblcent",
-      match               = pi.match,
-      match.recycle       = pi.match.recycle,
-      residual.cov.syntax = FALSE,
-      run                 = FALSE
-    )
-
-    indprods     <- setdiff(colnames(modsemModel$data), colnames(data))
-    intTermElems <- modsemModel$elementsInProdNames
-    syntax       <- modsemModel$syntax
-    data         <- modsemModel$data
-    is.interaction.model <- length(intTermElems) > 0L
-
-  } else {
-    indprods     <- NULL
-    intTermElems <- NULL
-    modsemModel  <- NULL
-    is.interaction.model <- FALSE
-  }
-
   parTable <- modsem::modsemify(syntax, parentheses.as.string = TRUE)
   data     <- as.data.frame(data)
 
+  intTermNames <- unique(parTable[grepl(":", parTable$rhs), "rhs"])
+  intTermElems <- stringr::str_split(intTermNames, pattern = ":")
+  names(intTermElems)  <- intTermNames
+  is.interaction.model <- length(intTermElems) > 0L
+
+  # Int Terms
   # Check for observed (structural) variables
   structovs <- getStructOVs(parTable)
   ovs       <- getOVs(parTable)
@@ -108,10 +91,9 @@ parseModelArguments <- function(syntax,
     cluster              = cluster,
     lme4.syntax          = lme4.syntax,
     intTermElems         = intTermElems,
-    indprods             = indprods,
+    intTermNames         = intTermNames,
     is.interaction.model = is.interaction.model,
     ordered              = ordered,
-    modsemModel          = modsemModel,
     is.probit            = is.probit,
     is.cexp              = is.cexp
   )

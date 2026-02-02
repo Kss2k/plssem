@@ -182,20 +182,17 @@ estimatePLS_Step6 <- function(model) {
     L  <- model$matrices$lambda
     G  <- model$matrices$gamma
 
-    D.lv <- diag(NCOL(C))
-    D.ov <- diag(NCOL(SC))
-
-    dimnames(D.lv) <- dimnames(C)
-    dimnames(D.ov) <- dimnames(SC)
-
-    for (xz in names) {
-      model$factorScores[,xz] <- multiplyIndicatorsCpp(X[elems[[xz]]])
-      sigma <- stats::sd(model$factorScores[,xz,drop=TRUE])
-      D.lv[xz, xz] <- D.ov[xz, xz] <- sigma
+    for (elems.xz in elems) {
+      xz <- paste0(elems.xz, collapse = ":")
+      values <- multiplyIndicatorsCpp(X[elems.xz])
+      model$factorScores[,xz] <- X[[xz]] <- values
     }
 
-    model$matrices$SC <- D.ov %*% SC %*% D.ov
-    model$matrices$C  <- D.lv %*%  C %*% D.lv
+    Cxz <- stats::cov(X)
+    par <- colnames(X)
+
+    model$matrices$C[par, par] <- Cxz
+    model$matrices$SC[par, par] <- Cxz
   }
 
   model
@@ -361,9 +358,6 @@ estimatePLS_Step9 <- function(model) {
     }
    
     model$params$se <- rep(NA_real_, length(model$params$values))
-
-    Z <- createProdInds(model$info$modsemModel, data = X)
-    X[colnames(Z)] <- Z
 
     model$params$values.old <- model$params$values
     model$data <- as.matrix(X)

@@ -1,5 +1,5 @@
 step2 <- function(model) {
-  lVs <- model$info$lVs
+  lVs <- model$info$lVs.linear
   Ip <- model$matrices$Ip
   lambda <- model$matrices$lambda
   partLambda <- cbind(Ip, lambda)

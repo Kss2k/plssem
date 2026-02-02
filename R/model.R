@@ -22,9 +22,8 @@ specifyModel <- function(syntax,
   cluster              <- parsed$cluster
   lme4.syntax          <- parsed$lme4.syntax
   intTermElems         <- parsed$intTermElems
-  indprods             <- parsed$indprods
+  intTermNames         <- parsed$intTermNames
   is.interaction.model <- parsed$is.interaction.model
-  modsemModel          <- parsed$modsemModel
   ordered              <- parsed$ordered
   is.probit            <- parsed$is.probit
   is.cexp              <- parsed$is.cexp
@@ -58,12 +57,11 @@ specifyModel <- function(syntax,
   info$ordered              <- ordered
   info$ordered.x            <- ordered.x
   info$ordered.y            <- ordered.y
-  info$indprods             <- indprods
   info$intTermElems         <- intTermElems
+  info$intTermNames         <- intTermNames
   info$is.interaction.model <- is.interaction.model
   info$mc.reps              <- mc.reps
   info$rng.seed             <- floor(stats::runif(1L) * 1e6)
-  info$modsemModel          <- modsemModel
 
   matrices$S <- preppedData$S
   matrices$C <- diag(nrow(matrices$gamma))
@@ -119,8 +117,10 @@ specifyModel <- function(syntax,
 
 # badly named function -- since if also returns some useful info
 initMatrices <- function(pt) {
-  lVs  <- unique(pt[pt$op == "=~", "lhs"])
+  lVs.linear <- unique(pt[pt$op == "=~", "lhs"])
   etas <- unique(pt[pt$op == "~", "lhs"])
+
+  lVs  <- c(lVs.linear, pt[grepl(":", pt$rhs), "rhs"])
   xis  <- lVs[!lVs %in% etas]
 
   allInds <- vector("character", 0)
@@ -164,6 +164,14 @@ initMatrices <- function(pt) {
     selectGamma[predsLv, lV] <- TRUE
   }
 
+  is.nlin      <- grepl(":", lVs)
+  preds.linear <- preds
+  succs.linear <- succs
+  preds.linear[is.nlin,] <- FALSE
+  preds.linear[,is.nlin] <- FALSE
+  succs.linear[is.nlin,] <- FALSE
+  succs.linear[,is.nlin] <- FALSE
+
   # Covariance Matrix xis ------------------------------------------------------
   xis <- lVs[!lVs %in% pt[pt$op == "~", "lhs"]]
   selectCov <- matrix(
@@ -184,6 +192,8 @@ initMatrices <- function(pt) {
     gamma = gamma, 
     preds = preds,
     succs = succs, 
+    succs.linear = succs.linear,
+    preds.linear = preds.linear,
     outerWeights = getNonZeroElems(lambda), 
     Ip = Ip, 
     selectLambda = selectLambda,
@@ -195,6 +205,7 @@ initMatrices <- function(pt) {
     indsLvs = indsLvs,
     allInds = allInds,
     lVs = lVs,
+    lVs.linear = lVs.linear,
     etas = etas,
     xis = xis,
     inds.x = inds.x,

@@ -10,9 +10,9 @@ classifyConstructs <- function(.terms) {
   
   ## Count instances of each construct name (used for classifying)
   terms_classified <- lapply(terms_split, function(.x) {
-    x <- .x %>%
-      table(.) %>%
-      as.data.frame(., stringsAsFactors = FALSE)
+    x <- .x |>
+      table() |>
+      as.data.frame(stringsAsFactors = FALSE)
     
     ## To save typing
     a <- sum(x$Freq)

@@ -81,17 +81,17 @@ classifyConstructs <- function(.terms) {
   terms_classified
 }
 
-#' Internal: Utility functions for the estimation of nonlinear models
-#' 
-#' 
-#' @param .i Row index
-#' @param .j Column index
-#' @param .select_from matrix to select from
-#' @inheritParams csem_arguments
-#' 
-#' @name nonlinear_estimation_utilities
-#' @rdname nonlinear_estimation_utilities
-#' @keywords internal
+# Internal: Utility functions for the estimation of nonlinear models
+# 
+# 
+# @param .i Row index
+# @param .j Column index
+# @param .select_from matrix to select from
+# @inheritParams csem_arguments
+# 
+# @name nonlinear_estimation_utilities
+# @rdname nonlinear_estimation_utilities
+# @keywords internal
 f1 <- function(.i, .j) {
 
   tab_i <- classifyConstructs(.i)[[1]]
@@ -133,7 +133,7 @@ f1 <- function(.i, .j) {
 }
 
 
-#' @rdname nonlinear_estimation_utilities
+# @rdname nonlinear_estimation_utilities
 f2 <- function(.i, .j, .select_from, .Q, .H) {
 
   x <- .select_from[.i, .j, drop = FALSE]
@@ -177,27 +177,27 @@ f2 <- function(.i, .j, .select_from, .Q, .H) {
 }
 
 
-#' @rdname nonlinear_estimation_utilities
-#' Internal: Calculate consistent moments of a nonlinear model 
-#' 
-#' Collection of various moment estimators. See [classifyConstructs] for a list of
-#' possible moments.
-#' 
-#' M is the matrix of the sample counterparts (estimates) of the
-#' left-hand side terms in Equation (21) - (24) \insertCite{Dijkstra2014}{cSEM}.
-#' The label "M" did not appear in the paper and is only used in the package.
-#' Similar is suggested by \insertCite{Wall2000;textual}{cSEM} using classical factor scores.
-#' 
-#' @param .i Row index
-#' @param .j Column index
-#' @inheritParams csem_arguments
-#' 
-#' @references
-#'   \insertAllCited{} 
-#'     
-#' @name moments
-#' @rdname moments
-#' @keywords internal
+# @rdname nonlinear_estimation_utilities
+# Internal: Calculate consistent moments of a nonlinear model 
+# 
+# Collection of various moment estimators. See [classifyConstructs] for a list of
+# possible moments.
+# 
+# M is the matrix of the sample counterparts (estimates) of the
+# left-hand side terms in Equation (21) - (24) \insertCite{Dijkstra2014}{cSEM}.
+# The label "M" did not appear in the paper and is only used in the package.
+# Similar is suggested by \insertCite{Wall2000;textual}{cSEM} using classical factor scores.
+# 
+# @param .i Row index
+# @param .j Column index
+# @inheritParams csem_arguments
+# 
+# @references
+#   \insertAllCited{} 
+#     
+# @name moments
+# @rdname moments
+# @keywords internal
 
 SingleSingle <- function(.i, .j, .Q, .H) {
   
@@ -218,7 +218,7 @@ SingleSingle <- function(.i, .j, .Q, .H) {
 }
 
 
-#' @rdname moments
+# @rdname moments
 SingleQuadratic <- function(.i, .j, .Q, .H) {
   
   ## Label
@@ -238,7 +238,7 @@ SingleQuadratic <- function(.i, .j, .Q, .H) {
   ## Return
   x
 }
-#' @rdname moments
+# @rdname moments
 SingleCubic <- function(.i, .j, .Q, .H) {
   
   ### Preparation --------------------------------------------------------------
@@ -290,7 +290,7 @@ SingleCubic <- function(.i, .j, .Q, .H) {
   ## Return
   x
 }
-#' @rdname moments
+# @rdname moments
 SingleTwInter <- function(.i, .j, .Q, .H) {
   
   ## Label
@@ -310,7 +310,7 @@ SingleTwInter <- function(.i, .j, .Q, .H) {
   ## Return
   x
 }
-#' @rdname moments
+# @rdname moments
 SingleThrwInter <- function(.i, .j, .Q, .H) {
   ### Preparation --------------------------------------------------------------
   ## Get the classification table
@@ -363,7 +363,7 @@ SingleThrwInter <- function(.i, .j, .Q, .H) {
   ## Return
   x
 }
-#' @rdname moments
+# @rdname moments
 SingleQuadTwInter <- function(.i, .j, .Q, .H) {
   ### Preparation --------------------------------------------------------------
   ## Get the classification table
@@ -423,7 +423,7 @@ SingleQuadTwInter <- function(.i, .j, .Q, .H) {
   ## Return
   x
 }
-#' @rdname moments
+# @rdname moments
 QuadraticQuadratic <- function(.i, .j, .Q, .H) {
   
   ## Label
@@ -453,7 +453,7 @@ QuadraticQuadratic <- function(.i, .j, .Q, .H) {
   ## Return
   x
 }
-#' @rdname moments
+# @rdname moments
 QuadraticCubic <- function(.i, .j, .Q, .H) {
   ### Preparation --------------------------------------------------------------
   ## Get the classification table
@@ -512,7 +512,7 @@ QuadraticCubic <- function(.i, .j, .Q, .H) {
   ## Return
   x
 }
-#' @rdname moments
+# @rdname moments
 QuadraticTwInter <- function(.i, .j, .Q, .H) {
   ### Preparation --------------------------------------------------------------
   ## Get the classification table
@@ -567,7 +567,7 @@ QuadraticTwInter <- function(.i, .j, .Q, .H) {
   ## Return
   x
 }
-#' @rdname moments
+# @rdname moments
 QuadraticThrwInter <- function(.i, .j, .Q, .H) {
   ### Preparation --------------------------------------------------------------
   ## Get the classification table
@@ -622,7 +622,7 @@ QuadraticThrwInter <- function(.i, .j, .Q, .H) {
   ## Return
   x
 }
-#' @rdname moments
+# @rdname moments
 QuadraticQuadTwInter <- function(.i, .j, .Q, .H) {
   ### Preparation --------------------------------------------------------------
   ## Get the classification table
@@ -691,7 +691,7 @@ QuadraticQuadTwInter <- function(.i, .j, .Q, .H) {
   ## Return
   x
 }
-#' @rdname moments
+# @rdname moments
 CubicCubic <- function(.i, .j, .Q, .H) {
   
   ## Label
@@ -741,7 +741,7 @@ CubicCubic <- function(.i, .j, .Q, .H) {
   ## Return
   x
 }
-#' @rdname moments
+# @rdname moments
 CubicTwInter <- function(.i, .j, .Q, .H) {
   ### Prepartion ---------------------------------------------------------------
   ## Get the classification table
@@ -797,7 +797,7 @@ CubicTwInter <- function(.i, .j, .Q, .H) {
   ## Return
   x
 }
-#' @rdname moments
+# @rdname moments
 CubicThrwInter <- function(.i, .j, .Q, .H) {
   ### Prepartion ---------------------------------------------------------------
   ## Get the classification table
@@ -858,7 +858,7 @@ CubicThrwInter <- function(.i, .j, .Q, .H) {
   ## Return
   x
 }
-#' @rdname moments
+# @rdname moments
 CubicQuadTwInter <- function(.i, .j, .Q, .H) {
   ### Prepartion ---------------------------------------------------------------
   ## Get the classification table
@@ -932,7 +932,7 @@ CubicQuadTwInter <- function(.i, .j, .Q, .H) {
   ## Return
   x
 }
-#' @rdname moments
+# @rdname moments
 TwInterTwInter <- function(.i, .j, .Q, .H) {
   ## Label
   # i_split  := the term .i split into its components
@@ -978,7 +978,7 @@ TwInterTwInter <- function(.i, .j, .Q, .H) {
   ## Return
   x
 }
-#' @rdname moments
+# @rdname moments
 TwInterThrwInter <- function(.i, .j, .Q, .H) {
   
   ## Label
@@ -1024,7 +1024,7 @@ TwInterThrwInter <- function(.i, .j, .Q, .H) {
   ## Return x
   x
 }
-#' @rdname moments
+# @rdname moments
 TwInterQuadTwInter <- function(.i, .j, .Q, .H) {
   
   ### Preparation --------------------------------------------------------------
@@ -1106,7 +1106,7 @@ TwInterQuadTwInter <- function(.i, .j, .Q, .H) {
   ## Return
   x
 }
-#' @rdname moments
+# @rdname moments
 ThrwInterThrwInter <- function(.i, .j, .Q, .H){
   ## Label
   # i_split     := the "ThrwInter" term .i split into its components
@@ -1163,7 +1163,7 @@ ThrwInterThrwInter <- function(.i, .j, .Q, .H){
   ## Return x
   x
 }
-#' @rdname moments
+# @rdname moments
 ThrwInterQuadTwInter <- function(.i, .j, .Q, .H){
   ### Preparation --------------------------------------------------------------
   ## Get the classification table
@@ -1244,7 +1244,7 @@ ThrwInterQuadTwInter <- function(.i, .j, .Q, .H){
   ## Return x
   x
 }
-#' @rdname moments
+# @rdname moments
 QuadTwInercQuadTwInter <- function(.i, .j, .Q, .H) {
   ### Preparation --------------------------------------------------------------
   ## Get the classification table

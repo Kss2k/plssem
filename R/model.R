@@ -186,6 +186,9 @@ initMatrices <- function(pt) {
   Ip <- diag(nrow = nrow(lambda))
   colnames(Ip) <- rownames(Ip) <- rownames(lambda)
 
+  nlinSelectFrom <- outer(lVs, lVs, Vectorize(f1))
+  dimnames(nlinSelectFrom) <- list(lVs, lVs)
+
   # Create output lists --------------------------------------------------------
   matrices <- list(
     lambda = lambda,
@@ -198,7 +201,8 @@ initMatrices <- function(pt) {
     Ip = Ip, 
     selectLambda = selectLambda,
     selectGamma = selectGamma,
-    selectCov = selectCov
+    selectCov = selectCov,
+    nlinSelectFrom = nlinSelectFrom
   )
 
   info <- list(
@@ -240,9 +244,9 @@ getFitPLSModel <- function(model, consistent = TRUE) {
 
   # Caluculate consistent weights, based on measurement model
   if (consistent) {
-    P <- getReliabilityCoefs(model)
-    fitMeasurement <- getConsistentLoadings(model, P = P)
-    model$matrices$C <- getConsistenCorrMat(model, P = P)
+    Q <- getConstructQualities(model)
+    fitMeasurement <- getConsistentLoadings(model, Q = Q)
+    model$matrices$C <- getConsistenCorrMat(model, Q = Q)
   }
   
   # structural model

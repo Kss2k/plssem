@@ -337,9 +337,19 @@ estimatePLS_Step9 <- function(model) {
       seed     = model$info$rng.seed
     )$OV[[1L]]
 
-    # We only need to update the thresholds for indicators of endogenous variables
-    # The thresholds of ordered.x have already been solved analytically
+    # In theory we only need to update the thresholds for indicators of
+    # endogenous variables. For now we just update everything, as it's
+    # a cleaner way of getting the threshold parameters (though a bit slower)
+    # It's also cleaner when bootstrapping the model
+    for (ord.x in ordered.x) {
+      rescaled <- rescaleOrderedVariableAnalytic(
+        name = ord.x, data = X
+      )
 
+      model$params$values <- c(model$params$values, rescaled$thresholds)
+      X[[ord.x]] <- rescaled$values
+    }
+    
     for (ord.y in ordered.y) {
       rescaled <- rescaleOrderedVariableMonteCarlo(
         name = ord.y, data = X, sim.ov = sim.ov

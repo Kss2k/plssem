@@ -32,8 +32,8 @@ getPLS_Data <- function(data,
   X <- as.matrix(data[indicators])
 
   if (is.cexp) for (ord in intersect(indicators, ordered)) {
-    # Should serve as a good starting point
-    X[,ord] <- rescaleOrderedVariableAnalytic(ord, data = X)
+    # Should serve as a better starting point than not correcting at all...
+    X[,ord] <- rescaleOrderedVariableAnalytic(ord, data = data)$values
   }
 
   if (!is.null(cluster)) {

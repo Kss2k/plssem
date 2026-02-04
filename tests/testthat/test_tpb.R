@@ -10,10 +10,10 @@ tpb <- '
 
 # Inner Model (Based on Steinmetz et al., 2011)
   INT ~ ATT + SN + PBC
-  BEH ~ INT + PBC 
+  BEH ~ INT + PBC + INT:PBC
 '
 
-fit <- pls(tpb, modsem::TPB, bootstrap = TRUE)
+fit <- pls(tpb, modsem::TPB, bootstrap = TRUE, sample = 50)
 summary(fit)
 
 

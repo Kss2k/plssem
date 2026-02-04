@@ -16,5 +16,6 @@ step0 <- function(model) {
   # get new expected matrices
   model$matrices$C <- t(lambda) %*% S %*% lambda
   model$matrices$SC <- t(partLambda) %*% S %*% partLambda
+
   model 
 }

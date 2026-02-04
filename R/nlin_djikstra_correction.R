@@ -10,13 +10,11 @@ classifyConstructs <- function(.terms) {
   
   ## Count instances of each construct name (used for classifying)
   terms_classified <- lapply(terms_split, function(.x) {
-    x <- .x |>
-      table() |>
-      as.data.frame(stringsAsFactors = FALSE)
+    x <- as.data.frame(table(.x), stringAsFactors = FALSE)
     
     ## To save typing
     a <- sum(x$Freq)
-    b <- length(unique(x$.))
+    b <- length(unique(x$.x))
     
     ## Do the actual classification --------------------------------------------
     
@@ -29,7 +27,7 @@ classifyConstructs <- function(.terms) {
       switch(a,
              "1" = {
                x <- data.frame("Term_class"     = "Single",
-                               "Component"      = x$.,
+                               "Component"      = x$.x,
                                "Component_type" = "Single",
                                "Component_freq" = x$Freq,
                                stringsAsFactors = FALSE)
@@ -37,13 +35,13 @@ classifyConstructs <- function(.terms) {
              "2" = {
                if(b == 1) {
                  x <- data.frame("Term_class"     = "Quadratic",
-                                 "Component"      = x$.,
+                                 "Component"      = x$.x,
                                  "Component_type" = "Quadratic",
                                  "Component_freq" = x$Freq,
                                  stringsAsFactors = FALSE)
                } else if (b == 2){
                  x <- data.frame("Term_class"     = "TwInter",
-                                 "Component"      = x$.,
+                                 "Component"      = x$.x,
                                  "Component_type" = c("Single", "Single"),
                                  "Component_freq" = x$Freq,
                                  stringsAsFactors = FALSE)
@@ -52,13 +50,13 @@ classifyConstructs <- function(.terms) {
              "3" = {
                if(b == 1) {
                  x <- data.frame("Term_class"     = "Cubic",
-                                 "Component"      = x$.,
+                                 "Component"      = x$.x,
                                  "Component_type" = "Cubic",
                                  "Component_freq" = x$Freq,
                                  stringsAsFactors = FALSE)
                } else if (b == 2) {
                  x <- data.frame("Term_class"     = "QuadTwInter",
-                                 "Component"      = x$.,
+                                 "Component"      = x$.x,
                                  "Component_type" =
                                    ifelse(x$Freq == 1, "Single", "Quadratic"),
                                  "Component_freq" = x$Freq,
@@ -66,7 +64,7 @@ classifyConstructs <- function(.terms) {
                } else if (b == 3) {
                  
                  x <- data.frame("Term_class"     = "ThrwInter",
-                                 "Component"      = x$.,
+                                 "Component"      = x$.x,
                                  "Component_type" =
                                    c("Single", "Single", "Single"),
                                  "Component_freq" = x$Freq,

@@ -28,12 +28,13 @@ getPLS_Data <- function(data,
     )
   }
 
-  # TODO: Scale by is.cexp
-  if (is.cexp)
-    message("DEBUG: `is.cexp` argument is ignored in `getPLS_Data()`")
-
   S <- getCorrMat(data[indicators], probit = is.probit, ordered = ordered)
   X <- as.matrix(data[indicators])
+
+  if (is.cexp) for (ord in intersect(indicators, ordered)) {
+    # Should serve as a good starting point
+    X[,ord] <- rescaleOrderedVariableAnalytic(ord, data = X)
+  }
 
   if (!is.null(cluster)) {
     if (!is.character(cluster))

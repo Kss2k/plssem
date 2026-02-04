@@ -10,14 +10,6 @@ parseModelArguments <- function(syntax,
   stopif(length(syntax) > 1L || !is.character(syntax),
          "`syntax` must be a string of length 1!")
 
-  message("DEBUG: Move ordered logic!")
-  vars       <- colnames(data)
-  is.ordered <- vapply(data, FUN.VALUE = logical(1L), FUN = is.ordered)
-  ordered    <- union(ordered, vars[is.ordered])
-
-  for (ord in ordered)
-    data[[ord]] <- as.integer(as.ordered(data[[ord]]))
-
   parTable <- modsem::modsemify(syntax, parentheses.as.string = TRUE)
   data     <- as.data.frame(data)
 
@@ -30,10 +22,17 @@ parseModelArguments <- function(syntax,
   # Check for observed (structural) variables
   structovs <- getStructOVs(parTable)
   ovs       <- getOVs(parTable)
-  ordered   <- intersect(ovs, ordered)
 
+  # Remove any (x + z + ... + y | cluster1 + cluster2 + ... + cluster3) expressions
   structovs <- structovs[!grepl("\\(|\\)", structovs)]
   ovs       <- ovs[!grepl("\\(|\\)", ovs)]
+
+  vars       <- intersect(ovs, colnames(data))
+  is.ordered <- vapply(data[vars], FUN.VALUE = logical(1L), FUN = is.ordered)
+  ordered    <- union(ordered, vars[is.ordered])
+
+  for (ord in ordered)
+    data[[ord]] <- as.integer(as.ordered(data[[ord]]))
 
   missing <- setdiff(ovs, colnames(data))
   stopif(length(missing), "Missing observed variables in data:\n  ",

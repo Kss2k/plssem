@@ -181,6 +181,12 @@ initMatrices <- function(pt) {
 
   diag(selectCov) <- TRUE
   selectCov[xis, xis][lower.tri(selectCov[xis, xis])] <- TRUE
+
+  # Residual Covariance Matrix indicators --------------------------------------
+  k <- length(allInds)
+  selectTheta <- matrix(FALSE, nrow = k, ncol = k,
+                        dimnames = list(allInds, allInds))
+  diag(selectTheta) <- TRUE
   
   # Selection Matric Indicators ------------------------------------------------
   Ip <- diag(nrow = nrow(lambda))
@@ -202,6 +208,7 @@ initMatrices <- function(pt) {
     selectLambda = selectLambda,
     selectGamma = selectGamma,
     selectCov = selectCov,
+    selectTheta = selectTheta,
     nlinSelectFrom = nlinSelectFrom
   )
 
@@ -268,10 +275,33 @@ getFitPLSModel <- function(model, consistent = TRUE) {
                                                   # will be consistent estimates
   fitCov[etas, etas] <- fitCovRes[etas, etas]
   
+  # Indicator Residuals
+  indicators <- rownames(lambda)
+  k <- length(indicators)
+
+  fitTheta <- matrix(0, nrow = k, ncol = k,
+                     dimnames = list(indicators, indicators))
+  crossLoaded <- apply(
+    X      = fitStructural,
+    MARGIN = 1L,
+    FUN    = \(x) sum(abs(x) > .Machine$double.xmin) > 1L
+  )
+
+  warnif(any(crossLoaded),
+         "Did not expect any cross loaded indicators,\n",
+         "when calculating indicator residuals!")
+
+  for (ind in indicators) {
+    r  <- fitMeasurement[ind, which.max(fitMeasurement[ind, ])]
+    v  <- SC[ind, ind]
+    fitTheta[ind, ind] <- v - r^2
+  }
+
   list(
     fitMeasurement = plssemMatrix(fitMeasurement),
     fitStructural  = plssemMatrix(fitStructural),
-    fitCov         = plssemMatrix(fitCov, symmetric = TRUE)
+    fitCov         = plssemMatrix(fitCov, symmetric = TRUE),
+    fitTheta       = plssemMatrix(fitTheta, symmetric = TRUE)
   )
 }
 
@@ -295,7 +325,13 @@ getParamVecNames <- function(model) {
   for (j in colnames(psi)) for (i in rownames(psi))
     psi[i, j] <- paste0(j, "~~", i)
 
-  c(lambda[selectLambda], gamma[selectGamma], psi[selectCov]) 
+  selectTheta <- model$matrices$selectTheta
+  theta       <- selectTheta
+  
+  for (j in colnames(theta)) for (i in rownames(theta))
+    theta[i, j] <- paste0(j, "~~", i)
+
+  c(lambda[selectLambda], gamma[selectGamma], psi[selectCov], theta[selectTheta]) 
 }
 
 
@@ -311,7 +347,16 @@ extractCoefs <- function(model) {
   fitCov    <- fit$fitCov
   selectCov <- model$matrices$selectCov
 
-  out <- c(lambda[selectLambda], gamma[selectGamma], fitCov[selectCov])
+  fitTheta    <- fit$fitTheta
+  selectTheta <- model$matrices$selectTheta
+
+  out <- c(
+    lambda[selectLambda],
+    gamma[selectGamma],
+    fitCov[selectCov],
+    fitTheta[selectTheta]
+  )
+
   names(out) <- model$params$names
 
   plssemVector(out)

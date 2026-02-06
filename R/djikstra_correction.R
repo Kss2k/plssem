@@ -19,13 +19,15 @@ getConsistenCorrMat <- function(model, Q) {
 
     for (j in seq_len(i)) {
       xz.j <- intTermNames[[j]]
-      C[xz.i, xz.j] <- f2(xz.i, xz.j, selectFrom, .Q = Q, .H = model$factorScores)
+      pij  <- f2(xz.i, xz.j, selectFrom, .Q = Q, .H = model$factorScores)
+      C[xz.i, xz.j] <- C[xz.j, xz.i] <- pij
     }
     
 
     for (y in lVs) {
       xz.j <- intTermNames[[j]]
-      C[xz.i, y] <- f2(xz.i, y, selectFrom, .Q = Q, .H = model$factorScores)
+      pij <- f2(xz.i, y, selectFrom, .Q = Q, .H = model$factorScores)
+      C[xz.i, y] <- C[y, xz.i] <- pij
     }
 
   }

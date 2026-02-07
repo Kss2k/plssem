@@ -1,9 +1,56 @@
-
-getConsistenCorrMat <- function(model, Q) {
+getConsistentCorrMat <- function(model, Q) {
   lVs          <- model$info$lVs.linear
+  ordered      <- model$info$ordered
+  is.probit    <- model$info$is.probit
   intTermElems <- model$info$intTermElems
   intTermNames <- model$info$intTermNames
   C            <- model$matrices$C
+  lambda       <- model$matrices$lambda
+  selectLambda <- model$matrices$selectLambda
+  selectFrom   <- model$matrices$nlinSelectFrom
+  probit2cont  <- model$matrices$probit2cont
+  data         <- model$data
+  k            <- length(lVs)
+  inds         <- rownames(lambda)
+
+  # If we have a mixed model where the linear part of the model is estimated
+  # using a probit link, whilst the non linear part of the model is estimated
+  # using conditional expectation (CEXP) values for the obsered values, we need
+  # to use a corrected version of Q.
+  #
+  # Let: r be the correlation coefficient,
+  #      x be the true latent variable
+  #    x.p be the probit latent proxy
+  #    x.c be the the CEXP latent proxy
+  #
+  # We already have Q, but we want to know the correlation between x.c and x (Q.c).
+  #
+  # Q    = r(x, x.p)
+  # Q.p  = r(x.p, x.c)
+  # Q.c  = r(x.p, x.c) * r(x, x.p) = Qc * Q
+  #
+  # Thus we need to solve for r(x.p, x.c). The simplest way is just by
+  # using polyserial correlations.
+  #
+  # This will change slightly each iteration, but it should
+  # be sufficient to precompute an approximation of S(lv) 
+  # by assuming multivariate normality.
+
+  Q.p <- stats::setNames(rep(1, k), nm = lVs)
+  if (length(ordered)) for (lv in lVs) {
+    inds.lv <- inds[selectLambda[,lv]]
+
+    if (!any(inds.lv %in% ordered))
+      next # just skip as Q.p = 1
+
+    w.lv    <- lambda[inds.lv, lv, drop = FALSE]
+    S.lv    <- probit2cont[[lv]]
+
+    W <- diagPartitioned(w.lv, w.lv)
+    Q.p[lv] <- cov2cor(t(W) %*% S.lv %*% W)[1L, 2L]
+  }
+
+  Q <- Q * Q.p
  
   for (i in seq_along(lVs)) {
     for (j in seq_len(i - 1)) {
@@ -13,7 +60,9 @@ getConsistenCorrMat <- function(model, Q) {
     }
   }
 
-  selectFrom <- model$matrices$nlinSelectFrom
+  if (!model$info$is.nlin)
+    return(C)
+
   for (i in seq_along(intTermElems)) {
     xz.i <- intTermNames[[i]]
 
@@ -22,14 +71,12 @@ getConsistenCorrMat <- function(model, Q) {
       pij  <- f2(xz.i, xz.j, selectFrom, .Q = Q, .H = model$factorScores)
       C[xz.i, xz.j] <- C[xz.j, xz.i] <- pij
     }
-    
 
     for (y in lVs) {
       xz.j <- intTermNames[[j]]
       pij <- f2(xz.i, y, selectFrom, .Q = Q, .H = model$factorScores)
       C[xz.i, y] <- C[y, xz.i] <- pij
     }
-
   }
 
   C

@@ -283,12 +283,12 @@ for (cond in names(list_thresholds)) {
       print_sep()
       
       fitted_i <- list(
-        plsc.ord.p = get_output(
-          expr = suppressMessages(pls(model, data = data_cat_i, ordered = ordered,
-                                      probit.nlin = TRUE)),
-          method = "PLScOrd-p", id = id, cond = cond, ncat = ncat
-        ),
-
+#        plsc.ord.p = get_output(
+#          expr = suppressMessages(pls(model, data = data_cat_i, ordered = ordered,
+#                                      probit.nlin = TRUE)),
+#          method = "PLScOrd-p", id = id, cond = cond, ncat = ncat
+#        ),
+#
         plsc.ord.c = get_output(
           expr = suppressMessages(pls(model, data = data_cat_i, ordered = ordered,
                                       probit.nlin = FALSE)),
@@ -347,7 +347,10 @@ failed.pars <- data.frame(
 
 
 
-for (results_id in results) {
+for (id in seq_along(results)) {
+  results_id <- results[[id]]
+  cat(sprintf("\r%d/%d", id, length(results)))
+
   for (fitted in results_id) {
     if (is.null(fitted$pars)) resi <- failed.pars  
     else                      resi <- fitted$pars
@@ -378,7 +381,7 @@ plot_results <- function(compare = methods, param = "Y~X:Z") {
     summarize(bias = mean(bias)) |>
     ggplot(aes(x = method, y = bias, colour = method, fill = method)) +
     geom_col(alpha = 0.2) +
-    facet_grid(rows = vars(cond), cols = vars(ncat), scales = "free") +
+    facet_grid(rows = vars(cond), cols = vars(ncat), scales = "fixed") +
     ggtitle(sprintf("Bias for %s by method", param)) +
     ylab("Bisa") +
     xlab("Method") + 
@@ -386,6 +389,8 @@ plot_results <- function(compare = methods, param = "Y~X:Z") {
 }
 
 
+
+saveRDS(resd, "table.rds")
 
 
 table_results <- function(compare = methods, alpha = 0.05) {
@@ -401,5 +406,7 @@ table_results <- function(compare = methods, alpha = 0.05) {
 }
 
 
-plot_results()
+plot_results(param = "Y~X:Z")
+plot_results(param = "Y~Z")
+plot_results(param = "Y~X")
 table_results()

@@ -26,7 +26,7 @@ specifyModel <- function(syntax,
   lme4.syntax          <- parsed$lme4.syntax
   intTermElems         <- parsed$intTermElems
   intTermNames         <- parsed$intTermNames
-  is.nlin <- parsed$is.nlin
+  is.nlin              <- parsed$is.nlin
   ordered              <- parsed$ordered
   is.probit            <- parsed$is.probit
   is.cexp              <- parsed$is.cexp
@@ -36,14 +36,14 @@ specifyModel <- function(syntax,
   info            <- matricesAndInfo$info
 
   preppedData <- getPLS_Data(
-    data                 = data,
-    indicators           = matricesAndInfo$info$allInds,
-    consistent           = consistent,
-    cluster              = cluster,
-    standardize          = standardize,
-    ordered              = ordered,
-    is.probit            = is.probit,
-    is.cexp              = is.cexp
+    data        = data,
+    indicators  = matricesAndInfo$info$allInds,
+    consistent  = consistent,
+    cluster     = cluster,
+    standardize = standardize,
+    ordered     = ordered,
+    is.probit   = is.probit,
+    is.cexp     = is.cexp
   )
 
   inds.x    <- info$inds.x
@@ -78,6 +78,13 @@ specifyModel <- function(syntax,
   colnames(matrices$SC) <- rownames(matrices$SC) <- c(
     colnames(matrices$S), 
     colnames(matrices$C)
+  )
+
+  matrices$probit2cont <- getCorrMatsProbit2cont(
+    data         = preppedData$X,
+    selectLambda = matrices$selectLambda,
+    ordered      = ordered,
+    lvs          = info$lVs
   )
 
   model <- list(
@@ -256,7 +263,7 @@ getFitPLSModel <- function(model, consistent = TRUE) {
   if (consistent) {
     Q <- getConstructQualities(model)
     fitMeasurement <- getConsistentLoadings(model, Q = Q)
-    model$matrices$C <- getConsistenCorrMat(model, Q = Q)
+    model$matrices$C <- getConsistentCorrMat(model, Q = Q)
   }
   
   # structural model
@@ -371,5 +378,5 @@ getFactorScores <- function(model) {
   W <- model$matrices$lambda
   X <- model$data
 
-  X %*% W
+  scale(X %*% W)
 }

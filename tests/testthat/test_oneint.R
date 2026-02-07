@@ -13,5 +13,5 @@ fit <- pls(m, modsem::oneInt, bootstrap = TRUE, sample = 50)
 summary(fit)
 
 
-fit <- pls(m, oneIntOrdered, bootstrap = FALSE, probit.nlin = TRUE)
+fit <- pls(m, oneIntOrdered, bootstrap = FALSE)
 summary(fit)

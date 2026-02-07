@@ -163,3 +163,36 @@ getThresholdsFromQuantiles <- function(X, variable) {
 
   stats::setNames(tau, nm = lab)
 }
+
+
+getCorrMatsProbit2cont <- function(data, ordered, lvs, selectLambda) {
+  probit2cont <- list()
+  inds        <- rownames(selectLambda)
+
+  if (length(ordered)) for (lv in lvs) {
+    inds.lv <- inds[selectLambda[,lv]]
+    ord.lv  <- intersect(inds.lv, ordered)
+
+    if (!length(ord.lv)) # just skip
+      next
+
+    X.cont <- data[, inds.lv]
+    X.ord  <- data[, inds.lv]
+
+    colnames(X.cont) <- paste0(".as_continous__", inds.lv)
+    X <- cbind(X.cont, X.ord)
+
+    suppressWarnings({
+      # Suppress this:
+      #> Warning Message:
+      #> lavaan->lav_samplestats_step2():  
+      #> correlation between variables x1 and .as_continous__x1 
+      #> is (nearly) 1.0 
+      S.lv <- getCorrMat(X, probit = TRUE, ordered = ord.lv)
+    })
+
+    probit2cont[[lv]] <- S.lv
+  }
+
+  probit2cont 
+}

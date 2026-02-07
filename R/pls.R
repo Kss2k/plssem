@@ -368,7 +368,13 @@ estimatePLS_Step9 <- function(model) {
 
     model$params$values.old <- model$params$values
     model$data <- as.matrix(X)
-    model$matrices$S <- getCorrMat(X, ordered = ordered, probit = is.probit)
+
+    if (!is.probit) {
+      # if we have a probit model, we will just get 
+      # the same polychoric matrix as before
+      # So there is no point in updating the model...
+      model$matrices$S <- getCorrMat(X, ordered = ordered, probit = is.probit)
+    }
   }
 
   model

@@ -233,7 +233,6 @@ get_output <- function(expr,
 }
 
 
-
 print.simoutput <- function(x, ...) {
   cat(sprintf("ID: %i, Method: %s, Elapsed: %s Cond: %s, NCAT: %d\n", 
               x$id, x$method, capture.output(x$elapsed), x$cond, x$ncat))
@@ -283,20 +282,31 @@ for (cond in names(list_thresholds)) {
       print_sep()
       
       fitted_i <- list(
-#        plsc.ord.p = get_output(
-#          expr = suppressMessages(pls(model, data = data_cat_i, ordered = ordered,
-#                                      probit.nlin = TRUE)),
-#          method = "PLScOrd-p", id = id, cond = cond, ncat = ncat
-#        ),
-#
+        plsc.ord.p = get_output(
+          expr = suppressMessages(pls(model, data = data_cat_i, ordered = ordered,
+                                      consistent.probit = TRUE)),
+          method = "PLScOrd-p", id = id, cond = cond, ncat = ncat
+        ),
+
         plsc.ord.c = get_output(
           expr = suppressMessages(pls(model, data = data_cat_i, ordered = ordered,
-                                      probit.nlin = FALSE)),
+                                      consistent.probit = FALSE)),
           method = "PLScOrd-c", id = id, cond = cond, ncat = ncat
         ),
         
         plsc = get_output(
           expr = suppressMessages(pls(model, data = data_cat_i)),
+          method = "PLSc", id = id, cond = cond, ncat = ncat
+        ),
+        
+        pls.ord.c = get_output(
+          expr = suppressMessages(pls(model, data = data_cat_i, ordered = ordered,
+                                      consistent.probit = FALSE, consistent = FALSE)),
+          method = "PLScOrd-c", id = id, cond = cond, ncat = ncat
+        ),
+        
+        pls = get_output(
+          expr = suppressMessages(pls(model, data = data_cat_i, consistent = FALSE)),
           method = "PLSc", id = id, cond = cond, ncat = ncat
         )
 
@@ -390,7 +400,6 @@ plot_results <- function(compare = methods, param = "Y~X:Z") {
 
 
 
-saveRDS(resd, "table.rds")
 
 
 table_results <- function(compare = methods, alpha = 0.05) {
@@ -410,3 +419,4 @@ plot_results(param = "Y~X:Z")
 plot_results(param = "Y~Z")
 plot_results(param = "Y~X")
 table_results()
+# saveRDS(resd, "table.rds")

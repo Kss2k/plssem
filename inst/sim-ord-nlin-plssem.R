@@ -285,13 +285,13 @@ for (cond in names(list_thresholds)) {
         plsc.ord.p = get_output(
           expr = suppressMessages(pls(model, data = data_cat_i, ordered = ordered,
                                       consistent.probit = TRUE)),
-          method = "PLScOrd-p", id = id, cond = cond, ncat = ncat
+          method = "OrdPLSc Ord[c+p]", id = id, cond = cond, ncat = ncat
         ),
 
         plsc.ord.c = get_output(
           expr = suppressMessages(pls(model, data = data_cat_i, ordered = ordered,
                                       consistent.probit = FALSE)),
-          method = "PLScOrd-c", id = id, cond = cond, ncat = ncat
+          method = "OrdPLSc Ord[c]", id = id, cond = cond, ncat = ncat
         ),
         
         plsc = get_output(
@@ -302,12 +302,12 @@ for (cond in names(list_thresholds)) {
         pls.ord.c = get_output(
           expr = suppressMessages(pls(model, data = data_cat_i, ordered = ordered,
                                       consistent.probit = FALSE, consistent = FALSE)),
-          method = "PLScOrd-c", id = id, cond = cond, ncat = ncat
+          method = "OrdPLS Ord[c]", id = id, cond = cond, ncat = ncat
         ),
         
         pls = get_output(
           expr = suppressMessages(pls(model, data = data_cat_i, consistent = FALSE)),
-          method = "PLSc", id = id, cond = cond, ncat = ncat
+          method = "PLS", id = id, cond = cond, ncat = ncat
         )
 
         # lms.cont = get_output( # to have an unbiased reference point

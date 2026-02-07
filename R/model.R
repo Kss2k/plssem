@@ -6,6 +6,7 @@ specifyModel <- function(syntax,
                          standardize = TRUE,
                          ordered = NULL,
                          probit = NULL,
+                         probit.nlin = NULL,
                          mc.reps = 1e5,
                          tolerance = 1e-5,
                          max.iter.0_5 = 100,
@@ -13,7 +14,9 @@ specifyModel <- function(syntax,
   parsed <- parseModelArguments(
     syntax = syntax,
     data = data,
-    ordered = ordered
+    ordered = ordered,
+    probit = probit,
+    probit.nlin = probit.nlin
   )
 
   syntax               <- parsed$syntax
@@ -23,7 +26,7 @@ specifyModel <- function(syntax,
   lme4.syntax          <- parsed$lme4.syntax
   intTermElems         <- parsed$intTermElems
   intTermNames         <- parsed$intTermNames
-  is.interaction.model <- parsed$is.interaction.model
+  is.nlin <- parsed$is.nlin
   ordered              <- parsed$ordered
   is.probit            <- parsed$is.probit
   is.cexp              <- parsed$is.cexp
@@ -48,20 +51,20 @@ specifyModel <- function(syntax,
   ordered.x <- intersect(inds.x, ordered)
   ordered.y <- intersect(inds.y, ordered)
  
-  info$lme4.syntax          <- lme4.syntax
-  info$is.multilevel        <- !is.null(lme4.syntax)
-  info$cluster              <- cluster
-  info$consistent           <- consistent
-  info$is.probit            <- is.probit 
-  info$is.cexp              <- is.cexp
-  info$ordered              <- ordered
-  info$ordered.x            <- ordered.x
-  info$ordered.y            <- ordered.y
-  info$intTermElems         <- intTermElems
-  info$intTermNames         <- intTermNames
-  info$is.interaction.model <- is.interaction.model
-  info$mc.reps              <- mc.reps
-  info$rng.seed             <- floor(stats::runif(1L) * 1e6)
+  info$lme4.syntax   <- lme4.syntax
+  info$is.multilevel <- !is.null(lme4.syntax)
+  info$cluster       <- cluster
+  info$consistent    <- consistent
+  info$is.probit     <- is.probit 
+  info$is.cexp       <- is.cexp
+  info$ordered       <- ordered
+  info$ordered.x     <- ordered.x
+  info$ordered.y     <- ordered.y
+  info$intTermElems  <- intTermElems
+  info$intTermNames  <- intTermNames
+  info$is.nlin       <- is.nlin
+  info$mc.reps       <- mc.reps
+  info$rng.seed      <- floor(stats::runif(1L) * 1e6)
 
   matrices$S <- preppedData$S
   matrices$C <- diag(nrow(matrices$gamma))

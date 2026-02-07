@@ -42,6 +42,9 @@
 #' @param probit Logical; overrides the automatic choice of probit factor scores
 #'   that is based on whether ordered indicators are present.
 #'
+#' @param probit.nlin Logical; Should step 0-5 be estimated using a probit model,
+#'   even if the model is non linear?
+#'
 #' @param tolerance Numeric; Convergence criteria/tolerance.
 #'
 #' @param ... Currently unused, reserved for future extensions.
@@ -90,6 +93,7 @@ pls <- function(syntax,
                 sample = 50L,
                 ordered = NULL,
                 probit = NULL,
+                probit.nlin = FALSE,
                 tolerance = 1e-5,
                 max.iter.0_5 = 100L,
                 max.iter.0_9 = 50L,
@@ -105,6 +109,7 @@ pls <- function(syntax,
     standardize  = standardize,
     ordered      = ordered,
     probit       = probit,
+    probit.nlin  = probit.nlin,
     tolerance    = tolerance,
     max.iter.0_5 = max.iter.0_5,
     max.iter.0_9 = max.iter.0_9
@@ -171,7 +176,7 @@ estimatePLS_Step0_5 <- function(model) {
 estimatePLS_Step6 <- function(model) {
   model$factorScores <- getFactorScores(model)
 
-  if (model$info$is.interaction.model) {
+  if (model$info$is.nlin) {
     # Update variance and coefficients of interaction terms
     elems <- model$info$intTermElems
     names <- names(elems)
@@ -272,6 +277,7 @@ estimatePLS_Step9 <- function(model) {
   ordered.y  <- model$info$ordered.y
   is.probit  <- model$info$is.probit
   is.cexp    <- model$info$is.cexp
+  is.nlin    <- model$info$is.nlin
   mc.reps    <- model$info$mc.reps
   is.ordered <- length(ordered) > 0
 
@@ -285,7 +291,7 @@ estimatePLS_Step9 <- function(model) {
     return(model)
   }
 
-  if (is.ordered && is.probit) {
+  if (is.ordered && is.probit && !is.nlin) {
     for (ord in ordered) {
       tau <- getThresholdsFromQuantiles(X = model$data, variable = ord)
       model$params$values <- c(model$params$values, tau)
@@ -362,7 +368,7 @@ estimatePLS_Step9 <- function(model) {
 
     model$params$values.old <- model$params$values
     model$data <- as.matrix(X)
-    model$matrices$S <- getCorrMat(X, ordered = NULL, probit = FALSE)
+    model$matrices$S <- getCorrMat(X, ordered = ordered, probit = is.probit)
   }
 
   model

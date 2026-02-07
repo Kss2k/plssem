@@ -6,7 +6,8 @@ parseModelArguments <- function(syntax,
                                 pi.match = NULL,
                                 pi.match.recycle = NULL,
                                 ordered = NULL,
-                                probit = NULL) {
+                                probit = NULL,
+                                probit.nlin = FALSE) {
   stopif(length(syntax) > 1L || !is.character(syntax),
          "`syntax` must be a string of length 1!")
 
@@ -16,7 +17,7 @@ parseModelArguments <- function(syntax,
   intTermNames <- unique(parTable[grepl(":", parTable$rhs), "rhs"])
   intTermElems <- stringr::str_split(intTermNames, pattern = ":")
   names(intTermElems)  <- intTermNames
-  is.interaction.model <- length(intTermElems) > 0L
+  is.nlin <- length(intTermElems) > 0L
 
   # Int Terms
   # Check for observed (structural) variables
@@ -79,22 +80,22 @@ parseModelArguments <- function(syntax,
   if (is.null(probit))
     probit <- length(ordered) > 0L
 
-  is.probit <- probit && !is.interaction.model
-  is.cexp   <- probit && is.interaction.model
+  is.probit <- probit && (!is.nlin || probit.nlin)
+  is.cexp   <- probit && is.nlin
 
   list(
-    syntax               = syntax,
-    data                 = data,
-    parTable.pls         = parTable.pls,
-    parTable.all         = parTable,
-    cluster              = cluster,
-    lme4.syntax          = lme4.syntax,
-    intTermElems         = intTermElems,
-    intTermNames         = intTermNames,
-    is.interaction.model = is.interaction.model,
-    ordered              = ordered,
-    is.probit            = is.probit,
-    is.cexp              = is.cexp
+    syntax       = syntax,
+    data         = data,
+    parTable.pls = parTable.pls,
+    parTable.all = parTable,
+    cluster      = cluster,
+    lme4.syntax  = lme4.syntax,
+    intTermElems = intTermElems,
+    intTermNames = intTermNames,
+    is.nlin      = is.nlin,
+    ordered      = ordered,
+    is.probit    = is.probit,
+    is.cexp      = is.cexp
   )
 }
 

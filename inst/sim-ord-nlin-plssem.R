@@ -248,6 +248,8 @@ print_sep <-  \() cat(strrep("─", options("width")[[1]]), "\n")
 # ──────────────────────────────────────────────────────────────────────────────
 # Run Simulation
 # ──────────────────────────────────────────────────────────────────────────────
+id <- 0
+total <- R * sum(sapply(list_thresholds, length))
 results <- NULL
 
 for (cond in names(list_thresholds)) {
@@ -258,6 +260,8 @@ for (cond in names(list_thresholds)) {
 
     results_sub <- vector("list", length=R)
     for (i in seq_len(R)) {
+      id <- id + 1
+
       if (!is.null(results_sub[[i]])) {
         message(sprintf("Skipping iteration %i, as it has already been run...", i))
         next
@@ -275,25 +279,25 @@ for (cond in names(list_thresholds)) {
       print(p)
 
       print_sep()
-      cat(sprintf("Iteration %d:\n", i)) 
+      cat(sprintf("Iteration %d/%d:\n", id, total)) 
       print_sep()
       
       fitted_i <- list(
         plsc.ord.p = get_output(
           expr = suppressMessages(pls(model, data = data_cat_i, ordered = ordered,
                                       probit.nlin = TRUE)),
-          method = "PLScOrd-p", id = i, cond = cond, ncat = ncat
+          method = "PLScOrd-p", id = id, cond = cond, ncat = ncat
         ),
 
         plsc.ord.c = get_output(
           expr = suppressMessages(pls(model, data = data_cat_i, ordered = ordered,
                                       probit.nlin = FALSE)),
-          method = "PLScOrd-c", id = i, cond = cond, ncat = ncat
+          method = "PLScOrd-c", id = id, cond = cond, ncat = ncat
         ),
         
         plsc = get_output(
           expr = suppressMessages(pls(model, data = data_cat_i)),
-          method = "PLSc", id = i, cond = cond, ncat = ncat
+          method = "PLSc", id = id, cond = cond, ncat = ncat
         )
 
         # lms.cont = get_output( # to have an unbiased reference point

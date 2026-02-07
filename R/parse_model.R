@@ -6,8 +6,7 @@ parseModelArguments <- function(syntax,
                                 pi.match = NULL,
                                 pi.match.recycle = NULL,
                                 ordered = NULL,
-                                probit = NULL,
-                                probit.nlin = FALSE) {
+                                probit = NULL) {
   stopif(length(syntax) > 1L || !is.character(syntax),
          "`syntax` must be a string of length 1!")
 
@@ -80,7 +79,7 @@ parseModelArguments <- function(syntax,
   if (is.null(probit))
     probit <- length(ordered) > 0L
 
-  is.probit <- probit && (!is.nlin || probit.nlin)
+  is.probit <- probit && !is.nlin
   is.cexp   <- probit && is.nlin
 
   list(

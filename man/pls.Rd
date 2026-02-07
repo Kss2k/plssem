@@ -13,7 +13,7 @@ pls(
   sample = 50L,
   ordered = NULL,
   probit = NULL,
-  probit.nlin = FALSE,
+  consistent.probit = TRUE,
   tolerance = 1e-05,
   max.iter.0_5 = 100L,
   max.iter.0_9 = 50L,
@@ -47,8 +47,8 @@ should be treated as ordered when computing polychoric correlations.}
 \item{probit}{Logical; overrides the automatic choice of probit factor scores
 that is based on whether ordered indicators are present.}
 
-\item{probit.nlin}{Logical; Should step 0-5 be estimated using a probit model,
-even if the model is non linear?}
+\item{consistent.probit}{Logical; Should probit consistent estimates be
+calculated?}
 
 \item{tolerance}{Numeric; Convergence criteria/tolerance.}
 

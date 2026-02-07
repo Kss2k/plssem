@@ -1,17 +1,18 @@
 getConsistentCorrMat <- function(model, Q) {
-  lVs          <- model$info$lVs.linear
-  ordered      <- model$info$ordered
-  is.probit    <- model$info$is.probit
-  intTermElems <- model$info$intTermElems
-  intTermNames <- model$info$intTermNames
-  C            <- model$matrices$C
-  lambda       <- model$matrices$lambda
-  selectLambda <- model$matrices$selectLambda
-  selectFrom   <- model$matrices$nlinSelectFrom
-  probit2cont  <- model$matrices$probit2cont
-  data         <- model$data
-  k            <- length(lVs)
-  inds         <- rownames(lambda)
+  lVs               <- model$info$lVs.linear
+  ordered           <- model$info$ordered
+  is.probit         <- model$info$is.probit
+  intTermElems      <- model$info$intTermElems
+  intTermNames      <- model$info$intTermNames
+  consistent.probit <- model$info$consistent.probit
+  C                 <- model$matrices$C
+  lambda            <- model$matrices$lambda
+  selectLambda      <- model$matrices$selectLambda
+  selectFrom        <- model$matrices$nlinSelectFrom
+  probit2cont       <- model$matrices$probit2cont
+  data              <- model$data
+  k                 <- length(lVs)
+  inds              <- rownames(lambda)
 
   # If we have a mixed model where the linear part of the model is estimated
   # using a probit link, whilst the non linear part of the model is estimated
@@ -36,8 +37,10 @@ getConsistentCorrMat <- function(model, Q) {
   # be sufficient to precompute an approximation of S(lv) 
   # by assuming multivariate normality.
 
+  calcQ.p <- length(ordered) > 0 && consistent.probit
   Q.p <- stats::setNames(rep(1, k), nm = lVs)
-  if (length(ordered)) for (lv in lVs) {
+
+  if (calcQ.p) for (lv in lVs) {
     inds.lv <- inds[selectLambda[,lv]]
 
     if (!any(inds.lv %in% ordered))

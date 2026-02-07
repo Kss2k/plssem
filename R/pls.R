@@ -42,8 +42,8 @@
 #' @param probit Logical; overrides the automatic choice of probit factor scores
 #'   that is based on whether ordered indicators are present.
 #'
-#' @param probit.nlin Logical; Should step 0-5 be estimated using a probit model,
-#'   even if the model is non linear?
+#' @param consistent.probit Logical; Should probit consistent estimates be
+#'   calculated?
 #'
 #' @param tolerance Numeric; Convergence criteria/tolerance.
 #'
@@ -93,7 +93,7 @@ pls <- function(syntax,
                 sample = 50L,
                 ordered = NULL,
                 probit = NULL,
-                probit.nlin = FALSE,
+                consistent.probit = TRUE,
                 tolerance = 1e-5,
                 max.iter.0_5 = 100L,
                 max.iter.0_9 = 50L,
@@ -103,16 +103,16 @@ pls <- function(syntax,
 
   # Define model
   model <- specifyModel(
-    syntax       = syntax,
-    data         = data,
-    consistent   = consistent,
-    standardize  = standardize,
-    ordered      = ordered,
-    probit       = probit,
-    probit.nlin  = probit.nlin,
-    tolerance    = tolerance,
-    max.iter.0_5 = max.iter.0_5,
-    max.iter.0_9 = max.iter.0_9
+    syntax            = syntax,
+    data              = data,
+    consistent        = consistent,
+    standardize       = standardize,
+    ordered           = ordered,
+    probit            = probit,
+    consistent.probit = consistent.probit,
+    tolerance         = tolerance,
+    max.iter.0_5      = max.iter.0_5,
+    max.iter.0_9      = max.iter.0_9
   ) 
 
   # Fit model

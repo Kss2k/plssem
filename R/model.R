@@ -6,7 +6,7 @@ specifyModel <- function(syntax,
                          standardize = TRUE,
                          ordered = NULL,
                          probit = NULL,
-                         probit.nlin = NULL,
+                         consistent.probit = NULL,
                          mc.reps = 1e5,
                          tolerance = 1e-5,
                          max.iter.0_5 = 100,
@@ -15,8 +15,7 @@ specifyModel <- function(syntax,
     syntax = syntax,
     data = data,
     ordered = ordered,
-    probit = probit,
-    probit.nlin = probit.nlin
+    probit = probit
   )
 
   syntax               <- parsed$syntax
@@ -51,20 +50,21 @@ specifyModel <- function(syntax,
   ordered.x <- intersect(inds.x, ordered)
   ordered.y <- intersect(inds.y, ordered)
  
-  info$lme4.syntax   <- lme4.syntax
-  info$is.multilevel <- !is.null(lme4.syntax)
-  info$cluster       <- cluster
-  info$consistent    <- consistent
-  info$is.probit     <- is.probit 
-  info$is.cexp       <- is.cexp
-  info$ordered       <- ordered
-  info$ordered.x     <- ordered.x
-  info$ordered.y     <- ordered.y
-  info$intTermElems  <- intTermElems
-  info$intTermNames  <- intTermNames
-  info$is.nlin       <- is.nlin
-  info$mc.reps       <- mc.reps
-  info$rng.seed      <- floor(stats::runif(1L) * 1e6)
+  info$lme4.syntax       <- lme4.syntax
+  info$is.multilevel     <- !is.null(lme4.syntax)
+  info$cluster           <- cluster
+  info$consistent        <- consistent
+  info$is.probit         <- is.probit 
+  info$is.cexp           <- is.cexp
+  info$ordered           <- ordered
+  info$ordered.x         <- ordered.x
+  info$ordered.y         <- ordered.y
+  info$intTermElems      <- intTermElems
+  info$intTermNames      <- intTermNames
+  info$is.nlin           <- is.nlin
+  info$mc.reps           <- mc.reps
+  info$rng.seed          <- floor(stats::runif(1L) * 1e6)
+  info$consistent.probit <- consistent.probit
 
   matrices$S <- preppedData$S
   matrices$C <- diag(nrow(matrices$gamma))
@@ -80,12 +80,14 @@ specifyModel <- function(syntax,
     colnames(matrices$C)
   )
 
-  matrices$probit2cont <- getCorrMatsProbit2cont(
-    data         = preppedData$X,
-    selectLambda = matrices$selectLambda,
-    ordered      = ordered,
-    lvs          = info$lVs
-  )
+  if (consistent.probit) {
+    matrices$probit2cont <- getCorrMatsProbit2cont(
+      data         = preppedData$X,
+      selectLambda = matrices$selectLambda,
+      ordered      = ordered,
+      lvs          = info$lVs
+    )
+  }
 
   model <- list(
     parTable.input = pt,
@@ -219,7 +221,8 @@ initMatrices <- function(pt) {
     selectGamma = selectGamma,
     selectCov = selectCov,
     selectTheta = selectTheta,
-    nlinSelectFrom = nlinSelectFrom
+    nlinSelectFrom = nlinSelectFrom,
+    probit2cont = NULL
   )
 
   info <- list(

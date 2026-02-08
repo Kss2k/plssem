@@ -9,4 +9,5 @@ src/*.dll
 tests/testthat/mplusResults*
 sketches/
 inst/doc
+inst/*.rds
 docs

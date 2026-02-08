@@ -80,7 +80,7 @@ specifyModel <- function(syntax,
     colnames(matrices$C)
   )
 
-  if (consistent.probit) {
+  if (consistent.probit && info$is.cexp) {
     matrices$probit2cont <- getCorrMatsProbit2cont(
       data         = preppedData$X,
       selectLambda = matrices$selectLambda,
@@ -295,7 +295,7 @@ getFitPLSModel <- function(model, consistent = TRUE) {
   fitTheta <- matrix(0, nrow = k, ncol = k,
                      dimnames = list(indicators, indicators))
   crossLoaded <- apply(
-    X      = fitStructural,
+    X      = fitMeasurement,
     MARGIN = 1L,
     FUN    = \(x) sum(abs(x) > .Machine$double.xmin) > 1L
   )

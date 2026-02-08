@@ -129,12 +129,12 @@ cov2cor <- function(vcov) {
 
 
 stopif <- function(cond, ...) {
-  if (isTRUE(cond)) stop(...)
+  if (isTRUE(cond)) stop(..., call. = FALSE)
 }
 
 
 warnif <- function(cond, ...) {
-  if (isTRUE(cond)) warning(...)
+  if (isTRUE(cond)) warning(..., call. = FALSE)
 }
 
 
@@ -176,8 +176,8 @@ getCorrMatsProbit2cont <- function(data, ordered, lvs, selectLambda) {
     if (!length(ord.lv)) # just skip
       next
 
-    X.cont <- data[, inds.lv]
-    X.ord  <- data[, inds.lv]
+    X.cont <- data[, inds.lv, drop = FALSE]
+    X.ord  <- data[, inds.lv, drop = FALSE]
 
     colnames(X.cont) <- paste0(".as_continous__", inds.lv)
     X <- cbind(X.cont, X.ord)

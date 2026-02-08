@@ -2,6 +2,7 @@ getConsistentCorrMat <- function(model, Q) {
   lVs               <- model$info$lVs.linear
   ordered           <- model$info$ordered
   is.probit         <- model$info$is.probit
+  is.cexp           <- model$info$is.cexp
   intTermElems      <- model$info$intTermElems
   intTermNames      <- model$info$intTermNames
   consistent.probit <- model$info$consistent.probit
@@ -37,7 +38,7 @@ getConsistentCorrMat <- function(model, Q) {
   # be sufficient to precompute an approximation of S(lv) 
   # by assuming multivariate normality.
 
-  calcQ.p <- length(ordered) > 0 && consistent.probit
+  calcQ.p <- length(ordered) > 0 && consistent.probit && is.cexp
   Q.p <- stats::setNames(rep(1, k), nm = lVs)
 
   if (calcQ.p) for (lv in lVs) {

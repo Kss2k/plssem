@@ -124,8 +124,22 @@ sim_cont_data <- function(N = n[1]) {
 }
 
 
+rthreshold <- function(k, offset = runif(1, min = -0.7, max = 0.7), sigma = 0.4) {
+  t <- seq_len(k) - mean(seq_len(k)) + offset
+  t + runif(k, min = -sigma, max = sigma)
+}
+
+
 # Based on Rhemtulla et al., 2012 and Schubert et al., 2018
 list_thresholds <- list(
+  Uneven = list(
+    `2` = \() rthreshold(2),
+    `3` = \() rthreshold(3),
+    `4` = \() rthreshold(4),
+    `5` = \() rthreshold(5),
+    `6` = \() rthreshold(6),
+    `7` = \() rthreshold(7)
+  ),
   Symmetric = list(
   `2` = c( 0.00),
   `3` = c(-0.83,  0.83),
@@ -176,6 +190,9 @@ cut_data <- function(data, thr, choose = NULL) {
     choose <- colnames(data)
 
   means <- data
+
+  if (is.function(thr))
+    thr <- thr()
 
   for (i in seq_along(choose)) {
     var <- choose[[i]]
@@ -282,39 +299,32 @@ for (cond in names(list_thresholds)) {
       print_sep()
       
       fitted_i <- list(
-        plsc.ord.p = get_output(
+        plsc.ord = get_output(
           expr = suppressMessages(pls(model, data = data_cat_i, ordered = ordered,
                                       consistent.probit = TRUE)),
-          method = "OrdPLSc Ord[c+p]", id = id, cond = cond, ncat = ncat
+          method = "OrdPLSc", id = id, cond = cond, ncat = ncat
         ),
 
-        plsc.ord.c = get_output(
-          expr = suppressMessages(pls(model, data = data_cat_i, ordered = ordered,
-                                      consistent.probit = FALSE)),
-          method = "OrdPLSc Ord[c]", id = id, cond = cond, ncat = ncat
-        ),
-        
         plsc = get_output(
           expr = suppressMessages(pls(model, data = data_cat_i)),
           method = "PLSc", id = id, cond = cond, ncat = ncat
         ),
         
         pls.ord.c = get_output(
-          expr = suppressMessages(pls(model, data = data_cat_i, ordered = ordered,
-                                      consistent.probit = FALSE, consistent = FALSE)),
-          method = "OrdPLS Ord[c]", id = id, cond = cond, ncat = ncat
+          expr = suppressMessages(pls(model, data = data_cat_i, ordered = ordered, consistent = FALSE)),
+          method = "OrdPLS", id = id, cond = cond, ncat = ncat
         ),
         
         pls = get_output(
           expr = suppressMessages(pls(model, data = data_cat_i, consistent = FALSE)),
           method = "PLS", id = id, cond = cond, ncat = ncat
-        )
+        ),
 
-        # lms.cont = get_output( # to have an unbiased reference point
-        #   expr = modsem(model, data = data_cont_i, method = "lms"),
-        #   method = "LMS-cont", id = i, cond = cond, ncat = ncat,
-        #   parfun = standardized_estimates
-        # )
+        lms.cont = get_output( # to have an unbiased reference point
+          expr = modsem(model, data = data_cont_i, method = "lms"),
+          method = "LMS-cont", id = i, cond = cond, ncat = ncat,
+          parfun = standardized_estimates
+        )
         
       ) 
       

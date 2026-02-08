@@ -252,9 +252,12 @@ getFitPLSModel <- function(model, consistent = TRUE) {
   etas    <- model$info$etas
   xis     <- model$info$xis
   lVs     <- model$info$lVs
+  lVs.lin <- model$info$lVs.linear
   indsLvs <- model$info$indsLvs
+  is.cexp <- model$info$is.cexp
   ptl     <- model$parTable.input
   SC      <- model$matrices$SC
+  k       <- length(lVs.lin)
   
   # measurement model 
   fitMeasurement <- lambda
@@ -262,9 +265,15 @@ getFitPLSModel <- function(model, consistent = TRUE) {
   for (lV in lVs) for (indsLv in indsLvs[[lV]])
     fitMeasurement[indsLv, lV] <- SC[indsLv, lV]
 
-  # Caluculate consistent weights, based on measurement model
-  if (consistent) {
-    Q <- getConstructQualities(model)
+  # Caluculate consistent weights and correlations
+  if (consistent || is.cexp) {
+    # We want to correct both for the errors causes by using the CEXP
+    # estimator, compared to the probit estimator. As well as the bias
+    # caused by ignoring measurement error.
+
+    if (consistent) Q <- getConstructQualities(model)
+    else            Q <- stats::setNames(rep(1L, k), nm = lVs.lin) # ignore measurement error
+
     fitMeasurement <- getConsistentLoadings(model, Q = Q)
     model$matrices$C <- getConsistentCorrMat(model, Q = Q)
   }

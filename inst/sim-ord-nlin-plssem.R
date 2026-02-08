@@ -133,12 +133,12 @@ rthreshold <- function(k, offset = runif(1, min = -0.7, max = 0.7), sigma = 0.4)
 # Based on Rhemtulla et al., 2012 and Schubert et al., 2018
 list_thresholds <- list(
   Uneven = list(
-    `2` = \() rthreshold(2),
-    `3` = \() rthreshold(3),
-    `4` = \() rthreshold(4),
-    `5` = \() rthreshold(5),
-    `6` = \() rthreshold(6),
-    `7` = \() rthreshold(7)
+    `2` = \() rthreshold(1),
+    `3` = \() rthreshold(2),
+    `4` = \() rthreshold(3),
+    `5` = \() rthreshold(4),
+    `6` = \() rthreshold(5),
+    `7` = \() rthreshold(6)
   ),
   Symmetric = list(
   `2` = c( 0.00),
@@ -366,29 +366,40 @@ failed.pars <- data.frame(
 )
 
 
-
+results_dfs <- vector("list", length(results))
 for (id in seq_along(results)) {
   results_id <- results[[id]]
   cat(sprintf("\r%d/%d", id, length(results)))
 
+  resid <- NULL
   for (fitted in results_id) {
     if (is.null(fitted$pars)) resi <- failed.pars  
     else                      resi <- fitted$pars
     resi$id <- fitted$id
+
+    colnames(resi) <- stringr::str_replace_all(
+      string = colnames(resi),
+      pattern = c(std.error = "se", p.value = "pvalue")
+    )
     
     resi$method <- fitted$method
     resi$ncat   <- fitted$ncat
     resi$cond   <- fitted$cond
     resi$par <- paste0(resi$lhs,  resi$op, resi$rhs)
     resi$elapsed <- fitted$elapsed
-    resd <- rbind(resd, resi[cols])
+  
+    resid <- rbind(resid, resi[cols])
   }
+
+  results_dfs[[id]] <- resid
 }
+    
+resd <- do.call("rbind", results_dfs)
+cat("\n")
 
 resd$par <- paste0(resd$lhs,  resd$op, resd$rhs)
 resd <- merge(resd, parTable.true, all.x = TRUE)
-resd$bias <- resd$est.true - resd$est
-
+resd$bias <- resd$est - resd$est.true
 
 
 
@@ -409,9 +420,6 @@ plot_results <- function(compare = methods, param = "Y~X:Z") {
 }
 
 
-
-
-
 table_results <- function(compare = methods, alpha = 0.05) {
   resd |>
     filter(op == "~" & method %in% compare) |> 
@@ -429,4 +437,5 @@ plot_results(param = "Y~X:Z")
 plot_results(param = "Y~Z")
 plot_results(param = "Y~X")
 table_results()
-# saveRDS(resd, "table.rds")
+
+saveRDS(resd, sprintf("results-sim-ord-nlin-%s.rds", Sys.time()))

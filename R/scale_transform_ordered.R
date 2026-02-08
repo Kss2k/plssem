@@ -31,6 +31,8 @@ rescaleOrderedVariableMonteCarlo <- function(name,
 
   # compute conditional means in each [q[i], q[i+1]) (last bin inclusive)
   mu <- numeric(K)
+  sim.y.rescaled <- y
+
   for (i in seq_len(K)) {
     lo <- q[i]
     hi <- q[i + 1]
@@ -54,9 +56,12 @@ rescaleOrderedVariableMonteCarlo <- function(name,
       if (!any(idx)) mu[i] <- 0.5 * (lo + hi)
     }
 
-    if (any(idx)) mu[i] <- mean(y[idx])
+    if (any(idx)) {
+      mu[i] <- mean(y[idx])
+      sim.y.rescaled[idx] <- mu[i] 
+    }
   }
-
+  
   # exact centering to remove residual drift (weighted by observed category probs)
   mu <- mu - sum(p_obs * mu, na.rm = TRUE)
 
@@ -71,7 +76,7 @@ rescaleOrderedVariableMonteCarlo <- function(name,
   labels.t <- paste0(name, "|t", seq_len(sum(is.finite(q))))
   thresholds <- stats::setNames(q[is.finite(q)], labels.t)
 
-  list(values = x.out, thresholds = thresholds)
+  list(values = x.out, thresholds = thresholds, sim.y.rescaled = sim.y.rescaled)
 }
 
 

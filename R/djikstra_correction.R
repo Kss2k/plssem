@@ -11,6 +11,7 @@ getConsistentCorrMat <- function(model, Q) {
   selectLambda      <- model$matrices$selectLambda
   selectFrom        <- model$matrices$nlinSelectFrom
   probit2cont       <- model$matrices$probit2cont
+  Q.ordered         <- model$matrices$Q.ordered
   data              <- model$data
   k                 <- length(lVs)
   inds              <- rownames(lambda)
@@ -39,7 +40,7 @@ getConsistentCorrMat <- function(model, Q) {
   # by assuming multivariate normality.
 
   calcQ.p <- length(ordered) > 0 && consistent.probit && is.cexp
-  Q.p <- stats::setNames(rep(1, k), nm = lVs)
+  Q.p <- Q.p2 <- stats::setNames(rep(1, k), nm = lVs)
 
   if (calcQ.p) for (lv in lVs) {
     inds.lv <- inds[selectLambda[,lv]]
@@ -48,6 +49,7 @@ getConsistentCorrMat <- function(model, Q) {
       next # just skip as Q.p = 1
 
     w.lv    <- lambda[inds.lv, lv, drop = FALSE]
+    w.q     <- w.lv / sum(w.lv)
     S.lv    <- probit2cont[[lv]]
 
     W <- diagPartitioned(w.lv, w.lv)

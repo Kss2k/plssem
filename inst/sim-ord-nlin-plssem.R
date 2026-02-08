@@ -318,14 +318,15 @@ for (cond in names(list_thresholds)) {
         pls = get_output(
           expr = suppressMessages(pls(model, data = data_cat_i, consistent = FALSE)),
           method = "PLS", id = id, cond = cond, ncat = ncat
-        ),
-
-        lms.cont = get_output( # to have an unbiased reference point
-          expr = modsem(model, data = data_cont_i, method = "lms"),
-          method = "LMS-cont", id = i, cond = cond, ncat = ncat,
-          parfun = standardized_estimates
         )
-        
+
+        #,
+
+        # lms.cont = get_output( # to have an unbiased reference point
+        #   expr = modsem(model, data = data_cont_i, method = "lms"),
+        #   method = "LMS-cont", id = i, cond = cond, ncat = ncat,
+        #   parfun = standardized_estimates
+        # )
       ) 
       
       print(fitted_i)

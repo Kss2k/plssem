@@ -1,3 +1,6 @@
+USE_NON_LINEAR_PROBIT_CORR_MAT <- FALSE # for now we stick with the linear assumption
+
+
 #' Fit Partial Least Squares Structural Equation Models
 #'
 #' `pls()` estimates Partial Least Squares Structural Equation Models (PLS-SEM)
@@ -357,40 +360,43 @@ estimatePLS_Step9 <- function(model) {
       model$params$values <- c(model$params$values, rescaled$thresholds)
       X[[ord.x]] <- rescaled$values
     }
-
-    # for (ord.y in ordered.y) {
-    #   rescaled <- rescaleOrderedVariableMonteCarlo(
-    #     name = ord.y, data = X, sim.ov = sim.ov
-    #   )
-    #   model$params$values <- c(model$params$values, rescaled$thresholds)
-    #   X[[ord.y]] <- rescaled$values
-    # }
   
-    for (eta in etas) {
-      inds.eta <- indsLvs[[eta]]
-      ord.eta  <- intersect(ordered, inds.eta)
+    if (USE_NON_LINEAR_PROBIT_CORR_MAT) {
+      for (eta in etas) {
+        inds.eta <- indsLvs[[eta]]
+        ord.eta  <- intersect(ordered, inds.eta)
 
-      if (!length(ord.eta))
-        next
+        if (!length(ord.eta))
+          next
 
-      sim.cont <- sim.ov[, inds.eta, drop = FALSE]
-      sim.ord  <- sim.ov[, inds.eta, drop = FALSE]
-      colnames(sim.cont) <- paste0(".as_continous__", inds.eta)
+        sim.cont <- sim.ov[, inds.eta, drop = FALSE]
+        sim.ord  <- sim.ov[, inds.eta, drop = FALSE]
+        colnames(sim.cont) <- paste0(".as_continous__", inds.eta)
 
-      for (ord.y in ord.eta) {
+        for (ord.y in ord.eta) {
+          rescaled <- rescaleOrderedVariableMonteCarlo(
+            name = ord.y, data = X, sim.ov = sim.ov
+          )
+
+          model$params$values <- c(model$params$values, rescaled$thresholds)
+          X[[ord.y]] <- rescaled$values
+          sim.ord[, ord.y] <- rescaled$sim.y.rescaled
+        }
+
+        sim.eta <- cbind(sim.cont, sim.ord)
+        S.eta <- cor(sim.eta)
+        
+        model$matrices$probit2cont[[eta]] <- S.eta
+      }
+
+    } else {
+      for (ord.y in ordered.y) {
         rescaled <- rescaleOrderedVariableMonteCarlo(
           name = ord.y, data = X, sim.ov = sim.ov
         )
-
         model$params$values <- c(model$params$values, rescaled$thresholds)
         X[[ord.y]] <- rescaled$values
-        sim.ord[, ord.y] <- rescaled$sim.y.rescaled
       }
-
-      sim.eta <- cbind(sim.cont, sim.ord)
-      S.eta <- cor(sim.eta)
-      
-      model$matrices$probit2cont[[eta]] <- S.eta
     }
    
     model$params$se <- rep(NA_real_, length(model$params$values))

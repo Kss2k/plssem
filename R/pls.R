@@ -272,16 +272,19 @@ estimatePLS_Step8 <- function(model) {
 
 estimatePLS_Step9 <- function(model) {
   # Handle ordered thresholds
-  ordered    <- model$info$ordered
-  ordered.x  <- model$info$ordered.x
-  ordered.y  <- model$info$ordered.y
-  is.probit  <- model$info$is.probit
-  is.cexp    <- model$info$is.cexp
-  is.nlin    <- model$info$is.nlin
-  mc.reps    <- model$info$mc.reps
-  etas       <- model$info$etas
-  indsLvs    <- model$info$indsLvs
-  is.ordered <- length(ordered) > 0
+  ordered      <- model$info$ordered
+  ordered.x    <- model$info$ordered.x
+  ordered.y    <- model$info$ordered.y
+  is.probit    <- model$info$is.probit
+  is.cexp      <- model$info$is.cexp
+  is.nlin      <- model$info$is.nlin
+  mc.reps      <- model$info$mc.reps
+  etas         <- model$info$etas
+  indsLvs      <- model$info$indsLvs
+  lambda       <- model$matrices$lambda
+  intTerms     <- model$info$intTermNames
+  intTermElems <- model$info$intTermElems
+  is.ordered   <- length(ordered) > 0
 
   model$status$finished <- TRUE
   model$status$iterations.0_9 <- model$status$iterations.0_9 + 1L
@@ -339,59 +342,77 @@ estimatePLS_Step9 <- function(model) {
     parTable <- addColonPI_ParTable(parTable, model = model)
     parTable <- parTable[!(parTable$op == "=~" & grepl(":", parTable$lhs)), , drop = FALSE]
 
-    sim.ov <- simulateDataParTable(
+    sim <- simulateDataParTable(
       parTable = parTable,
       N        = mc.reps,
-      seed     = model$info$rng.seed
-    )$OV[[1L]]
+      seed     = model$info$rng.seed,
+      colsOVs  = rownames(lambda),
+      colsLVs  = colnames(lambda)
+    )
+
+    sim.ov <- scale(sim$OV[[1L]])
+    sim.lv <- scale(sim$LV[[1L]])
+    sim.ord <- sim.ov
 
     # In theory we only need to update the thresholds for indicators of
     # endogenous variables. For now we just update everything, as it's
     # a cleaner way of getting the threshold parameters (though a bit slower)
     # It's also cleaner when bootstrapping the model
-    for (ord.x in ordered.x) {
-      rescaled <- rescaleOrderedVariableAnalytic(
-        name = ord.x, data = X
-      )
-
-      model$params$values <- c(model$params$values, rescaled$thresholds)
-      X[[ord.x]] <- rescaled$values
-    }
-
-    # for (ord.y in ordered.y) {
-    #   rescaled <- rescaleOrderedVariableMonteCarlo(
-    #     name = ord.y, data = X, sim.ov = sim.ov
+    # for (ord.x in ordered.x) {
+    #   rescaled <- rescaleOrderedVariableAnalytic(
+    #     name = ord.x, data = X
     #   )
+
     #   model$params$values <- c(model$params$values, rescaled$thresholds)
-    #   X[[ord.y]] <- rescaled$values
+    #   X[[ord.x]] <- rescaled$values
     # }
-  
-    for (eta in etas) {
-      inds.eta <- indsLvs[[eta]]
-      ord.eta  <- intersect(ordered, inds.eta)
 
-      if (!length(ord.eta))
-        next
-
-      sim.cont <- sim.ov[, inds.eta, drop = FALSE]
-      sim.ord  <- sim.ov[, inds.eta, drop = FALSE]
-      colnames(sim.cont) <- paste0(".as_continous__", inds.eta)
-
-      for (ord.y in ord.eta) {
-        rescaled <- rescaleOrderedVariableMonteCarlo(
-          name = ord.y, data = X, sim.ov = sim.ov
-        )
-
-        model$params$values <- c(model$params$values, rescaled$thresholds)
-        X[[ord.y]] <- rescaled$values
-        sim.ord[, ord.y] <- rescaled$sim.y.rescaled
-      }
-
-      sim.eta <- cbind(sim.cont, sim.ord)
-      S.eta <- cor(sim.eta)
-      
-      model$matrices$probit2cont[[eta]] <- S.eta
+    for (ord.y in ordered) {
+      rescaled <- rescaleOrderedVariableMonteCarlo(
+        name = ord.y, data = X, sim.ov = sim.ov
+      )
+      model$params$values <- c(model$params$values, rescaled$thresholds)
+      X[[ord.y]] <- rescaled$values
+      sim.ord[,ord.y] <- rescaled$sim.y.rescaled
     }
+  
+    # for (eta in etas) {
+    #   inds.eta <- indsLvs[[eta]]
+    #   ord.eta  <- intersect(ordered, inds.eta)
+
+    #   if (!length(ord.eta))
+    #     next
+
+    #   sim.cont <- sim.ov[, inds.eta, drop = FALSE]
+    #   sim.ord  <- sim.ov[, inds.eta, drop = FALSE]
+    #   colnames(sim.cont) <- paste0(".as_continous__", inds.eta)
+
+    #   for (ord.y in ord.eta) {
+    #     rescaled <- rescaleOrderedVariableMonteCarlo(
+    #       name = ord.y, data = X, sim.ov = sim.ov
+    #     )
+
+    #     model$params$values <- c(model$params$values, rescaled$thresholds)
+    #     X[[ord.y]] <- rescaled$values
+    #     sim.ord[, ord.y] <- rescaled$sim.y.rescaled
+    #   }
+
+    #   sim.eta <- cbind(sim.cont, sim.ord)
+    #   S.eta <- cor(sim.eta)
+    #   
+    #   model$matrices$probit2cont[[eta]] <- S.eta
+    # }
+   
+    sim.lv.proxy <- scale(scale(sim.ord) %*% lambda)
+
+    for (intTerm in intTerms) {
+      elems <- intTermElems[[intTerm]]
+      sim.lv.proxy[,intTerm] <- matrixStats::rowProds(sim.lv.proxy[,elems])
+      sim.lv[,intTerm] <- matrixStats::rowProds(sim.lv[,elems])
+    }
+ 
+    Q.mcem.mat <- cov(sim.lv) / cov(sim.lv.proxy)
+
    
     model$params$se <- rep(NA_real_, length(model$params$values))
 
@@ -404,6 +425,8 @@ estimatePLS_Step9 <- function(model) {
       # So there is no point in updating the model...
       model$matrices$S <- getCorrMat(X, ordered = ordered, probit = is.probit)
     }
+
+    model$matrices$Q.mcem.mat <- Q.mcem.mat
   }
 
   model

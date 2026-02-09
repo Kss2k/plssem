@@ -16,6 +16,9 @@ getConsistentCorrMat <- function(model, Q) {
   k                 <- length(lVs)
   inds              <- rownames(lambda)
 
+  if (!is.null(model$matrices$Q.mcem.mat))
+    return(C * model$matrices$Q.mcem.mat)
+
   # If we have a mixed model where the linear part of the model is estimated
   # using a probit link, whilst the non linear part of the model is estimated
   # using conditional expectation (CEXP) values for the obsered values, we need

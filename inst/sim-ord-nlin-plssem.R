@@ -6,6 +6,7 @@ library(dplyr)
 library(tidyr)
 library(ggplot2)
 library(plssem)
+library(cSEM)
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Setup Simulation
@@ -261,6 +262,27 @@ print.simoutput <- function(x, ...) {
 print_sep <-  \() cat(strrep("─", options("width")[[1]]), "\n")
 
 
+parameter_estimates.cSEMResults <- function(object, ...) {
+  paths <- summarize(object)$Estimates$Path_estimates
+  par <- stringr::str_remove_all(paths$Name, " ")
+  par <- stringr::str_replace_all(par, "\\.", ":")
+  lhs <- stringr::str_split_i(par, "~", i = 1L)
+  rhs <- stringr::str_split_i(par, "~", i = 2L)
+  op  <- "~"
+  est <- paths$Estimate
+  se  <- paths$Std_err
+  pvalue <- paths$p_value
+  z      <- est / se
+  ci.lower <- est - 1.96 * se
+  ci.upper <- est + 1.96 * se
+
+  plssem:::plssemParTable(data.frame(
+    lhs = lhs, op = op, rhs = rhs, est = est,
+    se = se, z = z, pvalue = pvalue,
+    ci.lower = ci.lower, ci.upper = ci.upper, label = ""
+  ))
+}
+
 # ──────────────────────────────────────────────────────────────────────────────
 # Run Simulation
 # ──────────────────────────────────────────────────────────────────────────────
@@ -287,13 +309,6 @@ for (cond in names(list_thresholds)) {
       data_cat_i  <- cut_data(data = data_cont_i, thr = thresholds)
       ordered <- colnames(data_cat_i)
 
-      p <- data_cat_i |>
-        pivot_longer(cols = all_of(ordered), names_to = "variable") |>
-        mutate(value = as.ordered(value)) |>
-        ggplot(mapping = aes(x = value, colour = variable, fill = variable)) +
-        geom_bar(alpha = 0.3) + facet_wrap(~variable)
-      print(p)
-
       print_sep()
       cat(sprintf("Iteration %d/%d:\n", id, total)) 
       print_sep()
@@ -318,6 +333,12 @@ for (cond in names(list_thresholds)) {
         pls = get_output(
           expr = suppressMessages(pls(model, data = data_cat_i, consistent = FALSE)),
           method = "PLS", id = id, cond = cond, ncat = ncat
+        ),
+
+        pls.ord.csem = get_output(
+          expr = csem(.model = stringr::str_replace_all(model, ":", "."),
+                      .data = as.data.frame(lapply(data_cat_i, as.ordered))),
+          method = "cSEM (OrdPLS+2SMM)", id = id, cond = cond, ncat = ncat
         )
 
         #,
@@ -415,7 +436,7 @@ plot_results <- function(compare = methods, param = "Y~X:Z") {
     geom_col(alpha = 0.2) +
     facet_grid(rows = vars(cond), cols = vars(ncat), scales = "fixed") +
     ggtitle(sprintf("Bias for %s by method", param)) +
-    ylab("Bisa") +
+    ylab("Bias") +
     xlab("Method") + 
     theme_bw()
 }

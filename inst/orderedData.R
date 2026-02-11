@@ -13,7 +13,7 @@ cut_data <- function(data, k = K, choose = NULL) {
   standardize <- \(x) (x - mean(x)) / sd(x)
 
   if (is.null(choose))
-    choose <- colnames(data)
+    choose <- setdiff(colnames(data), "cluster")
 
   means <- data
 

@@ -29,7 +29,7 @@ parseModelArguments <- function(syntax,
 
   vars       <- intersect(ovs, colnames(data))
   is.ordered <- vapply(data[vars], FUN.VALUE = logical(1L), FUN = is.ordered)
-  ordered    <- union(ordered, vars[is.ordered])
+  ordered    <- intersect(union(ordered, vars[is.ordered]), vars)
 
   for (ord in ordered)
     data[[ord]] <- as.integer(as.ordered(data[[ord]]))

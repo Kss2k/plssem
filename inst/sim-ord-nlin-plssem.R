@@ -2,11 +2,11 @@ set.seed(2308257)
 
 library(mvtnorm)
 library(modsem)
-library(dplyr)
 library(tidyr)
 library(ggplot2)
 library(plssem)
 library(cSEM)
+library(dplyr)
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Setup Simulation
@@ -431,7 +431,7 @@ plot_results <- function(compare = methods, param = "Y~X:Z") {
   resd |>
     filter(op == "~" & method %in% compare & par == param) |>
     group_by(par, method, cond, ncat) |>
-    summarize(bias = mean(bias)) |>
+    dplyr::summarize(bias = mean(bias)) |>
     ggplot(aes(x = method, y = bias, colour = method, fill = method)) +
     geom_col(alpha = 0.2) +
     facet_grid(rows = vars(cond), cols = vars(ncat), scales = "fixed") +
@@ -460,4 +460,4 @@ plot_results(param = "Y~Z")
 plot_results(param = "Y~X")
 table_results()
 
-saveRDS(resd, sprintf("results-sim-ord-nlin-%s.rds", Sys.time()))
+saveRDS(resd, sprintf("results-sim-ord-nlin-csem-%s.rds", Sys.time()))

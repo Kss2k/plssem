@@ -480,4 +480,4 @@ plot_results(param = "Y~Z")
 plot_results(param = "Y~X~~Y~X")
 table_results()
 
-saveRDS(resd, sprintf("results-random-intercepts-%s.rds", Sys.time()))
+saveRDS(resd, sprintf("inst/results-random-slopes-%s.rds", Sys.time()))

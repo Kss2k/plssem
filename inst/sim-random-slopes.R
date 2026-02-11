@@ -78,7 +78,7 @@ sim_cont_data <- function(N = n, K = k) {
     beta + lambda * lv + residual(epsilon)
   }
 
-  SXI <- diag(rep(var_ov, 2))
+  SXI <- diag(c(var_x, var_z))
   SXI[1, 2] <- SXI[2, 1] <- cov_x_z
   XI <- rmvnorm(N, sigma = SXI)
   

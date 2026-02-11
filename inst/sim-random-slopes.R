@@ -58,15 +58,15 @@ var_y_proj <- var_fixed + var_random
 zeta_y <- 1 - var_y_proj
 
 
-lhs <- c(rep("Y", 2), "Y~1", "Y~X", "Y~Z", "Y~X")
-rhs <- c("X", "Z", "Y~1", "Y~X", "Y~Z", "Y~Z")
-op  <- c(rep("~", 2), rep("~~", 4))
+lhs <- c(rep("Y", 2), "Y~1", "Y~X", "Y~Z", "Y~X", "Y~Z")
+rhs <- c("X", "Z", "Y~1", "Y~X", "Y~Z", "Y~Z", "Y~X")
+op  <- c(rep("~", 2), rep("~~", 5))
 parTable.true <- data.frame(
   lhs = lhs,
   op  = op,
   rhs = rhs,
   par = sprintf("%s%s%s", lhs, op, rhs),
-  est.true = c(gamma_y_x, gamma_y_z, var_beta_y, var_gamma_y_x, var_gamma_y_z, cov_gamma_x_z)
+  est.true = c(gamma_y_x, gamma_y_z, var_beta_y, var_gamma_y_x, var_gamma_y_z, cov_gamma_x_z, cov_gamma_x_z)
 )
 
 
@@ -447,7 +447,7 @@ resd$bias <- resd$est - resd$est.true
 
 # Mehtods to look at
 methods <- unique(resd$method)
-plot_results <- function(compare = methods, param = "Y~X:Z") {
+plot_results <- function(compare = methods, param = "Y~X") {
   resd |>
     filter(method %in% compare & par == param) |>
     group_by(par, method, cond, ncat) |>
@@ -475,12 +475,9 @@ table_results <- function(compare = methods, alpha = 0.05) {
 }
 
 
-plot_results(param = "f~x1")
-plot_results(param = "f~x2")
-plot_results(param = "f~x3")
-plot_results(param = "f~w1")
-plot_results(param = "f~w2")
-plot_results(param = "f~1~~f~1")
+plot_results(param = "Y~X")
+plot_results(param = "Y~Z")
+plot_results(param = "Y~X~~Y~X")
 table_results()
 
 saveRDS(resd, sprintf("results-random-intercepts-%s.rds", Sys.time()))

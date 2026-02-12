@@ -1,12 +1,11 @@
-# step 1: using path scheme
-step1 <- function(model) {
-  lVs <- model$info$lVs.linear
+estimatePLS_Step1 <- function(model) {
+  lVs   <- model$info$lVs.linear
   succs <- model$matrices$succs.linear
   preds <- model$matrices$preds.linear
   gamma <- model$matrices$gamma
-  S <- model$matrices$S 
-  C <- model$matrices$C
-  SC <- model$matrices$SC 
+  S     <- model$matrices$S 
+  C     <- model$matrices$C
+  SC    <- model$matrices$SC 
 
   for (lV in lVs) {
     predsLv <- lVs[preds[ , lV, drop = TRUE]]

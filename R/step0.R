@@ -1,4 +1,4 @@
-step0 <- function(model) {
+estimatePLS_Step0 <- function(model) {
   lambda <- model$matrices$lambda
 
   for (i in seq_len(ncol(lambda))) {
@@ -17,5 +17,5 @@ step0 <- function(model) {
   model$matrices$C <- t(lambda) %*% S %*% lambda
   model$matrices$SC <- t(partLambda) %*% S %*% partLambda
 
-  model 
+  model
 }

@@ -1,5 +1,5 @@
 # basically just step 0
-step4 <- function(model) {
+estimatePLS_Step4 <- function(model) {
   lambda <- model$matrices$lambda
   partLambda <- cbind(model$matrices$Ip, lambda)
   S <- model$matrices$S 

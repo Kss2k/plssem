@@ -65,6 +65,15 @@ specifyModel <- function(syntax,
   info$mc.reps           <- mc.reps
   info$rng.seed          <- floor(stats::runif(1L) * 1e6)
   info$consistent.probit <- consistent.probit
+  info$n                 <- NROW(preppedData$X)
+  info$estimator         <- "PLS"
+
+  if (info$consistent)
+    info$estimator <- paste0(info$estimator, "c")
+  if (info$is.multilevel) 
+    info$estimator <- paste0(info$estimator, "-MLM")
+  if (info$is.probit||info$is.cexp)
+    info$estimator <- paste0("Ord", info$estimator)
 
   matrices$S <- preppedData$S
   matrices$C <- diag(nrow(matrices$gamma))

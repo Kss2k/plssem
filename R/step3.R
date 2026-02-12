@@ -1,5 +1,5 @@
 # assuming that all lVs are reflective (i.e., using mode A)
-step3 <- function(model) {
+estimatePLS_Step3 <- function(model) {
   lVs     <- model$info$lVs.linear
   indsLvs <- model$info$indsLvs
   lambda  <- model$matrices$lambda

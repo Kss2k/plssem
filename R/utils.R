@@ -196,3 +196,19 @@ getCorrMatsProbit2cont <- function(data, ordered, lvs, selectLambda) {
 
   probit2cont 
 }
+
+
+formatNumeric <- function(x, digits = 3, scientific = FALSE,
+                          justify = "right", width = NULL) {
+  digits_fmt <- if (is.finite(digits)) max(0L, as.integer(digits)) else 3L
+  digits_fmt_fmt <- max(1L, digits_fmt)
+  if (is.numeric(x)) {
+    x_round <- round(x, digits_fmt)
+    format(x_round, nsmall = digits_fmt, digits = digits_fmt_fmt,
+           trim = FALSE, justify = justify, scientific = scientific,
+           width = width)
+  } else {
+    format(x, trim = FALSE, justify = justify, scientific = scientific,
+           width = width)
+  }
+}

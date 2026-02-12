@@ -1,0 +1,48 @@
+---
+title: "Categorical Models with plssem"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Categorical Models with plssem}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval    = identical(Sys.getenv("IN_PKGDOWN"), "true")
+)
+
+library(plssem)
+```
+
+Ordered indicators are common in survey-based SEM applications. This vignette
+reuses the Theory of Planned Behavior example but illustrates how to run the
+model when the manifest variables are ordinal.
+
+## Theory of Planned Behavior (Ordered Indicators)
+
+```{r tpb-ordered, message=FALSE, warning=FALSE}
+tpb <- ' 
+# Outer Model (Based on Hagger et al., 2007)
+  ATT =~ att1 + att2 + att3 + att4 + att5
+  SN =~ sn1 + sn2
+  PBC =~ pbc1 + pbc2 + pbc3
+  INT =~ int1 + int2 + int3
+  BEH =~ b1 + b2
+
+# Inner Model (Based on Steinmetz et al., 2011)
+  INT ~ ATT + SN + PBC
+  BEH ~ INT + PBC 
+'
+
+fit_cat <- pls(
+  tpb,
+  data      = TPB_Ordered,
+  bootstrap = TRUE,
+  sample    = 500,
+  ordered   = colnames(TPB_Ordered) # explicitly specify ordered variables
+)
+summary(fit_cat)
+```

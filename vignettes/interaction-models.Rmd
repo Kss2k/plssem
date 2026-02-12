@@ -1,0 +1,59 @@
+---
+title: "Interaction Models with plssem"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Interaction Models with plssem}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval    = identical(Sys.getenv("IN_PKGDOWN"), "true")
+)
+
+library(plssem)
+library(modsem)
+```
+
+This vignette shows how to estimate interaction models, with
+both continuous and ordered (categorical) data. 
+
+## Model Syntax
+
+```{r interaction-syntax}
+m <- '
+  X =~ x1 + x2 + x3
+  Z =~ z1 + z2 + z3
+  Y =~ y1 + y2 + y3
+
+  Y ~ X + Z + X:Z
+'
+```
+
+## Continuous Indicators
+
+```{r interaction-continuous, message=FALSE, warning=FALSE}
+fit_cont <- pls(
+  m,
+  data      = modsem::oneInt,
+  bootstrap = TRUE,
+  sample    = 500
+)
+summary(fit_ont)
+```
+
+## Ordered Indicators
+
+```{r interaction-ordered, message=FALSE, warning=FALSE}
+fit_ord <- pls(
+  m,
+  data      = oneIntOrdered,
+  bootstrap = TRUE,
+  sample    = 500,
+  ordered   = colnames(oneIntOrdered) # explicitly specify variables as ordered
+)
+summary(fit_ord)
+```

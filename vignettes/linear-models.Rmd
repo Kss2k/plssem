@@ -1,0 +1,49 @@
+---
+title: "Linear Models with plssem"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Linear Models with plssem}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval    = identical(Sys.getenv("IN_PKGDOWN"), "true")
+)
+
+library(plssem)
+library(modsem)
+```
+
+This vignette demonstrates how to estimate a traditional linear PLS-SEM using
+continuous indicators.
+
+## Theory of Planned Behavior (Continuous Indicators)
+
+```{r tpb-syntax}
+tpb <- ' 
+# Outer Model (Based on Hagger et al., 2007)
+  ATT =~ att1 + att2 + att3 + att4 + att5
+  SN =~ sn1 + sn2
+  PBC =~ pbc1 + pbc2 + pbc3
+  INT =~ int1 + int2 + int3
+  BEH =~ b1 + b2
+
+# Inner Model (Based on Steinmetz et al., 2011)
+  INT ~ ATT + SN + PBC
+  BEH ~ INT + PBC 
+'
+```
+
+```{r tpb-linear, message=FALSE, warning=FALSE}
+fit_tpb <- pls(
+  tpb,
+  data      = modsem::TPB,
+  bootstrap = TRUE,
+  sample    = 500
+)
+summary(fit_tpb)
+```

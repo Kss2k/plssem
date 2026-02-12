@@ -1,0 +1,93 @@
+---
+title: "Multilevel Models with plssem"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Multilevel Models with plssem}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval    = identical(Sys.getenv("IN_PKGDOWN"), "true")
+)
+
+library(plssem)
+```
+
+This vignette shows examples of multilevel random slopes and intercept models,
+with both continuous and ordinal data.
+
+## Random Slopes Model
+
+```{r slopes-syntax}
+slopes_model <- "
+  X =~ x1 + x2 + x3
+  Z =~ z1 + z2 + z3
+  Y =~ y1 + y2 + y3
+  W =~ w1 + w2 + w3
+  Y ~ X + Z + (1 + X + Z | cluster)
+  W ~ X + Z + (1 + X + Z | cluster)
+"
+```
+
+### Continuous Indicators
+
+```{r slopes-continuous, message=FALSE, warning=FALSE}
+fit_slopes_cont <- pls(
+  slopes_model,
+  data      = randomSlopes,
+  bootstrap = TRUE,
+  sample    = 500
+)
+summary(fit_slopes_cont)
+```
+
+### Ordered Indicators
+
+```{r slopes-ordered, message=FALSE, warning=FALSE}
+fit_slopes_ord <- pls(
+  slopes_model,
+  data      = randomSlopesOrdered,
+  bootstrap = TRUE,
+  sample    = 500
+  ordered   = colnames(randomSlopesOrdered) # explicitly specify variables as ordered
+)
+summary(fit_slopes_ord)
+```
+
+## Random Intercepts Model
+
+```{r intercepts-syntax}
+intercepts_model <- '
+  f =~ y1 + y2 + y3
+  f ~ x1 + x2 + x3 + w1 + w2 + (1 | cluster)
+'
+```
+
+### Continuous Indicators
+
+```{r intercepts-continuous, message=FALSE, warning=FALSE}
+fit_intercepts_cont <- pls(
+  intercepts_model,
+  data      = randomIntercepts,
+  bootstrap = TRUE,
+  sample    = 500
+)
+summary(fit_intercepts_cont)
+```
+
+### Ordered Indicators
+
+```{r intercepts-ordered, message=FALSE, warning=FALSE}
+fit_intercepts_ord <- pls(
+  intercepts_model,
+  data      = randomInterceptsOrdered,
+  bootstrap = TRUE,
+  sample    = 500
+  ordered   = colnames(randomInterceptsOrdered) # explicitly specify variables as ordered
+)
+summary(fit_intercepts_ord)
+```

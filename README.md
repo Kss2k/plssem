@@ -1,11 +1,11 @@
 # `plssem`
 
-The goal of the `plssem` package is to allow the 
+The goal of the [`plssem`](https://kss2k.github.io/plssem/) package is to allow the 
 estimation of complex Structural Equation Models (SEMs) using the 
 PLS-SEM framework. This package expands the PLS-SEM (and PLSc-SEM) framework
 to handle categorical data, non-linear models, and multilevel structures.
 
-`plssem` is currently under development. The end goal is to allow the estimation
+[`plssem`](https://kss2k.github.io/plssem/) is currently under development. The end goal is to allow the estimation
 of non-linear multilevel PLS-SEM (and PLSc-SEM) models with ordinal/categorical data. 
 
 ## Installation

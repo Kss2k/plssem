@@ -1,6 +1,10 @@
 pandoc: '2.12'
 pkgdown: 2.0.7
 pkgdown_sha: ~
-articles: {}
-last_built: 2026-02-12T11:48Z
+articles:
+  categorical-models: categorical-models.html
+  interaction-models: interaction-models.html
+  linear-models: linear-models.html
+  multilevel-models: multilevel-models.html
+last_built: 2026-02-12T12:46Z
 

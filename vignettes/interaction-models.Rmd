@@ -42,7 +42,7 @@ fit_cont <- pls(
   bootstrap = TRUE,
   sample    = 500
 )
-summary(fit_ont)
+summary(fit_cont)
 ```
 
 ## Ordered Indicators

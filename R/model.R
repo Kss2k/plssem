@@ -96,6 +96,13 @@ specifyModel <- function(syntax,
       ordered      = ordered,
       lvs          = info$lVs
     )
+
+    matrices$probit.correction.residuals <- getOrderedResidualCorrection(
+      lvs     = info$lVs.linear,
+      indsLvs = info$indsLvs,
+      ordered = info$ordered,
+      X       = preppedData$X
+    )
   }
 
   model <- list(
@@ -322,10 +329,19 @@ getFitPLSModel <- function(model, consistent = TRUE) {
          "Did not expect any cross loaded indicators,\n",
          "when calculating indicator residuals!")
 
+  res.correction <- model$matrices$probit.correction.residuals$correction
   for (ind in indicators) {
-    r  <- fitMeasurement[ind, which.max(fitMeasurement[ind, ])]
+    j  <- which.max(abs(fitMeasurement[ind, ]))
+    r  <- fitMeasurement[ind, j]
     v  <- SC[ind, ind]
-    fitTheta[ind, ind] <- v - r^2
+    res <- v - r^2
+
+    if (model$info$is.cexp) {
+      res <- res * res.correction[ind] 
+      fitMeasurement[ind, j] <- sqrt(1 - res)
+    }
+
+    fitTheta[ind, ind] <- res
   }
 
   list(

@@ -18,7 +18,10 @@ estimatePLS_Step1 <- function(model) {
       gamma[predsLv, lV] <- solve(SC[predsLv, predsLv]) %*% SC[predsLv, lV]
 
     # standardize 
-    gamma[, lV] <- gamma[, lV, drop = TRUE] / c(sqrt(t(gamma[, lV]) %*% C %*% gamma[, lV]))
+    scalef <- c(sqrt(t(gamma[, lV]) %*% C %*% gamma[, lV]))
+    
+    if (scalef)
+      gamma[, lV] <- gamma[, lV] / scalef
   }
 
   model$matrices$gamma <- gamma

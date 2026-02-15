@@ -234,9 +234,12 @@ getOrderedResidualCorrection <- function(lvs, indsLvs, ordered, X) {
     res.cont <- c(res.cont, res.cont.lv[new])
   }
 
+  correction <- res.ord / res.cont
+  correction[is.na(correction)] <- 1L
+
   list(
     res.ord = res.ord,
     res.cont = res.cont,
-    correction = res.ord / res.cont
+    correction = correction
   )
 }

@@ -12,6 +12,7 @@ plslmer <- function(plsModel) {
   fit.u <- plsModel$fit.u
 
   Correction <- fit.c$fitStructural / fit.u$fitStructural
+  CorrectionCov <- fit.c$fitCov / fit.u$fitCov
 
   Xf <- as.data.frame(plsModel$factorScores)
   Xx <- as.data.frame(plsModel$data)
@@ -112,7 +113,8 @@ plslmer <- function(plsModel) {
     VCOV[[dep]]    <- vcovFit
     FIXEF[[dep]]   <- fixefFit
     VARCORR[[dep]] <- varCorrFit
-    SIGMA[[dep]]   <- getSigmaFromVarCorr(fit = lmerFit, varCorr = varCorrFit, dep = dep)
+    SIGMA[[dep]]   <- getSigmaFromVarCorr(fit = lmerFit, varCorr = varCorrFit, dep = dep,
+                                          CorrectionCov = CorrectionCov)
   }
 
   valuesFixef <- unlist(unname(FIXEF))
@@ -131,9 +133,11 @@ plslmer <- function(plsModel) {
 }
 
 
-getSigmaFromVarCorr <- function(fit, varCorr, dep) {
+getSigmaFromVarCorr <- function(fit, varCorr, dep, CorrectionCov) {
   rvdep  <- sprintf("%s~~%s", dep, dep)
-  sigma <- stats::setNames(lme4::getME(fit, "sigma")^2, nm = rvdep)
+
+  scaleZeta <- CorrectionCov[dep, dep]
+  sigma <- stats::setNames(lme4::getME(fit, "sigma")^2, nm = rvdep) * scaleZeta
 
   for (VC in varCorr) {
     namesVC <- matrix("", nrow = NROW(VC), ncol = NCOL(VC))
@@ -149,98 +153,3 @@ getSigmaFromVarCorr <- function(fit, varCorr, dep) {
 
   sigma 
 }
-
-
-# ORIGINAL SKETCH:
-#    plscr <- function(.model, .data,
-#                      .disattenuate = NA, # capture
-#                      .lme4.model = NULL,
-#                      cluster = NULL,
-#                      mix = FALSE,
-#                      correct.scores = FALSE,
-#                      ...) {
-#      pt <- modsem::modsemify(.model)
-#      .model.step1 <- modsem:::parTableToSyntax(pt[!grepl(":", pt$rhs), , drop = FALSE])
-#      fit.c <- csem(.model = .model.step1, .data = .data, .disattenuate = TRUE, .id = NULL)
-#    
-#      if (!correct.scores) {
-#        fit.u <- csem(.model = .model.step1, .data = .data, .disattenuate = FALSE, .id = NULL)
-#        # Create correction matrix for correction of path coefficients
-#        # and do not correct factor scores directly
-#    
-#        if (!is.null(cluster)) {
-#          cfit.u <- csem(.model = .model.step1, .data = .data, .disattenuate = FALSE, .id = cluster)
-#          cfit.c <- csem(.model = .model.step1, .data = .data, .disattenuate = TRUE, .id = cluster)
-#    
-#          correction <- cfit.c[[1L]]$Estimates$Path_estimates
-#          correction[TRUE] <- 0
-#     
-#          k <- length(cfit.c)
-#          for (i in seq_along(cfit.c)) {
-#            Gamma.c <- cfit.c[[i]]$Estimates$Path_estimates
-#            Gamma.u <- cfit.u[[i]]$Estimates$Path_estimates
-#            correction <- correction + Gamma.c / (k * Gamma.u)
-#          }
-#    
-#        } else {
-#          Gamma.c <- fit.c$Estimates$Path_estimates
-#          Gamma.u <- fit.u$Estimates$Path_estimates
-#          correction <- Gamma.c / Gamma.u
-#        
-#        }
-#        
-#        .X <- getConstructScores(fit.c)[[1L]]
-#        .Y <- cbind(.X, .data)
-#      } else {
-#        .model.step2 <- modsem:::parTableToSyntax(pt[pt$op == "~", ])
-#        .X <- getConstructScores(fit.c)[[1L]]
-#        .S <- fit.c$Estimates$Construct_VCV
-#        .Y <- fitX2Cov(X = .X, S = .S)
-#        .Y <- cbind(.Y, .data)
-#        correction <- NULL
-#      }
-#     
-#      if (is.null(.lme4.model)) {
-#        list(fit = sem(model = .model.step2, data = .Y), correction = correction)
-#      } else {
-#        fit.lmer <- lmer(.lme4.model, data = .Y)
-#        coef <- coef(fit.lmer)
-#        VarCorr <- VarCorr(fit.lmer)
-#        fixef <- fixef(fit.lmer)
-#        vcov  <- vcov(fit.lmer)
-#    
-#        # for now we just hard code this stuff
-#        cx <- correction["Y", "X"]
-#        cz <- correction["Y", "Z"]
-#        attr(VarCorr$cluster, "stddev")["X"] <- cx * attr(VarCorr$cluster, "stddev")["X"]
-#        attr(VarCorr$cluster, "stddev")["Z"] <- cz * attr(VarCorr$cluster, "stddev")["Z"]
-#        fixef["X"] <- cx * fixef["X"]
-#        fixef["Z"] <- cz * fixef["Z"]
-#        coef$cluster[,"X"] <- cx * coef$cluster[,"X"]
-#        coef$cluster[,"Z"] <- cz * coef$cluster[,"Z"]
-#        se <- sqrt(diag(vcov))
-#        se["X"] <- cx * se["X"]
-#        se["Z"] <- cz * se["Z"]
-#    
-#        parTable <- data.frame(
-#          lhs = c( "Y", "Y", "Y"),
-#          op  = c("~1", "~", "~"),
-#          rhs = c(  "", "X", "Z"),
-#          est = fixef,
-#          se  = se
-#        )
-#    
-#        out <- list(
-#          fit = fit.lmer,
-#          correction = correction,
-#          coef = coef,
-#          VarCorr = VarCorr,
-#          fixef = fixef,
-#          parTable = parTable
-#        )
-#    
-#        class(out) <- "MlPlsSem"
-#        out
-#      }
-#    }
-#    

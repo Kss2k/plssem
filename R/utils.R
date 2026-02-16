@@ -212,3 +212,34 @@ formatNumeric <- function(x, digits = 3, scientific = FALSE,
            width = width)
   }
 }
+
+
+getOrderedResidualCorrection <- function(lvs, indsLvs, ordered, X) {
+  res.ord  <- NULL
+  res.cont <- NULL
+
+  for (lv in lvs) {
+    inds <- indsLvs[[lv]]
+    inds.ov <- intersect(inds, ordered)
+
+    syntax <- paste0(lv, "=~", paste0(inds.ov, collapse="+"))
+    fit.c <- lavaan::cfa(syntax, X)
+    fit.o <- lavaan::cfa(syntax, X, ordered = inds.ov)
+  
+    res.ord.lv  <- 1 - lavaan::lavInspect(fit.o, what = "r2")
+    res.cont.lv <- 1 - lavaan::lavInspect(fit.c, what = "r2")
+
+    new <- setdiff(names(res.ord.lv), names(res.ord))
+    res.ord  <- c(res.ord, res.ord.lv[new])
+    res.cont <- c(res.cont, res.cont.lv[new])
+  }
+
+  correction <- res.ord / res.cont
+  correction[is.na(correction)] <- 1L
+
+  list(
+    res.ord = res.ord,
+    res.cont = res.cont,
+    correction = correction
+  )
+}

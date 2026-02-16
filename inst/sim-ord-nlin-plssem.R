@@ -263,7 +263,7 @@ print_sep <-  \() cat(strrep("─", options("width")[[1]]), "\n")
 
 
 parameter_estimates.cSEMResults <- function(object, ...) {
-  paths <- summarize(object)$Estimates$Path_estimates
+  paths <- cSEM::summarize(object)$Estimates$Path_estimates
   par <- stringr::str_remove_all(paths$Name, " ")
   par <- stringr::str_replace_all(par, "\\.", ":")
   lhs <- stringr::str_split_i(par, "~", i = 1L)
@@ -431,7 +431,7 @@ plot_results <- function(compare = methods, param = "Y~X:Z") {
   resd |>
     filter(op == "~" & method %in% compare & par == param) |>
     group_by(par, method, cond, ncat) |>
-    dplyr::summarize(bias = mean(bias)) |>
+    dplyr::summarize(bias = mean(bias, na.rm = TRUE)) |>
     ggplot(aes(x = method, y = bias, colour = method, fill = method)) +
     geom_col(alpha = 0.2) +
     facet_grid(rows = vars(cond), cols = vars(ncat), scales = "fixed") +

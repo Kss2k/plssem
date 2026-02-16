@@ -58,15 +58,15 @@ var_y_proj <- var_fixed + var_random
 zeta_y <- 1 - var_y_proj
 
 
-lhs <- c(rep("Y", 2), "Y~1", "Y~X", "Y~Z", "Y~X", "Y~Z")
-rhs <- c("X", "Z", "Y~1", "Y~X", "Y~Z", "Y~Z", "Y~X")
-op  <- c(rep("~", 2), rep("~~", 5))
+lhs <- c(rep("Y", 2), "Y~1", "Y~X", "Y~Z", "Y~X", "Y~Z", "Y")
+rhs <- c("X", "Z", "Y~1", "Y~X", "Y~Z", "Y~Z", "Y~X", "Y")
+op  <- c(rep("~", 2), rep("~~", 6))
 parTable.true <- data.frame(
   lhs = lhs,
   op  = op,
   rhs = rhs,
   par = sprintf("%s%s%s", lhs, op, rhs),
-  est.true = c(gamma_y_x, gamma_y_z, var_beta_y, var_gamma_y_x, var_gamma_y_z, cov_gamma_x_z, cov_gamma_x_z)
+  est.true = c(gamma_y_x, gamma_y_z, var_beta_y, var_gamma_y_x, var_gamma_y_z, cov_gamma_x_z, cov_gamma_x_z, zeta_y)
 )
 
 

@@ -71,7 +71,7 @@ estimatePLS_Step9 <- function(model) {
       parTable = parTable,
       N        = mc.reps,
       seed     = model$info$rng.seed
-    )$OV[[1L]]
+    )$ov
 
     # In theory we only need to update the thresholds for indicators of
     # endogenous variables. For now we just update everything, as it's

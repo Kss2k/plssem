@@ -339,6 +339,12 @@ for (cond in names(list_thresholds)) {
           expr = csem(.model = stringr::str_replace_all(model, ":", "."),
                       .data = as.data.frame(lapply(data_cat_i, as.ordered))),
           method = "cSEM (OrdPLS+2SMM)", id = id, cond = cond, ncat = ncat
+        ),
+
+        pls.ord.mcem= get_output(
+          expr = mcem_nlin_ord_pls(model, data_cat_i, ordered = ordered, mc.reps = 1e4),
+          method = "OrdPLSc (MCEM)", id = i, cond = cond, ncat = ncat,
+          parfun = \(x) x
         )
 
         #,

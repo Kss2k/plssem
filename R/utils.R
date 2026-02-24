@@ -243,3 +243,8 @@ getOrderedResidualCorrection <- function(lvs, indsLvs, ordered, X) {
     correction = correction
   )
 }
+
+
+getIntTerms <- function(parTable) {
+  unique(parTable[grepl(":", parTable$rhs), "rhs"])
+}

@@ -237,7 +237,7 @@ get_output <- function(expr,
   elapsed <- end - start
  
   out <- list(
-    fit = fit,
+    fit = NULL, #fit,
     elapsed = elapsed,
     method = method,
     id = id,
@@ -342,7 +342,7 @@ for (cond in names(list_thresholds)) {
         ),
 
         pls.ord.mcem= get_output(
-          expr = mcem_nlin_ord_pls(model, data_cat_i, ordered = ordered, mc.reps = 1e4),
+          expr = mcpls(model, data_cat_i, ordered = ordered, mc.reps = 1e4),
           method = "OrdPLSc (MCEM)", id = i, cond = cond, ncat = ncat,
           parfun = \(x) x
         )
@@ -415,7 +415,8 @@ for (id in seq_along(results)) {
     resi$cond   <- fitted$cond
     resi$par <- paste0(resi$lhs,  resi$op, resi$rhs)
     resi$elapsed <- fitted$elapsed
-  
+
+    resi[setdiff(cols, colnames(resi))] <- NA
     resid <- rbind(resid, resi[cols])
   }
 

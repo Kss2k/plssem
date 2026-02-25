@@ -1,19 +1,27 @@
 #' @export
-mcem_nlin_ord_pls <- function(syntax, data, ordered = NULL, max.iter.mc = 100, mc.reps = 1e4, rng.seed = 2983472,
-                              tol = 1e-4, ...) {
+mcpls <- function(
+  syntax,
+  data,
+  ordered = NULL,
+  consistent = FALSE, # we get consistent estimates as a natural by-product
+  max.iter.mc = 100,
+  mc.reps = 1e4,
+  rng.seed = NULL,
+  tol = 1e-3,
+  miniter = 25,
+  maxiter = 250,
+  ...
+) {
   data <- as.data.frame(data)
   orderedData <- colnames(data)[sapply(data, FUN = is.ordered)]
   data[orderedData] <- lapply(data[orderedData], FUN = as.integer)
 
-  fit0 <- pls(syntax=syntax, data=data, ...)
-
-  info <- fit0$info
+  fit0 <- pls(syntax = syntax, data = data, consistent = consistent, ...)
   data <- as.data.frame(fit0$data)
   vars <- colnames(data)
   ordered <- intersect(vars, union(orderedData, ordered))
 
   PROBS <- stats::setNames(vector("list", length(ordered)), nm = ordered)
-
   for (ord in ordered) {
     freq <- table(data[[ord]])
     pct  <- cumsum(freq) / sum(freq)
@@ -23,34 +31,25 @@ mcem_nlin_ord_pls <- function(syntax, data, ordered = NULL, max.iter.mc = 100, m
   par0 <- getFreeParamsTable(parameter_estimates(fit0))
   par1 <- par0[c("lhs", "op", "rhs", "est")]
 
-  for (iter in seq_len(max.iter.mc)) {
-    temperature <- 1 - (iter - 1) / max.iter.mc # this could be improved
-
+  .f <- function(p) {
+    par1$est <- p
+    
     sim <- simulateDataParTable(par1, N = mc.reps, seed = rng.seed)
     sim.ov <- sim$ov
-
     for (ord in ordered)
-      sim.ov[,ord] <- ordinalize(sim.ov[,ord], probs = PROBS[[ord]])
+      sim.ov[, ord] <- ordinalize(sim.ov[, ord], probs = PROBS[[ord]])
 
-    fit2 <- pls(syntax=syntax, data=sim.ov, ...)
+    fit2 <- pls(syntax = syntax, data = sim.ov, consistent = consistent, ...)
     par2 <- getFreeParamsTable(parameter_estimates(fit2))
-
-
-    diff <- par2$est - par0$est
-    objective <- mean(abs(diff))
-    par1$est <- par1$est - temperature * diff
-
-    printf("\rIter: %i, diff: %.2g", iter, objective)
-
-    if (objective < tol) {
-      printf("\nSolution converged!\n")
-      break
-    }
+ 
+    par2$est - par0$est
   }
 
-  if (iter == max.iter.mc)
-    printf("\nSolution dit not converge!")
 
+  par1$est <- SimDesign::RobbinsMonro(p = par1$est,
+                                      f = .f, tol = tol,
+                                      miniter = miniter,
+                                      maxiter = maxiter)$root
   par1
 }
 

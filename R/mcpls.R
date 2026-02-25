@@ -5,7 +5,7 @@ mcpls <- function(
   ordered = NULL,
   consistent = FALSE, # we get consistent estimates as a natural by-product
   max.iter.mc = 100,
-  mc.reps = 1e4,
+  mc.reps = 20000,
   rng.seed = NULL,
   tol = 1e-3,
   miniter = 25,
@@ -39,8 +39,11 @@ mcpls <- function(
     for (ord in ordered)
       sim.ov[, ord] <- ordinalize(sim.ov[, ord], probs = PROBS[[ord]])
 
-    fit2 <- pls(syntax = syntax, data = sim.ov, consistent = consistent, ...)
-    par2 <- getFreeParamsTable(parameter_estimates(fit2))
+    fit0$data <- scale(sim.ov[vars])
+    fit0$matrices$S <- cov(fit0$data)
+
+    fit2 <- estimatePLS(fit0)
+    par2 <- getFreeParamsTable(getParTableEstimates(fit2))
  
     par2$est - par0$est
   }
@@ -50,6 +53,8 @@ mcpls <- function(
                                       f = .f, tol = tol,
                                       miniter = miniter,
                                       maxiter = maxiter)$root
+  cat("\n")
+
   par1
 }
 

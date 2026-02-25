@@ -17,4 +17,4 @@ fit <- pls(m, oneIntOrdered, bootstrap = FALSE)
 summary(fit)
 
 
-fit <- mcpls(m, oneIntOrdered, mc.reps = 1e4, consistent = FALSE)
+fit <- mcpls(m, oneIntOrdered, mc.reps = 2e4, consistent = FALSE)

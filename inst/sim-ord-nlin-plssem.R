@@ -133,14 +133,14 @@ rthreshold <- function(k, offset = runif(1, min = -0.7, max = 0.7), sigma = 0.4)
 
 # Based on Rhemtulla et al., 2012 and Schubert et al., 2018
 list_thresholds <- list(
-  Uneven = list(
-    `2` = \() rthreshold(1),
-    `3` = \() rthreshold(2),
-    `4` = \() rthreshold(3),
-    `5` = \() rthreshold(4),
-    `6` = \() rthreshold(5),
-    `7` = \() rthreshold(6)
-  ),
+  # Uneven = list(
+  #   `2` = \() rthreshold(1),
+  #   `3` = \() rthreshold(2),
+  #   `4` = \() rthreshold(3),
+  #   `5` = \() rthreshold(4),
+  #   `6` = \() rthreshold(5),
+  #   `7` = \() rthreshold(6)
+  # ),
   Symmetric = list(
   `2` = c( 0.00),
   `3` = c(-0.83,  0.83),
@@ -165,22 +165,22 @@ list_thresholds <- list(
     `6` = c(-0.13,  0.25,  0.61,  0.99,  1.48),
     `7` = c(-0.25,  0.13,  0.47,  0.81,  1.18,  1.64)
   ),
-  Alt.Mod = list(
-    `2` = c(-0.36),
-    `3` = c(-0.76,  0.50),
-    `4` = c(-1.66, -0.79,  0.31),
-    `5` = c(-2.05, -1.16, -0.39,  0.70),
-    `6` = c(-2.33, -1.44, -0.81, -0.08,  1.05),
-    `7` = c(-2.54, -1.44, -0.94, -0.38,  0.43,  1.43)
-  ),
-  Ald.Ext = list(
-    `2` = c(-1.04),
-    `3` = c(-1.13, -0.58),
-    `4` = c(-1.23, -0.71, -0.28),
-    `5` = c(-1.34, -0.84, -0.44, -0.05),
-    `6` = c(-1.48, -0.99, -0.61, -0.25,  0.13),
-    `7` = c(-1.64, -1.18, -0.81, -0.47, -0.13,  0.25)
-  )
+  # Alt.Mod = list(
+  #   `2` = c(-0.36),
+  #   `3` = c(-0.76,  0.50),
+  #   `4` = c(-1.66, -0.79,  0.31),
+  #   `5` = c(-2.05, -1.16, -0.39,  0.70),
+  #   `6` = c(-2.33, -1.44, -0.81, -0.08,  1.05),
+  #   `7` = c(-2.54, -1.44, -0.94, -0.38,  0.43,  1.43)
+  # ),
+  # Alt.Ext = list(
+  #   `2` = c(-1.04),
+  #   `3` = c(-1.13, -0.58),
+  #   `4` = c(-1.23, -0.71, -0.28),
+  #   `5` = c(-1.34, -0.84, -0.44, -0.05),
+  #   `6` = c(-1.48, -0.99, -0.61, -0.25,  0.13),
+  #   `7` = c(-1.64, -1.18, -0.81, -0.47, -0.13,  0.25)
+  # )
 )
 
 
@@ -343,7 +343,7 @@ for (cond in names(list_thresholds)) {
 
         pls.ord.mcem= get_output(
           expr = mcpls(model, data_cat_i, ordered = ordered, mc.reps = 1e4),
-          method = "OrdPLSc (MCEM)", id = i, cond = cond, ncat = ncat,
+          method = "OrdPLSc (MCRoot)", id = id, cond = cond, ncat = ncat,
           parfun = \(x) x
         )
 

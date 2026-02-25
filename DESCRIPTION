@@ -36,5 +36,3 @@ Depends:
 URL: https://github.com/kss2k/plssem
 Suggests: knitr, rmarkdown
 VignetteBuilder: knitr
-Remotes:  
-    kss2k/modsem

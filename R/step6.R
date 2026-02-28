@@ -17,7 +17,7 @@ estimatePLS_Step6 <- function(model) {
       X[,xz] <- Rfast::rowprods(X[,elems.xz])
     }
 
-    Cxz <- Rfast::cova(X, center = TRUE)
+    Cxz <- Rfast::cova(X)
     par <- colnames(X)
 
     model$factorScores <- X

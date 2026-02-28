@@ -35,11 +35,9 @@ mcpls <- function(
     par1$est <- p
     
     sim <- simulateDataParTable(par1, N = mc.reps, seed = rng.seed)
-    # sim.ov <- ordinalizeDataFrame(sim$ov, PROBS = PROBS, ordered = ordered)
-    sim.ov <- sim$ov
+    sim.ov <- ordinalizeDataFrame(sim$ov, PROBS = PROBS, ordered = ordered)
 
     fit0$data <- Rfast::standardise(as.matrix(sim.ov[vars]))
-    fit0$data <- scale(sim.ov[vars])
     fit0$matrices$S <- Rfast::cova(fit0$data)
 
     fit2 <- estimatePLS(fit0)

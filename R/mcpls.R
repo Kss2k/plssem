@@ -8,8 +8,9 @@ mcpls <- function(
   mc.reps = 20000,
   rng.seed = NULL,
   tol = 1e-3,
-  miniter = 25,
+  miniter = 15,
   maxiter = 250,
+  fixed.seed = FALSE,
   ...
 ) {
   data <- as.data.frame(data)
@@ -30,6 +31,11 @@ mcpls <- function(
 
   par0 <- getFreeParamsTable(parameter_estimates(fit0))
   par1 <- par0[c("lhs", "op", "rhs", "est")]
+
+  if (fixed.seed && is.null(rng.seed)) {
+    rng.seed <- floor(runif(1L, min = 0, max = 9999999))
+    printf("Using fixed seed %i...\n", rng.seed)
+  }
 
   .f <- function(p) {
     par1$est <- p

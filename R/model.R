@@ -415,5 +415,5 @@ getFactorScores <- function(model) {
   W <- model$matrices$lambda
   X <- model$data
 
-  scale(X %*% W)
+  Rfast::standardise(X %*% W)
 }

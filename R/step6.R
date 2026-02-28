@@ -5,7 +5,7 @@ estimatePLS_Step6 <- function(model) {
     # Update variance and coefficients of interaction terms
     elems <- model$info$intTermElems
     names <- names(elems)
-    X     <- as.data.frame(model$factorScores)
+    X     <- model$factorScores
 
     SC <- model$matrices$SC
     C  <- model$matrices$C
@@ -14,13 +14,13 @@ estimatePLS_Step6 <- function(model) {
 
     for (elems.xz in elems) {
       xz <- paste0(elems.xz, collapse = ":")
-      values <- multiplyIndicatorsCpp(X[elems.xz])
-      model$factorScores[,xz] <- X[[xz]] <- values
+      X[,xz] <- Rfast::rowprods(X[,elems.xz])
     }
 
-    Cxz <- stats::cov(X)
+    Cxz <- Rfast::cova(X, center = TRUE)
     par <- colnames(X)
 
+    model$factorScores <- X
     model$matrices$C[par, par] <- Cxz
     model$matrices$SC[par, par] <- Cxz
   }

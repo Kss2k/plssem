@@ -9,6 +9,11 @@ simulateDataParTable <- function(parTable, N = 1e5, seed = NULL) {
   if (!is.null(seed))
     set.seed(seed)
 
+  # Generate seed passed to Rfast::Rnorm. Passing seed=NULL does not work
+  # If the user has used set.seed()
+  rfast.seed <- floor(runif(1L, min = 0, max = 9999999))
+  rfast.seed <- NULL
+
   xis     <- getXis(parTable)
   etas    <- getSortedEtas(parTable)
   lvs     <- getLVs(parTable)
@@ -35,6 +40,7 @@ simulateDataParTable <- function(parTable, N = 1e5, seed = NULL) {
   }
 
   Xi <- mvtnorm::rmvnorm(n = N, mean = rep(0, length(xis)), sigma = Psi.x)
+  # Xi <- mvnfast::rmvn(n = N, mu = rep(0, length(xis)), sigma = Psi.x)
   Xi <- as.data.frame(scale(Xi))
   colnames(Xi) <- xis
 
@@ -68,6 +74,7 @@ simulateDataParTable <- function(parTable, N = 1e5, seed = NULL) {
     }
 
     resvar <- max(1 - var(vals), 0)
+    # vals <- vals + Rfast::Rnorm(N, m = 0, s = sqrt(resvar), seed = rfast.seed)
     vals <- vals + rnorm(N, mean = 0, sd = sqrt(resvar))
 
     Xi[[eta]] <- vals
@@ -82,9 +89,9 @@ simulateDataParTable <- function(parTable, N = 1e5, seed = NULL) {
                          parTable$rhs == ind, "est"]
       epsilon <- max(1 - lambda^2, 0)
 
+      # vals <- lambda * Xi[[lv]] + Rfast::Rnorm(N, m = 0, s = sqrt(epsilon), seed = rfast.seed)
       vals <- lambda * Xi[[lv]] + rnorm(N, mean = 0, sd = sqrt(epsilon))
       vals <- (vals - mean(vals)) / sd(vals)
-
 
       Inds[[ind]] <- vals
     }

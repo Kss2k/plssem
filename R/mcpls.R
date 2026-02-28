@@ -35,19 +35,18 @@ mcpls <- function(
     par1$est <- p
     
     sim <- simulateDataParTable(par1, N = mc.reps, seed = rng.seed)
+    # sim.ov <- ordinalizeDataFrame(sim$ov, PROBS = PROBS, ordered = ordered)
     sim.ov <- sim$ov
-    for (ord in ordered)
-      sim.ov[, ord] <- ordinalize(sim.ov[, ord], probs = PROBS[[ord]])
 
+    fit0$data <- Rfast::standardise(as.matrix(sim.ov[vars]))
     fit0$data <- scale(sim.ov[vars])
-    fit0$matrices$S <- cov(fit0$data)
+    fit0$matrices$S <- Rfast::cova(fit0$data)
 
     fit2 <- estimatePLS(fit0)
     par2 <- getFreeParamsTable(getParTableEstimates(fit2))
  
     par2$est - par0$est
   }
-
 
   par1$est <- SimDesign::RobbinsMonro(p = par1$est,
                                       f = .f, tol = tol,
@@ -61,9 +60,18 @@ mcpls <- function(
 
 ordinalize <- function(x, probs) {
   probs <- sort(probs[probs < 1]) # skip 100%, we analytically know it to be Inf
-  breaks <- c(-Inf, quantile(x, probs = probs), Inf)
+  breaks <- collapse::fquantile(x, probs = probs)
 
-  cut(x, breaks = breaks, labels = FALSE)
+  findInterval(x, vec = breaks)
+}
+
+
+ordinalizeDataFrame <- function(df, PROBS, ordered = NULL) {
+  nm <- colnames(df)
+  quickdf(stats::setNames(
+    lapply(nm, FUN = \(v) if (v %in% ordered) ordinalize(df[[v]], probs = PROBS[[v]])
+                          else df[[v]]),
+    nm = nm))
 }
 
 

@@ -30,7 +30,10 @@ Imports:
     stringr,
     purrr,
     matrixStats,
-    SimDesign
+    SimDesign,
+    Rfast,
+    collapse,
+    mvnfast
 Depends: 
     R (>= 4.1.0)
 URL: https://github.com/kss2k/plssem

@@ -248,3 +248,10 @@ getOrderedResidualCorrection <- function(lvs, indsLvs, ordered, X) {
 getIntTerms <- function(parTable) {
   unique(parTable[grepl(":", parTable$rhs), "rhs"])
 }
+
+
+quickdf <- function(l) {
+  class(l) <- "data.frame"
+  attr(l, "row.names") <- .set_row_names(length(l[[1]]))
+  l
+}

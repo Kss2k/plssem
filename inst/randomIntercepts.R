@@ -1,3 +1,5 @@
+devtools::load_all()
+
 library(mvtnorm)
 library(lme4)
 

@@ -1,12 +1,13 @@
 estimatePLS_Step7  <- function(model) {
-  # Step 6 get baseline fit for correcting path coefficients in
+  # Step 7 get baseline fit for correcting path coefficients in
   # multilevel model.
 
-  is.multilevel <- model$info$is.multilevel
-  consistent    <- model$info$consistent
-  is.probit     <- model$info$is.probit
+  is.mlm     <- model$info$is.mlm
+  is.mcpls   <- model$info$is.mcpls
+  consistent <- model$info$consistent
+  is.probit  <- model$info$is.probit
 
-  if (!is.multilevel) {
+  if (!is.mlm) {
 
     if (consistent) {
       model$fit.c <- getFitPLSModel(model, consistent = TRUE)
@@ -24,11 +25,14 @@ estimatePLS_Step7  <- function(model) {
   model.c <- model
   model.u <- model
 
-  # if consistent is FALSE we want to correct for not using probit
+  # Even if consistent is FALSE we want to correct for not using probit
   # factor scores only.
-  if (is.probit) {
+  if (is.probit || is.mcpls) {
+    model.u$info$is.probit <- FALSE
+    model.u$info$is.mcpls  <- FALSE
+
     model.u$matrices$S <- getCorrMat(model.u$data, probit = FALSE)
-    model.u <- estimatePLS_Step0_5(model.u)
+    model.u <- estimatePLS_Step0_5(model.u) |> estimatePLS_Step6()
   }
 
   model$fit.c <- getFitPLSModel(model.c, consistent = consistent)

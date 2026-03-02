@@ -19,7 +19,12 @@ bootstrap <- function(model, R = 50L, zero.tol = 1e-10) {
     model$data       <- sampleData
 
     utils::capture.output(type = "message", { # capture real time output
-      model <- suppressWarnings(estimatePLS(model))
+      model <- suppressWarnings(estimatePLS(
+        model = model,
+        # args passed onto mcpls
+        fixed.seed = TRUE,
+        verbose    = FALSE
+      ))
     })
 
     results[[i]] <- model$params$values

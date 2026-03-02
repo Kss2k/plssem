@@ -1,0 +1,109 @@
+simulateDataParTable <- function(parTable, N = 1e5, seed = NULL) {
+  if (!is.null(seed) && exists(".Random.seed")) .Random.seed.orig <- .Random.seed
+  else                                          .Random.seed.orig <- NULL
+
+  on.exit({
+    if (!is.null(.Random.seed.orig)) .Random.seed <<- .Random.seed.orig
+  })
+
+  if (!is.null(seed))
+    set.seed(seed)
+
+  # Generate seed passed to Rfast::Rnorm. Passing seed=NULL does not work
+  # If the user has used set.seed()
+  rfast.seed <- floor(stats::runif(1L, min = 0, max = 9999999))
+  rfast.seed <- NULL
+
+  xis     <- getXis(parTable)
+  etas    <- getSortedEtas(parTable)
+  lvs     <- getLVs(parTable)
+  indsLVs <- getIndsLVs(parTable, lVs = lvs)
+  ovs     <- getOVs(parTable)
+
+  Psi.x <- diag(1, length(xis))
+  dimnames(Psi.x) <- list(xis, xis)
+
+  for (i in seq_along(xis)) {
+    xi.i <- xis[[i]]
+
+    for (j in seq_len(i - 1)) {
+      xi.j <- xis[[j]]
+
+      p.ij <- parTable[
+        (parTable$rhs == xi.i & parTable$op == "~~" & parTable$lhs == xi.j) |
+        (parTable$rhs == xi.j & parTable$op == "~~" & parTable$lhs == xi.i),
+        "est"
+      ]
+
+      Psi.x[i, j] <- Psi.x[j, i] <- p.ij
+    }
+  }
+
+  # Xi <- mvtnorm::rmvnorm(n = N, mean = rep(0, length(xis)), sigma = Psi.x)
+  Xi <- mvnfast::rmvn(n = N, mu = rep(0, length(xis)), sigma = Psi.x)
+  Xi <- as.data.frame(Rfast::standardise(Xi))
+  colnames(Xi) <- xis
+
+  undefIntTerms <- getIntTerms(parTable)
+  elemsIntTerms <- stringr::str_split(undefIntTerms, pattern = ":")
+  names(elemsIntTerms) <- undefIntTerms
+
+  for (eta in etas) {
+
+    for (intTerm in undefIntTerms) {
+      elems <- elemsIntTerms[[intTerm]]
+
+      if (all(elems %in% colnames(Xi))) {
+        Xi[[intTerm]] <- multiplyIndicatorsCpp(Xi[elems])
+        Xi[[intTerm]] <- Xi[[intTerm]] - mean(Xi[[intTerm]])
+
+        undefIntTerms <- setdiff(undefIntTerms, intTerm)
+      }
+    }
+
+    predRows <- parTable[parTable$lhs == eta & parTable$op == "~", , drop = FALSE]
+    
+    vals <- numeric(N)
+
+    for (i in seq_len(NROW(predRows))) {
+      row  <- predRows[i, ]
+      beta <- row$est
+      pred <- row$rhs
+
+      vals <- vals + beta * Xi[[pred]]
+    }
+
+    resvar <- max(1 - stats::var(vals), 0)
+    vals <- vals + Rfast::Rnorm(N, m = 0, s = sqrt(resvar), seed = rfast.seed)
+    # vals <- vals + rnorm(N, mean = 0, sd = sqrt(resvar))
+
+    Xi[[eta]] <- vals
+  }
+
+  Inds <- list()
+
+  for (lv in lvs) {
+    for (ind in indsLVs[[lv]]) {
+      lambda <- parTable[parTable$lhs == lv &
+                         parTable$op == "=~" &
+                         parTable$rhs == ind, "est"]
+      epsilon <- max(1 - lambda^2, 0)
+
+      # vals <- lambda * Xi[[lv]] + rnorm(N, mean = 0, sd = sqrt(epsilon))
+      vals <- lambda * Xi[[lv]] + Rfast::Rnorm(N, m = 0, s = sqrt(epsilon), seed = rfast.seed)
+
+      Inds[[ind]] <- vals
+    }
+  }
+
+  Inds <- as.data.frame(Inds)
+  All  <- cbind(Xi, Inds)
+  Lv   <- All[lvs]
+  Ov   <- All[ovs]
+
+  list(
+    all = All,
+    ov  = Ov,
+    lv  = Lv
+  )
+}

@@ -1,18 +1,18 @@
-# assuming that all lVs are reflective (i.e., using mode A)
+# assuming that all lvs are reflective (i.e., using mode A)
 estimatePLS_Step3 <- function(model) {
-  lVs     <- model$info$lVs.linear
+  lvs     <- model$info$lvs.linear
   indsLvs <- model$info$indsLvs
   lambda  <- model$matrices$lambda
   S       <- model$matrices$S
   SC      <- model$matrices$SC
 
-  for (lV in lVs) {
-    indsLv <- indsLvs[[lV]]
+  for (lv in lvs) {
+    indsLv <- indsLvs[[lv]]
 
     for (indLv in indsLv) {
-      lambda[indLv, lV] <- SC[indLv, lV]
+      lambda[indLv, lv] <- SC[indLv, lv]
     }
-    lambda[, lV] <- lambda[, lV, drop = TRUE] / c(sqrt(t(lambda[, lV]) %*% S %*% lambda[, lV]))
+    lambda[, lv] <- lambda[, lv, drop = TRUE] / c(sqrt(t(lambda[, lv]) %*% S %*% lambda[, lv]))
   }
 
   model$matrices$lambda <- lambda

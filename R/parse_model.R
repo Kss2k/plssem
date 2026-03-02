@@ -6,7 +6,9 @@ parseModelArguments <- function(syntax,
                                 pi.match = NULL,
                                 pi.match.recycle = NULL,
                                 ordered = NULL,
-                                probit = NULL) {
+                                probit = NULL,
+                                mcpls = FALSE,
+                                consistent = TRUE) {
   stopif(length(syntax) > 1L || !is.character(syntax),
          "`syntax` must be a string of length 1!")
 
@@ -76,11 +78,9 @@ parseModelArguments <- function(syntax,
     lme4.syntax <- NULL
   }
 
-  if (is.null(probit))
-    probit <- length(ordered) > 0L
-
-  is.probit <- probit && !is.nlin
-  is.cexp   <- probit && is.nlin
+  is.mcpls  <- if (is.null(mcpls)) length(ordered) > 0L && is.nlin else mcpls
+  is.probit <- if (is.null(probit)) length(ordered) > 0L && !is.mcpls else probit
+  is.mlm    <- length(lme4.syntax) > 0L
 
   list(
     syntax       = syntax,
@@ -94,7 +94,9 @@ parseModelArguments <- function(syntax,
     is.nlin      = is.nlin,
     ordered      = ordered,
     is.probit    = is.probit,
-    is.cexp      = is.cexp
+    is.mcpls     = is.mcpls,
+    is.mlm       = is.mlm,
+    consistent   = consistent && !is.mcpls
   )
 }
 

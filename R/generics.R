@@ -16,9 +16,9 @@ summary.plssem <- function(object, ...) {
   strParTableLines <- utils::capture.output(modsem::summarize_partable(parTable))
   strParTable <- paste0(paste0(strParTableLines[-(1:6)], collapse = "\n"), "\n") # [-(1:6)] to skip headers
 
-  if      (object$info$is.probit) link <- "PROBIT"
-  else if (object$info$is.cexp)   link <- "PROBIT-CEXP"
-  else                            link <- "LINEAR"
+  is.ord <- object$info$is.probit || (length(object$info$ordered) && object$info$is.mcpls)
+  if (is.ord) link <- "PROBIT"
+  else        link <- "LINEAR"
 
   getR2 <- function(x, pt = parTable) {
     rvar <- pt[pt$lhs == x & pt$op == "~~" & pt$rhs == x, "est"]

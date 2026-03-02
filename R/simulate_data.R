@@ -39,9 +39,9 @@ simulateDataParTable <- function(parTable, N = 1e5, seed = NULL) {
     }
   }
 
-  Xi <- mvtnorm::rmvnorm(n = N, mean = rep(0, length(xis)), sigma = Psi.x)
-  # Xi <- mvnfast::rmvn(n = N, mu = rep(0, length(xis)), sigma = Psi.x)
-  Xi <- as.data.frame(scale(Xi))
+  # Xi <- mvtnorm::rmvnorm(n = N, mean = rep(0, length(xis)), sigma = Psi.x)
+  Xi <- mvnfast::rmvn(n = N, mu = rep(0, length(xis)), sigma = Psi.x)
+  Xi <- as.data.frame(Rfast::standardise(Xi))
   colnames(Xi) <- xis
 
   undefIntTerms <- getIntTerms(parTable)
@@ -73,9 +73,9 @@ simulateDataParTable <- function(parTable, N = 1e5, seed = NULL) {
       vals <- vals + beta * Xi[[pred]]
     }
 
-    resvar <- max(1 - var(vals), 0)
-    # vals <- vals + Rfast::Rnorm(N, m = 0, s = sqrt(resvar), seed = rfast.seed)
-    vals <- vals + rnorm(N, mean = 0, sd = sqrt(resvar))
+    resvar <- max(1 - stats::var(vals), 0)
+    vals <- vals + Rfast::Rnorm(N, m = 0, s = sqrt(resvar), seed = rfast.seed)
+    # vals <- vals + rnorm(N, mean = 0, sd = sqrt(resvar))
 
     Xi[[eta]] <- vals
   }
@@ -89,9 +89,8 @@ simulateDataParTable <- function(parTable, N = 1e5, seed = NULL) {
                          parTable$rhs == ind, "est"]
       epsilon <- max(1 - lambda^2, 0)
 
-      # vals <- lambda * Xi[[lv]] + Rfast::Rnorm(N, m = 0, s = sqrt(epsilon), seed = rfast.seed)
-      vals <- lambda * Xi[[lv]] + rnorm(N, mean = 0, sd = sqrt(epsilon))
-      vals <- (vals - mean(vals)) / sd(vals)
+      # vals <- lambda * Xi[[lv]] + rnorm(N, mean = 0, sd = sqrt(epsilon))
+      vals <- lambda * Xi[[lv]] + Rfast::Rnorm(N, m = 0, s = sqrt(epsilon), seed = rfast.seed)
 
       Inds[[ind]] <- vals
     }

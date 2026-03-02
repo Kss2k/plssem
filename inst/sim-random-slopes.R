@@ -475,9 +475,22 @@ table_results <- function(compare = methods, alpha = 0.05) {
 }
 
 
+table_results_par <- function(param, compare = methods, alpha = 0.05) {
+  resd |>
+    dplyr::filter(par == param & method %in% compare) |> 
+    group_by(par, method) |>
+    dplyr::summarize(est.mean = mean(est, na.rm = TRUE),
+              se.obs = sd(est, na.rm = TRUE),
+              se.exp = mean(se, na.rm = TRUE),
+              percent.sig = sum(pvalue < alpha, na.rm = TRUE) / 
+                            sum(!is.na(pvalue)))
+}
+
+
 plot_results(param = "Y~X")
 plot_results(param = "Y~Z")
 plot_results(param = "Y~X~~Y~X")
 table_results()
+table_results_par("Y~~Y")
 
 saveRDS(resd, sprintf("inst/results-random-slopes-%s.rds", Sys.time()))

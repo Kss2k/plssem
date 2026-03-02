@@ -138,8 +138,8 @@ plslmer <- function(plsModel) {
 
 
 meanDiagZGZt <- function(fit, varCorr.c, dep = NULL) {
-  mf   <- model.frame(fit)
-  bars <- lme4::findbars(formula(fit))
+  mf   <- stats::model.frame(fit)
+  bars <- reformulas::findbars(stats::formula(fit))
 
   # helper to match your naming convention dep~(Intercept)->dep~1 etc.
   getNames <- function(lhs, nm) {
@@ -164,7 +164,7 @@ meanDiagZGZt <- function(fit, varCorr.c, dep = NULL) {
 
     # "Small" Z for this term (no expansion by levels), just n x k:
     f_rhs <- stats::as.formula(paste0("~", deparse(expr)))
-    Zsmall <- model.matrix(f_rhs, mf)
+    Zsmall <- stats::model.matrix(f_rhs, mf)
 
     # Name alignment: columns of Zsmall must match row/colnames of Sigma
     if (!is.null(dep)) {

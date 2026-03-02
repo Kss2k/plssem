@@ -50,5 +50,6 @@ tpb_uk <- "
   BEH ~ INT:PBC
 "
 
-mcpls(tpb_uk, TPB_UK, ordered = colnames(TPB_UK),
-      max.iter.mc = 500, consistent = FALSE)
+fit <- pls(tpb_uk, TPB_UK, ordered = colnames(TPB_UK),
+           max.iter.mc = 500, consistent = FALSE)
+summary(fit)

@@ -12,11 +12,10 @@ pls(
   bootstrap = FALSE,
   sample = 50L,
   ordered = NULL,
+  mcpls = NULL,
   probit = NULL,
-  consistent.probit = TRUE,
   tolerance = 1e-05,
   max.iter.0_5 = 100L,
-  max.iter.0_9 = 50L,
   ...
 )
 }
@@ -47,22 +46,12 @@ should be treated as ordered when computing polychoric correlations.}
 \item{probit}{Logical; overrides the automatic choice of probit factor scores
 that is based on whether ordered indicators are present.}
 
-\item{consistent.probit}{Logical; Should probit consistent estimates be
-calculated?}
-
 \item{tolerance}{Numeric; Convergence criteria/tolerance.}
 
 \item{max.iter.0_5}{Maximum number of PLS iterations performed when estimating
 the measurement and structural models.}
 
-\item{max.iter.0_9}{Maximum number of PLS iterations performed when estimating
-the measurement and structural models. Only relevant for interaction
-models with ordered data.}
-
 \item{...}{Currently unused, reserved for future extensions.}
-
-\item{max.iter}{Maximum number of PLS iterations performed when estimating
-the measurement and structural models.}
 }
 \value{
 An object of class `plssem` containing the estimated parameters, fit

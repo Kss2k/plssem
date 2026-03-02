@@ -23,10 +23,6 @@ USE_NON_LINEAR_PROBIT_CORR_MAT <- FALSE # for now we stick with the linear assum
 #' @param max.iter.0_5 Maximum number of PLS iterations performed when estimating
 #'   the measurement and structural models.
 #'
-#' @param max.iter.0_9 Maximum number of PLS iterations performed when estimating
-#'   the measurement and structural models. Only relevant for interaction
-#'   models with ordered data.
-#'
 #' @param consistent Logical; `TRUE` requests PLSc corrections, whereas `FALSE`
 #'   fits the traditional PLS model.
 #'
@@ -36,17 +32,11 @@ USE_NON_LINEAR_PROBIT_CORR_MAT <- FALSE # for now we stick with the linear assum
 #' @param sample Integer giving the number of bootstrap resamples drawn when
 #'   `bootstrap = TRUE`.
 #'
-#' @param max.iter Maximum number of PLS iterations performed when estimating
-#'   the measurement and structural models.
-#'
 #' @param ordered Optional character vector naming manifest indicators that
 #'   should be treated as ordered when computing polychoric correlations.
 #'
 #' @param probit Logical; overrides the automatic choice of probit factor scores
 #'   that is based on whether ordered indicators are present.
-#'
-#' @param consistent.probit Logical; Should probit consistent estimates be
-#'   calculated?
 #'
 #' @param tolerance Numeric; Convergence criteria/tolerance.
 #'
@@ -91,15 +81,14 @@ USE_NON_LINEAR_PROBIT_CORR_MAT <- FALSE # for now we stick with the linear assum
 pls <- function(syntax,
                 data,
                 standardize = TRUE,
-                consistent = TRUE, 
+                consistent = TRUE,
                 bootstrap = FALSE,
                 sample = 50L,
                 ordered = NULL,
+                mcpls = NULL,
                 probit = NULL,
-                consistent.probit = TRUE,
                 tolerance = 1e-5,
                 max.iter.0_5 = 100L,
-                max.iter.0_9 = 50L,
                 ...) {
   # preprocess data
   data <- as.data.frame(data)
@@ -112,11 +101,11 @@ pls <- function(syntax,
     standardize       = standardize,
     ordered           = ordered,
     probit            = probit,
+    mcpls             = mcpls,
     consistent.probit = consistent.probit,
     tolerance         = tolerance,
-    max.iter.0_5      = max.iter.0_5,
-    max.iter.0_9      = max.iter.0_9
-  ) 
+    max.iter.0_5      = max.iter.0_5
+  )
 
   # Fit model
   model <- estimatePLS(model = model)
@@ -129,12 +118,12 @@ pls <- function(syntax,
 
   model$parTable <- getParTableEstimates(model)
   class(model) <- "plssem"
-  model 
+  model
 }
 
 
 resetPLS_Model <- function(model, hard.reset = FALSE) {
-  model$status$finished       <- FALSE 
+  model$status$finished       <- FALSE
   model$status$convergence    <- FALSE
   model$status$iterations.0_5 <- 0L
 
@@ -146,20 +135,29 @@ resetPLS_Model <- function(model, hard.reset = FALSE) {
 
   model
 }
- 
 
-estimatePLS <- function(model, max.iter = 100) {
+
+estimatePLS_Inner <- function(model) {
   model <- resetPLS_Model(model, hard.reset = TRUE)
-  
-  while (!model$status$finished) {
-    model <- 
-      resetPLS_Model(model) |>
-      estimatePLS_Step0_5() |>
-      estimatePLS_Step6() |>
-      estimatePLS_Step7() |>
-      estimatePLS_Step8() |>
-      estimatePLS_Step9()
-  }
+
+  resetPLS_Model(model) |>
+    estimatePLS_Step0_5() |>
+    estimatePLS_Step6() |>
+    estimatePLS_Step7() |>
+    estimatePLS_Step8()
+}
+
+
+estimatePLS_Outer <- function(model, ...) {
+  if (model$info$is.mcpls)
+    return(mcpls(model, ...))
 
   model
+}
+
+
+estimatePLS <- function(model, ...) {
+  model |>
+    estimatePLS_Inner() |>
+    estimatePLS_Outer(...)
 }

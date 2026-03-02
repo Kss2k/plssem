@@ -6,29 +6,34 @@ specifyModel <- function(syntax,
                          standardize = TRUE,
                          ordered = NULL,
                          probit = NULL,
+                         mcpls = NULL,
                          consistent.probit = NULL,
                          mc.reps = 1e5,
                          tolerance = 1e-5,
-                         max.iter.0_5 = 100,
-                         max.iter.0_9 = 50) {
+                         max.iter.0_5 = 100) {
+
   parsed <- parseModelArguments(
-    syntax = syntax,
-    data = data,
-    ordered = ordered,
-    probit = probit
+    syntax     = syntax,
+    data       = data,
+    ordered    = ordered,
+    probit     = probit,
+    mcpls      = mcpls,
+    consistent = consistent
   )
 
-  syntax               <- parsed$syntax
-  data                 <- parsed$data
-  pt                   <- parsed$parTable.pls
-  cluster              <- parsed$cluster
-  lme4.syntax          <- parsed$lme4.syntax
-  intTermElems         <- parsed$intTermElems
-  intTermNames         <- parsed$intTermNames
-  is.nlin              <- parsed$is.nlin
-  ordered              <- parsed$ordered
-  is.probit            <- parsed$is.probit
-  is.cexp              <- parsed$is.cexp
+  syntax        <- parsed$syntax
+  data          <- parsed$data
+  pt            <- parsed$parTable.pls
+  cluster       <- parsed$cluster
+  lme4.syntax   <- parsed$lme4.syntax
+  is.mlm        <- parsed$is.mlm
+  is.mcpls      <- parsed$is.mcpls
+  intTermElems  <- parsed$intTermElems
+  intTermNames  <- parsed$intTermNames
+  is.nlin       <- parsed$is.nlin
+  ordered       <- parsed$ordered
+  is.probit     <- parsed$is.probit
+  consistent    <- parsed$consistent
 
   matricesAndInfo <- initMatrices(pt)
   matrices        <- matricesAndInfo$matrices
@@ -41,21 +46,20 @@ specifyModel <- function(syntax,
     cluster     = cluster,
     standardize = standardize,
     ordered     = ordered,
-    is.probit   = is.probit,
-    is.cexp     = is.cexp
+    is.probit   = is.probit
   )
 
   inds.x    <- info$inds.x
   inds.y    <- info$inds.y
   ordered.x <- intersect(inds.x, ordered)
   ordered.y <- intersect(inds.y, ordered)
- 
+
   info$lme4.syntax       <- lme4.syntax
-  info$is.multilevel     <- !is.null(lme4.syntax)
+  info$is.mlm            <- is.mlm
+  info$is.mcpls          <- is.mcpls
+  info$is.probit         <- is.probit
   info$cluster           <- cluster
   info$consistent        <- consistent
-  info$is.probit         <- is.probit 
-  info$is.cexp           <- is.cexp
   info$ordered           <- ordered
   info$ordered.x         <- ordered.x
   info$ordered.y         <- ordered.y
@@ -63,47 +67,12 @@ specifyModel <- function(syntax,
   info$intTermNames      <- intTermNames
   info$is.nlin           <- is.nlin
   info$mc.reps           <- mc.reps
-  info$rng.seed          <- floor(stats::runif(1L) * 1e6)
-  info$consistent.probit <- consistent.probit
+  info$rng.seed          <- floor(stats::runif(1L, min=0, max=9999999))
   info$n                 <- NROW(preppedData$X)
-  info$estimator         <- "PLS"
+  info$estimator         <- getEstimatorFromInfo(info)
 
-  if (info$consistent)
-    info$estimator <- paste0(info$estimator, "c")
-  if (info$is.multilevel) 
-    info$estimator <- paste0(info$estimator, "-MLM")
-  if (info$is.probit||info$is.cexp)
-    info$estimator <- paste0("Ord", info$estimator)
-
-  matrices$S <- preppedData$S
-  matrices$C <- diag(nrow(matrices$gamma))
-
-  dimnames(matrices$C) <- dimnames(matrices$gamma)
-  matrices$SC <- rbind(
-    cbind(matrices$S, matrix(0, nrow = nrow(matrices$S), ncol = nrow(matrices$C))),
-    cbind(matrix(0, nrow = nrow(matrices$C), ncol = nrow(matrices$S)), matrices$C)
-  )
-
-  colnames(matrices$SC) <- rownames(matrices$SC) <- c(
-    colnames(matrices$S), 
-    colnames(matrices$C)
-  )
-
-  if (consistent.probit && info$is.cexp) {
-    matrices$probit2cont <- getCorrMatsProbit2cont(
-      data         = preppedData$X,
-      selectLambda = matrices$selectLambda,
-      ordered      = ordered,
-      lvs          = info$lVs
-    )
-
-    matrices$probit.correction.residuals <- getOrderedResidualCorrection(
-      lvs     = info$lVs.linear,
-      indsLvs = info$indsLvs,
-      ordered = info$ordered,
-      X       = preppedData$X
-    )
-  }
+  matrices$S  <- preppedData$S
+  matrices$SC <- diagPartitioned(matrices$S, matrices$C)
 
   model <- list(
     parTable.input = pt,
@@ -124,7 +93,6 @@ specifyModel <- function(syntax,
       iterations.0_5 = 0L,
       iterations.0_9 = 0L,
       tolerance      = tolerance,
-      max.iter.0_9   = max.iter.0_9,
       max.iter.0_5   = max.iter.0_5
     )
   )
@@ -133,7 +101,7 @@ specifyModel <- function(syntax,
   k        <- length(parnames)
 
   model$params <- list(
-    names      = parnames, 
+    names      = parnames,
     values     = rep(NA_real_, k),
     values.old = NULL,
     se         = rep(NA_real_, k)
@@ -145,54 +113,54 @@ specifyModel <- function(syntax,
 
 # badly named function -- since if also returns some useful info
 initMatrices <- function(pt) {
-  lVs.linear <- unique(pt[pt$op == "=~", "lhs"])
+  lvs.linear <- unique(pt[pt$op == "=~", "lhs"])
   etas <- unique(pt[pt$op == "~", "lhs"])
 
-  lVs  <- c(lVs.linear, pt[grepl(":", pt$rhs), "rhs"])
-  xis  <- lVs[!lVs %in% etas]
+  lvs  <- c(lvs.linear, pt[grepl(":", pt$rhs), "rhs"])
+  xis  <- lvs[!lvs %in% etas]
 
   allInds <- vector("character", 0)
-  indsLvs <- vector("list", length(lVs))
+  indsLvs <- vector("list", length(lvs))
 
-  names(indsLvs) <- lVs
-  for (lV in lVs) {
-    indsLv <- pt[pt$lhs == lV & pt$op == "=~", "rhs"]
+  names(indsLvs) <- lvs
+  for (lv in lvs) {
+    indsLv <- pt[pt$lhs == lv & pt$op == "=~", "rhs"]
     allInds <- c(allInds, indsLv)
-    indsLvs[[lV]] <- indsLv
+    indsLvs[[lv]] <- indsLv
   }
 
   inds.x <- unique(unlist(indsLvs[xis]))
   inds.y <- unique(unlist(indsLvs[etas]))
 
   # Lamdba ---------------------------------------------------------------------
-  lambda <- matrix(0, nrow = length(allInds), ncol = length(lVs),
-                   dimnames = list(allInds, lVs))
-  selectLambda <- matrix(FALSE, nrow = length(allInds), ncol = length(lVs),
-                   dimnames = list(allInds, lVs))
-  for (lV in lVs) {
-    lambda[indsLvs[[lV]], lV] <- 1
-    selectLambda[indsLvs[[lV]], lV] <- TRUE
+  lambda <- matrix(0, nrow = length(allInds), ncol = length(lvs),
+                   dimnames = list(allInds, lvs))
+  selectLambda <- matrix(FALSE, nrow = length(allInds), ncol = length(lvs),
+                   dimnames = list(allInds, lvs))
+  for (lv in lvs) {
+    lambda[indsLvs[[lv]], lv] <- 1
+    selectLambda[indsLvs[[lv]], lv] <- TRUE
   }
 
   # Gamma ----------------------------------------------------------------------
-  gamma <- matrix(0, nrow = length(lVs), ncol = length(lVs),
-                  dimnames = list(lVs, lVs))
+  gamma <- matrix(0, nrow = length(lvs), ncol = length(lvs),
+                  dimnames = list(lvs, lvs))
   # Selection Matrix
-  selectGamma <- matrix(FALSE, nrow = length(lVs), ncol = length(lVs),
-                  dimnames = list(lVs, lVs))
+  selectGamma <- matrix(FALSE, nrow = length(lvs), ncol = length(lvs),
+                  dimnames = list(lvs, lvs))
   # Predecessors and successors
-  preds <- succs <- matrix(FALSE, nrow = length(lVs), ncol = length(lVs),
-                           dimnames = list(lVs, lVs))
-  for (lV in lVs) {
-    predsLv <- pt[pt$lhs == lV & pt$op == "~", "rhs"]
-    succsLv <- pt[pt$rhs == lV & pt$op == "~", "lhs"]
-    preds[predsLv, lV] <- TRUE
-    succs[succsLv, lV] <- TRUE
-    # selectionmatrix 
-    selectGamma[predsLv, lV] <- TRUE
+  preds <- succs <- matrix(FALSE, nrow = length(lvs), ncol = length(lvs),
+                           dimnames = list(lvs, lvs))
+  for (lv in lvs) {
+    predsLv <- pt[pt$lhs == lv & pt$op == "~", "rhs"]
+    succsLv <- pt[pt$rhs == lv & pt$op == "~", "lhs"]
+    preds[predsLv, lv] <- TRUE
+    succs[succsLv, lv] <- TRUE
+    # selectionmatrix
+    selectGamma[predsLv, lv] <- TRUE
   }
 
-  is.nlin      <- grepl(":", lVs)
+  is.nlin      <- grepl(":", lvs)
   preds.linear <- preds
   succs.linear <- succs
   preds.linear[is.nlin,] <- FALSE
@@ -201,10 +169,10 @@ initMatrices <- function(pt) {
   succs.linear[,is.nlin] <- FALSE
 
   # Covariance Matrix xis ------------------------------------------------------
-  xis <- lVs[!lVs %in% pt[pt$op == "~", "lhs"]]
+  xis <- lvs[!lvs %in% pt[pt$op == "~", "lhs"]]
   selectCov <- matrix(
-    FALSE, nrow = length(lVs), ncol = length(lVs),
-    dimnames = list(lVs, lVs)
+    FALSE, nrow = length(lvs), ncol = length(lvs),
+    dimnames = list(lvs, lvs)
   )
 
   diag(selectCov) <- TRUE
@@ -215,41 +183,49 @@ initMatrices <- function(pt) {
   selectTheta <- matrix(FALSE, nrow = k, ncol = k,
                         dimnames = list(allInds, allInds))
   diag(selectTheta) <- TRUE
-  
+
   # Selection Matric Indicators ------------------------------------------------
   Ip <- diag(nrow = nrow(lambda))
   colnames(Ip) <- rownames(Ip) <- rownames(lambda)
 
-  nlinSelectFrom <- outer(lVs, lVs, Vectorize(f1))
-  dimnames(nlinSelectFrom) <- list(lVs, lVs)
+  nlinSelectFrom <- outer(lvs, lvs, Vectorize(f1))
+  dimnames(nlinSelectFrom) <- list(lvs, lvs)
+
+
+  C <- diag(nrow(gamma))
+  dimnames(C) <- dimnames(gamma)
 
   # Create output lists --------------------------------------------------------
   matrices <- list(
     lambda = lambda,
-    gamma = gamma, 
+    gamma = gamma,
     preds = preds,
-    succs = succs, 
+    succs = succs,
     succs.linear = succs.linear,
     preds.linear = preds.linear,
-    outerWeights = getNonZeroElems(lambda), 
-    Ip = Ip, 
-    selectLambda = selectLambda,
-    selectGamma = selectGamma,
-    selectCov = selectCov,
-    selectTheta = selectTheta,
-    nlinSelectFrom = nlinSelectFrom,
-    probit2cont = NULL
+    outerWeights = getNonZeroElems(lambda),
+    Ip = Ip,
+    C  = C,
+    S  = NULL,
+    SC = NULL,
+    select = list(
+      lambda   = selectLambda,
+      gamma    = selectGamma,
+      cov      = selectCov,
+      theta    = selectTheta,
+      nlinFrom = nlinSelectFrom
+    )
   )
 
   info <- list(
-    indsLvs = indsLvs,
-    allInds = allInds,
-    lVs = lVs,
-    lVs.linear = lVs.linear,
-    etas = etas,
-    xis = xis,
-    inds.x = inds.x,
-    inds.y = inds.y
+    indsLvs    = indsLvs,
+    allInds    = allInds,
+    lvs        = lvs,
+    lvs.linear = lvs.linear,
+    etas       = etas,
+    xis        = xis,
+    inds.x     = inds.x,
+    inds.y     = inds.y
   )
 
   list(
@@ -260,51 +236,48 @@ initMatrices <- function(pt) {
 
 
 getFitPLSModel <- function(model, consistent = TRUE) {
-  model$matrices$C <- model$matrices$C
-   
   lambda  <- model$matrices$lambda
   gamma   <- model$matrices$gamma
   preds   <- model$matrices$preds
   etas    <- model$info$etas
   xis     <- model$info$xis
-  lVs     <- model$info$lVs
-  lVs.lin <- model$info$lVs.linear
+  lvs     <- model$info$lvs
+  lvs.lin <- model$info$lvs.linear
   indsLvs <- model$info$indsLvs
-  is.cexp <- model$info$is.cexp
   ptl     <- model$parTable.input
   SC      <- model$matrices$SC
-  k       <- length(lVs.lin)
-  
-  # measurement model 
+  k       <- length(lvs.lin)
+
+  # measurement model
   fitMeasurement <- lambda
   fitMeasurement[TRUE] <- 0
-  for (lV in lVs) for (indsLv in indsLvs[[lV]])
-    fitMeasurement[indsLv, lV] <- SC[indsLv, lV]
+  for (lv in lvs) for (indsLv in indsLvs[[lv]])
+    fitMeasurement[indsLv, lv] <- SC[indsLv, lv]
 
   # Caluculate consistent weights and correlations
-  if (consistent || is.cexp) {
+  if (consistent) {
     # We want to correct both for the errors causes by using the CEXP
     # estimator, compared to the probit estimator. As well as the bias
     # caused by ignoring measurement error.
 
     if (consistent) Q <- getConstructQualities(model)
-    else            Q <- stats::setNames(rep(1L, k), nm = lVs.lin) # ignore measurement error
+    else            Q <- stats::setNames(rep(1L, k), nm = lvs.lin) # ignore measurement error
 
     fitMeasurement <- getConsistentLoadings(model, Q = Q)
     model$matrices$C <- getConsistentCorrMat(model, Q = Q)
   }
-  
+
   # structural model
   fitStructural       <- gamma
   fitStructural[TRUE] <- 0
-  for (lV in lVs) {
-    predsLv <- lVs[preds[ , lV, drop = TRUE]]
+  for (lv in lvs) {
+    predsLv <- lvs[preds[ , lv, drop = TRUE]]
 
     if (length(predsLv))
-      fitStructural[predsLv, lV] <- getPathCoefs(lV, predsLv,  model$matrices$C)
+      fitStructural[predsLv, lv] <- getPathCoefs(lv, predsLv,  model$matrices$C)
   }
 
-  # Covariance matrix 
+  # Covariance matrix
   fitCovXi  <- model$matrices$C[xis, xis, drop = FALSE]
   fitCov    <- model$matrices$C
   fitCovProj <- t(fitStructural) %*% model$matrices$C %*% fitStructural
@@ -312,7 +285,7 @@ getFitPLSModel <- function(model, consistent = TRUE) {
                                                   # But I'm not sure the residual covariances
                                                   # will be consistent estimates
   fitCov[etas, etas] <- fitCovRes[etas, etas]
-  
+
   # Indicator Residuals
   indicators <- rownames(lambda)
   k <- length(indicators)
@@ -329,17 +302,11 @@ getFitPLSModel <- function(model, consistent = TRUE) {
          "Did not expect any cross loaded indicators,\n",
          "when calculating indicator residuals!")
 
-  res.correction <- model$matrices$probit.correction.residuals$correction
   for (ind in indicators) {
     j  <- which.max(abs(fitMeasurement[ind, ]))
     r  <- fitMeasurement[ind, j]
     v  <- SC[ind, ind]
     res <- v - r^2
-
-    if (model$info$is.cexp) {
-      res <- res * res.correction[ind] 
-      fitMeasurement[ind, j] <- sqrt(1 - res)
-    }
 
     fitTheta[ind, ind] <- res
   }
@@ -354,48 +321,48 @@ getFitPLSModel <- function(model, consistent = TRUE) {
 
 
 getParamVecNames <- function(model) {
-  selectLambda <- model$matrices$selectLambda
+  selectLambda <- model$matrices$select$lambda
   lambda       <- selectLambda
 
   for (j in colnames(lambda)) for (i in rownames(lambda))
     lambda[i, j] <- paste0(j, "=~", i)
 
-  selectGamma <- model$matrices$selectGamma
+  selectGamma <- model$matrices$select$gamma
   gamma       <- selectGamma
 
   for (j in colnames(gamma)) for (i in rownames(gamma))
     gamma[i, j] <- paste0(j, "~", i)
-  
-  selectCov <- model$matrices$selectCov
+
+  selectCov <- model$matrices$select$cov
   psi       <- selectCov
 
   for (j in colnames(psi)) for (i in rownames(psi))
     psi[i, j] <- paste0(j, "~~", i)
 
-  selectTheta <- model$matrices$selectTheta
+  selectTheta <- model$matrices$select$theta
   theta       <- selectTheta
-  
+
   for (j in colnames(theta)) for (i in rownames(theta))
     theta[i, j] <- paste0(j, "~~", i)
 
-  c(lambda[selectLambda], gamma[selectGamma], psi[selectCov], theta[selectTheta]) 
+  c(lambda[selectLambda], gamma[selectGamma], psi[selectCov], theta[selectTheta])
 }
 
 
 extractCoefs <- function(model) {
-  fit <- model$fit 
+  fit <- model$fit
 
   lambda       <- fit$fitMeasurement
-  selectLambda <- model$matrices$selectLambda
+  selectLambda <- model$matrices$select$lambda
 
-  gamma       <- fit$fitStructural 
-  selectGamma <- model$matrices$selectGamma
+  gamma       <- fit$fitStructural
+  selectGamma <- model$matrices$select$gamma
 
   fitCov    <- fit$fitCov
-  selectCov <- model$matrices$selectCov
+  selectCov <- model$matrices$select$cov
 
   fitTheta    <- fit$fitTheta
-  selectTheta <- model$matrices$selectTheta
+  selectTheta <- model$matrices$select$theta
 
   out <- c(
     lambda[selectLambda],
@@ -416,4 +383,21 @@ getFactorScores <- function(model) {
   X <- model$data
 
   Rfast::standardise(X %*% W)
+}
+
+
+getEstimatorFromInfo <- function(info) {
+  consistent <- info$consistent
+  is.mcpls   <- info$is.mcpls
+  is.mlm     <- info$is.mlm
+  is.probit  <- info$is.probit
+
+  estimator  <- "PLS"
+
+  if (consistent || is.mcpls) estimator <- paste0(estimator, "c")
+  if (is.mlm)                 estimator <- paste0(estimator, "-MLM")
+  if (is.probit)              estimator <- paste0("Ord", estimator)
+  if (is.mcpls)               estimator <- paste0("MC", estimator)
+
+  estimator
 }

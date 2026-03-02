@@ -31,11 +31,6 @@ getPLS_Data <- function(data,
   S <- getCorrMat(data[indicators], probit = is.probit, ordered = ordered)
   X <- as.matrix(data[indicators])
 
-  if (is.cexp) for (ord in intersect(indicators, ordered)) {
-    # Should serve as a better starting point than not correcting at all...
-    X[,ord] <- rescaleOrderedVariableAnalytic(ord, data = data)$values
-  }
-
   if (!is.null(cluster)) {
     if (!is.character(cluster))
       stop("`cluster` must be a character string, if lme4.syntax is provided!")
@@ -128,13 +123,18 @@ cov2cor <- function(vcov) {
 }
 
 
+warning2 <- function(...) {
+  warning(..., call. = FALSE)
+}
+
+
 stopif <- function(cond, ...) {
   if (isTRUE(cond)) stop(..., call. = FALSE)
 }
 
 
 warnif <- function(cond, ...) {
-  if (isTRUE(cond)) warning(..., call. = FALSE)
+  if (isTRUE(cond)) warning2(..., call. = FALSE)
 }
 
 
@@ -155,49 +155,6 @@ getPolyCorr <- function(data, ordered = NULL) {
 }
 
 
-getThresholdsFromQuantiles <- function(X, variable) {
-  x   <- X[, variable]
-  pct <- table(x) / length(x)
-  tau <- stats::qnorm(cumsum(pct)[-length(pct)])
-  lab <- paste0(variable, "|t", seq_along(tau))
-
-  stats::setNames(tau, nm = lab)
-}
-
-
-getCorrMatsProbit2cont <- function(data, ordered, lvs, selectLambda) {
-  probit2cont <- list()
-  inds        <- rownames(selectLambda)
-
-  if (length(ordered)) for (lv in lvs) {
-    inds.lv <- inds[selectLambda[,lv]]
-    ord.lv  <- intersect(inds.lv, ordered)
-
-    if (!length(ord.lv)) # just skip
-      next
-
-    X.cont <- data[, inds.lv, drop = FALSE]
-    X.ord  <- data[, inds.lv, drop = FALSE]
-
-    colnames(X.cont) <- paste0(".as_continous__", inds.lv)
-    X <- cbind(X.cont, X.ord)
-
-    suppressWarnings({
-      # Suppress this:
-      #> Warning Message:
-      #> lavaan->lav_samplestats_step2():  
-      #> correlation between variables x1 and .as_continous__x1 
-      #> is (nearly) 1.0 
-      S.lv <- getCorrMat(X, probit = TRUE, ordered = ord.lv)
-    })
-
-    probit2cont[[lv]] <- S.lv
-  }
-
-  probit2cont 
-}
-
-
 formatNumeric <- function(x, digits = 3, scientific = FALSE,
                           justify = "right", width = NULL) {
   digits_fmt <- if (is.finite(digits)) max(0L, as.integer(digits)) else 3L
@@ -214,37 +171,6 @@ formatNumeric <- function(x, digits = 3, scientific = FALSE,
 }
 
 
-getOrderedResidualCorrection <- function(lvs, indsLvs, ordered, X) {
-  res.ord  <- NULL
-  res.cont <- NULL
-
-  for (lv in lvs) {
-    inds <- indsLvs[[lv]]
-    inds.ov <- intersect(inds, ordered)
-
-    syntax <- paste0(lv, "=~", paste0(inds.ov, collapse="+"))
-    fit.c <- lavaan::cfa(syntax, X)
-    fit.o <- lavaan::cfa(syntax, X, ordered = inds.ov)
-  
-    res.ord.lv  <- 1 - lavaan::lavInspect(fit.o, what = "r2")
-    res.cont.lv <- 1 - lavaan::lavInspect(fit.c, what = "r2")
-
-    new <- setdiff(names(res.ord.lv), names(res.ord))
-    res.ord  <- c(res.ord, res.ord.lv[new])
-    res.cont <- c(res.cont, res.cont.lv[new])
-  }
-
-  correction <- res.ord / res.cont
-  correction[is.na(correction)] <- 1L
-
-  list(
-    res.ord = res.ord,
-    res.cont = res.cont,
-    correction = correction
-  )
-}
-
-
 getIntTerms <- function(parTable) {
   unique(parTable[grepl(":", parTable$rhs), "rhs"])
 }
@@ -254,4 +180,9 @@ quickdf <- function(l) {
   class(l) <- "data.frame"
   attr(l, "row.names") <- .set_row_names(length(l[[1]]))
   l
+}
+
+
+tryCatchNA <- function(expr) {
+  tryCatch(expr, error = \(e) NA_real_)  
 }

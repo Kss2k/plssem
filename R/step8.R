@@ -2,7 +2,7 @@ estimatePLS_Step8 <- function(model) {
   model$params$values <- extractCoefs(model)
   model$params$se     <- rep(NA_real_, length(model$params$values))
 
-  if (model$info$is.multilevel) {
+  if (model$info$is.mlm) {
     model$fit.lmer <- plslmer(model)
 
     coefs.x <- model$params$values

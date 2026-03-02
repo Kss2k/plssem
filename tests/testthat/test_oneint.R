@@ -13,8 +13,6 @@ fit <- pls(m, modsem::oneInt, bootstrap = TRUE, sample = 50)
 summary(fit)
 
 
+
 fit <- pls(m, oneIntOrdered, bootstrap = FALSE)
 summary(fit)
-
-
-fit <- mcpls(m, oneIntOrdered, mc.reps = 2e4, consistent = FALSE)

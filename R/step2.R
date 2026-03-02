@@ -1,5 +1,5 @@
 estimatePLS_Step2 <- function(model) {
-  lVs        <- model$info$lVs.linear
+  lvs        <- model$info$lvs.linear
   Ip         <- model$matrices$Ip
   lambda     <- model$matrices$lambda
   partLambda <- cbind(Ip, lambda)

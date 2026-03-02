@@ -1,64 +1,92 @@
-#' @export
 mcpls <- function(
-  syntax,
-  data,
-  ordered = NULL,
-  consistent = FALSE, # we get consistent estimates as a natural by-product
+  fit0,
   max.iter.mc = 100,
   mc.reps = 20000,
   rng.seed = NULL,
   tol = 1e-3,
-  miniter = 15,
+  miniter = 5,
   maxiter = 250,
   fixed.seed = FALSE,
+  verbose = TRUE,
   ...
 ) {
-  data <- as.data.frame(data)
-  orderedData <- colnames(data)[sapply(data, FUN = is.ordered)]
-  data[orderedData] <- lapply(data[orderedData], FUN = as.integer)
 
-  fit0 <- pls(syntax = syntax, data = data, consistent = consistent, ...)
-  data <- as.data.frame(fit0$data)
+  data <- fit0$data
   vars <- colnames(data)
-  ordered <- intersect(vars, union(orderedData, ordered))
+  ordered <- fit0$info$ordered
 
   PROBS <- stats::setNames(vector("list", length(ordered)), nm = ordered)
   for (ord in ordered) {
-    freq <- table(data[[ord]])
+    freq <- table(data[,ord])
     pct  <- cumsum(freq) / sum(freq)
     PROBS[[ord]] <- pct[-length(pct)]
   }
 
-  par0 <- getFreeParamsTable(parameter_estimates(fit0))
+  par0 <- getFreeParamsTable(fit0)
   par1 <- par0[c("lhs", "op", "rhs", "est")]
 
   if (fixed.seed && is.null(rng.seed)) {
     rng.seed <- floor(runif(1L, min = 0, max = 9999999))
-    printf("Using fixed seed %i...\n", rng.seed)
+    if (verbose) printf("Using fixed seed %i...\n", rng.seed)
   }
 
   .f <- function(p) {
     par1$est <- p
-    
+
     sim <- simulateDataParTable(par1, N = mc.reps, seed = rng.seed)
     sim.ov <- ordinalizeDataFrame(sim$ov, PROBS = PROBS, ordered = ordered)
 
     fit0$data <- Rfast::standardise(as.matrix(sim.ov[vars]))
     fit0$matrices$S <- Rfast::cova(fit0$data)
 
-    fit2 <- estimatePLS(fit0)
-    par2 <- getFreeParamsTable(getParTableEstimates(fit2))
- 
+    fit2 <- estimatePLS_Inner(fit0)
+    par2 <- getFreeParamsTable(fit2) 
+
     par2$est - par0$est
   }
 
-  par1$est <- SimDesign::RobbinsMonro(p = par1$est,
-                                      f = .f, tol = tol,
-                                      miniter = miniter,
-                                      maxiter = maxiter)$root
-  cat("\n")
+  mcfit <- SimDesign::RobbinsMonro(
+    p = par1$est,
+    f = .f,
+    tol = tol,
+    miniter = miniter,
+    maxiter = maxiter,
+    verbose = verbose
+  )
 
-  par1
+  if (verbose) cat("\n")
+
+  iter <- mcfit$iter
+  if (iter >= maxiter && !fixed.seed) {
+    rng.seed <- floor(runif(1L, min = 0, max = 9999999))
+    warning2("Maximum number of iterations reached!\n",
+             sprintf("Attempting to use fixed seed %i...", rng.seed))
+
+    mcfit <- SimDesign::RobbinsMonro(
+      p = mcfit$root,
+      f = .f,
+      tol = tol,
+      miniter = miniter,
+      maxiter = maxiter,
+      verbose = verbose
+    )
+
+    if (verbose) cat("\n")
+
+    iter <- iter + mcfit$iter
+  }
+
+  par1$est <- mcfit$root
+  fit1 <- updateModelFromFreeParTableMC(
+    parTable = par1,
+    model    = fit0,
+    mc.reps  = mc.reps,
+    seed     = rng.seed
+  )
+
+  fit1$status$iterations <- mcfit$iter
+
+  fit1
 }
 
 
@@ -79,7 +107,9 @@ ordinalizeDataFrame <- function(df, PROBS, ordered = NULL) {
 }
 
 
-getFreeParamsTable <- function(parTable) {
+getFreeParamsTable <- function(model) {
+  parTable <- getParTableEstimates(model)
+
   lhs <- parTable$lhs
   op  <- parTable$op
   rhs <- parTable$rhs
@@ -91,4 +121,89 @@ getFreeParamsTable <- function(parTable) {
   attr(out, "cond") <- cond1 & cond2
 
   out
+}
+
+
+updateModelFromFreeParTableMC <- function(parTable, model, mc.reps, seed = NULL) {
+  sim <- simulateDataParTable(parTable, N = mc.reps, seed = seed)
+
+  lvs <- getLVs(parTable)
+  indsLVs <- getIndsLVs(parTable, lVs = lvs)
+
+  SC <- Rfast::cova(as.matrix(sim$all))
+
+  ovs <- colnames(model$matrices$S)
+  lvs <- colnames(model$matrices$C)
+
+  model$matrices$S  <- SC[ovs, ovs, drop = FALSE]
+  model$matrices$C  <- SC[lvs, lvs, drop = FALSE]
+  model$matrices$SC <- SC[c(ovs, lvs), c(ovs, lvs), drop = FALSE]
+
+  fit <- model$fit
+  fitMeasurement <- fit$fitMeasurement
+  fitStructural  <- fit$fitStructural
+  fitCov         <- fit$fitCov
+  fitTheta       <- fit$fitTheta
+
+  select <- model$matrices$select
+  selectLambda <- select$lambda
+  selectGamma  <- select$gamma
+  selectCov    <- select$cov
+  selectTheta  <- select$theta
+
+  vlhs <- parTable$lhs
+  vop  <- parTable$op
+  vrhs <- parTable$rhs
+
+  getpar <- function(lhs, op, rhs) {
+    cond <- vlhs == lhs & vop == op & vrhs == rhs
+
+    if (op == "~~")
+      cond <- cond | (vlhs == rhs & vop == op & vrhs == lhs)
+
+    par <- parTable[cond, "est"]
+
+    if (!length(par)) NA_real_ else par[[1L]] 
+  }
+
+  for (lv in colnames(fitMeasurement)) for (ov in rownames(fitMeasurement)) {
+    if (!selectLambda[ov, lv]) next
+
+    par <- getpar(lhs = lv, op = "=~", rhs = ov)
+    if (is.na(par)) par <- tryCatchNA(SC[ov, lv])
+
+    fitMeasurement[ov, lv] <- par
+
+
+    if (selectTheta[ov, ov])
+      fitTheta[ov, ov] <- max(0, 1 - par)
+  }
+
+  for (dep in colnames(fitStructural)) for (indep in rownames(fitStructural)) {
+    if (!selectGamma[indep, dep]) next
+
+    par <- getpar(lhs = dep, op = "~", rhs = indep)
+
+    fitStructural[indep, dep] <- par
+  }
+ 
+  k <- NCOL(fitCov)
+  for (i in seq_len(k)) for (j in seq_len(i - 1)) {
+    lhs <- colnames(fitCov)[[i]]
+    rhs <- rownames(fitCov)[[j]]
+
+    if (!selectCov[lhs, rhs]) next
+
+    par <- getpar(lhs = lhs, op = "~~", rhs = rhs)
+    if (is.na(par)) par <- tryCatchNA(SC[lhs, rhs])
+
+    fitCov[i, j] <- fitCov[j, i] <- par
+  }
+
+  model$fit$fitMeasurement <- fitMeasurement
+  model$fit$fitStructural  <- fitStructural
+  model$fit$fitCov         <- fitCov
+  model$fit$fitTheta       <- fitTheta
+
+  estimatePLS_Step8(model)
 }

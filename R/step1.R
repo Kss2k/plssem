@@ -1,5 +1,5 @@
 estimatePLS_Step1 <- function(model) {
-  lVs   <- model$info$lVs.linear
+  lvs   <- model$info$lvs.linear
   succs <- model$matrices$succs.linear
   preds <- model$matrices$preds.linear
   gamma <- model$matrices$gamma
@@ -7,21 +7,21 @@ estimatePLS_Step1 <- function(model) {
   C     <- model$matrices$C
   SC    <- model$matrices$SC 
 
-  for (lV in lVs) {
-    predsLv <- lVs[preds[ , lV, drop = TRUE]]
-    succsLv <- lVs[succs[ , lV, drop = TRUE]]
+  for (lv in lvs) {
+    predsLv <- lvs[preds[ , lv, drop = TRUE]]
+    succsLv <- lvs[succs[ , lv, drop = TRUE]]
 
     for (succ in succsLv)
-      gamma[succ, lV] <- C[lV, succ]
+      gamma[succ, lv] <- C[lv, succ]
 
     if (length(predsLv) > 0)
-      gamma[predsLv, lV] <- solve(SC[predsLv, predsLv]) %*% SC[predsLv, lV]
+      gamma[predsLv, lv] <- solve(SC[predsLv, predsLv]) %*% SC[predsLv, lv]
 
     # standardize 
-    scalef <- c(sqrt(t(gamma[, lV]) %*% C %*% gamma[, lV]))
+    scalef <- c(sqrt(t(gamma[, lv]) %*% C %*% gamma[, lv]))
     
     if (scalef)
-      gamma[, lV] <- gamma[, lV] / scalef
+      gamma[, lv] <- gamma[, lv] / scalef
   }
 
   model$matrices$gamma <- gamma

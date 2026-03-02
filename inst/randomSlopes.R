@@ -1,3 +1,4 @@
+
 library(mvtnorm)
 
 std1 <- \(x) (x - mean(x)) / sd(x)

@@ -11,7 +11,7 @@ simulateDataParTable <- function(parTable, N = 1e5, seed = NULL) {
 
   # Generate seed passed to Rfast::Rnorm. Passing seed=NULL does not work
   # If the user has used set.seed()
-  rfast.seed <- floor(runif(1L, min = 0, max = 9999999))
+  rfast.seed <- floor(stats::runif(1L, min = 0, max = 9999999))
   rfast.seed <- NULL
 
   xis     <- getXis(parTable)

@@ -7,7 +7,6 @@ specifyModel <- function(syntax,
                          ordered = NULL,
                          probit = NULL,
                          mcpls = NULL,
-                         consistent.probit = NULL,
                          mc.reps = 1e5,
                          tolerance = 1e-5,
                          max.iter.0_5 = 100) {
@@ -390,13 +389,13 @@ getEstimatorFromInfo <- function(info) {
   consistent <- info$consistent
   is.mcpls   <- info$is.mcpls
   is.mlm     <- info$is.mlm
-  is.probit  <- info$is.probit
+  is.ord     <- info$is.probit || (info$is.mcpls && length(info$ordered))
 
   estimator  <- "PLS"
 
   if (consistent || is.mcpls) estimator <- paste0(estimator, "c")
   if (is.mlm)                 estimator <- paste0(estimator, "-MLM")
-  if (is.probit)              estimator <- paste0("Ord", estimator)
+  if (is.ord)                 estimator <- paste0("Ord", estimator)
   if (is.mcpls)               estimator <- paste0("MC", estimator)
 
   estimator

@@ -43,6 +43,8 @@ are computed with `sample` resamples.}
 \item{ordered}{Optional character vector naming manifest indicators that
 should be treated as ordered when computing polychoric correlations.}
 
+\item{mcpls}{Should a Monte-Carlo consistency correction be applied?}
+
 \item{probit}{Logical; overrides the automatic choice of probit factor scores
 that is based on whether ordered indicators are present.}
 

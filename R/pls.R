@@ -37,6 +37,8 @@ USE_NON_LINEAR_PROBIT_CORR_MAT <- FALSE # for now we stick with the linear assum
 #'
 #' @param probit Logical; overrides the automatic choice of probit factor scores
 #'   that is based on whether ordered indicators are present.
+#' 
+#' @param mcpls Should a Monte-Carlo consistency correction be applied?
 #'
 #' @param tolerance Numeric; Convergence criteria/tolerance.
 #'
@@ -95,16 +97,15 @@ pls <- function(syntax,
 
   # Define model
   model <- specifyModel(
-    syntax            = syntax,
-    data              = data,
-    consistent        = consistent,
-    standardize       = standardize,
-    ordered           = ordered,
-    probit            = probit,
-    mcpls             = mcpls,
-    consistent.probit = consistent.probit,
-    tolerance         = tolerance,
-    max.iter.0_5      = max.iter.0_5
+    syntax       = syntax,
+    data         = data,
+    consistent   = consistent,
+    standardize  = standardize,
+    ordered      = ordered,
+    probit       = probit,
+    mcpls        = mcpls,
+    tolerance    = tolerance,
+    max.iter.0_5 = max.iter.0_5
   )
 
   # Fit model

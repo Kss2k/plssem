@@ -7,7 +7,7 @@ mcpls <- function(
   miniter = 5,
   maxiter = 250,
   fixed.seed = FALSE,
-  verbose = TRUE,
+  verbose = interactive(),
   ...
 ) {
 

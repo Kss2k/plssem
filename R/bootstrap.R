@@ -1,18 +1,20 @@
-bootstrap <- function(model, R = 50L, zero.tol = 1e-10) {
+bootstrap <- function(model, R = 50L, zero.tol = 1e-10, verbose = interactive()) {
   data      <- model$data
   cluster   <- model$info$cluster
   is.probit <- model$info$is.probit
   ordered   <- model$info$ordered
   results   <- vector("list", R)
 
-  cli::cli_progress_bar(
-    name  = sprintf("bootstrap[%i]", R),
-    type  = "iterator",
-    total = R
-  )
+  if (verbose) {
+    cli::cli_progress_bar(
+      name  = sprintf("bootstrap[%i]", R),
+      type  = "iterator",
+      total = R
+    )
+  }
 
   for (i in seq_len(R)) {
-    cli::cli_progress_update()
+    if (verbose) cli::cli_progress_update()
 
     sampleData       <- resample(data, cluster = cluster)
     model$matrices$S <- getCorrMat(sampleData, ordered = ordered, probit = is.probit)
@@ -30,7 +32,7 @@ bootstrap <- function(model, R = 50L, zero.tol = 1e-10) {
     results[[i]] <- model$params$values
   }
 
-  cli::cli_progress_done()
+  if (verbose) cli::cli_progress_done()
 
   suppressWarnings({ # TODO: Fix mismatching thresholds in bootstrapping
     resultsMat <- do.call(rbind, results) 

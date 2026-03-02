@@ -85,11 +85,10 @@ factor scores, and supports multilevel specifications expressed with
 <span>  bootstrap <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  sample <span class="op">=</span> <span class="fl">50L</span>,</span>
 <span>  ordered <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  mcpls <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  probit <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  consistent.probit <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  tolerance <span class="op">=</span> <span class="fl">1e-05</span>,</span>
 <span>  max.iter.0_5 <span class="op">=</span> <span class="fl">100L</span>,</span>
-<span>  max.iter.0_9 <span class="op">=</span> <span class="fl">50L</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -133,14 +132,13 @@ are computed with `sample` resamples.</p></dd>
 should be treated as ordered when computing polychoric correlations.</p></dd>
 
 
+<dt>mcpls</dt>
+<dd><p>Should a Monte-Carlo consistency correction be applied?</p></dd>
+
+
 <dt>probit</dt>
 <dd><p>Logical; overrides the automatic choice of probit factor scores
 that is based on whether ordered indicators are present.</p></dd>
-
-
-<dt>consistent.probit</dt>
-<dd><p>Logical; Should probit consistent estimates be
-calculated?</p></dd>
 
 
 <dt>tolerance</dt>
@@ -152,19 +150,8 @@ calculated?</p></dd>
 the measurement and structural models.</p></dd>
 
 
-<dt>max.iter.0_9</dt>
-<dd><p>Maximum number of PLS iterations performed when estimating
-the measurement and structural models. Only relevant for interaction
-models with ordered data.</p></dd>
-
-
 <dt>...</dt>
 <dd><p>Currently unused, reserved for future extensions.</p></dd>
-
-
-<dt>max.iter</dt>
-<dd><p>Maximum number of PLS iterations performed when estimating
-the measurement and structural models.</p></dd>
 
 </dl></div>
     <div id="value">
@@ -329,8 +316,8 @@ the measurement and structural models.</p></dd>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   w3                                             0.785</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> R-squared (latents):</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Y                                              0.440</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   W                                              0.440</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Y                                              0.531</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   W                                              0.544</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Latent Variables:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                  Estimate  Std.Error  z.value  P(&gt;|z|)</span>
@@ -380,87 +367,12 @@ the measurement and structural models.</p></dd>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     W~1             0.009                             </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     W~X             0.016                             </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Thresholds:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                  Estimate  Std.Error  z.value  P(&gt;|z|)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     x1|t1          -2.848                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     x1|t2          -1.999                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     x1|t3          -0.947                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     x1|t4           0.134                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     x1|t5           1.088                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     x1|t6           2.165                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     x2|t1          -1.940                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     x2|t2          -0.976                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     x2|t3           0.276                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     x2|t4           0.974                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     x2|t5           2.245                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     x2|t6           2.989                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     x3|t1          -2.018                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     x3|t2          -1.143                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     x3|t3          -0.178                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     x3|t4           0.671                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     x3|t5           1.852                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     x3|t6           2.727                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     z1|t1          -2.149                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     z1|t2          -1.324                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     z1|t3          -0.218                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     z1|t4           0.844                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     z1|t5           1.878                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     z1|t6           2.636                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     z2|t1          -2.468                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     z2|t2          -1.433                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     z2|t3          -0.286                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     z2|t4           0.810                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     z2|t5           1.524                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     z2|t6           2.620                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     z3|t1          -2.706                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     z3|t2          -2.084                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     z3|t3          -1.158                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     z3|t4           0.093                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     z3|t5           0.980                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     z3|t6           1.981                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     y1|t1          -2.524                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     y1|t2          -1.758                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     y1|t3          -0.678                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     y1|t4           0.405                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     y1|t5           1.464                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     y1|t6           2.382                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     y2|t1          -2.447                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     y2|t2          -1.691                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     y2|t3          -0.576                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     y2|t4           0.232                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     y2|t5           1.410                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     y2|t6           2.349                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     y3|t1          -1.884                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     y3|t2          -0.960                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     y3|t3          -0.104                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     y3|t4           1.128                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     y3|t5           1.981                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     y3|t6           3.090                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     w1|t1          -2.636                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     w1|t2          -1.679                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     w1|t3          -0.798                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     w1|t4           0.285                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     w1|t5           1.104                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     w1|t6           2.264                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     w2|t1          -2.428                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     w2|t2          -1.649                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     w2|t3          -0.621                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     w2|t4           0.580                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     w2|t5           1.427                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     w2|t6           2.366                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     w3|t1          -2.357                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     w3|t2          -1.433                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     w3|t3          -0.732                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     w3|t4           0.598                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     w3|t5           1.525                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     w3|t6           2.203                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Variances:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                  Estimate  Std.Error  z.value  P(&gt;|z|)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     X               1.000                             </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     Z               1.000                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .Y               0.560                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .W               0.560                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .Y               0.469                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .W               0.456                             </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    .x1              0.130                             </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    .x2              0.331                             </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    .x3              0.211                             </span>

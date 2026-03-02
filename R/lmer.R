@@ -11,6 +11,8 @@ plslmer <- function(plsModel) {
   fit.c <- plsModel$fit.c
   fit.u <- plsModel$fit.u
 
+  selectGamma <- plsModel$matrices$select$gamma
+  Cov.lv <- fit.c$fitCov
   Correction <- fit.c$fitStructural / fit.u$fitStructural
   CorrectionCov <- fit.c$fitCov / fit.u$fitCov
 
@@ -50,6 +52,7 @@ plslmer <- function(plsModel) {
     fterms  <- stats::terms(stats::formula(line))
     vars    <- attr(fterms, "variables")
     dep     <- as.character(vars[[2L]])
+    indep   <- colnames(selectGamma)[selectGamma[,dep]]
 
     fixefFit   <- fixVecNames(lme4::fixef(lmerFit), dep = dep)
     vcovFit    <- fixMatNames(stats::vcov(lmerFit), dep = dep)
@@ -113,8 +116,9 @@ plslmer <- function(plsModel) {
     VCOV[[dep]]    <- vcovFit
     FIXEF[[dep]]   <- fixefFit
     VARCORR[[dep]] <- varCorrFit
-    SIGMA[[dep]]   <- getSigmaFromVarCorr(fit = lmerFit, varCorr = varCorrFit, dep = dep,
-                                          CorrectionCov = CorrectionCov)
+    SIGMA[[dep]]   <- getSigmaFromVarCorr(fit = lmerFit, varCorr = varCorrFit,
+                                          beta = fixefFit, CorrectionCov = CorrectionCov,
+                                          Cov.lv = Cov.lv, dep = dep, indep = indep)
   }
 
   valuesFixef <- unlist(unname(FIXEF))
@@ -133,23 +137,103 @@ plslmer <- function(plsModel) {
 }
 
 
-getSigmaFromVarCorr <- function(fit, varCorr, dep, CorrectionCov) {
-  rvdep  <- sprintf("%s~~%s", dep, dep)
+meanDiagZGZt <- function(fit, varCorr.c, dep = NULL) {
+  mf   <- model.frame(fit)
+  bars <- lme4::findbars(formula(fit))
 
-  scaleZeta <- CorrectionCov[dep, dep]
-  sigma <- stats::setNames(lme4::getME(fit, "sigma")^2, nm = rvdep) * scaleZeta
+  # helper to match your naming convention dep~(Intercept)->dep~1 etc.
+  getNames <- function(lhs, nm) {
+    rhs <- stringr::str_replace_all(nm, pattern="\\(Intercept\\)", replacement="1")
+    paste0(lhs, "~", rhs)
+  }
 
+  # Build the "small" random-effects model matrix (n x k) for each grouping factor,
+  # then compute rowwise z_i' Sigma z_i and sum across factors.
+  n <- nrow(mf)
+  v <- numeric(n)
+
+  for (b in bars) {
+    expr  <- b[[2]]                 # random part, e.g. 1 + x
+    gname <- deparse(b[[3]])        # grouping factor name
+
+    Sigma <- varCorr.c[[gname]]
+    if (is.null(Sigma)) {
+      stop("varCorr.c is missing grouping factor '", gname, "'.")
+    }
+    Sigma <- as.matrix(Sigma)
+
+    # "Small" Z for this term (no expansion by levels), just n x k:
+    f_rhs <- stats::as.formula(paste0("~", deparse(expr)))
+    Zsmall <- model.matrix(f_rhs, mf)
+
+    # Name alignment: columns of Zsmall must match row/colnames of Sigma
+    if (!is.null(dep)) {
+      colnames(Zsmall) <- getNames(dep, colnames(Zsmall))
+    }
+
+    # Reorder Zsmall to match Sigma ordering
+    rn <- rownames(Sigma)
+    if (is.null(rn)) rn <- colnames(Sigma)
+    if (is.null(rn)) {
+      stop("Sigma for grouping factor '", gname, "' must have row/col names.")
+    }
+
+    # Check that all Sigma terms exist in Zsmall
+    missing_cols <- setdiff(rn, colnames(Zsmall))
+    if (length(missing_cols) > 0) {
+      stop("For grouping factor '", gname, "', Z columns missing: ",
+           paste(missing_cols, collapse = ", "))
+    }
+
+    Zsmall <- Zsmall[, rn, drop = FALSE]
+
+    # Rowwise quadratic form: diag(Zsmall %*% Sigma %*% t(Zsmall))
+    # computed as rowSums((Zsmall %*% Sigma) * Zsmall)
+    A <- Zsmall %*% Sigma
+    v <- v + rowSums(A * Zsmall)
+  }
+
+  mean(v)
+}
+
+
+sigma2FromUnitVarY <- function(fit, beta.c, varCorr.c, targetVarY = 1,
+                               Cov.lv, dep, indep) {
+  beta.par <- paste0(dep, "~", indep)
+  beta.sub <- beta.c[beta.par]
+  Cov.x    <- Cov.lv[indep, indep]
+
+  v_re <- meanDiagZGZt(fit, varCorr.c, dep = dep)
+  v_fi <- t(beta.sub) %*% Cov.x %*% beta.sub
+
+  max(targetVarY - v_re - v_fi, 0)
+}
+
+
+getSigmaFromVarCorr <- function(fit, beta, varCorr, dep, indep, CorrectionCov, Cov.lv) {
+  rvdep <- sprintf("%s~~%s", dep, dep)
+
+  # If Var(Y)=1 on your reporting scale, use targetVarY=1
+  # If instead you want the "post-hoc scaled" total variance, set targetVarY = CorrectionCov[dep, dep]
+  targetVarY <- 1
+
+  sigma2 <- sigma2FromUnitVarY(fit, beta.c = beta, varCorr.c = varCorr,
+                               targetVarY = targetVarY, Cov.lv = Cov.lv,
+                               dep = dep, indep = indep)
+  sigma  <- stats::setNames(sigma2, nm = rvdep)
+
+  # Keep returning the (corrected) random-effect covariances as you already do
   for (VC in varCorr) {
     namesVC <- matrix("", nrow = NROW(VC), ncol = NCOL(VC))
     for (i in seq_len(NROW(VC))) for (j in seq_len(i))
       namesVC[i, j] <- sprintf("%s~~%s", rownames(VC)[i], colnames(VC)[j])
 
-    namesSigma <- namesVC[lower.tri(namesVC, diag = TRUE)]
+    namesSigma  <- namesVC[lower.tri(namesVC, diag = TRUE)]
     valuesSigma <- VC[lower.tri(VC, diag = TRUE)]
     names(valuesSigma) <- namesSigma
 
     sigma <- c(sigma, valuesSigma)
   }
 
-  sigma 
+  sigma
 }

@@ -1,4 +1,4 @@
-bootstrap <- function(model, R = 50L, zero.tol = 1e-10, verbose = interactive()) {
+bootstrap <- function(model, R = 50L, zero.tol = 1e-10, verbose = model$info$verbose) {
   data      <- model$data
   cluster   <- model$info$cluster
   is.probit <- model$info$is.probit

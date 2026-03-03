@@ -1,13 +1,12 @@
 mcpls <- function(
   fit0,
-  max.iter.mc = 100,
-  mc.reps = 20000,
-  rng.seed = NULL,
-  tol = 1e-3,
-  miniter = 5,
-  maxiter = 250,
-  fixed.seed = FALSE,
-  verbose = interactive(),
+  min.iter   = fit0$info$mc.args$min.iter,
+  max.iter   = fit0$info$mc.args$max.iter,
+  mc.reps    = fit0$info$mc.args$mc.reps,
+  rng.seed   = fit0$info$mc.args$rng.seed,
+  tol        = fit0$info$mc.args$tol,
+  fixed.seed = fit0$info$mc.args$fixed.seed,
+  verbose    = fit0$info$verbose,
   ...
 ) {
 
@@ -49,15 +48,15 @@ mcpls <- function(
     p = par1$est,
     f = .f,
     tol = tol,
-    miniter = miniter,
-    maxiter = maxiter,
+    miniter = min.iter,
+    maxiter = max.iter,
     verbose = verbose
   )
 
   if (verbose) cat("\n")
 
   iter <- mcfit$iter
-  if (iter >= maxiter && !fixed.seed) {
+  if (iter >= max.iter && !fixed.seed) {
     rng.seed <- floor(runif(1L, min = 0, max = 9999999))
     warning2("Maximum number of iterations reached!\n",
              sprintf("Attempting to use fixed seed %i...", rng.seed))
@@ -66,8 +65,8 @@ mcpls <- function(
       p = mcfit$root,
       f = .f,
       tol = tol,
-      miniter = miniter,
-      maxiter = maxiter,
+      miniter = min.iter,
+      maxiter = max.iter,
       verbose = verbose
     )
 

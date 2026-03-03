@@ -16,6 +16,12 @@ pls(
   probit = NULL,
   tolerance = 1e-05,
   max.iter.0_5 = 100L,
+  mc.min.iter = 5L,
+  mc.max.iter = 250L,
+  mc.reps = 20000L,
+  mc.tol = 0.001,
+  mc.fixed.seed = FALSE,
+  verbose = interactive(),
   ...
 )
 }
@@ -52,6 +58,18 @@ that is based on whether ordered indicators are present.}
 
 \item{max.iter.0_5}{Maximum number of PLS iterations performed when estimating
 the measurement and structural models.}
+
+\item{mc.min.iter}{Minimum number of iterations in MC-PLS algorithm.}
+
+\item{mc.max.iter}{Maximum number of iterations in MC-PLS algorithm.}
+
+\item{mc.reps}{Monte-Carlo sample size in MC-PLS algorithm.}
+
+\item{mc.tol}{Tolerance in MC-PLS algorithm.}
+
+\item{mc.fixed.seed}{Should a fixed seed be used in the MC-PLS algorithm?}
+
+\item{verbose}{Should verbose output be printed?}
 
 \item{...}{Currently unused, reserved for future extensions.}
 }

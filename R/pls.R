@@ -42,6 +42,18 @@ USE_NON_LINEAR_PROBIT_CORR_MAT <- FALSE # for now we stick with the linear assum
 #'
 #' @param tolerance Numeric; Convergence criteria/tolerance.
 #'
+#' @param mc.min.iter Minimum number of iterations in MC-PLS algorithm.
+#'
+#' @param mc.max.iter Maximum number of iterations in MC-PLS algorithm.
+#'
+#' @param mc.reps Monte-Carlo sample size in MC-PLS algorithm.
+#'
+#' @param mc.tol Tolerance in MC-PLS algorithm.
+#'
+#' @param mc.fixed.seed Should a fixed seed be used in the MC-PLS algorithm?
+#'
+#' @param verbose Should verbose output be printed?
+#'
 #' @param ... Currently unused, reserved for future extensions.
 #'
 #' @return An object of class `plssem` containing the estimated parameters, fit
@@ -91,21 +103,33 @@ pls <- function(syntax,
                 probit = NULL,
                 tolerance = 1e-5,
                 max.iter.0_5 = 100L,
+                mc.min.iter = 5L,
+                mc.max.iter = 250L,
+                mc.reps = 20000L,
+                mc.tol = 1e-3,
+                mc.fixed.seed = FALSE,
+                verbose = interactive(),
                 ...) {
   # preprocess data
   data <- as.data.frame(data)
 
   # Define model
   model <- specifyModel(
-    syntax       = syntax,
-    data         = data,
-    consistent   = consistent,
-    standardize  = standardize,
-    ordered      = ordered,
-    probit       = probit,
-    mcpls        = mcpls,
-    tolerance    = tolerance,
-    max.iter.0_5 = max.iter.0_5
+    syntax        = syntax,
+    data          = data,
+    consistent    = consistent,
+    standardize   = standardize,
+    ordered       = ordered,
+    probit        = probit,
+    mcpls         = mcpls,
+    tolerance     = tolerance,
+    max.iter.0_5  = max.iter.0_5,
+    mc.min.iter   = mc.min.iter,
+    mc.max.iter   = mc.max.iter,
+    mc.reps       = mc.reps,
+    mc.tol        = mc.tol,
+    mc.fixed.seed = mc.fixed.seed,
+    verbose       = verbose
   )
 
   # Fit model

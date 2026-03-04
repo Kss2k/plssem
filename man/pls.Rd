@@ -22,6 +22,7 @@ pls(
   mc.tol = 0.001,
   mc.fixed.seed = FALSE,
   mc.polyak.juditsky = FALSE,
+  mc.fn.args = list(),
   verbose = interactive(),
   ...
 )
@@ -72,6 +73,9 @@ the measurement and structural models.}
 
 \item{mc.polyak.juditsky}{Should the polyak.juditsky running average method
 be applied in the MC-PLS algorithm?}
+
+\item{mc.fn.args}{Additional arguments to MC-PLS algorithm, mainly for controling
+the step size.}
 
 \item{verbose}{Should verbose output be printed?}
 

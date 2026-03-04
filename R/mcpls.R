@@ -8,6 +8,7 @@ mcpls <- function(
   fixed.seed      = fit0$info$mc.args$fixed.seed,
   verbose         = fit0$info$verbose,
   polyak.juditsky = fit0$info$mc.args$polyak.juditsky,
+  fn.args         = fit0$info$mc.args$fn.args,
   ...
 ) {
 
@@ -40,19 +41,21 @@ mcpls <- function(
     fit0$matrices$S <- Rfast::cova(fit0$data)
 
     fit2 <- estimatePLS_Inner(fit0)
-    par2 <- getFreeParamsTable(fit2) 
+    par2 <- getFreeParamsTable(fit2)
 
     par2$est - par0$est
   }
 
-  mcfit <- SimDesign::RobbinsMonro(
+  mcfit <- robbinsMonro1951(
     p               = par1$est,
     f               = .f,
     tol             = tol,
-    miniter         = min.iter,
-    maxiter         = max.iter,
+    min.iter        = min.iter,
+    max.iter        = max.iter,
     verbose         = verbose,
-    Polyak_Juditsky = polyak.juditsky
+    polyak.juditsky = polyak.juditsky,
+    fn.args         = fn.args,
+    ...
   )
 
   if (verbose) cat("\n")
@@ -63,14 +66,16 @@ mcpls <- function(
     warning2("Maximum number of iterations reached!\n",
              sprintf("Attempting to use fixed seed %i...", rng.seed))
 
-    mcfit <- SimDesign::RobbinsMonro(
-      p               = mcfit$root,
+    mcfit <- robbinsMonro1951(
+      p               = as.vector(mcfit$root),
       f               = .f,
       tol             = tol,
-      miniter         = min.iter,
-      maxiter         = max.iter,
+      min.iter        = min.iter,
+      max.iter        = max.iter,
       verbose         = verbose,
-      Polyak_Juditsky = polyak.juditsky
+      polyak.juditsky = polyak.juditsky,
+      fn.args         = fn.args,
+      ...
     )
 
     if (verbose) cat("\n")
@@ -165,7 +170,7 @@ updateModelFromFreeParTableMC <- function(parTable, model, mc.reps, seed = NULL)
 
     par <- parTable[cond, "est"]
 
-    if (!length(par)) NA_real_ else par[[1L]] 
+    if (!length(par)) NA_real_ else par[[1L]]
   }
 
   for (lv in colnames(fitMeasurement)) for (ov in rownames(fitMeasurement)) {
@@ -188,7 +193,7 @@ updateModelFromFreeParTableMC <- function(parTable, model, mc.reps, seed = NULL)
 
     fitStructural[indep, dep] <- par
   }
- 
+
   k <- NCOL(fitCov)
   for (i in seq_len(k)) for (j in seq_len(i - 1)) {
     lhs <- colnames(fitCov)[[i]]
@@ -208,4 +213,23 @@ updateModelFromFreeParTableMC <- function(parTable, model, mc.reps, seed = NULL)
   model$fit$fitTheta       <- fitTheta
 
   estimatePLS_Step8(model)
+}
+
+
+robbinsMonro1951 <- function(p, f, tol, min.iter, max.iter, verbose,
+                             polyak.juditsky, fn.args, ...) {
+
+  args.required <- list(
+      p               = p,
+      f               = f,
+      tol             = tol,
+      miniter         = min.iter,
+      maxiter         = max.iter,
+      verbose         = verbose,
+      Polyak_Juditsky = polyak.juditsky
+  )
+
+  args <- c(args.required, fn.args, list(...))
+
+  do.call(SimDesign::RobbinsMonro, args)
 }

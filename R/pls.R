@@ -55,6 +55,9 @@ USE_NON_LINEAR_PROBIT_CORR_MAT <- FALSE # for now we stick with the linear assum
 #' @param mc.polyak.juditsky Should the polyak.juditsky running average method
 #'   be applied in the MC-PLS algorithm?
 #'
+#' @param mc.fn.args Additional arguments to MC-PLS algorithm, mainly for controling
+#'   the step size.
+#'
 #' @param verbose Should verbose output be printed?
 #'
 #' @param ... Currently unused, reserved for future extensions.
@@ -112,6 +115,7 @@ pls <- function(syntax,
                 mc.tol = 1e-3,
                 mc.fixed.seed = FALSE,
                 mc.polyak.juditsky = FALSE,
+                mc.fn.args = list(),
                 verbose = interactive(),
                 ...) {
   # preprocess data
@@ -134,6 +138,7 @@ pls <- function(syntax,
     mc.tol             = mc.tol,
     mc.fixed.seed      = mc.fixed.seed,
     mc.polyak.juditsky = mc.polyak.juditsky,
+    mc.fn.args         = mc.fn.args,
     verbose            = verbose
   )
 

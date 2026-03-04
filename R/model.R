@@ -15,6 +15,7 @@ specifyModel <- function(syntax,
                          mc.tol             = 1e-3,
                          mc.fixed.seed      = FALSE,
                          mc.polyak.juditsky = FALSE,
+                         mc.fn.args         = list(),
                          verbose            = interactive()) {
 
   parsed <- parseModelArguments(
@@ -83,6 +84,7 @@ specifyModel <- function(syntax,
     tol             = mc.tol,
     fixed.seed      = mc.fixed.seed,
     polyak.juditsky = mc.polyak.juditsky,
+    fn.args         = mc.fn.args,
     rng.seed        = NULL
   )
 

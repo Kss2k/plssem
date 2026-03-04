@@ -1,12 +1,13 @@
 mcpls <- function(
   fit0,
-  min.iter   = fit0$info$mc.args$min.iter,
-  max.iter   = fit0$info$mc.args$max.iter,
-  mc.reps    = fit0$info$mc.args$mc.reps,
-  rng.seed   = fit0$info$mc.args$rng.seed,
-  tol        = fit0$info$mc.args$tol,
-  fixed.seed = fit0$info$mc.args$fixed.seed,
-  verbose    = fit0$info$verbose,
+  min.iter        = fit0$info$mc.args$min.iter,
+  max.iter        = fit0$info$mc.args$max.iter,
+  mc.reps         = fit0$info$mc.args$mc.reps,
+  rng.seed        = fit0$info$mc.args$rng.seed,
+  tol             = fit0$info$mc.args$tol,
+  fixed.seed      = fit0$info$mc.args$fixed.seed,
+  verbose         = fit0$info$verbose,
+  polyak.juditsky = fit0$info$mc.args$polyak.juditsky,
   ...
 ) {
 
@@ -45,12 +46,13 @@ mcpls <- function(
   }
 
   mcfit <- SimDesign::RobbinsMonro(
-    p = par1$est,
-    f = .f,
-    tol = tol,
-    miniter = min.iter,
-    maxiter = max.iter,
-    verbose = verbose
+    p               = par1$est,
+    f               = .f,
+    tol             = tol,
+    miniter         = min.iter,
+    maxiter         = max.iter,
+    verbose         = verbose,
+    Polyak_Juditsky = polyak.juditsky
   )
 
   if (verbose) cat("\n")
@@ -62,12 +64,13 @@ mcpls <- function(
              sprintf("Attempting to use fixed seed %i...", rng.seed))
 
     mcfit <- SimDesign::RobbinsMonro(
-      p = mcfit$root,
-      f = .f,
-      tol = tol,
-      miniter = min.iter,
-      maxiter = max.iter,
-      verbose = verbose
+      p               = mcfit$root,
+      f               = .f,
+      tol             = tol,
+      miniter         = min.iter,
+      maxiter         = max.iter,
+      verbose         = verbose,
+      Polyak_Juditsky = polyak.juditsky
     )
 
     if (verbose) cat("\n")
@@ -75,7 +78,7 @@ mcpls <- function(
     iter <- iter + mcfit$iter
   }
 
-  par1$est <- mcfit$root
+  par1$est <- as.vector(mcfit$root)
   fit1 <- updateModelFromFreeParTableMC(
     parTable = par1,
     model    = fit0,

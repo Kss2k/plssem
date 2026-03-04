@@ -2,19 +2,20 @@ OPERATORS <- c("~~", "=~", "~1", "~", "|", "<~")
 
 specifyModel <- function(syntax,
                          data,
-                         consistent    = TRUE,
-                         standardize   = TRUE,
-                         ordered       = NULL,
-                         probit        = NULL,
-                         mcpls         = NULL,
-                         tolerance     = 1e-5,
-                         max.iter.0_5  = 100,
-                         mc.max.iter   = 250,
-                         mc.min.iter   = 5,
-                         mc.reps       = 20000,
-                         mc.tol        = 1e-3,
-                         mc.fixed.seed = FALSE,
-                         verbose       = interactive()) {
+                         consistent         = TRUE,
+                         standardize        = TRUE,
+                         ordered            = NULL,
+                         probit             = NULL,
+                         mcpls              = NULL,
+                         tolerance          = 1e-5,
+                         max.iter.0_5       = 100,
+                         mc.max.iter        = 250,
+                         mc.min.iter        = 5,
+                         mc.reps            = 20000,
+                         mc.tol             = 1e-3,
+                         mc.fixed.seed      = FALSE,
+                         mc.polyak.juditsky = FALSE,
+                         verbose            = interactive()) {
 
   parsed <- parseModelArguments(
     syntax     = syntax,
@@ -58,28 +59,32 @@ specifyModel <- function(syntax,
   ordered.x <- intersect(inds.x, ordered)
   ordered.y <- intersect(inds.y, ordered)
 
-  info$lme4.syntax       <- lme4.syntax
-  info$is.mlm            <- is.mlm
-  info$is.mcpls          <- is.mcpls
-  info$is.probit         <- is.probit
-  info$cluster           <- cluster
-  info$consistent        <- consistent
-  info$ordered           <- ordered
-  info$ordered.x         <- ordered.x
-  info$ordered.y         <- ordered.y
-  info$intTermElems      <- intTermElems
-  info$intTermNames      <- intTermNames
-  info$is.nlin           <- is.nlin
-  info$rng.seed          <- floor(stats::runif(1L, min=0, max=9999999))
-  info$n                 <- NROW(preppedData$X)
-  info$estimator         <- getEstimatorFromInfo(info)
-  info$verbose           <- verbose
-  info$mc.args           <- list(min.iter      = mc.min.iter,
-                                 max.iter      = mc.max.iter,
-                                 mc.reps       = mc.reps,
-                                 tol           = mc.tol,
-                                 fixed.seed    = mc.fixed.seed,
-                                 rng.seed      = NULL)
+  info$lme4.syntax  <- lme4.syntax
+  info$is.mlm       <- is.mlm
+  info$is.mcpls     <- is.mcpls
+  info$is.probit    <- is.probit
+  info$cluster      <- cluster
+  info$consistent   <- consistent
+  info$ordered      <- ordered
+  info$ordered.x    <- ordered.x
+  info$ordered.y    <- ordered.y
+  info$intTermElems <- intTermElems
+  info$intTermNames <- intTermNames
+  info$is.nlin      <- is.nlin
+  info$rng.seed     <- floor(stats::runif(1L, min=0, max=9999999))
+  info$n            <- NROW(preppedData$X)
+  info$estimator    <- getEstimatorFromInfo(info)
+  info$verbose      <- verbose
+
+  info$mc.args <- list(
+    min.iter        = mc.min.iter,
+    max.iter        = mc.max.iter,
+    mc.reps         = mc.reps,
+    tol             = mc.tol,
+    fixed.seed      = mc.fixed.seed,
+    polyak.juditsky = mc.polyak.juditsky,
+    rng.seed        = NULL
+  )
 
   matrices$S  <- preppedData$S
   matrices$SC <- diagPartitioned(matrices$S, matrices$C)

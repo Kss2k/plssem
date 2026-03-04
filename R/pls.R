@@ -52,6 +52,9 @@ USE_NON_LINEAR_PROBIT_CORR_MAT <- FALSE # for now we stick with the linear assum
 #'
 #' @param mc.fixed.seed Should a fixed seed be used in the MC-PLS algorithm?
 #'
+#' @param mc.polyak.juditsky Should the polyak.juditsky running average method
+#'   be applied in the MC-PLS algorithm?
+#'
 #' @param verbose Should verbose output be printed?
 #'
 #' @param ... Currently unused, reserved for future extensions.
@@ -108,6 +111,7 @@ pls <- function(syntax,
                 mc.reps = 20000L,
                 mc.tol = 1e-3,
                 mc.fixed.seed = FALSE,
+                mc.polyak.juditsky = FALSE,
                 verbose = interactive(),
                 ...) {
   # preprocess data
@@ -115,21 +119,22 @@ pls <- function(syntax,
 
   # Define model
   model <- specifyModel(
-    syntax        = syntax,
-    data          = data,
-    consistent    = consistent,
-    standardize   = standardize,
-    ordered       = ordered,
-    probit        = probit,
-    mcpls         = mcpls,
-    tolerance     = tolerance,
-    max.iter.0_5  = max.iter.0_5,
-    mc.min.iter   = mc.min.iter,
-    mc.max.iter   = mc.max.iter,
-    mc.reps       = mc.reps,
-    mc.tol        = mc.tol,
-    mc.fixed.seed = mc.fixed.seed,
-    verbose       = verbose
+    syntax             = syntax,
+    data               = data,
+    consistent         = consistent,
+    standardize        = standardize,
+    ordered            = ordered,
+    probit             = probit,
+    mcpls              = mcpls,
+    tolerance          = tolerance,
+    max.iter.0_5       = max.iter.0_5,
+    mc.min.iter        = mc.min.iter,
+    mc.max.iter        = mc.max.iter,
+    mc.reps            = mc.reps,
+    mc.tol             = mc.tol,
+    mc.fixed.seed      = mc.fixed.seed,
+    mc.polyak.juditsky = mc.polyak.juditsky,
+    verbose            = verbose
   )
 
   # Fit model

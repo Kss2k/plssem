@@ -21,6 +21,7 @@ pls(
   mc.reps = 20000L,
   mc.tol = 0.001,
   mc.fixed.seed = FALSE,
+  mc.polyak.juditsky = FALSE,
   verbose = interactive(),
   ...
 )
@@ -68,6 +69,9 @@ the measurement and structural models.}
 \item{mc.tol}{Tolerance in MC-PLS algorithm.}
 
 \item{mc.fixed.seed}{Should a fixed seed be used in the MC-PLS algorithm?}
+
+\item{mc.polyak.juditsky}{Should the polyak.juditsky running average method
+be applied in the MC-PLS algorithm?}
 
 \item{verbose}{Should verbose output be printed?}
 

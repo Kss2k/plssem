@@ -46,8 +46,11 @@ mcpls <- function(
     par2$est - par0$est
   }
 
+  p <- par1$est
+
+
   mcfit <- robbinsMonro1951(
-    p               = par1$est,
+    p               = p,
     f               = .f,
     tol             = tol,
     min.iter        = min.iter,
@@ -57,8 +60,6 @@ mcpls <- function(
     fn.args         = fn.args,
     ...
   )
-
-  if (verbose) cat("\n")
 
   iter <- mcfit$iter
   if (iter >= max.iter && !fixed.seed) {
@@ -77,8 +78,6 @@ mcpls <- function(
       fn.args         = fn.args,
       ...
     )
-
-    if (verbose) cat("\n")
 
     iter <- iter + mcfit$iter
   }
@@ -231,5 +230,8 @@ robbinsMonro1951 <- function(p, f, tol, min.iter, max.iter, verbose,
 
   args <- c(args.required, fn.args, list(...))
 
-  do.call(SimDesign::RobbinsMonro, args)
+  mcfit <- do.call(SimDesign::RobbinsMonro, args)
+  if (verbose) cat("\n")
+
+  mcfit
 }

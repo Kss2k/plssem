@@ -4,8 +4,8 @@ Title: Estimate complex Structural Equation Models (SEMs) using the PLS-SEM fram
 Version: 0.1.0
 Authors@R: 
     person(given = "Kjell", family = "Solem Slupphaug", 
-        email = "slupphaugkjell@gmail.com", role = c("aut", "cre"),
-        comment = c(ORCID = "0009-0005-8324-2834")
+           email = "slupphaugkjell@gmail.com", role = c("aut", "cre"),
+           comment = c(ORCID = "0009-0005-8324-2834"))
 Maintainer: Kjell Solem Slupphaug <slupphaugkjell@gmail.com>
 Description:
     Estimate complex Structural Equation Models (SEMs) using the 

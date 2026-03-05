@@ -27,7 +27,7 @@ mcpls <- function(
   par1 <- par0[c("lhs", "op", "rhs", "est")]
 
   if (fixed.seed && is.null(rng.seed)) {
-    rng.seed <- floor(runif(1L, min = 0, max = 9999999))
+    rng.seed <- floor(stats::runif(1L, min = 0, max = 9999999))
     if (verbose) printf("Using fixed seed %i...\n", rng.seed)
   }
 
@@ -63,7 +63,7 @@ mcpls <- function(
 
   iter <- mcfit$iter
   if (iter >= max.iter && !fixed.seed) {
-    rng.seed <- floor(runif(1L, min = 0, max = 9999999))
+    rng.seed <- floor(stats::runif(1L, min = 0, max = 9999999))
     warning2("Maximum number of iterations reached!\n",
              sprintf("Attempting to use fixed seed %i...", rng.seed))
 

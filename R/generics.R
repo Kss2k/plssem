@@ -50,8 +50,6 @@ summary.plssem <- function(object, ...) {
     )
   )
 
-
-
   class(out) <- "SummaryPlsSem"
   out
 }
@@ -71,7 +69,7 @@ print.SummaryPlsSem <- function(x, ...) {
 
   printf("plssem (%s) ended normally after %i iterations\n\n",
          PKG_INFO$version, x$info$iterations)
- 
+
   width.out <- x$print$width
 
   headerNames <- c(
@@ -141,11 +139,11 @@ print.plssem <- function(x, ...) {
 #'
 #' @export
 parameter_estimates.plssem <- function(object,
-                                       colon.pi = TRUE, 
+                                       colon.pi = TRUE,
                                        label.renamed.prod = FALSE,
                                        ...) {
   parTable <- object$parTable
-  
+
   if (colon.pi)
     parTable <- addColonPI_ParTable(parTable, model = object,
                                     label.renamed.prod = label.renamed.prod)

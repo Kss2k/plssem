@@ -34,7 +34,6 @@ Imports:
     Rfast,
     collapse,
     mvnfast,
-    mvtnorm,
     reformulas
 Depends: 
     R (>= 4.1.0)

@@ -1,12 +1,12 @@
 # `plssem`
 
-The goal of the [`plssem`](https://kss2k.github.io/plssem/) package is to allow the 
-estimation of complex Structural Equation Models (SEMs) using the 
+The goal of the [`plssem`](https://kss2k.github.io/plssem/) package is to allow the
+estimation of complex Structural Equation Models (SEMs) using the
 PLS-SEM framework. This package expands the PLS-SEM (and PLSc-SEM) framework
 to handle categorical data, non-linear models, and multilevel structures.
 
 [`plssem`](https://kss2k.github.io/plssem/) is currently under development. The end goal is to allow the estimation
-of non-linear multilevel PLS-SEM (and PLSc-SEM) models with ordinal/categorical data. 
+of non-linear multilevel PLS-SEM (and PLSc-SEM) models with ordinal/categorical data.
 
 ## Installation
 The package currently needs to be installed from `GitHub`. Currently, it
@@ -23,7 +23,7 @@ devtools::install_github("kss2k/plssem")
 library(plssem)
 library(modsem)
 
-tpb <- ' 
+tpb <- '
 # Outer Model (Based on Hagger et al., 2007)
   ATT =~ att1 + att2 + att3 + att4 + att5
   SN =~ sn1 + sn2
@@ -33,7 +33,7 @@ tpb <- '
 
 # Inner Model (Based on Steinmetz et al., 2011)
   INT ~ ATT + SN + PBC
-  BEH ~ INT + PBC 
+  BEH ~ INT + PBC
 '
 
 fit <- pls(tpb, TPB, bootstrap = TRUE)
@@ -42,7 +42,7 @@ summary(fit)
 
 ### Linear Model with Ordered Data
 ```r
-tpb <- ' 
+tpb <- '
 # Outer Model (Based on Hagger et al., 2007)
   ATT =~ att1 + att2 + att3 + att4 + att5
   SN =~ sn1 + sn2
@@ -52,7 +52,7 @@ tpb <- '
 
 # Inner Model (Based on Steinmetz et al., 2011)
   INT ~ ATT + SN + PBC
-  BEH ~ INT + PBC 
+  BEH ~ INT + PBC
 '
 
 fit <- pls(tpb, TPB_Ordered, bootstrap = TRUE)

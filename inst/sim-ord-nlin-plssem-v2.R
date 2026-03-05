@@ -312,15 +312,21 @@ print_sep <-  \() cat(strrep("─", options("width")[[1]]), "\n")
 
 
 parameter_estimates.cSEMResults <- function(object, ...) {
-  paths <- cSEM::summarize(object)$Estimates$Path_estimates
-  par <- stringr::str_remove_all(paths$Name, " ")
+  estimates <- cSEM::summarize(object)$Estimates
+
+  vals <- rbind(
+    estimates$Loading_estimates,
+    estimates$Path_estimates
+  )
+
+  par <- stringr::str_remove_all(vals$Name, " ")
   par <- stringr::str_replace_all(par, "\\.", ":")
   lhs <- stringr::str_split_i(par, "~", i = 1L)
   rhs <- stringr::str_split_i(par, "~", i = 2L)
   op  <- "~"
-  est <- paths$Estimate
+  est <- vals$Estimate
   se  <- paths$Std_err
-  pvalue <- paths$p_value
+  pvalue <- vals$p_value
   z      <- est / se
   ci.lower <- est - 1.96 * se
   ci.upper <- est + 1.96 * se

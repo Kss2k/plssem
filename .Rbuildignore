@@ -9,3 +9,6 @@ sketches
 ^pkgdown$
 CONTRIBUTING.md
 CLONE.md
+*.csv
+inst/*.rds
+inst/*.csv

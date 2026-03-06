@@ -1,5 +1,3 @@
-set.seed(2308257)
-
 library(mvtnorm)
 library(modsem)
 library(tidyr)
@@ -8,10 +6,14 @@ library(plssem)
 library(cSEM)
 library(dplyr)
 
+setwd("C:/Users/slupp/Desktop/CODE/R/repos/plssem")
+
 # ──────────────────────────────────────────────────────────────────────────────
 # Setup Simulation
 # ──────────────────────────────────────────────────────────────────────────────
-filename <- stringr::str_remove_all(sprintf("realtime-results-%s.csv", Sys.time()), " ")
+filename <- sprintf("realtime-results-%s.csv", substr(Sys.time(), 1, 16)) |>
+  stringr::str_replace_all(" ", "-") |>
+  stringr::str_replace_all(":", "-")
 
 pars <- c("X=~x1", "X=~x2", "X=~x3",
           "Z=~z1", "Z=~z2", "Z=~z3",
@@ -32,9 +34,10 @@ writeLinesToFile <- function(lines) {
 
 writeOutputToFile <- function(output) {
   tbl <- output$pars
-  nm <- paste0(tbl$lhs, tbl$op, tbl$rhs)
-  est <- setNames(tbl$est, nm = nm) 
-  est[setdiff(pars, nm)] <- NA_real_
+  nm <- paste0(tolower(tbl$lhs), tbl$op, tolower(tbl$rhs))
+  est <- setNames(tbl$est, nm = nm)
+  parsl <- tolower(pars)
+  est[setdiff(parsl, nm)] <- NA_real_
 
   
   line <- paste0(c(
@@ -43,7 +46,7 @@ writeOutputToFile <- function(output) {
     output$ncat,
     output$seed,
     output$method,
-    est[pars]
+    est[parsl]
   ), collapse = ";")
 
   writeLinesToFile(line)
@@ -183,41 +186,41 @@ list_thresholds <- list(
   Symmetric = list(
   `2` = c( 0.00),
   `3` = c(-0.83,  0.83),
-  `4` = c(-1.25,  0.00,  1.25),
+  # `4` = c(-1.25,  0.00,  1.25),
   `5` = c(-1.50, -0.50,  0.50, 1.50),
-  `6` = c(-1.60, -0.83,  0.00, 0.83, 1.60),
+  # `6` = c(-1.60, -0.83,  0.00, 0.83, 1.60),
   `7` = c(-1.79, -1.07, -0.36, 0.36, 1.07, 1.79)
   ),
   Moderate = list(
     `2` = c( 0.36),
     `3` = c(-0.50,  0.76),
-    `4` = c(-0.31,  0.79,  1.66),
+    # `4` = c(-0.31,  0.79,  1.66),
     `5` = c(-0.70,  0.39,  1.16,  2.05),
-    `6` = c(-1.05,  0.08,  0.81,  1.44,  2.33),
+    # `6` = c(-1.05,  0.08,  0.81,  1.44,  2.33),
     `7` = c(-1.43, -0.43,  0.38,  0.94,  1.44,  2.54)
   ),
   Extreme = list(
     `2` = c( 1.04),
     `3` = c( 0.58,  1.13),
-    `4` = c( 0.28,  0.71,  1.23),
+    #`4` = c( 0.28,  0.71,  1.23),
     `5` = c( 0.05,  0.44,  0.84,  1.34),
-    `6` = c(-0.13,  0.25,  0.61,  0.99,  1.48),
+    #`6` = c(-0.13,  0.25,  0.61,  0.99,  1.48),
     `7` = c(-0.25,  0.13,  0.47,  0.81,  1.18,  1.64)
   ),
   Alt.Mod = list(
     `2` = c(-0.36),
     `3` = c(-0.76,  0.50),
-    `4` = c(-1.66, -0.79,  0.31),
+    # `4` = c(-1.66, -0.79,  0.31),
     `5` = c(-2.05, -1.16, -0.39,  0.70),
-    `6` = c(-2.33, -1.44, -0.81, -0.08,  1.05),
+    # `6` = c(-2.33, -1.44, -0.81, -0.08,  1.05),
     `7` = c(-2.54, -1.44, -0.94, -0.38,  0.43,  1.43)
   ),
   Alt.Ext = list(
     `2` = c(-1.04),
     `3` = c(-1.13, -0.58),
-    `4` = c(-1.23, -0.71, -0.28),
+    # `4` = c(-1.23, -0.71, -0.28),
     `5` = c(-1.34, -0.84, -0.44, -0.05),
-    `6` = c(-1.48, -0.99, -0.61, -0.25,  0.13),
+    # `6` = c(-1.48, -0.99, -0.61, -0.25,  0.13),
     `7` = c(-1.64, -1.18, -0.81, -0.47, -0.13,  0.25)
   )
 )
@@ -256,7 +259,6 @@ cut_data <- function(data, thr, choose = NULL) {
 
 
 R <- 200L
-
 
 get_output <- function(expr,
                        parfun = parameter_estimates,
@@ -321,11 +323,11 @@ parameter_estimates.cSEMResults <- function(object, ...) {
 
   par <- stringr::str_remove_all(vals$Name, " ")
   par <- stringr::str_replace_all(par, "\\.", ":")
-  lhs <- stringr::str_split_i(par, "~", i = 1L)
-  rhs <- stringr::str_split_i(par, "~", i = 2L)
-  op  <- "~"
+  lhs <- stringr::str_split_i(par, "=~|~", i = 1L)
+  rhs <- stringr::str_split_i(par, "=~|~", i = 2L)
+  op  <- stringr::str_extract(par, "=~|~")
   est <- vals$Estimate
-  se  <- paths$Std_err
+  se  <- vals$Std_err
   pvalue <- vals$p_value
   z      <- est / se
   ci.lower <- est - 1.96 * se
@@ -342,26 +344,37 @@ parameter_estimates.cSEMResults <- function(object, ...) {
 # Run Simulation
 # ──────────────────────────────────────────────────────────────────────────────
 id <- 0
-total <- R * sum(sapply(list_thresholds, length))
+K <-  sum(sapply(list_thresholds, length))
+total <- R * K
+R.skip <- 0L
+
 results <- NULL
+set.seed(2308257)
 seeds <- floor(runif(total, min = 0, max = 9999999))
 
-for (cond in names(list_thresholds)) {
-  categories <- names(list_thresholds[[cond]])
+for (i in seq_len(R)) {
+  results_sub <- vector("list", length=K)
 
-  for (ncat in categories) {
-    thresholds <- list_thresholds[[cond]][[ncat]]
+  k <- 0  
+  for (cond in names(list_thresholds)) {
+    categories <- names(list_thresholds[[cond]])
+  
+    for (ncat in categories) {
+      thresholds <- list_thresholds[[cond]][[ncat]]
 
-    results_sub <- vector("list", length=R)
-    for (i in seq_len(R)) {
+      cat(sprintf("k=%i, i=%i, id=%i, seed = %i\n", k, i, id, seeds[id]))
+      k  <- k + 1
       id <- id + 1
-
-      if (!is.null(results_sub[[i]])) {
-        message(sprintf("Skipping iteration %i, as it has already been run...", i))
+  
+      if (i <= R.skip) {
+        message(sprintf("Skipping iteration %i, as it has already been run...", id))
+        next
+      } else if (!is.null(results_sub[[k]])) {
+        message(sprintf("Skipping iteration %i, as it has already been run...", id))
         next
       }
 
-      set.seed(seeds[i])
+      set.seed(seeds[id])
       data_cont_i <- sim_cont_data()
       data_cat_i  <- cut_data(data = data_cont_i, thr = thresholds)
       ordered <- colnames(data_cat_i)
@@ -373,7 +386,7 @@ for (cond in names(list_thresholds)) {
       fitted_i <- list(
         plsc.ord = get_output(
           expr = pls(model, data = data_cat_i, ordered = ordered, mc.reps = 20000),
-          method = "MC-OrdPLSc", id = id, cond = cond, ncat = ncat, seed = seeds[i],
+          method = "MC-OrdPLSc", id = id, cond = cond, ncat = ncat, seed = seeds[id],
           parfun = plssem::parameter_estimates
         ),
 
@@ -384,26 +397,22 @@ for (cond in names(list_thresholds)) {
         #   parfun = plssem::parameter_estimates
         # ) #,
 
-        # mplus = get_output(
-        #   expr = modsem(model, data = data_cat_i, method = "mplus", categorical = c("x1", "x2", "z1", "z2", "y1", "y2")),
-        #   method = "mplus", id = id, cond = cond, ncat = ncat, parfun = modsem::standardized_estimates
-        # )
 
-       bayes = get_output(
-          expr = modsem_stan(model, data = data_cat_i, ordered = ordered),
-          method = "Bayesian (MCMC)", id = id, cond = cond, ncat = ncat,
-          seed = seeds[i], parfun = modsem::standardized_estimates
-        ),
+        # bayes = get_output(
+        #    expr = modsem_stan(model, data = data_cat_i, ordered = ordered),
+        #    method = "Bayesian (MCMC)", id = id, cond = cond, ncat = ncat,
+        #    seed = seeds[i], parfun = modsem::standardized_estimates
+        #  ),
 
         plsc = get_output(
           expr = suppressMessages(pls(model, data = data_cat_i)),
           method = "PLSc", id = id, cond = cond, ncat = ncat,
-          seed = seeds[i], parfun = plssem::parameter_estimates
+          seed = seeds[id], parfun = plssem::parameter_estimates
         ),
 
         pls = get_output(
           expr = suppressMessages(pls(model, data = data_cat_i, consistent = FALSE)),
-          method = "PLS", id = id, cond = cond, ncat = ncat, seed = seeds[i],
+          method = "PLS", id = id, cond = cond, ncat = ncat, seed = seeds[id],
           parfun = plssem::parameter_estimates
         ),
 
@@ -411,17 +420,29 @@ for (cond in names(list_thresholds)) {
           expr = csem(.model = stringr::str_replace_all(model, ":", "."),
                       .data = as.data.frame(lapply(data_cat_i, as.ordered))),
           method = "cSEM (OrdPLS+2SMM)", id = id, cond = cond, ncat = ncat,
-          seed = seeds[i], parfun = parameter_estimates.cSEMResults
+          seed = seeds[id], parfun = parameter_estimates.cSEMResults
+        ),
+       
+        mplus = get_output(
+          expr = modsem(model, data = data_cat_i, method = "mplus", categorical = ordered,
+                        processors = 8),
+          method = "mplus", id = id, cond = cond, ncat = ncat, parfun = modsem::standardized_estimates,
+          seed = seeds[id]
         )
       ) 
       
       print(fitted_i)
       
-      results_sub[[i]] <- fitted_i
+      results_sub[[k]] <- fitted_i
     }
-
-    results <- c(results, results_sub)
   }
+  
+  filename.sub.rds <- sprintf("inst/subset/results-R%i-%s-%s-sim-ord-%s.rds", i, cond, ncat, substr(Sys.time(), 1, 16)) |>
+    stringr::str_replace_all(" ", "-") |>
+    stringr::str_replace_all(":", "-")
+  
+  saveRDS(results_sub, filename.sub.rds)
+  results <- c(results, results_sub)
 }
 
 
@@ -526,4 +547,8 @@ plot_results(param = "Y~Z")
 plot_results(param = "Y~X")
 table_results()
 
-saveRDS(resd, sprintf("results-sim-ord-nlin-csem-%s.rds", Sys.time()))
+filename.rds <- sprintf("ints/results-sim-ord-%s.rds", substr(Sys.time(), 1, 16)) |>
+  stringr::str_replace_all(" ", "-") |>
+  stringr::str_replace_all(":", "-")
+
+saveRDS(resd, filename.rds)

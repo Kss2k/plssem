@@ -110,7 +110,8 @@ specifyModel <- function(syntax,
       iterations.0_5 = 0L,
       iterations.0_9 = 0L,
       tolerance      = tolerance,
-      max.iter.0_5   = max.iter.0_5
+      max.iter.0_5   = max.iter.0_5,
+      is.admissible  = TRUE
     )
   )
 

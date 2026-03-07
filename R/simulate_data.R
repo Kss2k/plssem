@@ -9,6 +9,16 @@ simulateDataParTable <- function(parTable, N = 1e5, seed = NULL) {
   if (!is.null(seed))
     set.seed(seed)
 
+  is.admissible <- TRUE
+  checkFixVar <- function(v) {
+    if (v < 0) {
+      is.admissible <<- FALSE
+      return(0)
+    }
+
+    v
+  }
+
   # Generate seed passed to Rfast::Rnorm. Passing seed=NULL does not work
   # If the user has used set.seed()
   rfast.seed <- floor(stats::runif(1L, min = 0, max = 9999999))
@@ -73,7 +83,7 @@ simulateDataParTable <- function(parTable, N = 1e5, seed = NULL) {
       vals <- vals + beta * Xi[[pred]]
     }
 
-    resvar <- max(1 - stats::var(vals), 0)
+    resvar <- checkFixVar(1 - stats::var(vals))
     vals <- vals + Rfast::Rnorm(N, m = 0, s = sqrt(resvar), seed = rfast.seed)
     # vals <- vals + rnorm(N, mean = 0, sd = sqrt(resvar))
 
@@ -87,7 +97,7 @@ simulateDataParTable <- function(parTable, N = 1e5, seed = NULL) {
       lambda <- parTable[parTable$lhs == lv &
                          parTable$op == "=~" &
                          parTable$rhs == ind, "est"]
-      epsilon <- max(1 - lambda^2, 0)
+      epsilon <- checkFixVar(1 - lambda^2)
 
       # vals <- lambda * Xi[[lv]] + rnorm(N, mean = 0, sd = sqrt(epsilon))
       vals <- lambda * Xi[[lv]] + Rfast::Rnorm(N, m = 0, s = sqrt(epsilon), seed = rfast.seed)
@@ -104,6 +114,7 @@ simulateDataParTable <- function(parTable, N = 1e5, seed = NULL) {
   list(
     all = All,
     ov  = Ov,
-    lv  = Lv
+    lv  = Lv,
+    is.admissible = is.admissible
   )
 }

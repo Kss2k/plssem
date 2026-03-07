@@ -214,6 +214,7 @@ updateModelFromFreeParTableMC <- function(parTable, model, mc.reps, seed = NULL)
   model$fit$fitStructural  <- fitStructural
   model$fit$fitCov         <- fitCov
   model$fit$fitTheta       <- fitTheta
+  model$status$is.admissible <- sim$is.admissible
 
   estimatePLS_Step8(model)
 }

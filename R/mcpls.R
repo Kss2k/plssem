@@ -194,14 +194,18 @@ updateModelFromFreeParTableMC <- function(parTable, model, mc.reps, seed = NULL)
   }
 
   k <- NCOL(fitCov)
-  for (i in seq_len(k)) for (j in seq_len(i - 1)) {
+  C <- SC[colnames(fitStructural), colnames(fitStructural)]
+  projCov.mc <- t(fitStructural) %*% C %*% fitStructural
+  diag(C) <- diag(C) - diag(projCov.mc)
+
+  for (i in seq_len(k)) for (j in seq_len(i)) {
     lhs <- colnames(fitCov)[[i]]
     rhs <- rownames(fitCov)[[j]]
 
     if (!selectCov[lhs, rhs]) next
 
     par <- getpar(lhs = lhs, op = "~~", rhs = rhs)
-    if (is.na(par)) par <- tryCatchNA(SC[lhs, rhs])
+    if (is.na(par)) par <- tryCatchNA(C[lhs, rhs])
 
     fitCov[i, j] <- fitCov[j, i] <- par
   }

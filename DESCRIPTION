@@ -17,7 +17,7 @@ LazyData: true
 RoxygenNote: 7.3.3
 Imports: 
     stats,
-    modsem (>= 1.0.17),
+    modsem (>= 1.0.18),
     lme4,
     lavaan,
     cli,
@@ -34,3 +34,5 @@ Depends:
 URL: https://github.com/kss2k/plssem
 Suggests: knitr, rmarkdown
 VignetteBuilder: knitr
+Remotes:
+  https://github.com/kss2k/modsem

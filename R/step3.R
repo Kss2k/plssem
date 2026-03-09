@@ -5,16 +5,37 @@ estimatePLS_Step3 <- function(model) {
   lambda  <- model$matrices$lambda
   S       <- model$matrices$S
   SC      <- model$matrices$SC
+  modes   <- model$info$modes
 
   for (lv in lvs) {
+    mode.lv <- modes[[lv]]
+    inds <- indsLvs[[lv]]
     indsLv <- indsLvs[[lv]]
 
-    for (indLv in indsLv) {
-      lambda[indLv, lv] <- SC[indLv, lv]
-    }
-    lambda[, lv] <- lambda[, lv, drop = TRUE] / c(sqrt(t(lambda[, lv]) %*% S %*% lambda[, lv]))
+    # Get un-normalized weights
+    wj <- switch(mode.lv,
+      A = getWeightsModeA(lv = lv, lambda = lambda, SC = SC, inds = inds),
+      B = getWeightsModeB(lv = lv, lambda = lambda, SC = SC, inds = inds),
+      NA_real_
+    )
+
+    # Normalize
+    Sjj <- SC[inds, inds]
+    wj  <- wj / c(sqrt(t(wj) %*% Sjj %*% wj))
+
+    lambda[inds, lv] <- wj
   }
 
   model$matrices$lambda <- lambda
   model
+}
+
+
+getWeightsModeA <- function(lv, lambda, SC, inds) {
+  as.vector(SC[inds, lv])
+}
+
+
+getWeightsModeB <- function(lv, lambda, SC, inds) {
+  getPathCoefs(y = lv, X = inds, C = SC)
 }

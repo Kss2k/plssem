@@ -214,7 +214,9 @@ initMatrices <- function(pt) {
   k <- length(allInds)
   selectTheta <- matrix(FALSE, nrow = k, ncol = k,
                         dimnames = list(allInds, allInds))
-  diag(selectTheta) <- allInds %in% inds.a
+  diag(selectTheta) <- TRUE
+  is.formative <- allInds %in% inds.b
+  selectTheta[outer(is.formative, is.formative, "&")] <- TRUE
 
   # Selection Matric Indicators ------------------------------------------------
   Ip <- diag(nrow = nrow(lambda))
@@ -281,6 +283,7 @@ getFitPLSModel <- function(model, consistent = TRUE) {
   lvs.lin <- model$info$lvs.linear
   inds    <- model$info$allInds
   inds.a  <- model$info$inds.a
+  inds.b  <- model$info$inds.b
   indsLvs <- model$info$indsLvs
   modes   <- model$info$modes
   ptl     <- model$parTable.input
@@ -344,6 +347,11 @@ getFitPLSModel <- function(model, consistent = TRUE) {
     MARGIN = 1L,
     FUN    = \(x) sum(abs(x) > .Machine$double.xmin) > 1L
   )
+
+  fitThetaFull <- model$matrices$SC[inds, inds]
+  is.formative <- inds %in% inds.b
+  mask <- outer(is.formative, is.formative, FUN = "&")
+  fitTheta[mask] <- fitThetaFull[mask]
 
   warnif(any(crossLoaded),
          "Did not expect any cross loaded indicators,\n",

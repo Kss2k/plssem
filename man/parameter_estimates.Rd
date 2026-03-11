@@ -11,6 +11,9 @@ parameter_estimates(object, ...)
 
 \item{...}{Additional arguments passed to methods.}
 }
+\value{
+A parameter table describing the fitted model.
+}
 \description{
 Generic accessor for model parameter estimates
 }

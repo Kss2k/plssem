@@ -1,6 +1,6 @@
 Package: plssem
 Type: Package
-Title: Estimate complex Structural Equation Models (SEMs) using the PLS-SEM framework
+Title: Estimate Complex Structural Equation Models (SEMs) Using the Partial Least Squares Structural Equation Modeling Framework
 Version: 0.1.0
 Authors@R: 
     person(given = "Kjell", family = "Solem Slupphaug", 
@@ -8,10 +8,27 @@ Authors@R:
            comment = c(ORCID = "0009-0005-8324-2834"))
 Maintainer: Kjell Solem Slupphaug <slupphaugkjell@gmail.com>
 Description:
-    Estimate complex Structural Equation Models (SEMs) using the 
-    PLS-SEM framework. This package expands the PLS-SEM (and PLSc-SEM) framework
-    to handle categorical data, non-linear models, and multilevel structures.
-License: GPL-3 + file LICENSE
+    Estimate complex Structural Equation Models (SEMs) by fitting Partial
+    Least Squares Structural Equation Modeling (PLS-SEM) and Partial Least
+    Squares consistent Structural Equation Modeling (PLSc-SEM) specifications
+    that handle categorical data, non-linear relations, and multilevel
+    structures. The implementation follows Lohmöller (1989) for the classic PLS-SEM
+    algorithm, Dijkstra and Henseler (2015) for consistent PLSc-SEM, Dijkstra
+    (2014) for nonlinear consistency corrections, and Schuberth, Henseler, Dijkstra (2018)
+    for ordinal PLS-SEM and PLSc-SEM. Additional extensions are under development.
+    References:
+    Lohmöller, J.-B. (1989, ISBN:9783790803002).
+      "Latent Variable Path Modeling with Partial Least Squares."
+    Dijkstra, T. K., & Henseler, J. (2015).
+      <doi:10.1016/j.jmva.2015.06.002>.
+      "Consistent partial least squares path modeling."
+    Dijkstra, T. K. (2014).
+      <doi:10.1016/j.csda.2014.05.018>.
+      "Latent variables and indices: Hermite polynomial optimal smoothing."
+    Schuberth, F., Henseler, J., & Dijkstra, T. K. (2018).
+      <doi:10.1007/s11135-018-0767-9>.
+      "Confirmatory composite analysis in three steps."
+License: GPL-3
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.3.3

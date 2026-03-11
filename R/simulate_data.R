@@ -26,7 +26,9 @@ simulateDataParTable <- function(parTable, N = 1e5, seed = NULL) {
 
   xis     <- getXis(parTable)
   etas    <- getSortedEtas(parTable)
-  lvs     <- getLVs(parTable)
+  mode.a  <- getReflectiveLVs(parTable)
+  mode.b  <- getFormativeLVs(parTable)
+  lvs     <- unique(c(mode.a, mode.b))
   indsLVs <- getIndsLVs(parTable, lVs = lvs)
   ovs     <- getOVs(parTable)
 
@@ -72,7 +74,7 @@ simulateDataParTable <- function(parTable, N = 1e5, seed = NULL) {
     }
 
     predRows <- parTable[parTable$lhs == eta & parTable$op == "~", , drop = FALSE]
-    
+
     vals <- numeric(N)
 
     for (i in seq_len(NROW(predRows))) {
@@ -92,7 +94,7 @@ simulateDataParTable <- function(parTable, N = 1e5, seed = NULL) {
 
   Inds <- list()
 
-  for (lv in lvs) {
+  for (lv in mode.a) {
     for (ind in indsLVs[[lv]]) {
       lambda <- parTable[parTable$lhs == lv &
                          parTable$op == "=~" &
@@ -104,6 +106,10 @@ simulateDataParTable <- function(parTable, N = 1e5, seed = NULL) {
 
       Inds[[ind]] <- vals
     }
+  }
+
+  for (lv in mode.b) {
+    stop("Mode B is not available in MC-OrdPLSc (yet)!")
   }
 
   Inds <- as.data.frame(Inds)

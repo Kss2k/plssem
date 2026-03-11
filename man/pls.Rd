@@ -95,7 +95,7 @@ factor scores, and supports multilevel specifications expressed with
 }
 \examples{
 # Linear Model with Continuous Data
-\dontrun{
+\donttest{
 
 library(plssem)
 library(modsem)

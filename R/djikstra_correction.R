@@ -5,13 +5,10 @@ getConsistentCorrMat <- function(model, Q) {
   is.cexp           <- model$info$is.cexp
   intTermElems      <- model$info$intTermElems
   intTermNames      <- model$info$intTermNames
-  consistent.probit <- model$info$consistent.probit
   C                 <- model$matrices$C
   lambda            <- model$matrices$lambda
   selectLambda      <- model$matrices$select$lambda
   selectFrom        <- model$matrices$select$nlinFrom
-  probit2cont       <- model$matrices$probit2cont
-  Q.ordered         <- model$matrices$Q.ordered
   data              <- model$data
   k                 <- length(lvs)
   inds              <- rownames(lambda)
@@ -74,10 +71,19 @@ getConsistentLoadings <- function(model, Q) {
   lvs     <- model$info$lvs.linear
   indsLvs <- model$info$indsLvs
   lambda  <- model$matrices$lambda
+  modes   <- model$info$modes
 
   for (lv in lvs) {
     wq <- lambda[indsLvs[[lv]], lv]
-    lambda[indsLvs[[lv]], lv] <- wq %*% (Q[[lv]] / t(wq) %*% wq)
+    mode <- modes[[lv]]
+
+    lq <- switch(mode,
+      A = wq %*% (Q[[lv]] / t(wq) %*% wq),
+      B = wq,
+      NA_real_
+    )
+
+    lambda[indsLvs[[lv]], lv] <- lq
   }
 
   lambda
@@ -87,6 +93,7 @@ getConsistentLoadings <- function(model, Q) {
 getConstructQualities <- function(model) {
   gamma   <- model$matrices$gamma
   lvs     <- model$info$lvs.linear
+  modes   <- model$info$modes
   indsLvs <- model$info$indsLvs
   lambda  <- model$matrices$lambda
   # S = sample covariance matrix
@@ -97,7 +104,7 @@ getConstructQualities <- function(model) {
   for (lv in lvs) {
     inds.lv <- indsLvs[[lv]]
 
-    if (length(inds.lv) <= 1L) {
+    if (length(inds.lv) <= 1L || modes[[lv]] != "A") {
       Q[[lv]] <- 1
       next
     }

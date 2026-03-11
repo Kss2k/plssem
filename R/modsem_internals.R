@@ -7,16 +7,9 @@
 
 
 parTableToSyntax      <- .internalModsemAPI("parTableToSyntax")
-getOVs                <- .internalModsemAPI("getOVs")
-getLVs                <- .internalModsemAPI("getLVs")
-getEtas               <- .internalModsemAPI("getEtas")
-getSortedEtas         <- .internalModsemAPI("getEtas")
-getXis                <- .internalModsemAPI("getXis")
-getIndsLVs            <- .internalModsemAPI("getIndsLVs")
 getStructOVs          <- .internalModsemAPI("getStructOVs")
 getParTableLabels     <- .internalModsemAPI("getParTableLabels")
 multiplyIndicatorsCpp <- .internalModsemAPI("multiplyIndicatorsCpp")
 # simulateDataParTable  <- .internalModsemAPI("simulateDataParTable")
 createProdInds        <- .internalModsemAPI("createProdInds")
 allignLhsRhs          <- .internalModsemAPI("allignLhsRhs")
-getIndicators         <- .internalModsemAPI("getIndicators")

@@ -11,6 +11,9 @@
 
 \item{...}{Additional arguments for compatibility with the generic.}
 }
+\value{
+The input object, invisibly.
+}
 \description{
 Print a `plssem` object
 }

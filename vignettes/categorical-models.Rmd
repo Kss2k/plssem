@@ -10,8 +10,7 @@ vignette: >
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
-  comment = "#>",
-  eval    = identical(Sys.getenv("IN_PKGDOWN"), "true")
+  comment = "#>"
 )
 
 library(plssem)
@@ -41,7 +40,7 @@ fit_cat <- pls(
   tpb,
   data      = TPB_Ordered,
   bootstrap = TRUE,
-  sample    = 500,
+  sample    = 50,
   ordered   = colnames(TPB_Ordered) # explicitly specify ordered variables
 )
 summary(fit_cat)

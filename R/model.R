@@ -1,4 +1,4 @@
-OPERATORS <- c("~~", "=~", "~1", "~", "|", "<~")
+OPERATORS <- c("<~", "~~", "=~", "~1", "~", "|")
 
 specifyModel <- function(syntax,
                          data,
@@ -131,24 +131,38 @@ specifyModel <- function(syntax,
 
 # badly named function -- since if also returns some useful info
 initMatrices <- function(pt) {
-  lvs.linear <- unique(pt[pt$op == "=~", "lhs"])
+  lvs.linear <- getLVs(pt)
+
+  k      <- length(lvs.linear)
+  mode.a <- getReflectiveLVs(pt)
+  mode.b <- getFormativeLVs(pt)
+
+  getmode <- function(x)
+    ifelse(x %in% mode.a, yes = "A", no = ifelse(x %in% mode.b, yes = "B", no = NA))
+
+  modes <- stats::setNames(
+    vapply(lvs.linear, FUN.VALUE = character(1L), FUN = getmode),
+    nm = lvs.linear
+  )
+
   etas <- unique(pt[pt$op == "~", "lhs"])
 
   lvs  <- c(lvs.linear, pt[grepl(":", pt$rhs), "rhs"])
   xis  <- lvs[!lvs %in% etas]
 
-  allInds <- vector("character", 0)
   indsLvs <- vector("list", length(lvs))
 
   names(indsLvs) <- lvs
   for (lv in lvs) {
-    indsLv <- pt[pt$lhs == lv & pt$op == "=~", "rhs"]
-    allInds <- c(allInds, indsLv)
+    indsLv <- pt[pt$lhs == lv & pt$op %in% c("=~", "<~"), "rhs"]
     indsLvs[[lv]] <- indsLv
   }
 
+  allInds <- unique(unlist(indsLvs))
   inds.x <- unique(unlist(indsLvs[xis]))
   inds.y <- unique(unlist(indsLvs[etas]))
+  inds.a <- unique(unlist(indsLvs[mode.a]))
+  inds.b <- unique(unlist(indsLvs[mode.b]))
 
   # Lamdba ---------------------------------------------------------------------
   lambda <- matrix(0, nrow = length(allInds), ncol = length(lvs),
@@ -201,6 +215,8 @@ initMatrices <- function(pt) {
   selectTheta <- matrix(FALSE, nrow = k, ncol = k,
                         dimnames = list(allInds, allInds))
   diag(selectTheta) <- TRUE
+  is.formative <- allInds %in% inds.b
+  selectTheta[outer(is.formative, is.formative, "&")] <- TRUE
 
   # Selection Matric Indicators ------------------------------------------------
   Ip <- diag(nrow = nrow(lambda))
@@ -208,7 +224,6 @@ initMatrices <- function(pt) {
 
   nlinSelectFrom <- outer(lvs, lvs, Vectorize(f1))
   dimnames(nlinSelectFrom) <- list(lvs, lvs)
-
 
   C <- diag(nrow(gamma))
   dimnames(C) <- dimnames(gamma)
@@ -243,7 +258,12 @@ initMatrices <- function(pt) {
     etas       = etas,
     xis        = xis,
     inds.x     = inds.x,
-    inds.y     = inds.y
+    inds.y     = inds.y,
+    inds.a     = inds.a,
+    inds.b     = inds.b,
+    mode.a     = mode.a,
+    mode.b     = mode.b,
+    modes      = modes
   )
 
   list(
@@ -261,7 +281,11 @@ getFitPLSModel <- function(model, consistent = TRUE) {
   xis     <- model$info$xis
   lvs     <- model$info$lvs
   lvs.lin <- model$info$lvs.linear
+  inds    <- model$info$allInds
+  inds.a  <- model$info$inds.a
+  inds.b  <- model$info$inds.b
   indsLvs <- model$info$indsLvs
+  modes   <- model$info$modes
   ptl     <- model$parTable.input
   SC      <- model$matrices$SC
   k       <- length(lvs.lin)
@@ -269,8 +293,18 @@ getFitPLSModel <- function(model, consistent = TRUE) {
   # measurement model
   fitMeasurement <- lambda
   fitMeasurement[TRUE] <- 0
-  for (lv in lvs) for (indsLv in indsLvs[[lv]])
-    fitMeasurement[indsLv, lv] <- SC[indsLv, lv]
+  for (lv in lvs.lin) {
+    inds.lv <- indsLvs[[lv]]
+    mode.lv <- modes[[lv]]
+
+    lq <- switch(mode.lv,
+      A = SC[inds.lv, lv],
+      B = lambda[inds.lv, lv],
+      NA_real_
+    )
+
+    fitMeasurement[inds.lv, lv] <- lq
+  }
 
   # Caluculate consistent weights and correlations
   if (consistent) {
@@ -305,22 +339,25 @@ getFitPLSModel <- function(model, consistent = TRUE) {
   fitCov[etas, etas] <- fitCovRes[etas, etas]
 
   # Indicator Residuals
-  indicators <- rownames(lambda)
-  k <- length(indicators)
-
+  k <- length(inds)
   fitTheta <- matrix(0, nrow = k, ncol = k,
-                     dimnames = list(indicators, indicators))
+                     dimnames = list(inds, inds))
   crossLoaded <- apply(
     X      = fitMeasurement,
     MARGIN = 1L,
     FUN    = \(x) sum(abs(x) > .Machine$double.xmin) > 1L
   )
 
+  fitThetaFull <- model$matrices$SC[inds, inds]
+  is.formative <- inds %in% inds.b
+  mask <- outer(is.formative, is.formative, FUN = "&")
+  fitTheta[mask] <- fitThetaFull[mask]
+
   warnif(any(crossLoaded),
          "Did not expect any cross loaded indicators,\n",
          "when calculating indicator residuals!")
 
-  for (ind in indicators) {
+  for (ind in inds.a) {
     j  <- which.max(abs(fitMeasurement[ind, ]))
     r  <- fitMeasurement[ind, j]
     v  <- SC[ind, ind]
@@ -340,10 +377,18 @@ getFitPLSModel <- function(model, consistent = TRUE) {
 
 getParamVecNames <- function(model) {
   selectLambda <- model$matrices$select$lambda
+  modes        <- model$info$modes
+  lvs.linear   <- model$info$lvs.linear
   lambda       <- selectLambda
 
-  for (j in colnames(lambda)) for (i in rownames(lambda))
-    lambda[i, j] <- paste0(j, "=~", i)
+  for (j in lvs.linear) {
+    mode <- modes[[j]]
+    op <- switch(mode, A = "=~", B = "<~", "=~")
+
+    for (i in rownames(lambda))
+      lambda[i, j] <- paste0(j, op, i)
+
+  }
 
   selectGamma <- model$matrices$select$gamma
   gamma       <- selectGamma

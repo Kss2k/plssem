@@ -12,6 +12,7 @@ summary.plssem <- function(object, ...) {
   ovs <- getOVs(parTable)
   etas <- getEtas(parTable)
   inds <- getIndicators(parTable)
+  inds.a <- getReflectiveIndicators(parTable)
 
   strParTableLines <- utils::capture.output(modsem::summarize_partable(parTable))
   strParTable <- paste0(paste0(strParTableLines[-(1:6)], collapse = "\n"), "\n") # [-(1:6)] to skip headers
@@ -25,8 +26,8 @@ summary.plssem <- function(object, ...) {
     if (!length(rvar)) 0 else 1 - rvar
   }
 
-  r2.etas <- vapply(etas, FUN.VALUE = numeric(1L), FUN = getR2)
-  r2.inds <- vapply(inds, FUN.VALUE = numeric(1L), FUN = getR2)
+  r2.etas <- vapply(etas,   FUN.VALUE = numeric(1L), FUN = getR2)
+  r2.inds <- vapply(inds.a, FUN.VALUE = numeric(1L), FUN = getR2)
 
   out <- list(
     print = list(
@@ -59,6 +60,7 @@ summary.plssem <- function(object, ...) {
 #'
 #' @param x A `SummaryPlsSem` object as returned by [summary.plssem()].
 #' @param ... Additional arguments for compatibility with the generic.
+#' @return The input object, invisibly.
 #'
 #' @export
 print.SummaryPlsSem <- function(x, ...) {
@@ -112,6 +114,7 @@ print.SummaryPlsSem <- function(x, ...) {
                    width.out = width.out), "\n", sep = "")
 
   cat(x$print$strParTable)
+  invisible(x)
 }
 
 
@@ -119,6 +122,7 @@ print.SummaryPlsSem <- function(x, ...) {
 #'
 #' @param x An object of class `plssem`.
 #' @param ... Additional arguments for compatibility with the generic.
+#' @return The input object, invisibly.
 #'
 #' @export
 print.plssem <- function(x, ...) {
@@ -156,6 +160,7 @@ parameter_estimates.plssem <- function(object,
 #'
 #' @param object A fitted model object.
 #' @param ... Additional arguments passed to methods.
+#' @return A parameter table describing the fitted model.
 #'
 #' @export
 parameter_estimates <- function(object, ...) {

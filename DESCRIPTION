@@ -13,8 +13,8 @@ Description:
     Squares consistent Structural Equation Modeling (PLSc-SEM) specifications
     that handle categorical data, non-linear relations, and multilevel
     structures. The implementation follows Lohmöller (1989) for the classic PLS-SEM
-    algorithm, Dijkstra and Henseler (2015) for consistent PLSc-SEM, Dijkstra
-    (2014) for nonlinear consistency corrections, and Schuberth, Henseler, Dijkstra (2018)
+    algorithm, Dijkstra and Henseler (2015) for consistent PLSc-SEM, Dijkstra et al.,
+    (2014) for nonlinear PLSc-SEM, and Schuberth, Henseler, Dijkstra (2018)
     for ordinal PLS-SEM and PLSc-SEM. Additional extensions are under development.
     References:
     Lohmöller, J.-B. (1989, ISBN:9783790803002).
@@ -22,12 +22,12 @@ Description:
     Dijkstra, T. K., & Henseler, J. (2015).
       <doi:10.1016/j.jmva.2015.06.002>.
       "Consistent partial least squares path modeling."
-    Dijkstra, T. K. (2014).
-      <doi:10.1016/j.csda.2014.05.018>.
-      "Latent variables and indices: Hermite polynomial optimal smoothing."
+    Dijkstra, T. K., & Schermelleh-Engel, K. (2014).
+      <doi:10.1016/j.csda.2014.07.008>.
+      "Consistent partial least squares for nonlinear structural equation models."
     Schuberth, F., Henseler, J., & Dijkstra, T. K. (2018).
       <doi:10.1007/s11135-018-0767-9>.
-      "Confirmatory composite analysis in three steps."
+      "Partial least squares path modeling using ordinal categorical indicators."
 License: GPL-3
 Encoding: UTF-8
 LazyData: true

@@ -10,8 +10,7 @@ vignette: >
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
-  comment = "#>",
-  eval    = identical(Sys.getenv("IN_PKGDOWN"), "true")
+  comment = "#>"
 )
 
 library(plssem)
@@ -40,7 +39,7 @@ fit_cont <- pls(
   m,
   data      = modsem::oneInt,
   bootstrap = TRUE,
-  sample    = 500
+  sample    = 50
 )
 summary(fit_cont)
 ```
@@ -52,7 +51,7 @@ fit_ord <- pls(
   m,
   data      = oneIntOrdered,
   bootstrap = TRUE,
-  sample    = 500,
+  sample    = 50,
   ordered   = colnames(oneIntOrdered) # explicitly specify variables as ordered
 )
 summary(fit_ord)

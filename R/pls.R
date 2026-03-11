@@ -70,7 +70,7 @@ USE_NON_LINEAR_PROBIT_CORR_MAT <- FALSE # for now we stick with the linear assum
 #'
 #' @examples
 #' # Linear Model with Continuous Data
-#' \dontrun{
+#' \donttest{
 #'
 #' library(plssem)
 #' library(modsem)

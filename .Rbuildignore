@@ -13,4 +13,4 @@ CLONE.md
 ^.*\\.rds$
 inst/^.*\\.csv$
 inst/^.*\\.rds$
-inst/^\\.*
+^inst/\..*\.R$

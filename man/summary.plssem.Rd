@@ -2,18 +2,18 @@
 % Please edit documentation in R/generics.R
 \name{summary.plssem}
 \alias{summary.plssem}
-\title{Summarize a fitted `plssem` model}
+\title{Summarize a fitted \code{plssem} model}
 \usage{
 \method{summary}{plssem}(object, ...)
 }
 \arguments{
-\item{object}{An object of class `plssem`.}
+\item{object}{An object of class \code{plssem}.}
 
 \item{...}{Additional arguments passed to or from methods.}
 }
 \value{
-A `SummaryPlsSem` object containing formatted parameter estimates.
+A \code{SummaryPlsSem} object containing formatted parameter estimates.
 }
 \description{
-Summarize a fitted `plssem` model
+Summarize a fitted \code{plssem} model
 }

@@ -2,12 +2,12 @@
 % Please edit documentation in R/generics.R
 \name{print.plssem}
 \alias{print.plssem}
-\title{Print a `plssem` object}
+\title{Print a \code{plssem} object}
 \usage{
 \method{print}{plssem}(x, ...)
 }
 \arguments{
-\item{x}{An object of class `plssem`.}
+\item{x}{An object of class \code{plssem}.}
 
 \item{...}{Additional arguments for compatibility with the generic.}
 }
@@ -15,5 +15,5 @@
 The input object, invisibly.
 }
 \description{
-Print a `plssem` object
+Print a \code{plssem} object
 }

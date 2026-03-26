@@ -1,20 +1,38 @@
-bootstrap <- function(model, R = 50L, zero.tol = 1e-10, verbose = model$info$verbose) {
+bootstrap <- function(model,
+                      zero.tol = 1e-10,
+                      verbose  = model$info$verbose,
+                      parallel = model$info$boot$parallel,
+                      ncpus    = model$info$boot$ncpus,
+                      R        = model$info$boot$R,
+                      iseed    = model$info$boot$iseed) {
+
+  # The logic here follows the lavaan package
+  is.mc <- is.snow <- FALSE
+  if (is.null(parallel)) parallel <- "no"
+  parallel <- match.arg(parallel, c("no", "multicore", "snow"))
+
   data      <- model$data
   cluster   <- model$info$cluster
   is.probit <- model$info$is.probit
   ordered   <- model$info$ordered
   results   <- vector("list", R)
+  verbose   <- verbose && !is.snow
 
-  if (verbose) {
-    cli::cli_progress_bar(
-      name  = sprintf("bootstrap[%i]", R),
-      type  = "iterator",
-      total = R
+  progress <- function(i) {
+    available <- getOption("width")
+    available <- if (is.null(available)) 80L else available
+    len.out   <- max(40L, min(available - 20L, 60L))
+
+    finished <- floor((i / R) * len.out)
+    left     <- len.out - finished
+
+    printf(
+      paste0("\rBoostrap [%i] |", strrep("=", finished), strrep(" ", left), "|"), R
     )
   }
 
-  for (i in seq_len(R)) {
-    if (verbose) cli::cli_progress_update()
+  .bootf <- function(i) {
+    if (verbose) progress(i)
 
     sampleData       <- resample(data, cluster = cluster)
     model$matrices$S <- getCorrMat(sampleData, ordered = ordered, probit = is.probit)
@@ -29,14 +47,90 @@ bootstrap <- function(model, R = 50L, zero.tol = 1e-10, verbose = model$info$ver
       ))
     })
 
-    results[[i]] <- model$params$values
+    par <- model$params$values
+    attr(par, "id") <- i
+
+    par 
   }
 
-  if (verbose) cli::cli_progress_done()
 
-  suppressWarnings({ # TODO: Fix mismatching thresholds in bootstrapping
-    resultsMat <- do.call(rbind, results) 
-  })
+  if (parallel != "no" && ncpus > 1L) {
+    switch(
+      parallel,
+      multicore = { is.mc   <- .Platform$OS.type != "windows" },
+      snow      = { is.snow <- TRUE                           },
+                  { ncpus   <- 1L                             }
+    )
+
+    loadNamespace("parallel") # before recording seed!
+  }
+
+  # iseed:
+  # this is adapted from the Lavaan package
+  # - iseed is used for both serial and parallel
+  # - if iseed is not set, iseed is generated + .Random.seed created/updated
+  #     -> tmp.seed <- NA
+  # - if iseed is set: don't touch .Random.seed (if it exists)
+  #     -> tmp.seed <- .Random.seed (if it exists)
+  #     -> tmp.seed <- NULL (if it does not exist)
+
+  if (is.null(iseed)) {
+    if (!exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
+      runif(1)
+    }
+
+    # identical(temp.seed, NA): Will not change .Random.seed in GlobalEnv
+    temp.seed <- NA
+    iseed <- runif(1, 0, 999999999)
+
+  } else {
+    if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
+      temp.seed <-
+        get(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
+
+    } else {
+      # is.null(temp.seed): Will remove .Random.seed in GlobalEnv
+      #                     if serial.
+      #                     If parallel, .Random.seed will not be touched.
+      temp.seed <- NULL
+    }
+  }
+
+  if (!(ncpus > 1L && (is.mc || is.snow))) { # Only for serial
+    set.seed(iseed)
+  }
+
+  # this is adapted from the boot function in package boot
+  if (ncpus > 1L && (is.mc || is.snow)) {
+
+    if (is.mc) {
+      RNGkind("L'Ecuyer-CMRG") # to allow for reproducible results
+      set.seed(iseed)
+      results <- parallel::mclapply(seq_len(R), .bootf, mc.cores = ncpus)
+
+    } else if (is.snow) {
+
+      cl <- parallel::makePSOCKcluster(rep("localhost", ncpus))
+      # No need for
+      # if(RNGkind()[1L] == "L'Ecuyer-CMRG")
+      # clusterSetRNGStream() always calls `RNGkind("L'Ecuyer-CMRG")`
+
+      parallel::clusterSetRNGStream(cl, iseed = iseed)
+      results <- parallel::parLapply(cl, seq_len(R), .bootf)
+      parallel::stopCluster(cl)
+    }
+
+  } else {
+    results <- lapply(seq_len(R), .bootf)
+
+  }
+
+  if (verbose) {
+    progress(R)
+    cat("\n")
+  }
+
+  resultsMat <- do.call(rbind, results) 
   names(resultsMat) <- names(model$params$values)
 
   se <- apply(resultsMat, MARGIN = 2, FUN = stats::sd, na.rm = TRUE)

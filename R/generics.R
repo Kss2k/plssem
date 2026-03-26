@@ -1,8 +1,8 @@
-#' Summarize a fitted `plssem` model
+#' Summarize a fitted \code{plssem} model
 #'
-#' @param object An object of class `plssem`.
+#' @param object An object of class \code{plssem}.
 #' @param ... Additional arguments passed to or from methods.
-#' @return A `SummaryPlsSem` object containing formatted parameter estimates.
+#' @return A \code{SummaryPlsSem} object containing formatted parameter estimates.
 #'
 #' @export
 summary.plssem <- function(object, ...) {
@@ -56,9 +56,9 @@ summary.plssem <- function(object, ...) {
 }
 
 
-#' Print a `SummaryPlsSem` object
+#' Print a \code{SummaryPlsSem} object
 #'
-#' @param x A `SummaryPlsSem` object as returned by [summary.plssem()].
+#' @param x A \code{SummaryPlsSem} object as returned by [summary.plssem()].
 #' @param ... Additional arguments for compatibility with the generic.
 #' @return The input object, invisibly.
 #'
@@ -118,9 +118,9 @@ print.SummaryPlsSem <- function(x, ...) {
 }
 
 
-#' Print a `plssem` object
+#' Print a \code{plssem} object
 #'
-#' @param x An object of class `plssem`.
+#' @param x An object of class \code{plssem}.
 #' @param ... Additional arguments for compatibility with the generic.
 #' @return The input object, invisibly.
 #'
@@ -133,9 +133,9 @@ print.plssem <- function(x, ...) {
 }
 
 
-#' Parameter estimates for `plssem` objects
+#' Parameter estimates for \code{plssem} objects
 #'
-#' @param object An object of class `plssem`.
+#' @param object An object of class \code{plssem}.
 #' @param colon.pi Logical; whether to replace labels for interaction terms with colon notation.
 #' @param label.renamed.prod Logical; whether renamed product labels should be retained when colon expansion occurs.
 #' @param ... Additional arguments (not used).

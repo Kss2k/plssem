@@ -122,6 +122,7 @@ bootstrap <- function(model,
       # clusterSetRNGStream() always calls `RNGkind("L'Ecuyer-CMRG")`
       parallel::clusterSetRNGStream(cl, iseed = iseed)
       results <- parallel::parLapply(cl, seq_len(R), .bootf)
+
     }
 
   } else {

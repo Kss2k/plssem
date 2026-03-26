@@ -111,13 +111,17 @@ bootstrap <- function(model,
     } else if (is.snow) {
 
       cl <- parallel::makePSOCKcluster(rep("localhost", ncpus))
+      on.exit(parallel::stopCluster(cl), add = TRUE)
+
+      # Ensure workers have the package namespace loaded so internal helper
+      # functions referenced by `.bootf` resolve correctly.
+      parallel::clusterEvalQ(cl, loadNamespace("plssem"))
+
       # No need for
       # if(RNGkind()[1L] == "L'Ecuyer-CMRG")
       # clusterSetRNGStream() always calls `RNGkind("L'Ecuyer-CMRG")`
-
       parallel::clusterSetRNGStream(cl, iseed = iseed)
       results <- parallel::parLapply(cl, seq_len(R), .bootf)
-      parallel::stopCluster(cl)
     }
 
   } else {

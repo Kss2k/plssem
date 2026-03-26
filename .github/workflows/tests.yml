@@ -41,6 +41,7 @@ jobs:
 
       # Build any native code in the package (if applicable)
       - name: Compile package sources
+        if: ${{ hashFiles('src/*') != '' }}
         shell: Rscript {0}
         run: |
           options(warnPartialMatchDollar = TRUE)

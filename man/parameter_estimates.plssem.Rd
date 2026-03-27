@@ -2,12 +2,12 @@
 % Please edit documentation in R/generics.R
 \name{parameter_estimates.plssem}
 \alias{parameter_estimates.plssem}
-\title{Parameter estimates for `plssem` objects}
+\title{Parameter estimates for \code{plssem} objects}
 \usage{
 \method{parameter_estimates}{plssem}(object, colon.pi = TRUE, label.renamed.prod = FALSE, ...)
 }
 \arguments{
-\item{object}{An object of class `plssem`.}
+\item{object}{An object of class \code{plssem}.}
 
 \item{colon.pi}{Logical; whether to replace labels for interaction terms with colon notation.}
 
@@ -19,5 +19,5 @@
 A parameter table (data frame) describing the fitted model.
 }
 \description{
-Parameter estimates for `plssem` objects
+Parameter estimates for \code{plssem} objects
 }

@@ -40,7 +40,7 @@ fit_cat <- pls(
   tpb,
   data      = TPB_Ordered,
   bootstrap = TRUE,
-  sample    = 50,
+  boot.R    = 50,
   ordered   = colnames(TPB_Ordered) # explicitly specify ordered variables
 )
 summary(fit_cat)

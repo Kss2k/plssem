@@ -3,44 +3,61 @@ USE_NON_LINEAR_PROBIT_CORR_MAT <- FALSE # for now we stick with the linear assum
 
 #' Fit Partial Least Squares Structural Equation Models
 #'
-#' `pls()` estimates Partial Least Squares Structural Equation Models (PLS-SEM)
-#' and their consistent (PLSc) variants. The function accepts `lavaan`-style
+#' \code{pls()} estimates Partial Least Squares Structural Equation Models (PLS-SEM)
+#' and their consistent (PLSc) variants. The function accepts \code{lavaan}-style
 #' syntax, handles ordered indicators through polychoric correlations and probit
 #' factor scores, and supports multilevel specifications expressed with
-#' `lme4`-style random effects terms inside the structural model.
+#' \code{lme4}-style random effects terms inside the structural model.
 #'
-#' @param syntax Character string with `lavaan`-style model syntax describing
-#'   both measurement (`=~`) and structural (`~`) relations. Random effects are
-#'   specified with `(term | cluster)` statements.
+#' @param syntax Character string with \code{lavaan}-style model syntax describing
+#'   both measurement (\code{=~}) and structural (\code{~}) relations. Random effects are
+#'   specified with \code{(term | cluster)} statements.
 #'
-#' @param data A `data.frame` or coercible object containing the manifest
-#'   indicators referenced in `syntax`. Ordered factors are automatically
-#'   detected, but can also be supplied explicitly through `ordered`.
+#' @param data A \code{data.frame} or coercible object containing the manifest
+#'   indicators referenced in \code{syntax}. Ordered factors are automatically
+#'   detected, but can also be supplied explicitly through \code{ordered}.
 #'
-#' @param standardize Logical; if `TRUE`, indicators are standardized before
+#' @param standardize Logical; if \code{TRUE}, indicators are standardized before
 #'   estimation so that factor scores have comparable scales.
 #'
-#' @param max.iter.0_5 Maximum number of PLS iterations performed when estimating
-#'   the measurement and structural models.
-#'
-#' @param consistent Logical; `TRUE` requests PLSc corrections, whereas `FALSE`
+#' @param consistent Logical; \code{TRUE} requests PLSc corrections, whereas \code{FALSE}
 #'   fits the traditional PLS model.
 #'
-#' @param bootstrap Logical; if `TRUE`, nonparametric bootstrap standard errors
-#'   are computed with `sample` resamples.
-#'
-#' @param sample Integer giving the number of bootstrap resamples drawn when
-#'   `bootstrap = TRUE`.
+#' @param bootstrap Logical; if \code{TRUE}, nonparametric bootstrap standard errors
+#'   are computed with \code{boot.R} resamples.
 #'
 #' @param ordered Optional character vector naming manifest indicators that
 #'   should be treated as ordered when computing polychoric correlations.
 #'
+#' @param mcpls Should a Monte-Carlo consistency correction be applied?
+#'
 #' @param probit Logical; overrides the automatic choice of probit factor scores
 #'   that is based on whether ordered indicators are present.
 #'
-#' @param mcpls Should a Monte-Carlo consistency correction be applied?
-#'
 #' @param tolerance Numeric; Convergence criteria/tolerance.
+#'
+#' @param max.iter.0_5 Maximum number of PLS iterations performed when estimating
+#'   the measurement and structural models.
+#'
+#' @param boot.ncpus Integer: number of processes to be used in parallel operation.
+#'   By default this is the number of cores (as detected by \code{parallel::detectCores()}) minus one.
+#'
+#' @param boot.parallel The type of parallel operation to be used (if any). If missing,
+#'   the default is \code{"no"}.
+#'
+#' @param boot.R Integer giving the number of bootstrap resamples drawn when
+#'   \code{bootstrap = TRUE}.
+#'
+#' @param boot.iseed An integer to set the bootstrap seed. Or \code{NULL} if no
+#'   reproducible results are needed. This works for both serial (non-parallel) and
+#'   parallel settings. Internally, \code{RNGkind()} is set to \code{"L'Ecuyer-CMRG"}
+#'   if \code{parallel = "multicore"}. If \code{parallel = "snow"} (under windows),
+#'   \code{parallel::clusterSetRNGStream()} is called which automatically switches to
+#'   \code{"L'Ecuyer-CMRG"}. When iseed is not \code{NULL}, \code{.Random.seed}
+#'   (if it exists) in the global environment is left untouched.
+#'
+#' @param sample DEPRECTATED. Integer giving the number of bootstrap resamples drawn when
+#'   \code{bootstrap = TRUE}.
 #'
 #' @param mc.min.iter Minimum number of iterations in MC-PLS algorithm.
 #'
@@ -62,9 +79,9 @@ USE_NON_LINEAR_PROBIT_CORR_MAT <- FALSE # for now we stick with the linear assum
 #'
 #' @param ... Currently unused, reserved for future extensions.
 #'
-#' @return An object of class `plssem` containing the estimated parameters, fit
+#' @return An object of class \code{plssem} containing the estimated parameters, fit
 #'   measures, factor scores, and any bootstrap results. Methods such as
-#'   `summary()`, `print()`, and `coef()` can be applied to inspect the fit.
+#'   \code{summary()}, \code{print()}, and \code{coef()} can be applied to inspect the fit.
 #'
 #' @seealso [summary.plssem()], [print.plssem()]
 #'
@@ -183,12 +200,16 @@ pls <- function(syntax,
                 standardize = TRUE,
                 consistent = TRUE,
                 bootstrap = FALSE,
-                sample = 50L,
                 ordered = NULL,
                 mcpls = NULL,
                 probit = NULL,
                 tolerance = 1e-5,
                 max.iter.0_5 = 100L,
+                boot.ncpus = 1L,
+                boot.parallel = c("no", "multicore", "snow"),
+                boot.R = 50L,
+                boot.iseed = NULL,
+                sample = NULL,
                 mc.min.iter = 5L,
                 mc.max.iter = 250L,
                 mc.reps = 20000L,
@@ -198,6 +219,14 @@ pls <- function(syntax,
                 mc.fn.args = list(),
                 verbose = interactive(),
                 ...) {
+
+  boot.parallel <- match.arg(boot.parallel)
+
+  if (!is.null(sample)) {
+    warning("The sample argument is deprecated, please use the boot.R argument instead!")
+    boot.R <- sample
+  }
+
   # preprocess data
   data <- as.data.frame(data)
 
@@ -219,15 +248,20 @@ pls <- function(syntax,
     mc.fixed.seed      = mc.fixed.seed,
     mc.polyak.juditsky = mc.polyak.juditsky,
     mc.fn.args         = mc.fn.args,
-    verbose            = verbose
+    verbose            = verbose,
+    bootstrap          = bootstrap,
+    boot.ncpus         = boot.ncpus,
+    boot.parallel      = boot.parallel,
+    boot.R             = boot.R,
+    boot.iseed         = boot.iseed
   )
 
   # Fit model
   model <- estimatePLS(model = model)
 
   # Bootstrap
-  if (bootstrap) {
-    model$boot <- bootstrap(model, R = sample)
+  if (model$info$boot$bootstrap) {
+    model$boot <- bootstrap(model)
     model$params$se <- model$boot$se
   }
 

@@ -2,12 +2,12 @@
 % Please edit documentation in R/generics.R
 \name{print.SummaryPlsSem}
 \alias{print.SummaryPlsSem}
-\title{Print a `SummaryPlsSem` object}
+\title{Print a \code{SummaryPlsSem} object}
 \usage{
 \method{print}{SummaryPlsSem}(x, ...)
 }
 \arguments{
-\item{x}{A `SummaryPlsSem` object as returned by [summary.plssem()].}
+\item{x}{A \code{SummaryPlsSem} object as returned by [summary.plssem()].}
 
 \item{...}{Additional arguments for compatibility with the generic.}
 }
@@ -15,5 +15,5 @@
 The input object, invisibly.
 }
 \description{
-Print a `SummaryPlsSem` object
+Print a \code{SummaryPlsSem} object
 }

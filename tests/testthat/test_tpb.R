@@ -13,7 +13,7 @@ tpb <- '
   BEH ~ INT + PBC + INT:PBC
 '
 
-fit <- pls(tpb, modsem::TPB, bootstrap = TRUE, sample = 50)
+fit <- pls(tpb, modsem::TPB, bootstrap = TRUE, boot.R = 50)
 summary(fit)
 
 

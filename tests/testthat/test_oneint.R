@@ -9,10 +9,12 @@ m <- '
 '
 
 # summary(modsem::modsem(m, oneIntOrdered, "lms"), standardized = TRUE)
-fit <- pls(m, modsem::oneInt, bootstrap = TRUE, sample = 50)
+fit <- pls(m, modsem::oneInt, bootstrap = TRUE, boot.R = 100,
+           boot.parallel = "snow", boot.ncpus = 2)
 summary(fit)
 
 
 
-fit <- pls(m, oneIntOrdered, bootstrap = FALSE)
+fit <- pls(m, oneIntOrdered, bootstrap = TRUE, boot.R = 100,
+           boot.parallel = "multicore", boot.ncpus = 2)
 summary(fit)

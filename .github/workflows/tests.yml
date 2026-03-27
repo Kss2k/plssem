@@ -44,7 +44,7 @@ jobs:
         shell: Rscript {0}
         run: |
           options(warnPartialMatchDollar = TRUE)
-          pkgbuild::compile_dll(force = TRUE, debug = FALSE)
+          devtools::install()
 
       # Run your testthat tests with the same strictness flags you had
       - name: Run tests

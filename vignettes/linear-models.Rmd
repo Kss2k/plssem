@@ -42,7 +42,7 @@ fit_tpb <- pls(
   tpb,
   data      = modsem::TPB,
   bootstrap = TRUE,
-  sample    = 50
+  boot.R    = 50
 )
 summary(fit_tpb)
 ```

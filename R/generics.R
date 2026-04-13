@@ -1,11 +1,12 @@
 #' Summarize a fitted \code{plssem} model
 #'
 #' @param object An object of class \code{plssem}.
+#' @param fit Should fit measures be calculated?
 #' @param ... Additional arguments passed to or from methods.
 #' @return A \code{SummaryPlsSem} object containing formatted parameter estimates.
 #'
 #' @export
-summary.plssem <- function(object, ...) {
+summary.plssem <- function(object, fit = !isMC_PLS(object), ...) {
   parTable    <- parameter_estimates(object)
 
   lvs <- getLVs(parTable)
@@ -49,7 +50,7 @@ summary.plssem <- function(object, ...) {
       etas = r2.etas,
       inds = r2.inds
     ),
-    fit.measures = fitMeasures(object)
+    fit.measures = if (fit) fitMeasures(object) else NULL
   )
 
   class(out) <- "SummaryPlsSem"
@@ -98,23 +99,25 @@ print.SummaryPlsSem <- function(x, ...) {
   cat(allignLhsRhs(lhs = headerNames, rhs = headerValues, pad = "  ",
                    width.out = width.out), "\n", sep = "")
 
-  cat("Fit Measures:\n")
-  headerNames <- c(
-    "Chi-Square",
-    "Degrees of Freedom",
-    "SRMR",
-    "RMSEA"
-  )
+  if (!is.null(x$fit.measures)) {
+    cat("Fit Measures:\n")
+    headerNames <- c(
+      "Chi-Square",
+      "Degrees of Freedom",
+      "SRMR",
+      "RMSEA"
+    )
 
-  headerValues <- c(
-    sprintf("%.3f", x$fit.measures$chisq),
-    sprintf("%d", x$fit.measures$chisq.df),
-    sprintf("%.3f", x$fit.measures$srmr),
-    sprintf("%.3f", x$fit.measures$rmsea)
-  )
+    headerValues <- c(
+      sprintf("%.3f", x$fit.measures$chisq),
+      sprintf("%d", x$fit.measures$chisq.df),
+      sprintf("%.3f", x$fit.measures$srmr),
+      sprintf("%.3f", x$fit.measures$rmsea)
+    )
 
-  cat(allignLhsRhs(lhs = headerNames, rhs = headerValues, pad = "  ",
-                   width.out = width.out), "\n", sep = "")
+    cat(allignLhsRhs(lhs = headerNames, rhs = headerValues, pad = "  ",
+                     width.out = width.out), "\n", sep = "")
+  }
 
   cat("R-squared (indicators):\n")
 
@@ -184,4 +187,21 @@ parameter_estimates.plssem <- function(object,
 #' @export
 parameter_estimates <- function(object, ...) {
   UseMethod("parameter_estimates")
+}
+
+
+#' @export
+isMC_PLS.plssem <- function(object) {
+  object$info$is.mcpls 
+}
+
+
+#' Check if object is a MC-PLS model
+#'
+#' @param object A fitted model object.
+#' @return \code{TRUE}/\code{FALSE}.
+#'
+#' @export
+isMC_PLS <- function(object) {
+  UseMethod("isMC_PLS")
 }

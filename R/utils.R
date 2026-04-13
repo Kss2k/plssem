@@ -134,7 +134,7 @@ stopif <- function(cond, ...) {
 
 
 warnif <- function(cond, ...) {
-  if (isTRUE(cond)) warning2(..., call. = FALSE)
+  if (isTRUE(cond)) warning2(...)
 }
 
 

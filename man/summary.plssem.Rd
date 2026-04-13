@@ -4,10 +4,12 @@
 \alias{summary.plssem}
 \title{Summarize a fitted \code{plssem} model}
 \usage{
-\method{summary}{plssem}(object, ...)
+\method{summary}{plssem}(object, fit = !isMC_PLS(object), ...)
 }
 \arguments{
 \item{object}{An object of class \code{plssem}.}
+
+\item{fit}{Should fit measures be calculated?}
 
 \item{...}{Additional arguments passed to or from methods.}
 }

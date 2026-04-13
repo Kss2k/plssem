@@ -41,6 +41,9 @@ calcImpliedIndicatorCorrMat <- function(model, saturated = FALSE) {
 
 
 fitMeasures <- function(model, saturated = FALSE) {
+  warnif(model$info$is.mcpls,
+         "Fit measures might be unreliable for MC-PLSc models!")
+
   Expected <- calcImpliedIndicatorCorrMat(model, saturated = FALSE)
   N        <- NROW(model$data)
   chisq    <- calcChisq(model, saturated = saturated, E = Expected)

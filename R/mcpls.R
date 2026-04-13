@@ -87,6 +87,8 @@ mcpls <- function(
     parTable = par1,
     model    = fit0,
     mc.reps  = mc.reps,
+    PROBS    = PROBS,
+    ordered  = ordered, 
     seed     = rng.seed
   )
 
@@ -130,8 +132,10 @@ getFreeParamsTable <- function(model) {
 }
 
 
-updateModelFromFreeParTableMC <- function(parTable, model, mc.reps, seed = NULL) {
+updateModelFromFreeParTableMC <- function(parTable, model, mc.reps,
+                                          PROBS, ordered, seed = NULL) {
   sim <- simulateDataParTable(parTable, N = mc.reps, seed = seed)
+  sim.ord <- ordinalizeDataFrame(sim$ov, PROBS = PROBS, ordered = ordered)
 
   lvs <- getLVs(parTable)
   indsLVs <- getIndsLVs(parTable, lVs = lvs)
@@ -140,6 +144,9 @@ updateModelFromFreeParTableMC <- function(parTable, model, mc.reps, seed = NULL)
 
   ovs <- colnames(model$matrices$S)
   lvs <- colnames(model$matrices$C)
+
+  model$matrices$S.ord.expected <- Rfast::cova(as.matrix(sim.ord))
+  model$matrices$S.ord.observed <- Rfast::cova(model$data)
 
   model$matrices$S  <- SC[ovs, ovs, drop = FALSE]
   model$matrices$C  <- SC[lvs, lvs, drop = FALSE]
@@ -216,7 +223,25 @@ updateModelFromFreeParTableMC <- function(parTable, model, mc.reps, seed = NULL)
   model$fit$fitTheta       <- fitTheta
   model$status$is.admissible <- sim$is.admissible
 
+  model$status$mcpls.update.args <- list(
+    parTable = parTable,
+    model    = model,
+    mc.reps  = mc.reps,
+    PROBS    = PROBS,
+    ordered  = ordered,
+    seed     = seed
+  )
+
   estimatePLS_Step8(model)
+}
+
+
+resampleMCPLS_Fit <- function(model, ...) {
+  args <- model$status$mcpls.update.args
+  new.args <- list(...)
+  args[names(new.args)] <- new.args
+
+  do.call(updateModelFromFreeParTableMC, args)
 }
 
 

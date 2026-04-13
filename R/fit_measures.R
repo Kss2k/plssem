@@ -40,20 +40,34 @@ calcImpliedIndicatorCorrMat <- function(model, saturated = FALSE) {
 }
 
 
-fitMeasures <- function(model, saturated = FALSE) {
-  warnif(model$info$is.mcpls,
-         "Fit measures might be unreliable for MC-PLSc models!")
+fitMeasures <- function(model, saturated = FALSE, mc.reps = 1e6) {
 
-  Expected <- calcImpliedIndicatorCorrMat(model, saturated = FALSE)
+  if (model$info$is.mcpls) {
+    warning2("Fit measures for MC-PLSc models are under development!\n"
+             "Traditional fit criteria will likely be too strict.")
+    message(sprintf("Resampling MC-PLSc Model (R = %d)...", mc.reps))
+
+    resampled <- resampleMCPLS_Fit(fit, mc.reps = mc.reps)
+
+    Expected <- resampled$matrices$S.ord.expected
+    Observed <- resampled$matrices$S.ord.observed
+
+  } else {
+    Expected <- calcImpliedIndicatorCorrMat(model, saturated = FALSE)
+    Observed <- model$matrices$S
+  }
+
   N        <- NROW(model$data)
-  chisq    <- calcChisq(model, saturated = saturated, E = Expected)
+  chisq    <- calcChisq(model, saturated = saturated,
+                        E = Expected, O = Observed)
   chisq.df <- calcChisqDf(model, saturated = saturated)
 
   list(
     chisq    = chisq,
     chisq.df = chisq.df,
     rmsea    = calcRMSEA(chisq, df = chisq.df, N = N)$rmsea,
-    srmr     = calcSRMR(model, saturated = saturated, Expected = Expected)
+    srmr     = calcSRMR(model, saturated = saturated,
+                        Expected = Expected, Observed = Observed)
   )
 }
 

@@ -6,8 +6,8 @@
 #' @return A \code{SummaryPlsSem} object containing formatted parameter estimates.
 #'
 #' @export
-summary.plssem <- function(object, fit = !isMC_PLS(object), ...) {
-  parTable    <- parameter_estimates(object)
+summary.plssem <- function(object, fit = TRUE, ...) {
+  parTable <- parameter_estimates(object)
 
   lvs <- getLVs(parTable)
   ovs <- getOVs(parTable)

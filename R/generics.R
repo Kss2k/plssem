@@ -50,8 +50,8 @@ summary.plssem <- function(object, ...) {
       inds = r2.inds
     ),
     fit.measures = list(
-      srmr  = calcSRMR(fit),
-      chisq = calcChisq(fit)
+      srmr  = calcSRMR(object),
+      chisq = calcChisq(object)
     )
   )
 

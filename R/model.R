@@ -310,6 +310,7 @@ getFitPLSModel <- function(model, consistent = TRUE) {
   inds.b  <- model$info$inds.b
   indsLvs <- model$info$indsLvs
   modes   <- model$info$modes
+  mode.a  <- model$info$mode.a
   ptl     <- model$parTable.input
   SC      <- model$matrices$SC
   k       <- length(lvs.lin)
@@ -345,6 +346,7 @@ getFitPLSModel <- function(model, consistent = TRUE) {
     else            Q <- stats::setNames(rep(1L, k), nm = lvs.lin) # ignore measurement error
 
     fitMeasurement <- getConsistentLoadings(model, Q = Q)
+    fitLambda[,mode.a] <- fitMeasurement[,mode.a]
     model$matrices$C <- getConsistentCorrMat(model, Q = Q)
   }
 

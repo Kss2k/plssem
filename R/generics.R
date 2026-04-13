@@ -48,6 +48,10 @@ summary.plssem <- function(object, ...) {
     r2 = list(
       etas = r2.etas,
       inds = r2.inds
+    ),
+    fit.measures = list(
+      srmr  = calcSRMR(fit),
+      chisq = calcChisq(fit)
     )
   )
 
@@ -92,6 +96,22 @@ print.SummaryPlsSem <- function(x, ...) {
     x$info$iterations,
     x$info$nlvs,
     x$info$novs
+  )
+
+  cat(allignLhsRhs(lhs = headerNames, rhs = headerValues, pad = "  ",
+                   width.out = width.out), "\n", sep = "")
+
+  cat("Fit Measures:\n")
+  headerNames <- c(
+    "Chi-Square",
+    # "Degrees of Freedom",
+    "SRMR"
+  )
+
+  headerValues <- c(
+    sprintf("%.3f", x$fit.measures$chisq),
+    # x$fit.measures$chisq.df
+    sprintf("%.3f", x$fit.measures$srmr)
   )
 
   cat(allignLhsRhs(lhs = headerNames, rhs = headerValues, pad = "  ",

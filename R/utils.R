@@ -334,3 +334,8 @@ getIndsLVs <- function(parTable, lVs, isOV = FALSE, ovs = NULL) {
 lapplyNamed <- function(X, FUN, ..., names = X) {
   structure(lapply(X, FUN, ...), names = names)
 }
+
+
+tr <- function(X) {
+  sum(diag(X))
+}

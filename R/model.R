@@ -315,19 +315,24 @@ getFitPLSModel <- function(model, consistent = TRUE) {
   k       <- length(lvs.lin)
 
   # measurement model
-  fitMeasurement <- lambda
-  fitMeasurement[TRUE] <- 0
+  fitMeasurement <- fitLambda <- fitWeights <- lambda
+  fitMeasurement[TRUE] <- fitLambda[TRUE] <- fitWeights[TRUE] <- 0
+
   for (lv in lvs.lin) {
     inds.lv <- indsLvs[[lv]]
     mode.lv <- modes[[lv]]
 
-    lq <- switch(mode.lv,
-      A = SC[inds.lv, lv],
-      B = lambda[inds.lv, lv],
+    wq <- lambda[inds.lv, lv]
+    lq <- SC[inds.lv, lv]
+    pq <- switch(mode.lv,
+      A = lq,
+      B = wq,
       NA_real_
     )
 
-    fitMeasurement[inds.lv, lv] <- lq
+    fitMeasurement[inds.lv, lv] <- pq
+    fitWeights[inds.lv, lv]     <- wq
+    fitLambda[inds.lv, lv]      <- lq
   }
 
   # Caluculate consistent weights and correlations
@@ -361,6 +366,7 @@ getFitPLSModel <- function(model, consistent = TRUE) {
                                                   # But I'm not sure the residual covariances
                                                   # will be consistent estimates
   fitCov[etas, etas] <- fitCovRes[etas, etas]
+  fitCov[etas, xis] <- fitCov[xis, etas] <- 0
 
   # Indicator Residuals
   k <- length(inds)
@@ -394,7 +400,9 @@ getFitPLSModel <- function(model, consistent = TRUE) {
     fitMeasurement = plssemMatrix(fitMeasurement),
     fitStructural  = plssemMatrix(fitStructural),
     fitCov         = plssemMatrix(fitCov, symmetric = TRUE),
-    fitTheta       = plssemMatrix(fitTheta, symmetric = TRUE)
+    fitTheta       = plssemMatrix(fitTheta, symmetric = TRUE),
+    fitWeights     = plssemMatrix(fitWeights),
+    fitLambda      = plssemMatrix(fitLambda)
   )
 }
 

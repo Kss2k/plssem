@@ -9,12 +9,18 @@ to handle categorical data, non-linear models, and multilevel structures.
 of non-linear multilevel PLS-SEM (and PLSc-SEM) models with ordinal/categorical data.
 
 ## Installation
-The package currently needs to be installed from `GitHub`. Currently, it
-also depends on the latest development version of `modsem`.
+
+The package can be downloaded from `CRAN`.
 
 ```r
-devtools::install_github("kss2k/modsem")
-devtools::install_github("kss2k/plssem")
+install.packages("plssem")
+```
+
+The development version of the package can be installed from `GitHub`. It
+should be paired with the latest development version of `modsem`.
+
+```r
+devtools::install_github(c("kss2k/modsem", "kss2k/plssem"))
 ```
 
 ## Examples

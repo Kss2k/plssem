@@ -7,6 +7,11 @@ estimatePLS_Step1 <- function(model) {
   C     <- model$matrices$C
   SC    <- model$matrices$SC 
 
+  if (model$info$is.cfa) {
+    succs <- model$matrices$succs.cfa
+    preds <- model$matrices$preds.cfa
+  }
+
   for (lv in lvs) {
     predsLv <- lvs[preds[ , lv, drop = TRUE]]
     succsLv <- lvs[succs[ , lv, drop = TRUE]]

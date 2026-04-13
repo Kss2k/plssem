@@ -213,6 +213,14 @@ initMatrices <- function(pt) {
   succs.linear[is.nlin,] <- FALSE
   succs.linear[,is.nlin] <- FALSE
 
+  is.cfa <- !any(preds.linear) && !any(succs.linear)
+  preds.cfa           <- preds
+  preds.cfa[TRUE]     <- TRUE
+  diag(preds.cfa)     <- FALSE
+  preds.cfa[is.nlin,] <- FALSE
+  preds.cfa[,is.nlin] <- FALSE
+  succs.cfa           <- preds.cfa
+
   # Covariance Matrix xis ------------------------------------------------------
   xis <- lvs[!lvs %in% pt[pt$op == "~", "lhs"]]
   selectCov <- matrix(
@@ -249,6 +257,8 @@ initMatrices <- function(pt) {
     succs = succs,
     succs.linear = succs.linear,
     preds.linear = preds.linear,
+    preds.cfa    = preds.cfa,
+    succs.cfa    = succs.cfa,
     outerWeights = getNonZeroElems(lambda),
     Ip = Ip,
     C  = C,
@@ -276,7 +286,8 @@ initMatrices <- function(pt) {
     inds.b     = inds.b,
     mode.a     = mode.a,
     mode.b     = mode.b,
-    modes      = modes
+    modes      = modes,
+    is.cfa     = is.cfa
   )
 
   list(

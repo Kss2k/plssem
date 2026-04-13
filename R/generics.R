@@ -10,7 +10,7 @@ summary.plssem <- function(object, ...) {
 
   lvs <- getLVs(parTable)
   ovs <- getOVs(parTable)
-  etas <- getEtas(parTable)
+  etas <- getEtas(parTable, checkAny=FALSE)
   inds <- getIndicators(parTable)
   inds.a <- getReflectiveIndicators(parTable)
 

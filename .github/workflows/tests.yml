@@ -44,7 +44,6 @@ jobs:
         shell: Rscript {0}
         run: |
           options(warnPartialMatchDollar = TRUE)
-          devtools::install_github("kss2k/modsem", force = TRUE, upgrade = "never")
           devtools::install()
 
       # Run your testthat tests with the same strictness flags you had

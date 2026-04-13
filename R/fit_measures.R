@@ -43,7 +43,7 @@ calcImpliedIndicatorCorrMat <- function(model, saturated = FALSE) {
 fitMeasures <- function(model, saturated = FALSE, mc.reps = 1e6) {
 
   if (model$info$is.mcpls) {
-    warning2("Fit measures for MC-PLSc models are under development!\n"
+    warning2("Fit measures for MC-PLSc models are under development!\n",
              "Traditional fit criteria will likely be too strict.")
     message(sprintf("Resampling MC-PLSc Model (R = %d)...", mc.reps))
 

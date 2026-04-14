@@ -25,13 +25,21 @@ simulateDataParTable <- function(parTable, N = 1e5, seed = NULL, .covtol = .95) 
   parTable$penalty <- 0 # parameter penalties for inadmissible solutions
 
   penalty.cfg <- list(
-    corr = list(limit = abs(.covtol), guard = 0, beta = 10, scale = 1),
+    corr = list(
+      limit = abs(.covtol),
+      guard = 0,
+      beta  = 10,
+      scale = 1,
+      max_penalty = 2
+    ),
     loading = list(
       limit = 1,
-      guard = 0.02,
+      guard = 0.005,
+      clamp = 0.001,
       beta  = 3,
       scale = 0.02,
-      tol   = sqrt(.Machine$double.eps)
+      tol   = sqrt(.Machine$double.eps),
+      max_penalty = 1
     )
   )
 
@@ -70,7 +78,8 @@ simulateDataParTable <- function(parTable, N = 1e5, seed = NULL, .covtol = .95) 
           limit = penalty.cfg$corr$limit,
           guard = penalty.cfg$corr$guard,
           beta  = penalty.cfg$corr$beta,
-          scale = penalty.cfg$corr$scale
+          scale = penalty.cfg$corr$scale,
+          penalty.max = penalty.cfg$corr$max_penalty
         )
 
         if (penalty != 0)
@@ -169,13 +178,15 @@ simulateDataParTable <- function(parTable, N = 1e5, seed = NULL, .covtol = .95) 
         limit = penalty.cfg$loading$limit,
         guard = penalty.cfg$loading$guard,
         beta  = penalty.cfg$loading$beta,
-        scale = penalty.cfg$loading$scale
+        scale = penalty.cfg$loading$scale,
+        penalty.max = penalty.cfg$loading$max_penalty
       )
 
       if (lambda.penalty != 0)
         parTable[cond, "penalty"] <- parTable[cond, "penalty"] + lambda.penalty
 
-      clamp.limit <- penalty.cfg$loading$limit - penalty.cfg$loading$tol
+      clamp.margin <- max(penalty.cfg$loading$clamp, penalty.cfg$loading$tol)
+      clamp.limit <- max(0, penalty.cfg$loading$limit - clamp.margin)
       lambda <- clampAbs(lambda.raw, clamp.limit)
       epsilon <- checkFixVar(1 - lambda^2)
 
@@ -232,7 +243,8 @@ betacoef <- function(formulaString, data) {
 }
 
 
-smoothBoundaryPenalty <- function(value, limit, guard = 0, beta = 4, scale = 1) {
+smoothBoundaryPenalty <- function(value, limit, guard = 0, beta = 4, scale = 1,
+                                  penalty.max = Inf) {
   if (!length(value) || scale == 0)
     return(numeric(length(value)))
 
@@ -255,6 +267,13 @@ smoothBoundaryPenalty <- function(value, limit, guard = 0, beta = 4, scale = 1) 
   z <- pmin(z, 700) # avoid overflow inside expm1
 
   penalty[idx] <- sign(value[idx]) * scale * (expm1(z) - z)
+
+  if (!is.finite(penalty.max) || penalty.max <= 0)
+    return(penalty)
+
+  cap <- abs(penalty.max)
+
+  penalty <- cap * tanh(penalty / cap)
   penalty
 }
 

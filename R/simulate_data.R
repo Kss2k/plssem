@@ -24,6 +24,17 @@ simulateDataParTable <- function(parTable, N = 1e5, seed = NULL, .covtol = .95) 
 
   parTable$penalty <- 0 # parameter penalties for inadmissible solutions
 
+  penalty.cfg <- list(
+    corr = list(limit = abs(.covtol), guard = 0, beta = 10, scale = 1),
+    loading = list(
+      limit = 1,
+      guard = 0.02,
+      beta  = 3,
+      scale = 0.02,
+      tol   = sqrt(.Machine$double.eps)
+    )
+  )
+
   # Generate seed passed to Rfast::Rnorm. Passing seed=NULL does not work
   # If the user has used set.seed()
   rfast.seed <- floor(stats::runif(1L, min = 0, max = 9999999))
@@ -54,7 +65,17 @@ simulateDataParTable <- function(parTable, N = 1e5, seed = NULL, .covtol = .95) 
       p.ij <- parTable[cond, "est"][1]
 
       if (p.ij <= -.covtol || p.ij >= .covtol) {
-        parTable[cond, "penalty"] <- sign(p.ij) * (abs(p.ij) - abs(.covtol))
+        penalty <- smoothBoundaryPenalty(
+          p.ij,
+          limit = penalty.cfg$corr$limit,
+          guard = penalty.cfg$corr$guard,
+          beta  = penalty.cfg$corr$beta,
+          scale = penalty.cfg$corr$scale
+        )
+
+        if (penalty != 0)
+          parTable[cond, "penalty"] <- parTable[cond, "penalty"] + penalty
+
         p.ij <- sign(p.ij) * abs(.covtol)
       }
 
@@ -122,7 +143,7 @@ simulateDataParTable <- function(parTable, N = 1e5, seed = NULL, .covtol = .95) 
       beta.y <- beta.hat[parTable[cond, "rhs"]]
       beta.x <- parTable[cond, "est"]
 
-      parTable[cond, "penalty"] <- beta.x - beta.y
+      parTable[cond, "penalty"] <- parTable[cond, "penalty"] + (beta.x - beta.y)
     }
 
     vals <- vals + Rfast::Rnorm(N, m = 0, s = sqrt(resvar), seed = rfast.seed)
@@ -141,12 +162,26 @@ simulateDataParTable <- function(parTable, N = 1e5, seed = NULL, .covtol = .95) 
         parTable$rhs == ind
       )
 
-      lambda <- parTable[cond, "est"]
+      lambda.raw <- parTable[cond, "est"]
+
+      lambda.penalty <- smoothBoundaryPenalty(
+        lambda.raw,
+        limit = penalty.cfg$loading$limit,
+        guard = penalty.cfg$loading$guard,
+        beta  = penalty.cfg$loading$beta,
+        scale = penalty.cfg$loading$scale
+      )
+
+      if (lambda.penalty != 0)
+        parTable[cond, "penalty"] <- parTable[cond, "penalty"] + lambda.penalty
+
+      clamp.limit <- penalty.cfg$loading$limit - penalty.cfg$loading$tol
+      lambda <- clampAbs(lambda.raw, clamp.limit)
       epsilon <- checkFixVar(1 - lambda^2)
 
       if (!attr(epsilon, "ok")) {
-        penalty <- sign(lambda) * (abs(lambda) - 1)
-        parTable[cond, "penalty"] <- penalty
+        penalty <- sign(lambda.raw) * (abs(lambda.raw) - penalty.cfg$loading$limit)
+        parTable[cond, "penalty"] <- parTable[cond, "penalty"] + penalty
       }
 
       # vals <- lambda * Xi[[lv]] + rnorm(N, mean = 0, sd = sqrt(epsilon))
@@ -157,7 +192,11 @@ simulateDataParTable <- function(parTable, N = 1e5, seed = NULL, .covtol = .95) 
   }
 
   for (lv in mode.b) {
-    stop("Mode B is not available in MC-OrdPLSc (yet)!")
+    inds.lv <- indsLVs[[lv]]
+    nind <- length(inds.lv)
+
+    stopif(nind != 1, "Mode B is not available in MC-OrdPLSc (yet)!")
+    Inds[[inds.lv]] <- Xi[[lv]]
   }
 
   Inds <- as.data.frame(Inds)
@@ -190,4 +229,39 @@ betacoef <- function(formulaString, data) {
 
   names(beta) <- stringr::str_replace_all(names(beta), pattern = INTR_OP, replacement = ":")
   beta
+}
+
+
+smoothBoundaryPenalty <- function(value, limit, guard = 0, beta = 4, scale = 1) {
+  if (!length(value) || scale == 0)
+    return(numeric(length(value)))
+
+  guard <- max(guard, 0)
+  limit <- abs(limit)
+  start <- max(limit - guard, 0)
+  delta <- abs(value) - start
+  penalty <- numeric(length(value))
+  idx <- delta > 0
+
+  if (!any(idx))
+    return(penalty)
+
+  if (guard > 0)
+    norm <- delta[idx] / guard
+  else
+    norm <- delta[idx]
+
+  z <- beta * norm
+  z <- pmin(z, 700) # avoid overflow inside expm1
+
+  penalty[idx] <- sign(value[idx]) * scale * (expm1(z) - z)
+  penalty
+}
+
+
+clampAbs <- function(value, limit) {
+  if (limit <= 0)
+    return(rep(0, length(value)))
+
+  pmin(pmax(value, -limit), limit)
 }

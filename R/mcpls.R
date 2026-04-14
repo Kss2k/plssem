@@ -24,7 +24,7 @@ mcpls <- function(
   }
 
   par0 <- getFreeParamsTable(fit0)
-  par1 <- par0[c("lhs", "op", "rhs", "est")]
+  par1 <- par0[c("lhs", "op", "rhs", "est", "is.free")]
 
   if (fixed.seed && is.null(rng.seed)) {
     rng.seed <- floor(stats::runif(1L, min = 0, max = 9999999))
@@ -32,7 +32,7 @@ mcpls <- function(
   }
 
   .f <- function(p) {
-    par1$est <- p
+    par1[par1$is.free, "est"] <- p
 
     sim <- simulateDataParTable(par1, N = mc.reps, seed = rng.seed)
     sim.ov <- ordinalizeDataFrame(sim$ov, PROBS = PROBS, ordered = ordered)
@@ -43,10 +43,11 @@ mcpls <- function(
     fit2 <- estimatePLS_Inner(fit0)
     par2 <- getFreeParamsTable(fit2)
 
-    par2$est - par0$est + sim$penalty
+    eps <- par2$est - par0$est + sim$penalty
+    eps[par0$is.free]
   }
 
-  p <- par1$est
+  p <- par1[par1$is.free, "est"]
 
 
   mcfit <- robbinsMonro1951(
@@ -82,7 +83,7 @@ mcpls <- function(
     iter <- iter + mcfit$iter
   }
 
-  par1$est <- as.vector(mcfit$root)
+  par1[par1$is.free, "est"] <- as.vector(mcfit$root)
   fit1 <- updateModelFromFreeParTableMC(
     parTable = par1,
     model    = fit0,
@@ -116,7 +117,7 @@ ordinalizeDataFrame <- function(df, PROBS, ordered = NULL) {
 
 
 getFreeParamsTable <- function(model) {
-  parTable <- getParTableEstimates(model)
+  parTable <- getParTableEstimates(model, rm.tmp = FALSE)
 
   lhs <- parTable$lhs
   op  <- parTable$op
@@ -127,6 +128,8 @@ getFreeParamsTable <- function(model) {
 
   out <- parTable[cond1 & cond2, , drop = FALSE]
   attr(out, "cond") <- cond1 & cond2
+
+  out$is.free <- out$op != "<~" # Can be made more comprehensive later
 
   out
 }

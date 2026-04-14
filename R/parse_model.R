@@ -49,7 +49,7 @@ parseModelArguments <- function(syntax,
     data[[tmp.ov]] <- data[[ov]]
     parTable <- rbind(
       parTable,
-      data.frame(lhs = ov, op = "<~", rhs = tmp.ov, mod = "1")
+      data.frame(lhs = ov, op = "<~", rhs = tmp.ov, mod = "")
     )
   }
 

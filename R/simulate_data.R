@@ -111,13 +111,13 @@ simulateDataParTable <- function(parTable, N = 1e5, seed = NULL, .covtol = .95) 
 
     if (!attr(resvar, "ok")) {
       # Recalc coefficients and penalize
-      formula <- formula(paste(
+      formulaString <- paste(
         eta, "~",
         paste0(predRows$rhs, collapse = " + ")
-      ))
+      )
 
       Xi[[eta]] <- standardizeAtomic(vals)
-      beta.hat <- coef(lm(formula, data = Xi))
+      beta.hat <- betacoef(formulaString, data = Xi)
 
       beta.y <- beta.hat[parTable[cond, "rhs"]]
       beta.x <- parTable[cond, "est"]
@@ -173,4 +173,21 @@ simulateDataParTable <- function(parTable, N = 1e5, seed = NULL, .covtol = .95) 
     penalty = parTable$penalty,
     parTable = parTable
   )
+}
+
+
+betacoef <- function(formulaString, data) {
+  # Here we assume that all product terms have been formed
+  # explicitly in the data. The reason we do it this way
+  # is because the lm() function doesn't treat X:X as a quadratic term
+
+  INTR_OP <- "__INTR__"
+  formula <- formula(stringr::str_replace_all(formulaString, pattern = ":", replacement = INTR_OP))
+  names(data) <- stringr::str_replace_all(names(data), pattern = ":", replacement = INTR_OP)
+
+  fit <- lm(formula, data = data)
+  beta <- coef(fit)
+
+  names(beta) <- stringr::str_replace_all(names(beta), pattern = INTR_OP, replacement = ":")
+  beta
 }

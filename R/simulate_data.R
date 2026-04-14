@@ -1,4 +1,4 @@
-simulateDataParTable <- function(parTable, N = 1e5, seed = NULL) {
+simulateDataParTable <- function(parTable, N = 1e5, seed = NULL, .covtol = .95) {
   if (!is.null(seed) && exists(".Random.seed")) .Random.seed.orig <- .Random.seed
   else                                          .Random.seed.orig <- NULL
 
@@ -13,11 +13,16 @@ simulateDataParTable <- function(parTable, N = 1e5, seed = NULL) {
   checkFixVar <- function(v) {
     if (v < 0) {
       is.admissible <<- FALSE
-      return(0)
+      v <- 0
+      attr(v, "ok") <- FALSE
+      return(v)
     }
 
+    attr(v, "ok") <- TRUE
     v
   }
+
+  parTable$penalty <- 0 # parameter penalties for inadmissible solutions
 
   # Generate seed passed to Rfast::Rnorm. Passing seed=NULL does not work
   # If the user has used set.seed()
@@ -41,18 +46,34 @@ simulateDataParTable <- function(parTable, N = 1e5, seed = NULL) {
     for (j in seq_len(i - 1)) {
       xi.j <- xis[[j]]
 
-      p.ij <- parTable[
+      cond <- (
         (parTable$rhs == xi.i & parTable$op == "~~" & parTable$lhs == xi.j) |
-        (parTable$rhs == xi.j & parTable$op == "~~" & parTable$lhs == xi.i),
-        "est"
-      ]
+        (parTable$rhs == xi.j & parTable$op == "~~" & parTable$lhs == xi.i)
+      )
+
+      p.ij <- parTable[cond, "est"][1]
+
+      if (p.ij <= -.covtol || p.ij >= .covtol) {
+        parTable[cond, "penalty"] <- sign(p.ij) * (abs(p.ij) - abs(.covtol))
+        p.ij <- sign(p.ij) * abs(.covtol)
+      }
 
       Psi.x[i, j] <- Psi.x[j, i] <- p.ij
     }
   }
 
   # Xi <- mvtnorm::rmvnorm(n = N, mean = rep(0, length(xis)), sigma = Psi.x)
-  Xi <- mvnfast::rmvn(n = N, mu = rep(0, length(xis)), sigma = Psi.x)
+  Psi.x.decomp <- tryCatch(
+    chol(Psi.x),
+    error = \(e) {
+      tryCatch({
+        diag(Psi.x) <- 1.01
+        chol(Psi.x)
+      }, error = \(e) diag2(Psi.x))
+    }
+  )
+
+  Xi <- mvnfast::rmvn(n = N, mu = rep(0, length(xis)), sigma = Psi.x.decomp, isChol = TRUE)
   Xi <- as.data.frame(Rfast::standardise(Xi))
   colnames(Xi) <- xis
 
@@ -73,7 +94,8 @@ simulateDataParTable <- function(parTable, N = 1e5, seed = NULL) {
       }
     }
 
-    predRows <- parTable[parTable$lhs == eta & parTable$op == "~", , drop = FALSE]
+    cond <- parTable$lhs == eta & parTable$op == "~"
+    predRows <- parTable[cond, , drop = FALSE]
 
     vals <- numeric(N)
 
@@ -86,6 +108,23 @@ simulateDataParTable <- function(parTable, N = 1e5, seed = NULL) {
     }
 
     resvar <- checkFixVar(1 - stats::var(vals))
+
+    if (!attr(resvar, "ok")) {
+      # Recalc coefficients and penalize
+      formula <- formula(paste(
+        eta, "~",
+        paste0(predRows$rhs, collapse = " + ")
+      ))
+
+      Xi[[eta]] <- standardizeAtomic(vals)
+      beta.hat <- coef(lm(formula, data = Xi))
+
+      beta.y <- beta.hat[parTable[cond, "rhs"]]
+      beta.x <- parTable[cond, "est"]
+
+      parTable[cond, "penalty"] <- beta.x - beta.y
+    }
+
     vals <- vals + Rfast::Rnorm(N, m = 0, s = sqrt(resvar), seed = rfast.seed)
     # vals <- vals + rnorm(N, mean = 0, sd = sqrt(resvar))
 
@@ -96,10 +135,19 @@ simulateDataParTable <- function(parTable, N = 1e5, seed = NULL) {
 
   for (lv in mode.a) {
     for (ind in indsLVs[[lv]]) {
-      lambda <- parTable[parTable$lhs == lv &
-                         parTable$op == "=~" &
-                         parTable$rhs == ind, "est"]
+      cond <- (
+        parTable$lhs == lv &
+        parTable$op == "=~" &
+        parTable$rhs == ind
+      )
+
+      lambda <- parTable[cond, "est"]
       epsilon <- checkFixVar(1 - lambda^2)
+
+      if (!attr(epsilon, "ok")) {
+        penalty <- sign(lambda) * (abs(lambda) - 1)
+        parTable[cond, "penalty"] <- penalty
+      }
 
       # vals <- lambda * Xi[[lv]] + rnorm(N, mean = 0, sd = sqrt(epsilon))
       vals <- lambda * Xi[[lv]] + Rfast::Rnorm(N, m = 0, s = sqrt(epsilon), seed = rfast.seed)
@@ -121,6 +169,8 @@ simulateDataParTable <- function(parTable, N = 1e5, seed = NULL) {
     all = All,
     ov  = Ov,
     lv  = Lv,
-    is.admissible = is.admissible
+    is.admissible = is.admissible,
+    penalty = parTable$penalty,
+    parTable = parTable
   )
 }

@@ -43,7 +43,7 @@ mcpls <- function(
     fit2 <- estimatePLS_Inner(fit0)
     par2 <- getFreeParamsTable(fit2)
 
-    par2$est - par0$est
+    par2$est - par0$est + sim$penalty
   }
 
   p <- par1$est

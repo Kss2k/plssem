@@ -47,7 +47,7 @@ fitMeasures <- function(model, saturated = FALSE, mc.reps = 1e6) {
              "Traditional fit criteria will likely be too strict.")
     message(sprintf("Resampling MC-PLSc Model (R = %d)...", mc.reps))
 
-    resampled <- resampleMCPLS_Fit(fit, mc.reps = mc.reps)
+    resampled <- resampleMCPLS_Fit(model, mc.reps = mc.reps)
 
     Expected <- resampled$matrices$S.ord.expected
     Observed <- resampled$matrices$S.ord.observed

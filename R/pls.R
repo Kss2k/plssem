@@ -231,7 +231,7 @@ pls <- function(syntax,
                 mc.boot.control = list(
                   min.iter        = mc.min.iter,
                   max.iter        = mc.max.iter,
-                  reps            = floor(0.5 * mc.reps),
+                  mc.reps         = floor(0.5 * mc.reps),
                   tol             = 3 * mc.tol,
                   polyak.juditsky = TRUE,
                   verbose         = FALSE,

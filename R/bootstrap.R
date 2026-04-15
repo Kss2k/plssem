@@ -231,7 +231,7 @@ CONFIG_BOOT_CONTROL <- list(
   tol.mult        = 2,
   mc.reps.mult    = 0.5,
   verbose         = FALSE,
-  low.tol.penalty   = 0
+  low.tol.penalty = 0
 )
 
 
@@ -275,7 +275,7 @@ prepMCBootControl <- function(boot.control, boot.optimize, model) {
     boot.control$tol <- CONFIG_BOOT_CONTROL$tol.mult * mc.args$tol
 
   if (is.null(boot.control$mc.reps))
-    boot.control$mc.reps <- CONFIG_BOOT_CONTROL$mc.reps.mult * mc.args$mc.reps
+    boot.control$mc.reps <- floor(CONFIG_BOOT_CONTROL$mc.reps.mult * mc.args$mc.reps)
 
   if (is.null(boot.control$verbose))
     boot.control$verbose <- CONFIG_BOOT_CONTROL$verbose

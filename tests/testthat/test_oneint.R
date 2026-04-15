@@ -15,6 +15,7 @@ summary(fit)
 
 
 
-fit <- pls(m, oneIntOrdered, bootstrap = TRUE, boot.R = 100,
-           boot.parallel = "multicore", boot.ncpus = 2)
+fit <- pls(m, oneIntOrdered, bootstrap = TRUE, boot.R = 500,
+           boot.parallel = "multicore", boot.ncpus = 4,
+           boot.optimize = TRUE)
 summary(fit)

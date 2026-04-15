@@ -1,5 +1,6 @@
 mcpls <- function(
   fit0,
+  p.start         = fit0$info$mc.args$p.start,
   min.iter        = fit0$info$mc.args$min.iter,
   max.iter        = fit0$info$mc.args$max.iter,
   mc.reps         = fit0$info$mc.args$mc.reps,
@@ -12,7 +13,8 @@ mcpls <- function(
   ...
 ) {
 
-  data <- fit0$data
+  fit0.base <- fit0
+  data <- fit0.base$data
   vars <- colnames(data)
   ordered <- fit0$info$ordered
 
@@ -37,18 +39,19 @@ mcpls <- function(
     sim <- simulateDataParTable(par1, N = mc.reps, seed = rng.seed)
     sim.ov <- ordinalizeDataFrame(sim$ov, PROBS = PROBS, ordered = ordered)
 
-    fit0$data <- Rfast::standardise(as.matrix(sim.ov[vars]))
-    fit0$matrices$S <- Rfast::cova(fit0$data)
+    fit.sim <- fit0.base
+    fit.sim$data <- Rfast::standardise(as.matrix(sim.ov[vars]))
+    fit.sim$matrices$S <- Rfast::cova(fit.sim$data)
 
-    fit2 <- estimatePLS_Inner(fit0)
+    fit2 <- estimatePLS_Inner(fit.sim)
     par2 <- getFreeParamsTable(fit2)
 
     eps <- par2$est - par0$est + sim$penalty
     eps[par0$is.free]
   }
 
-  p <- par1[par1$is.free, "est"]
-
+  ok.start <- !is.null(p.start) && length(p.start) == sum(par1$is.free)
+  p <- if (ok.start) p.start else par1[par1$is.free, "est"]
 
   mcfit <- robbinsMonro1951(
     p               = p,
@@ -86,7 +89,7 @@ mcpls <- function(
   par1[par1$is.free, "est"] <- as.vector(mcfit$root)
   fit1 <- updateModelFromFreeParTableMC(
     parTable = par1,
-    model    = fit0,
+    model    = fit0.base,
     mc.reps  = mc.reps,
     PROBS    = PROBS,
     ordered  = ordered, 
@@ -94,6 +97,7 @@ mcpls <- function(
   )
 
   fit1$status$iterations <- mcfit$iter
+  fit1$info$mc.args$p.start <- as.vector(mcfit$root)
 
   fit1
 }

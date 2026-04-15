@@ -28,6 +28,10 @@ pls(
   mc.polyak.juditsky = FALSE,
   mc.fn.args = list(),
   verbose = interactive(),
+  boot.optimize = TRUE,
+  mc.boot.control = list(min.iter = mc.min.iter, max.iter = mc.max.iter, reps = floor(0.5
+    * mc.reps), tol = 3 * mc.tol, polyak.juditsky = TRUE, verbose = FALSE, fixed.seed =
+    TRUE),
   ...
 )
 }
@@ -99,6 +103,15 @@ be applied in the MC-PLS algorithm?}
 the step size.}
 
 \item{verbose}{Should verbose output be printed?}
+
+\item{boot.optimize}{Logical; if \code{TRUE} and \code{bootstrap = TRUE}, applies
+the settings in \code{mc.boot.control} inside each bootstrap replicate (MC-PLS only).}
+
+\item{mc.boot.control}{List of control parameters passed to the MC-PLS algorithm
+inside each bootstrap replicate when \code{boot.optimize = TRUE}. This can be used
+to speed up bootstrapping by, for example, increasing the tolerance or reducing
+\code{mc.reps}. The element \code{reuse.p.start} controls whether to reuse the
+original \code{p.start} for the bootstrap replicates.}
 
 \item{...}{Currently unused, reserved for future extensions.}
 }

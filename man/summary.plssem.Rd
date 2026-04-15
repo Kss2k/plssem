@@ -4,7 +4,7 @@
 \alias{summary.plssem}
 \title{Summarize a fitted \code{plssem} model}
 \usage{
-\method{summary}{plssem}(object, fit = !isMC_PLS(object), ...)
+\method{summary}{plssem}(object, fit = TRUE, ...)
 }
 \arguments{
 \item{object}{An object of class \code{plssem}.}

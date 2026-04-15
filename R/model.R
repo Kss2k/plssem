@@ -21,7 +21,9 @@ specifyModel <- function(syntax,
                          boot.ncpus         = 1L,
                          boot.parallel      = "no",
                          boot.R             = 50L,
-                         boot.iseed         = NULL) {
+                         boot.iseed         = NULL,
+                         boot.optimize      = FALSE,
+                         mc.boot.control    = list()) {
 
   parsed <- parseModelArguments(
     syntax     = syntax,
@@ -90,7 +92,8 @@ specifyModel <- function(syntax,
     fixed.seed      = mc.fixed.seed,
     polyak.juditsky = mc.polyak.juditsky,
     fn.args         = mc.fn.args,
-    rng.seed        = NULL
+    rng.seed        = NULL,
+    p.start         = NULL
   )
 
   info$boot <- list(
@@ -98,7 +101,9 @@ specifyModel <- function(syntax,
     ncpus     = boot.ncpus,
     parallel  = boot.parallel,
     R         = boot.R,
-    iseed     = boot.iseed
+    iseed     = boot.iseed,
+    optimize  = boot.optimize,
+    mc.boot.control = mc.boot.control
   )
 
   matrices$S  <- preppedData$S

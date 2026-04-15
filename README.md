@@ -144,6 +144,3 @@ m <- '
 fit <- pls(m, oneIntOrdered, bootstrap = TRUE)
 summary(fit)
 ```
-
-## TODO
-1. Fix mismatching thresholds in bootstrapping (`R/bootstrap.R`, line 30)

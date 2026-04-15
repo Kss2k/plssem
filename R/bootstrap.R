@@ -14,6 +14,7 @@ bootstrap <- function(model,
   data      <- model$data
   cluster   <- model$info$cluster
   is.probit <- model$info$is.probit
+  is.mcpls  <- model$info$is.mcpls
   ordered   <- model$info$ordered
   results   <- vector("list", R)
   verbose   <- verbose && !is.snow
@@ -80,7 +81,7 @@ bootstrap <- function(model,
 
       par <- model.b$params$values
 
-      if (low.tol.penalty > 0) {
+      if (low.tol.penalty > 0 && is.mcpls) {
         k <- length(par)
         par <- par + rnorm(k, mean = 0, sd = low.tol.penalty)
       }
@@ -283,7 +284,8 @@ prepMCBootControl <- function(boot.control, boot.optimize, model) {
   if (is.null(boot.control$low.tol.penalty)) {
     # Lowering the tolerance while using a warm start lowers the variance
     # We adress this by adding a noise penalty to the parameters.
-    boot.control$low.tol.penalty <- max(0, 2 * (boot.control$tol - mc.args$tol))
+    # If you're reading this I hope you like magic numbers...
+    boot.control$low.tol.penalty <- max(0, pi * (boot.control$tol - mc.args$tol))
   }
 
   boot.control

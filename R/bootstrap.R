@@ -18,6 +18,15 @@ bootstrap <- function(model,
   results   <- vector("list", R)
   verbose   <- verbose && !is.snow
 
+  model.base <- model
+
+  boot.optimize <- isTRUE(model$info$boot$optimize)
+  mc.boot.control <- prepMCBootControl(
+    boot.control  = model$info$boot$mc.boot.control,
+    boot.optimize = boot.optimize,
+    model         = model
+  )
+
   progress <- function(i) {
     available <- getOption("width")
     available <- if (is.null(available)) 80L else available
@@ -27,30 +36,65 @@ bootstrap <- function(model,
     left     <- len.out - finished
 
     printf(
-      paste0("\rBoostrap [%i] |", strrep("=", finished), strrep(" ", left), "|"), R
+      paste0("\rBootstrap [%i] |", strrep("=", finished), strrep(" ", left), "|"), R
     )
   }
+
+  na.par <- stats::setNames(rep(NA_real_, length(model$params$values)),
+                            names(model$params$values))
+
+  P_START <- model$info$mc.args$p.start
 
   .bootf <- function(i) {
     if (verbose) progress(i)
 
-    sampleData       <- resample(data, cluster = cluster)
-    model$matrices$S <- getCorrMat(sampleData, ordered = ordered, probit = is.probit)
-    model$data       <- sampleData
+    tryCatch({
+      sampleData         <- resample(data, cluster = cluster)
+      model.b            <- model.base
+      model.b$matrices$S <- getCorrMat(sampleData, ordered = ordered, probit = is.probit)
+      model.b$data       <- sampleData
 
-    utils::capture.output(type = "message", { # capture real time output
-      model <- suppressWarnings(estimatePLS(
-        model = model,
-        # args passed onto mcpls
-        fixed.seed = TRUE,
-        verbose    = FALSE
-      ))
+      mc.args         <- model.b$info$mc.args
+      boot.fixed.seed <- mc.boot.control$fixed.seed
+      boot.polyak     <- mc.boot.control$polyak.juditsky
+      boot.tol        <- mc.boot.control$tol
+      boot.reps       <- mc.boot.control$mc.reps
+      boot.p.start    <- if (mc.boot.control$reuse.p.start) P_START else NULL
+      boot.verbose    <- mc.boot.control$verbose
+      low.tol.penalty <- mc.boot.control$low.tol.penalty
+
+      utils::capture.output(type = "message", { # capture real time output
+
+        model.b <- suppressWarnings(estimatePLS(
+          model = model.b,
+          # args passed onto mcpls
+          fixed.seed      = boot.fixed.seed,
+          verbose         = boot.verbose,
+          polyak.juditsky = boot.polyak,
+          tol             = boot.tol,
+          mc.reps         = boot.reps,
+          p.start         = boot.p.start
+        ))
+
+      })
+
+      par <- model.b$params$values
+
+      if (low.tol.penalty > 0) {
+        k <- length(par)
+        par <- par + rnorm(k, mean = 0, sd = low.tol.penalty)
+      }
+
+      attr(par, "id") <- i
+      par
+
+    }, error = \(e) {
+      warning("Bootstrap replicate ", i, " failed: ", conditionMessage(e))
+
+      par <- na.par
+      attr(par, "id") <- i
+      par
     })
-
-    par <- model$params$values
-    attr(par, "id") <- i
-
-    par 
   }
 
 
@@ -177,3 +221,70 @@ resample <- function(X, n.out = NROW(X), cluster = NULL, replace = TRUE) {
   Y
 }
 
+
+CONFIG_BOOT_CONTROL <- list(
+  min.iter        = 10L,
+  max.iter        = 250L,
+  reuse.p.start   = TRUE,
+  fixed.seed      = TRUE,
+  polyak.juditsky = TRUE,
+  tol.mult        = 2,
+  mc.reps.mult    = 0.5,
+  verbose         = FALSE,
+  low.tol.penalty   = 0
+)
+
+
+prepMCBootControl <- function(boot.control, boot.optimize, model) {
+  mc.args <- model$info$mc.args
+
+  if (!boot.optimize) {
+    # Overwrite fields by arguments in mc.args
+    # I.e., we do not try to optimize the algorithm
+    # differently from the main procedure
+
+    boot.control$min.iter        <- mc.args$min.iter
+    boot.control$max.iter        <- mc.args$max.iter
+    boot.control$polyak.juditsky <- mc.args$polyak.juditsky
+    boot.control$reuse.p.start   <- FALSE
+    boot.control$fixed.seed      <- mc.args$fixed.seed
+    boot.control$tol             <- mc.args$tol
+    boot.control$mc.reps         <- mc.args$mc.reps
+
+  }
+
+  if (is.null(boot.control))
+    boot.control <- list()
+
+  if (is.null(boot.control$min.iter))
+    boot.control$min.iter <- CONFIG_BOOT_CONTROL$min.iter
+
+  if (is.null(boot.control$max.iter))
+    boot.control$max.iter <- CONFIG_BOOT_CONTROL$max.iter
+  
+  if (is.null(boot.control$polyak.juditsky))
+    boot.control$polyak.juditsky <- CONFIG_BOOT_CONTROL$polyak.juditsky
+
+  if (is.null(boot.control$reuse.p.start))
+    boot.control$reuse.p.start <- CONFIG_BOOT_CONTROL$reuse.p.start
+
+  if (is.null(boot.control$fixed.seed))
+    boot.control$fixed.seed <- CONFIG_BOOT_CONTROL$fixed.seed
+
+  if (is.null(boot.control$tol))
+    boot.control$tol <- CONFIG_BOOT_CONTROL$tol.mult * mc.args$tol
+
+  if (is.null(boot.control$mc.reps))
+    boot.control$mc.reps <- CONFIG_BOOT_CONTROL$mc.reps.mult * mc.args$mc.reps
+
+  if (is.null(boot.control$verbose))
+    boot.control$verbose <- CONFIG_BOOT_CONTROL$verbose
+
+  if (is.null(boot.control$low.tol.penalty)) {
+    # Lowering the tolerance while using a warm start lowers the variance
+    # We adress this by adding a noise penalty to the parameters.
+    boot.control$low.tol.penalty <- max(0, 2 * (boot.control$tol - mc.args$tol))
+  }
+
+  boot.control
+}

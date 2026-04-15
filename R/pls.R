@@ -77,6 +77,15 @@ USE_NON_LINEAR_PROBIT_CORR_MAT <- FALSE # for now we stick with the linear assum
 #'
 #' @param verbose Should verbose output be printed?
 #'
+#' @param boot.optimize Logical; if \code{TRUE} and \code{bootstrap = TRUE}, applies
+#'   the settings in \code{mc.boot.control} inside each bootstrap replicate (MC-PLS only).
+#'
+#' @param mc.boot.control List of control parameters passed to the MC-PLS algorithm
+#'   inside each bootstrap replicate when \code{boot.optimize = TRUE}. This can be used
+#'   to speed up bootstrapping by, for example, increasing the tolerance or reducing
+#'   \code{mc.reps}. The element \code{reuse.p.start} controls whether to reuse the
+#'   original \code{p.start} for the bootstrap replicates.
+#'
 #' @param ... Currently unused, reserved for future extensions.
 #'
 #' @return An object of class \code{plssem} containing the estimated parameters, fit
@@ -218,6 +227,16 @@ pls <- function(syntax,
                 mc.polyak.juditsky = FALSE,
                 mc.fn.args = list(),
                 verbose = interactive(),
+                boot.optimize = TRUE,
+                mc.boot.control = list(
+                  min.iter        = mc.min.iter,
+                  max.iter        = mc.max.iter,
+                  reps            = floor(0.5 * mc.reps),
+                  tol             = 3 * mc.tol,
+                  polyak.juditsky = TRUE,
+                  verbose         = FALSE,
+                  fixed.seed      = TRUE
+                ),
                 ...) {
 
   boot.parallel <- match.arg(boot.parallel)
@@ -253,7 +272,9 @@ pls <- function(syntax,
     boot.ncpus         = boot.ncpus,
     boot.parallel      = boot.parallel,
     boot.R             = boot.R,
-    boot.iseed         = boot.iseed
+    boot.iseed         = boot.iseed,
+    boot.optimize      = boot.optimize,
+    mc.boot.control    = mc.boot.control
   )
 
   # Fit model

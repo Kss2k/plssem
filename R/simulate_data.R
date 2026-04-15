@@ -11,6 +11,13 @@ simulateDataParTable <- function(parTable, N = 1e5, seed = NULL, .covtol = .95) 
 
   is.admissible <- TRUE
   checkFixVar <- function(v) {
+    if (is.na(v) || !is.finite(v)) {
+      is.admissible <<- FALSE
+      v <- 0
+      attr(v, "ok") <- FALSE
+      return(v)
+    }
+
     if (v < 0) {
       is.admissible <<- FALSE
       v <- 0

@@ -50,8 +50,8 @@ mcpls <- function(
     eps[par0$is.free]
   }
 
-  p <- par1[par1$is.free, "est"]
-
+  ok.start <- !is.null(p.start) && length(p.start) == sum(par1$is.free)
+  p <- if (ok.start) p.start else par1[par1$is.free, "est"]
 
   mcfit <- robbinsMonro1951(
     p               = p,

@@ -50,11 +50,6 @@ simulateDataParTable <- function(parTable, N = 1e5, seed = NULL, .covtol = .95) 
     )
   )
 
-  # Generate seed passed to Rfast::Rnorm. Passing seed=NULL does not work
-  # If the user has used set.seed()
-  rfast.seed <- floor(stats::runif(1L, min = 0, max = 9999999))
-  rfast.seed <- NULL
-
   xis     <- getXis(parTable)
   etas    <- getSortedEtas(parTable)
   mode.a  <- getReflectiveLVs(parTable)
@@ -162,7 +157,7 @@ simulateDataParTable <- function(parTable, N = 1e5, seed = NULL, .covtol = .95) 
       parTable[cond, "penalty"] <- parTable[cond, "penalty"] + (beta.x - beta.y)
     }
 
-    vals <- vals + Rfast::Rnorm(N, m = 0, s = sqrt(resvar), seed = rfast.seed)
+    vals <- vals + Rfast::Rnorm(N, m = 0, s = sqrt(resvar), seed = rfast.seed())
     # vals <- vals + rnorm(N, mean = 0, sd = sqrt(resvar))
 
     Xi[[eta]] <- vals
@@ -203,7 +198,7 @@ simulateDataParTable <- function(parTable, N = 1e5, seed = NULL, .covtol = .95) 
       }
 
       # vals <- lambda * Xi[[lv]] + rnorm(N, mean = 0, sd = sqrt(epsilon))
-      vals <- lambda * Xi[[lv]] + Rfast::Rnorm(N, m = 0, s = sqrt(epsilon), seed = rfast.seed)
+      vals <- lambda * Xi[[lv]] + Rfast::Rnorm(N, m = 0, s = sqrt(epsilon), seed = rfast.seed())
 
       Inds[[ind]] <- vals
     }
@@ -290,4 +285,13 @@ clampAbs <- function(value, limit) {
     return(rep(0, length(value)))
 
   pmin(pmax(value, -limit), limit)
+}
+
+
+rfast.seed <- function() {
+  # Rfast doensn't work correctly with set.seed()
+  # Instead we have to pass a seed to Rfast.
+  # Here we generate a random seed, yielding deterministic
+  # results is set.seed() has been used.
+  floor(stats::runif(1L, min = 0, max = 9999999))
 }

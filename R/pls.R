@@ -232,10 +232,11 @@ pls <- function(syntax,
                   min.iter        = mc.min.iter,
                   max.iter        = mc.max.iter,
                   mc.reps         = floor(0.5 * mc.reps),
-                  tol             = 3 * mc.tol,
-                  polyak.juditsky = TRUE,
+                  tol             = 2 * mc.tol,
+                  polyak.juditsky = FALSE,
                   verbose         = FALSE,
-                  fixed.seed      = TRUE
+                  fixed.seed      = TRUE,
+                  reuse.p.start   = TRUE
                 ),
                 ...) {
 

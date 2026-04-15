@@ -285,7 +285,7 @@ prepMCBootControl <- function(boot.control, boot.optimize, model) {
     # Lowering the tolerance while using a warm start lowers the variance
     # We adress this by adding a noise penalty to the parameters.
     # If you're reading this I hope you like magic numbers...
-    boot.control$low.tol.penalty <- max(0, pi * (boot.control$tol - mc.args$tol))
+    boot.control$low.tol.penalty <- max(0)#, pi * (boot.control$tol - mc.args$tol))
   }
 
   boot.control

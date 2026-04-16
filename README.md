@@ -1,4 +1,4 @@
-# `plssem`
+# `plssem` <img src="man/figures/plssem.png" alt="Logo" align = "right" height="139" class="logo">
 
 The goal of the [`plssem`](https://kss2k.github.io/plssem/) package is to allow the
 estimation of complex Structural Equation Models (SEMs) using the

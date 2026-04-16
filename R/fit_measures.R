@@ -57,6 +57,10 @@ fitMeasures <- function(model, saturated = FALSE, mc.reps = 1e6) {
     Observed <- model$matrices$S
   }
 
+  # Make sure both are standardized
+  Expected <- cov2cor(Expected)
+  Observed <- cov2cor(Observed)
+
   N        <- NROW(model$data)
   chisq    <- calcChisq(model, saturated = saturated,
                         E = Expected, O = Observed)

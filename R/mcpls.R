@@ -147,13 +147,13 @@ updateModelFromFreeParTableMC <- function(parTable, model, mc.reps,
   lvs <- getLVs(parTable)
   indsLVs <- getIndsLVs(parTable, lVs = lvs)
 
-  SC <- Rfast::cova(as.matrix(sim$all))
+  SC <- cov2cor(Rfast::cova(as.matrix(sim$all)))
 
   ovs <- colnames(model$matrices$S)
   lvs <- colnames(model$matrices$C)
 
-  model$matrices$S.ord.expected <- Rfast::cova(as.matrix(sim.ord))
-  model$matrices$S.ord.observed <- Rfast::cova(model$data)
+  model$matrices$S.ord.expected <- cov2cor(Rfast::cova(as.matrix(sim.ord)))
+  model$matrices$S.ord.observed <- cov2cor(Rfast::cova(model$data))
 
   model$matrices$S  <- SC[ovs, ovs, drop = FALSE]
   model$matrices$C  <- SC[lvs, lvs, drop = FALSE]

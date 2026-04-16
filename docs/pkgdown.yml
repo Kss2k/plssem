@@ -1,5 +1,5 @@
-pandoc: '2.12'
-pkgdown: 2.0.7
+pandoc: '3.5'
+pkgdown: 2.1.1
 pkgdown_sha: ~
 articles:
   categorical-models: categorical-models.html
@@ -7,5 +7,4 @@ articles:
   linear-models: linear-models.html
   multilevel-models: multilevel-models.html
   parallel-bootstrapping: parallel-bootstrapping.html
-last_built: 2026-04-16T11:11Z
-
+last_built: 2026-04-16T16:28Z

@@ -1,0 +1,69 @@
+---
+title: "Parallel Bootstrapping with plssem"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Parallel Bootstrapping with plssem}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+
+library(plssem)
+```
+
+This vignette shows how to run bootstrap standard errors in parallel using
+`boot.ncpus` and `boot.parallel`.
+
+## Example model (ordered indicators)
+
+```{r syntax}
+m <- '
+  X =~ x1 + x2 + x3
+  Z =~ z1 + z2 + z3
+  Y =~ y1 + y2 + y3
+
+  Y ~ X + Z + X:Z
+'
+```
+
+## Windows: PSOCK cluster (`boot.parallel = "snow"`)
+
+Use `"snow"` on Windows (PSOCK clusters; similar to a “multisession” approach).
+
+```{r boot-windows, eval = FALSE}
+fit_win <- pls(
+  m,
+  data          = oneIntOrdered,
+  ordered       = colnames(oneIntOrdered),
+  bootstrap     = TRUE,
+  boot.R        = 500,
+  boot.ncpus    = 2,
+  boot.parallel = "snow",
+  boot.iseed    = 123
+)
+summary(fit_win)
+```
+
+## Linux: forked processes (`boot.parallel = "multicore"`)
+
+Use `"multicore"` on Linux (forking; not available on Windows).
+
+```{r boot-linux, eval = FALSE}
+fit_linux <- pls(
+  m,
+  data          = oneIntOrdered,
+  ordered       = colnames(oneIntOrdered),
+  bootstrap     = TRUE,
+  boot.R        = 500,
+  boot.ncpus    = 2,
+  boot.parallel = "multicore",
+  boot.iseed    = 123
+)
+summary(fit_linux)
+```
+

@@ -22,6 +22,9 @@
     <loc>/articles/multilevel-models.html</loc>
   </url>
   <url>
+    <loc>/articles/parallel-bootstrapping.html</loc>
+  </url>
+  <url>
     <loc>/authors.html</loc>
   </url>
   <url>
@@ -32,6 +35,9 @@
   </url>
   <url>
     <loc>/reference/index.html</loc>
+  </url>
+  <url>
+    <loc>/reference/isMC_PLS.html</loc>
   </url>
   <url>
     <loc>/reference/oneIntOrdered.html</loc>

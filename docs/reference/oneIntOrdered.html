@@ -43,6 +43,9 @@
     <li>
       <a href="../articles/multilevel-models.html">Multilevel Models with plssem</a>
     </li>
+    <li>
+      <a href="../articles/parallel-bootstrapping.html">Parallel Bootstrapping with plssem</a>
+    </li>
   </ul></li>
       </ul><ul class="nav navbar-nav navbar-right"><li>
   <a href="https://github.com/kss2k/plssem/" class="external-link">
@@ -83,73 +86,82 @@
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="pls.html">pls</a></span><span class="op">(</span><span class="va">m</span>, <span class="va">oneIntOrdered</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> plssem (0.1.0) ended normally after 61 iterations</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Fit measures for MC-PLSc models are under development!</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> Traditional fit criteria will likely be too strict.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Resampling MC-PLSc Model (R = 1000000)...</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> plssem (0.1.0) ended normally after 38 iterations</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Estimator                                  MCOrdPLSc</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Link                                          PROBIT</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                                                       </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Number of observations                          2000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Number of iterations                              61</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Number of iterations                              38</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Number of latent variables                         3</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Number of observed variables                       9</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Fit Measures:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Chi-Square                                    20.397</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Degrees of Freedom                                24</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   SRMR                                           0.011</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   RMSEA                                          0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> R-squared (indicators):</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   x1                                             0.931</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   x2                                             0.898</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   x2                                             0.899</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   x3                                             0.905</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   z1                                             0.935</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   z2                                             0.902</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   z1                                             0.936</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   z2                                             0.901</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   z3                                             0.911</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   y1                                             0.972</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   y1                                             0.971</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   y2                                             0.952</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   y3                                             0.962</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> R-squared (latents):</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Y                                              0.475</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Y                                              0.551</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Latent Variables:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                  Estimate  Std.Error  z.value  P(&gt;|z|)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   X =~          </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     x1              0.931                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     x2              0.898                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     x2              0.899                             </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     x3              0.905                             </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Z =~          </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     z1              0.935                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     z2              0.902                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     z1              0.936                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     z2              0.901                             </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     z3              0.911                             </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Y =~          </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     y1              0.972                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     y1              0.971                             </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     y2              0.952                             </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     y3              0.962                             </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Regressions:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                  Estimate  Std.Error  z.value  P(&gt;|z|)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Y ~           </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     X               0.417                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     Z               0.356                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     X:Z             0.448                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     X               0.414                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     Z               0.357                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     X:Z             0.449                             </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Covariances:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                  Estimate  Std.Error  z.value  P(&gt;|z|)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   X ~~          </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     Z               0.197                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     X:Z            -0.005                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     Z               0.194                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     X:Z            -0.008                             </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Z ~~          </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     X:Z            -0.004                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     X:Z            -0.008                             </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Variances:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                  Estimate  Std.Error  z.value  P(&gt;|z|)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     X               1.000                             </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     Z               1.000                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .Y               0.525                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     X:Z             1.020                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .Y               0.449                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     X:Z             1.000                             </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    .x1              0.069                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .x2              0.102                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .x2              0.101                             </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    .x3              0.095                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .z1              0.065                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .z2              0.098                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .z1              0.064                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .z2              0.099                             </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    .z3              0.089                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .y1              0.028                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .y1              0.029                             </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    .y2              0.048                             </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    .y3              0.038                             </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>

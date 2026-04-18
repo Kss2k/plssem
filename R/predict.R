@@ -1,20 +1,33 @@
+#' Predict from a fitted PLS-SEM model
+#'
+#' @param object A fitted \code{plssem} model.
+#' @param approach Prediction approach.
+#' @param newdata Optional new data matrix/data frame.
+#' @param std.ord.exp Logical; standardize ordinal expectation scores.
+#' @param benchmark Benchmark type(s). Either length 1 (recycled) or one entry
+#'   per indicator (optionally named). Supported: \code{"r2"}, \code{"rmse"},
+#'   \code{"mae"}, \code{"q2_predict"}, \code{"acc"}, \code{"ord_mae"}.
+#' @param ... Additional arguments passed to internal helpers.
+#' @return A \code{PlsSemPredict} object with matrices and benchmark results.
+#'
 #' @export
 pls_predict <- function(object,
                         approach = c("earliest", "direct"),
                         newdata = NULL,
                         std.ord.exp = FALSE,
-                        benchmark = "R2", # pearson and tetrachoric correlations
+                        benchmark = "R2",
                         ...) {
   approach <- match.arg(tolower(approach), c("earliest", "direct"))
-  benchmark <- match.arg(tolower(benchmark), c("r2"))
 
   W <- object$fit$fitWeights
   L <- object$fit$fitLambda
 
   ordered <- object$info$ordered
-  outerX <- getOuterDataMatrices(object, std.ord.exp = std.ord.exp)
+  outerX <- getOuterDataMatrices(object, newdata = newdata,
+                                 std.ord.exp = std.ord.exp)
   X.cont <- outerX$X.cont
   X.ord  <- outerX$X.ord
+  ordered <- intersect(ordered, colnames(X.cont))
 
   Y <- X.cont %*% W
 
@@ -75,37 +88,80 @@ pls_predict <- function(object,
 
   }
 
-  if (benchmark == "r2") {
-    
-    getr2 <- function(variable) {
-      x <- X.cont.pred[,variable]
+  Y           <- plssemMatrix(Y, is.public = TRUE)
+  X.cont      <- plssemMatrix(X.cont, is.public = TRUE)
+  X.cont.pred <- plssemMatrix(X.cont.pred, is.public = TRUE)
+  X.ord       <- plssemMatrix(X.ord, is.public = TRUE)
+  X.ord.pred  <- plssemMatrix(X.ord.pred, is.public = TRUE)
+  vars        <- colnames(X.cont.pred)
+  ordered     <- unique(c(ordered, stringr::str_remove_all(ordered, TEMP_OV_PREFIX)))
+  benchmarked <- NULL
 
-      if (variable %in% ordered) {
-        y <- X.ord[,variable]
-        r <- tetracor(x = x, y = y)
-      } else {
-        y <- X.cont[,variable]
-        r <- cor(x = x, y = y)
-      }
+  if (!is.null(benchmark)) {
+    allowedBenchmarks <- c("r2", "rmse", "mae", "acc", "ord_mae", "q2_predict")
+    benchmark <- .normalizeBenchmarkType(benchmark)
 
-      r^2
+    if (length(benchmark) == 1L) {
+      benchmarkByVar <- stats::setNames(rep(benchmark, length(vars)), vars)
+
+    } else if (is.null(names(benchmark)) || all(names(benchmark) == "")) {
+      stopif(length(benchmark) != length(vars),
+             "`benchmark` must have length 1 or one entry per variable.")
+      benchmarkByVar <- stats::setNames(benchmark, vars)
+
+    } else {
+      missing <- setdiff(vars, names(benchmark))
+      extra <- setdiff(names(benchmark), vars)
+
+      stopif(length(missing),
+             "Missing benchmark type(s) for variable(s): ",
+             paste0(missing, collapse = ", "))
+      warnif(length(extra),
+             "Ignoring benchmark type(s) for unknown variable(s): ",
+             paste0(extra, collapse = ", "))
+
+      benchmarkByVar <- benchmark[vars]
+      benchmarkByVar <- stats::setNames(as.character(benchmarkByVar), vars)
     }
 
-    benchmarked <- vapply(
-      X = colnames(X.cont.pred),
-      FUN.VALUE = numeric(1L),
-      FUN = getr2
+    invalid <- setdiff(unique(benchmarkByVar), allowedBenchmarks)
+    stopif(length(invalid),
+           "Invalid `benchmark` type(s): ", paste0(invalid, collapse = ", "),
+           "\nAllowed: ", paste0(allowedBenchmarks, collapse = ", "))
+
+    trainOuterX <- getOuterDataMatrices(object, newdata = object$data,
+                                        std.ord.exp = std.ord.exp)
+    trainMean <- colMeans(trainOuterX$X.cont, na.rm = TRUE)
+
+    values <- mapply(
+      FUN = .benchmark,
+      variable = vars,
+      benchmark = unname(benchmarkByVar),
+      X.cont = list(X.cont),
+      X.cont.pred = list(X.cont.pred),
+      X.ord = list(X.ord),
+      X.ord.pred = list(X.ord.pred),
+      ordered = list(ordered),
+      trainMean = list(trainMean),
+      SIMPLIFY = TRUE,
+      USE.NAMES = FALSE
     )
 
+    benchmarked <- data.frame(
+      variable = vars,
+      metric = unname(benchmarkByVar),
+      value = as.numeric(values),
+      stringsAsFactors = FALSE
+    )
   }
 
   out <- list(
-    Y           = plssemMatrix(Y),
-    X.cont      = plssemMatrix(X.cont),
-    X.cont.pred = plssemMatrix(X.cont.pred),
-    X.ord       = plssemMatrix(X.ord),      # Might be NULL
-    X.ord.pred  = plssemMatrix(X.ord.pred), # Might be NULL
-    benchmark   = plssemVector(benchmarked)
+    Y           = Y,
+    X.cont      = X.cont,
+    X.cont.pred = X.cont.pred,
+    X.ord       = X.ord,      # Might be NULL
+    X.ord.pred  = X.ord.pred, # Might be NULL
+    benchmark   = benchmarked
   )
 
   class(out) <- "PlsSemPredict"
@@ -113,11 +169,127 @@ pls_predict <- function(object,
 }
 
 
+#' Print a \code{PlsSemPredict} object
+#'
+#' @param x A \code{PlsSemPredict} object.
+#' @param ... Additional arguments for compatibility with the generic.
+#' @return The input object, invisibly.
+#'
+#' @export
 print.PlsSemPredict <- function(x, ...) {
-  # Summarize prediction object
+  fields <- names(x)
+  hasOrd <- !is.null(x$X.ord) || !is.null(x$X.ord.pred)
+
+  printf("PlsSemPredict object\n")
+  printf("Available fields: %s\n\n", paste0("$", fields, collapse = ", "))
+
+  printHead <- function(name, mat) {
+    printf("%s [%i x %i] (head)\n", name, nrow(mat), ncol(mat))
+    print(plssemMatrix(utils::head(mat)))
+    cat("\n")
+  }
+
+  if (!is.null(x$Y))           printHead("Y", x$Y)
+  if (!is.null(x$X.cont))      printHead("X.cont", x$X.cont)
+  if (!is.null(x$X.cont.pred)) printHead("X.cont.pred", x$X.cont.pred)
+
+  if (hasOrd) {
+    if (!is.null(x$X.ord))      printHead("X.ord", x$X.ord)
+    if (!is.null(x$X.ord.pred)) printHead("X.ord.pred", x$X.ord.pred)
+  }
+
+  if (!is.null(x$benchmark)) {
+    if (is.data.frame(x$benchmark) &&
+        all(c("variable", "metric", "value") %in% names(x$benchmark))) {
+      bm <- x$benchmark
+      metrics <- unique(bm$metric)
+
+      printf("Benchmark summary\n")
+      for (m in metrics) {
+        vals <- bm$value[bm$metric == m]
+        vals <- vals[is.finite(vals)]
+
+        if (!length(vals)) {
+          printf("%s: <empty>\n", m)
+        } else {
+          stats <- c(mean = mean(vals), median = stats::median(vals),
+                     min = min(vals), max = max(vals))
+          fmt <- formatNumeric(stats, digits = 3L)
+          printf("%s: n=%i, mean=%s, median=%s, min=%s, max=%s\n",
+                 m, length(vals), fmt["mean"], fmt["median"],
+                 fmt["min"], fmt["max"])
+        }
+
+        bm.m <- bm[bm$metric == m, c("variable", "value"), drop = FALSE]
+        bm.m$value <- formatNumeric(bm.m$value, digits = 3L)
+        rownames(bm.m) <- NULL
+        print(bm.m, row.names = FALSE)
+      }
+
+      cat("\n")
+
+    } else {
+      bench <- as.numeric(x$benchmark)
+      bench <- bench[is.finite(bench)]
+
+      printf("Benchmark")
+      if (!length(bench)) {
+        printf(": <empty>\n\n")
+      } else {
+        stats <- c(mean = mean(bench), median = stats::median(bench),
+                   min = min(bench), max = max(bench))
+        fmt <- formatNumeric(stats, digits = 3L)
+        printf(": n=%i, mean=%s, median=%s, min=%s, max=%s\n\n",
+               length(bench), fmt["mean"], fmt["median"],
+               fmt["min"], fmt["max"])
+      }
+    }
+  }
+
+  invisible(x)
 }
 
-assignScoresOrdinalNormal <- function(x, std.ord.exp = FALSE, probs = NULL) {
+
+.benchmark <- function(variable, benchmark,
+                       X.cont, X.cont.pred,
+                       X.ord = NULL, X.ord.pred = NULL,
+                       ordered = character(0), trainMean = NULL) {
+  type <- benchmark
+  xObs <- X.cont[,variable]
+  xPred <- X.cont.pred[,variable]
+
+  switch(
+    type,
+    r2 = .bm_r2(
+      variable = variable,
+      xObs     = xObs,
+      xPred    = xPred,
+      ordered  = ordered,
+      yOrd     = if (is.null(X.ord)) NULL else X.ord[,variable]
+    ),
+    rmse = .bm_rmse(xObs = xObs, xPred = xPred),
+    mae  = .bm_mae(xObs = xObs, xPred = xPred),
+    q2_predict = .bm_q2_predict(
+      variable = variable,
+      xObs = xObs,
+      xPred = xPred,
+      trainMean = trainMean
+    ),
+    acc = {
+      .bm_check_ord_only(type = type, variable = variable, ordered = ordered)
+      .bm_check_ord_mats(X.ord = X.ord, X.ord.pred = X.ord.pred)
+      .bm_acc(yObs = X.ord[,variable], yPred = X.ord.pred[,variable])
+    },
+    ord_mae = {
+      .bm_check_ord_only(type = type, variable = variable, ordered = ordered)
+      .bm_check_ord_mats(X.ord = X.ord, X.ord.pred = X.ord.pred)
+      .bm_ord_mae(yObs = X.ord[,variable], yPred = X.ord.pred[,variable])
+    },
+    stop("Unhandled benchmark type: ", type, call. = FALSE)
+  )
+}
+
+assignScoresOrdinalNormal <- function(x, std.ord.exp = FALSE, probs = NULL, eps = 1e-5) {
   x.i <- reindex(x)
 
   # observed category proportions
@@ -155,7 +327,7 @@ assignScoresOrdinalNormal <- function(x, std.ord.exp = FALSE, probs = NULL) {
     x.out <- standardizeAtomic(x.out)
 
   # labels for interior thresholds
-  labels.t   <- paste0(name, "|t", seq_len(K - 1))
+  labels.t   <- paste0("y|t", seq_len(K - 1))
   thresholds <- stats::setNames(tauf, labels.t)
 
   attr(x.out, "thresholds") <- thresholds
@@ -267,9 +439,80 @@ getOuterDataMatrices <- function(model, newdata = NULL, std.ord.exp = FALSE) {
 }
 
 
+#' Construct latent variable scores
+#'
+#' Convenience wrapper around [pls_predict()] returning only the predicted
+#' latent scores matrix.
+#'
+#' @param object A fitted \code{plssem} model.
+#' @param ... Passed to [pls_predict()].
+#' @return A \code{PlsSemMatrix} of predicted latent scores.
+#'
+#' @export
 pls_construct_scores <- function(object, ...) {
   predicted <- pls_predict(object, ...)
   predicted$Y
+}
+
+
+.normalizeBenchmarkType <- function(x) {
+  x <- tolower(x)
+  x[x %in% c("ordmae", "ord-mae", "ordinalmae", "ordinal_mae")] <- "ord_mae"
+  x[x %in% c("q2", "q2predict", "q2-predict", "q2_predict")] <- "q2_predict"
+  x
+}
+
+
+.bm_check_ord_only <- function(type, variable, ordered) {
+  stopif(!(variable %in% ordered),
+         "Benchmark `", type, "` is only available for ordered variables: ",
+         variable)
+}
+
+
+.bm_check_ord_mats <- function(X.ord, X.ord.pred) {
+  stopif(is.null(X.ord) || is.null(X.ord.pred),
+         "Ordinal matrices are NULL; cannot compute `", type, "`.")
+}
+
+
+.bm_r2 <- function(variable, xObs, xPred, ordered, yOrd = NULL) {
+  if (variable %in% ordered) {
+    stopif(is.null(yOrd), "Missing observed ordinal values for: ", variable)
+    r <- tryCatchNA(tetracor(x = xPred, y = yOrd))
+  } else {
+    r <- tryCatchNA(stats::cor(x = xPred, y = xObs, use = "complete.obs"))
+  }
+  r^2
+}
+
+
+.bm_rmse <- function(xObs, xPred) {
+  sqrt(mean((xPred - xObs)^2, na.rm = TRUE))
+}
+
+
+.bm_mae <- function(xObs, xPred) {
+  mean(abs(xPred - xObs), na.rm = TRUE)
+}
+
+
+.bm_q2_predict <- function(variable, xObs, xPred, trainMean) {
+  stopif(is.null(trainMean), "Missing training mean; cannot compute Q2_predict.")
+  sse <- sum((xPred - xObs)^2, na.rm = TRUE)
+  sst <- sum((xObs - trainMean[variable])^2, na.rm = TRUE)
+  if (!is.finite(sst) || sst <= 0) return(NA_real_)
+  1 - sse / sst
+}
+
+
+.bm_acc <- function(yObs, yPred) {
+  mean(yPred == yObs, na.rm = TRUE)
+}
+
+
+.bm_ord_mae <- function(yObs, yPred) {
+  mean(abs(yPred - yObs), na.rm = TRUE)
 }
 
 

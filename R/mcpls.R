@@ -18,12 +18,7 @@ mcpls <- function(
   vars <- colnames(data)
   ordered <- fit0$info$ordered
 
-  PROBS <- stats::setNames(vector("list", length(ordered)), nm = ordered)
-  for (ord in ordered) {
-    freq <- table(data[,ord])
-    pct  <- cumsum(freq) / sum(freq)
-    PROBS[[ord]] <- pct[-length(pct)]
-  }
+  PROBS <- getPROBS(data = data, ordered = ordered)
 
   par0 <- getFreeParamsTable(fit0)
   par1 <- par0[c("lhs", "op", "rhs", "est", "is.free")]
@@ -155,6 +150,9 @@ updateModelFromFreeParTableMC <- function(parTable, model, mc.reps,
   model$matrices$S.ord.expected <- cov2cor(Rfast::cova(as.matrix(sim.ord)))
   model$matrices$S.ord.observed <- cov2cor(Rfast::cova(model$data))
 
+  model$matrices$sim.ov.cont <- sim$ov
+  model$matrices$sim.ov.ord  <- sim.ord
+
   model$matrices$S  <- SC[ovs, ovs, drop = FALSE]
   model$matrices$C  <- SC[lvs, lvs, drop = FALSE]
   model$matrices$SC <- SC[c(ovs, lvs), c(ovs, lvs), drop = FALSE]
@@ -271,4 +269,17 @@ robbinsMonro1951 <- function(p, f, tol, min.iter, max.iter, verbose,
   if (verbose) cat("\n")
 
   mcfit
+}
+
+
+getPROBS <- function(data, ordered) {
+  PROBS <- stats::setNames(vector("list", length(ordered)), nm = ordered)
+
+  for (ord in ordered) {
+    freq <- table(data[,ord])
+    pct  <- cumsum(freq) / sum(freq)
+    PROBS[[ord]] <- pct[-length(pct)]
+  }
+
+  PROBS
 }

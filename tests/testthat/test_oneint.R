@@ -15,7 +15,12 @@ summary(fit)
 
 
 
-fit <- pls(m, oneIntOrdered, bootstrap = TRUE, boot.R = 500,
+fit <- pls(m, oneIntOrdered, bootstrap = TRUE, boot.R = 50,
            boot.parallel = "multicore", boot.ncpus = 4,
            boot.optimize = TRUE)
 summary(fit)
+
+P <- pls_predict(fit, approach = "earliest")
+lapply(P, head)
+P
+lapply(P, class)

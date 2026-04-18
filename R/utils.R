@@ -155,6 +155,13 @@ getPolyCorr <- function(data, ordered = NULL) {
 }
 
 
+tetracor <- function(x, y) {
+  # x is continous, y is ordinal
+  X <- data.frame(x, y)
+  lavaan::lavCor(X, ordered = "y")[1, 2]
+}
+
+
 formatNumeric <- function(x, digits = 3, scientific = FALSE,
                           justify = "right", width = NULL) {
   digits_fmt <- if (is.finite(digits)) max(0L, as.integer(digits)) else 3L

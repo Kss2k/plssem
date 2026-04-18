@@ -1,5 +1,6 @@
 OPERATORS <- c("<~", "~~", "=~", "~1", "~", "|")
 
+
 specifyModel <- function(syntax,
                          data,
                          consistent         = TRUE,

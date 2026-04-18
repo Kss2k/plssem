@@ -136,4 +136,3 @@ formatNumeric <- function(x, digits = 3, scientific = FALSE,
            width = width)
   }
 }
-

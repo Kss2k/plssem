@@ -387,7 +387,9 @@ getOuterDataMatrices <- function(model, newdata = NULL, std.ord.exp = FALSE) {
     stopif(length(missing), "Missing variables in `newdata`!\n",
            "Missing: ", paste0(missing, collapse = ", "))
 
-    newdata <- as.matrix(as.data.frame(newdata)[colnames(olddata)])
+    newdata <- Rfast::standardise(
+      as.matrix(as.data.frame(newdata)[colnames(olddata)]
+    )
 
   } else {
     newdata <- olddata

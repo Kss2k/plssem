@@ -103,7 +103,7 @@ plslmer <- function(plsModel) {
         vcPars <- rownames(varCorrFit[[c]])
         vcCorrection <- DCorrectionTerms[vcPars, vcPars, drop = FALSE]
 
-        coefFit[[c]] <- coefFit[[c]] %*% correctionTerms
+        coefFit[[c]] <- coefFit[[c]] %*% diag(correctionTerms[colnames(coefFit[[c]])])
         varCorrFit[[c]] <- vcCorrection %*% varCorrFit[[c]] %*% vcCorrection 
       }
 

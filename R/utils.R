@@ -184,7 +184,9 @@ formatNumeric <- function(x, digits = 3, scientific = FALSE,
 
 
 getIntTerms <- function(parTable) {
-  unique(parTable[grepl(":", parTable$rhs), "rhs"])
+  cond1 <- grepl(":", parTable$rhs)
+  cond2 <- !grepl("\\(|\\)\\|", parTable$rhs)
+  unique(parTable[cond1 & cond2, "rhs"])
 }
 
 

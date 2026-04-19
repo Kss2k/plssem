@@ -124,9 +124,10 @@ getFreeParamsTable <- function(model) {
 
   cond1 <- !(lhs == rhs & op == "~~")
   cond2 <- !((grepl(":", lhs) | grepl(":", rhs)) & op == "~~")
+  cond3 <- op != "~1" & !grepl("~", lhs) & !grepl("~", rhs)
 
-  out <- parTable[cond1 & cond2, , drop = FALSE]
-  attr(out, "cond") <- cond1 & cond2
+  out <- parTable[cond1 & cond2 & cond3, , drop = FALSE]
+  attr(out, "cond") <- cond1 & cond2 & cond3
 
   out$is.free <- out$op != "<~" # Can be made more comprehensive later
 

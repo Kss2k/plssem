@@ -167,7 +167,7 @@ initMatrices <- function(pt) {
 
   etas <- unique(pt[pt$op == "~", "lhs"])
 
-  lvs  <- c(lvs.linear, pt[grepl(":", pt$rhs), "rhs"])
+  lvs  <- c(lvs.linear, getIntTerms(pt))
   xis  <- lvs[!lvs %in% etas]
 
   indsLvs <- vector("list", length(lvs))

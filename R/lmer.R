@@ -1,4 +1,15 @@
 plslmer <- function(plsModel) {
+  INTR_OP <- "__INTR__"
+
+  safeIntr <- function(x) {
+    stringr::str_replace_all(x, stringr::fixed(":"), INTR_OP)
+  }
+
+  restoreIntr <- function(x) {
+    x <- stringr::str_replace_all(x, stringr::fixed(INTR_OP), ":")
+    stringr::str_replace_all(x, stringr::fixed("`"), "")
+  }
+
   lme4.syntax <- plsModel$info$lme4.syntax
   cluster     <- plsModel$info$cluster
   consistent  <- plsModel$info$consistent
@@ -25,8 +36,51 @@ plslmer <- function(plsModel) {
   Xc <- as.data.frame(attr(plsModel$data, "cluster"))
   X  <- cbind(Xf, Xx, Xc)
 
+  # Mean-center interaction/quadratic terms (e.g., X:Z and X:X).
+  intTerms <- plsModel$info$intTermNames
+  if (!is.null(intTerms) && length(intTerms)) {
+    intTerms <- intersect(intTerms, colnames(X))
+
+    for (term in intTerms) {
+      if (is.numeric(X[[term]]))
+        X[[term]] <- X[[term]] - mean(X[[term]], na.rm = TRUE)
+    }
+  }
+
+  # We don't want lmer to form the interaction terms on its' own, since we want
+  # them to be mean centered, matching the assumptions of our correction procedure.
+  # We threefore replace the ':' operator, and use explicitly formed interaction
+  # terms, also enaming any columns containing ':' before fitting, and map the
+  # lme4 syntax accordingly.
+  colsWithColon <- colnames(X)[grepl(":", colnames(X), fixed = TRUE)]
+  colsWithColonSafe <- safeIntr(colsWithColon)
+
+  X.safe <- X
+  if (length(colsWithColon)) {
+    colnames(X.safe)[match(colsWithColon, colnames(X.safe))] <- colsWithColonSafe
+  }
+
+  makeSafeFormula <- function(line) {
+    if (!length(colsWithColon))
+      return(line)
+
+    ord <- order(nchar(colsWithColon), decreasing = TRUE)
+    out <- line
+
+    for (i in ord) {
+      key  <- colsWithColon[[i]]
+      safe <- colsWithColonSafe[[i]]
+
+      out <- stringr::str_replace_all(out, stringr::fixed(paste0("`", key, "`")), safe)
+      out <- stringr::str_replace_all(out, stringr::fixed(key), safe)
+    }
+
+    out
+  }
+
   getNames <- function(lhs, nm) {
     rhs <- stringr::str_replace_all(nm, pattern = "\\(Intercept\\)", replacement = "1")
+    rhs <- restoreIntr(rhs)
     paste0(lhs, "~", rhs)
   }
 
@@ -52,10 +106,11 @@ plslmer <- function(plsModel) {
   SIGMA   <- list()
 
   for (line in lme4.syntax) {
-    lmerFit <- lme4::lmer(line, data = X)
-    fterms  <- stats::terms(stats::formula(line))
+    line.safe <- makeSafeFormula(line)
+    lmerFit <- lme4::lmer(line.safe, data = X.safe)
+    fterms  <- stats::terms(stats::formula(line.safe))
     vars    <- attr(fterms, "variables")
-    dep     <- as.character(vars[[2L]])
+    dep     <- restoreIntr(as.character(vars[[2L]]))
     indep   <- colnames(selectGamma)[selectGamma[,dep]]
 
     fixefFit   <- fixVecNames(lme4::fixef(lmerFit), dep = dep)
@@ -107,8 +162,15 @@ plslmer <- function(plsModel) {
     }
 
     for (c in cluster) {
-      coefFit[[c]] <- fixMatNames(as.matrix(coefFit[[c]]), dep = dep, rows = FALSE)
-      varCorrFit[[c]] <- fixMatNames(varCorrFit[[c]], dep = dep)
+      c.safe <- safeIntr(c)
+
+      coefFit[[c]] <- fixMatNames(as.matrix(coefFit[[c.safe]]), dep = dep, rows = FALSE)
+      varCorrFit[[c]] <- fixMatNames(varCorrFit[[c.safe]], dep = dep)
+
+      if (c.safe != c) {
+        coefFit[[c.safe]] <- NULL
+        varCorrFit[[c.safe]] <- NULL
+      }
      
       if (consistent) {
         vcPars <- rownames(varCorrFit[[c]])
@@ -149,12 +211,20 @@ plslmer <- function(plsModel) {
 
 
 meanDiagZGZt <- function(fit, varCorr.c, dep = NULL) {
+  INTR_OP <- "__INTR__"
+
+  restoreIntr <- function(x) {
+    x <- stringr::str_replace_all(x, stringr::fixed(INTR_OP), ":")
+    stringr::str_replace_all(x, stringr::fixed("`"), "")
+  }
+
   mf   <- stats::model.frame(fit)
   bars <- reformulas::findbars(stats::formula(fit))
 
   # helper to match your naming convention dep~(Intercept)->dep~1 etc.
   getNames <- function(lhs, nm) {
     rhs <- stringr::str_replace_all(nm, pattern="\\(Intercept\\)", replacement="1")
+    rhs <- restoreIntr(rhs)
     paste0(lhs, "~", rhs)
   }
 
@@ -165,7 +235,7 @@ meanDiagZGZt <- function(fit, varCorr.c, dep = NULL) {
 
   for (b in bars) {
     expr  <- b[[2]]                 # random part, e.g. 1 + x
-    gname <- deparse(b[[3]])        # grouping factor name
+    gname <- restoreIntr(deparse(b[[3]]))        # grouping factor name
 
     Sigma <- varCorr.c[[gname]]
     if (is.null(Sigma)) {

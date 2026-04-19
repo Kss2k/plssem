@@ -150,7 +150,9 @@ pls_predict <- function(object,
 
     trainOuterX <- getOuterDataMatrices(object, newdata = object$data,
                                         std.ord.exp = std.ord.exp)
-    trainMean <- colMeans(trainOuterX$X.cont, na.rm = TRUE)
+    trainMean <- colMeans(
+      plssemMatrix(trainOuterX$X.cont, is.public = TRUE), na.rm = TRUE
+    )
 
     values <- mapply(
       FUN = .benchmark,
@@ -427,7 +429,7 @@ getOuterDataMatrices <- function(model, newdata = NULL, std.ord.exp = FALSE) {
     is.ord <- vapply(newdata.df, FUN.VALUE = logical(1L), FUN = is.ordered)
     newdata.df[is.ord] <- lapply(newdata.df[is.ord], reindex)
 
-    if (object$info$standardized)
+    if (model$info$standardized)
       newdata <- Rfast::standardise(as.matrix(newdata.df))
     else
       newdata <- as.matrix(newdata.df)

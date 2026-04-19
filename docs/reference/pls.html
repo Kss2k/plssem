@@ -21,7 +21,7 @@ lme4-style random effects terms inside the structural model."><!-- mathjax --><s
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">plssem</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.1.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.1.1</span>
       </span>
     </div>
 
@@ -46,6 +46,9 @@ lme4-style random effects terms inside the structural model."><!-- mathjax --><s
     </li>
     <li>
       <a href="../articles/multilevel-models.html">Multilevel Models with plssem</a>
+    </li>
+    <li>
+      <a href="../articles/ordinal-regression.html">Ordinal Regression with plssem</a>
     </li>
     <li>
       <a href="../articles/parallel-bootstrapping.html">Parallel Bootstrapping with plssem</a>
@@ -105,9 +108,9 @@ factor scores, and supports multilevel specifications expressed with
 <span>  mc.fn.args <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/interactive.html" class="external-link">interactive</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  boot.optimize <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  mc.boot.control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>min.iter <span class="op">=</span> <span class="va">mc.min.iter</span>, max.iter <span class="op">=</span> <span class="va">mc.max.iter</span>, reps <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">floor</a></span><span class="op">(</span><span class="fl">0.5</span></span>
-<span>    <span class="op">*</span> <span class="va">mc.reps</span><span class="op">)</span>, tol <span class="op">=</span> <span class="fl">3</span> <span class="op">*</span> <span class="va">mc.tol</span>, polyak.juditsky <span class="op">=</span> <span class="cn">TRUE</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span>, fixed.seed <span class="op">=</span></span>
-<span>    <span class="cn">TRUE</span><span class="op">)</span>,</span>
+<span>  mc.boot.control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>min.iter <span class="op">=</span> <span class="va">mc.min.iter</span>, max.iter <span class="op">=</span> <span class="va">mc.max.iter</span>, mc.reps <span class="op">=</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">floor</a></span><span class="op">(</span><span class="fl">0.5</span> <span class="op">*</span> <span class="va">mc.reps</span><span class="op">)</span>, tol <span class="op">=</span> <span class="fl">2</span> <span class="op">*</span> <span class="va">mc.tol</span>, polyak.juditsky <span class="op">=</span> <span class="cn">FALSE</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>    fixed.seed <span class="op">=</span> <span class="cn">TRUE</span>, reuse.p.start <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -266,7 +269,7 @@ original <code>p.start</code> for the bootstrap replicates.</p></dd>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/kss2k/plssem" class="external-link">plssem</a></span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://modsem.org" class="external-link">modsem</a></span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> This is modsem (1.0.18). Please report any bugs!</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> This is modsem (1.0.19). Please report any bugs!</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Attaching package: ‘modsem’</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> The following object is masked from ‘package:plssem’:</span>
@@ -288,7 +291,7 @@ original <code>p.start</code> for the bootstrap replicates.</p></dd>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu">pls</span><span class="op">(</span><span class="va">tpb</span>, <span class="va">TPB</span>, bootstrap <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> plssem (0.1.0) ended normally after 3 iterations</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> plssem (0.1.1) ended normally after 3 iterations</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Estimator                                       PLSc</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Link                                          LINEAR</span>
@@ -406,7 +409,7 @@ original <code>p.start</code> for the bootstrap replicates.</p></dd>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu">pls</span><span class="op">(</span><span class="va">tpb</span>, <span class="va">TPB_Ordered</span>, bootstrap <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> plssem (0.1.0) ended normally after 4 iterations</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> plssem (0.1.1) ended normally after 4 iterations</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Estimator                                    OrdPLSc</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Link                                          PROBIT</span>
@@ -520,7 +523,7 @@ original <code>p.start</code> for the bootstrap replicates.</p></dd>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu">pls</span><span class="op">(</span><span class="va">syntax</span>, data <span class="op">=</span> <span class="va">randomSlopes</span>, bootstrap <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> plssem (0.1.0) ended normally after 3 iterations</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> plssem (0.1.1) ended normally after 3 iterations</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Estimator                                   PLSc-MLM</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Link                                          LINEAR</span>
@@ -640,7 +643,7 @@ original <code>p.start</code> for the bootstrap replicates.</p></dd>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu">pls</span><span class="op">(</span><span class="va">syntax</span>, data <span class="op">=</span> <span class="va">randomSlopesOrdered</span>, bootstrap <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> plssem (0.1.0) ended normally after 3 iterations</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> plssem (0.1.1) ended normally after 3 iterations</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Estimator                                OrdPLSc-MLM</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Link                                          PROBIT</span>
@@ -756,7 +759,7 @@ original <code>p.start</code> for the bootstrap replicates.</p></dd>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu">pls</span><span class="op">(</span><span class="va">syntax</span>, data <span class="op">=</span> <span class="va">randomIntercepts</span>, bootstrap <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> plssem (0.1.0) ended normally after 2 iterations</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> plssem (0.1.1) ended normally after 2 iterations</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Estimator                                   PLSc-MLM</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Link                                          LINEAR</span>
@@ -839,7 +842,7 @@ original <code>p.start</code> for the bootstrap replicates.</p></dd>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu">pls</span><span class="op">(</span><span class="va">syntax</span>, data <span class="op">=</span> <span class="va">randomInterceptsOrdered</span>, bootstrap <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> plssem (0.1.0) ended normally after 2 iterations</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> plssem (0.1.1) ended normally after 2 iterations</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Estimator                                OrdPLSc-MLM</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Link                                          PROBIT</span>
@@ -925,7 +928,7 @@ original <code>p.start</code> for the bootstrap replicates.</p></dd>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu">pls</span><span class="op">(</span><span class="va">m</span>, <span class="fu">modsem</span><span class="fu">::</span><span class="va"><a href="https://modsem.org/reference/oneInt.html" class="external-link">oneInt</a></span>, bootstrap <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> plssem (0.1.0) ended normally after 3 iterations</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> plssem (0.1.1) ended normally after 3 iterations</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Estimator                                       PLSc</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Link                                          LINEAR</span>
@@ -1016,7 +1019,7 @@ original <code>p.start</code> for the bootstrap replicates.</p></dd>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Fit measures for MC-PLSc models are under development!</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> Traditional fit criteria will likely be too strict.</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Resampling MC-PLSc Model (R = 1000000)...</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> plssem (0.1.0) ended normally after 70 iterations</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> plssem (0.1.1) ended normally after 70 iterations</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Estimator                                  MCOrdPLSc</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Link                                          PROBIT</span>

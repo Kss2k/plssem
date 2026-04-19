@@ -22,6 +22,9 @@
     <loc>/articles/multilevel-models.html</loc>
   </url>
   <url>
+    <loc>/articles/ordinal-regression.html</loc>
+  </url>
+  <url>
     <loc>/articles/parallel-bootstrapping.html</loc>
   </url>
   <url>
@@ -52,6 +55,15 @@
     <loc>/reference/pls.html</loc>
   </url>
   <url>
+    <loc>/reference/pls_construct_scores.html</loc>
+  </url>
+  <url>
+    <loc>/reference/pls_predict.html</loc>
+  </url>
+  <url>
+    <loc>/reference/print.PlsSemPredict.html</loc>
+  </url>
+  <url>
     <loc>/reference/print.SummaryPlsSem.html</loc>
   </url>
   <url>
@@ -71,5 +83,8 @@
   </url>
   <url>
     <loc>/reference/summary.plssem.html</loc>
+  </url>
+  <url>
+    <loc>/reference/titanic.html</loc>
   </url>
 </urlset>

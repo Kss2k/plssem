@@ -1,0 +1,38 @@
+citHeader("To cite plssem in publications, please use:")
+
+c(
+  bibentry(
+    bibtype = "Manual",
+    title = "plssem: Complex Partial Least Squares Structural Equation Modeling",
+    author = person(given = "Kjell", family = "Solem Slupphaug"),
+    year = "2026",
+    note = paste0(
+      "https://github.com/kss2k/plssem,\n",
+      "https://kss2k.github.io/plssem/"
+    )
+  ),
+  bibentry(
+    bibtype = "Article",
+    title = paste(
+      "Consistent Estimates from Biased Estimators:",
+      "Monte-Carlo Consistent Partial Least Squares for Latent Interaction Models with Ordinal Indicators"
+    ),
+    author = c(
+      person(given = "K", family = "Slupphaug"),
+      person(given = "M", family = "Mehmetoglu"),
+      person(given = "M", family = "Mittner")
+    ),
+    year = "2026",
+    month = "March",
+    day = "21",
+    journal = "PsyArXiv",
+    url = "https://osf.io/preprints/psyarxiv/fwzj6_v1",
+    header = "For the MC-PLSc estimator, please cite:",
+    textVersion = paste(
+      "Slupphaug, K., Mehmetoglu, M., & Mittner, M. (2026, March 21).",
+      "Consistent Estimates from Biased Estimators: Monte-Carlo Consistent Partial Least Squares",
+      "for Latent Interaction Models with Ordinal Indicators.",
+      "Retrieved from osf.io/preprints/psyarxiv/fwzj6_v1"
+    )
+  )
+)

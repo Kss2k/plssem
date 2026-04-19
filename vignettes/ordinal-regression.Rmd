@@ -27,7 +27,7 @@ making sure they are `ordered` in the dataset.
 ## Data
 
 ```{r data}
-head(titanic[, c("Survived", "Age", "Sex", "Pclass")])
+head(titanic[, c("Survived", "Age", "Sex", "Female", "Pclass")])
 ```
 
 ## Linear ordinal regression
@@ -35,12 +35,12 @@ head(titanic[, c("Survived", "Age", "Sex", "Pclass")])
 This model predicts survival as a function of age and sex.
 
 ```{r linear, message=FALSE, warning=FALSE}
-m_linear <- "Survived ~ Age + Sex"
+m_linear <- "Survived ~ Age + Female"
 
 fit_linear <- pls(
   m_linear,
   data          = titanic,
-  ordered       = c("Survived", "Sex"),
+  ordered       = "Survived",
   boot.R        = 50,
   bootstrap     = TRUE,
   boot.parallel = "multicore",
@@ -63,12 +63,12 @@ ordinal indicators and interactions, `plssem` automatically switches to the
 Monte-Carlo ordinal PLSc estimator.
 
 ```{r interaction, message=FALSE, warning=FALSE}
-m_int <- "Survived ~ Age + Sex + Age:Sex"
+m_int <- "Survived ~ Age + Female + Age:Female"
 
 fit_int <- pls(
   m_int,
   data          = titanic,
-  ordered       = c("Survived", "Sex"),
+  ordered       = "Survived",
   boot.R        = 50,
   bootstrap     = TRUE,
   boot.parallel = "multicore",

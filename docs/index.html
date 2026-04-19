@@ -262,6 +262,22 @@
 <span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/pls.html">pls</a></span><span class="op">(</span><span class="va">m</span>, <span class="va">oneIntOrdered</span>, bootstrap <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></code></pre></div>
 </div>
+<div class="section level3">
+<h3 id="multilevel-random-slopes-interaction-model-with-continuous-data">Multilevel Random Slopes Interaction Model with Continuous Data<a class="anchor" aria-label="anchor" href="#multilevel-random-slopes-interaction-model-with-continuous-data"></a>
+</h3>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">syntax</span> <span class="op">&lt;-</span> <span class="st">"</span></span>
+<span><span class="st">  X =~ x1 + x2 + x3</span></span>
+<span><span class="st">  Z =~ z1 + z2 + z3</span></span>
+<span><span class="st">  Y =~ y1 + y2 + y3</span></span>
+<span><span class="st">  W =~ w1 + w2 + w3</span></span>
+<span><span class="st">  Y ~ X + Z + X:Z + (1 + X + Z + X:Z | cluster)</span></span>
+<span><span class="st">  W ~ X + Z + X:Z + (1 + X + Z + X:Z | cluster)</span></span>
+<span><span class="st">"</span></span>
+<span></span>
+<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/pls.html">pls</a></span><span class="op">(</span><span class="va">m</span>, <span class="va">randomSlopes</span>, bootstrap <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></code></pre></div>
+</div>
 </div>
 </div>
   </div>

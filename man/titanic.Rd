@@ -27,11 +27,12 @@ https://github.com/paulhendricks/titanic
 \item{Fare}{Passenger Fare}
 \item{Cabin}{Cabin}
 \item{Embarked}{Port of Embarkation}
+\item{Female}{Dummy variable for \code{Sex="female"}}
 }
 }
 \examples{
 
-fit <- pls("Survived ~ Age + Sex + Age:Sex",
-           data = titanic, ordered = c("Survived", "Sex"))
-pls_predict(fit, benchmark = c("acc"))
+fit <- pls("Survived ~ Age + Female + Age:Female",
+           data = titanic, ordered = "Survived")
+pls_predict(fit, benchmark = "acc")
 }

@@ -140,6 +140,7 @@ NULL
 #' \item{Fare}{Passenger Fare}
 #' \item{Cabin}{Cabin}
 #' \item{Embarked}{Port of Embarkation}
+#' \item{Female}{Dummy variable for \code{Sex="female"}}
 #' }
 #'
 #' @format A data frame with 1309 rows and 12 variables:
@@ -147,7 +148,7 @@ NULL
 #'
 #' @examples
 #' 
-#' fit <- pls("Survived ~ Age + Sex + Age:Sex",
-#'            data = titanic, ordered = c("Survived", "Sex"))
-#' pls_predict(fit, benchmark = c("acc"))
+#' fit <- pls("Survived ~ Age + Female + Age:Female",
+#'            data = titanic, ordered = "Survived")
+#' pls_predict(fit, benchmark = "acc")
 NULL

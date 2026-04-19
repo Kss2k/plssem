@@ -87,7 +87,7 @@ pls_predict <- function(object,
       Y.sub[[eta]] <- vals
     }
 
-    Y <- as.matrix(Y.sub)
+    Y <- as.matrix(Y.sub[colnames(Y)])
   }
 
   X.cont.pred <- Y %*% t(L)
@@ -466,8 +466,10 @@ getOuterDataMatrices <- function(model, newdata = NULL, std.ord.exp = FALSE) {
   }
 
   newdata.cont <- newdata
-  newdata.ord  <- apply(newdata, MARGIN = 2, reindex)
-  dimnames(newdata.ord) <- dimnames(newdata)
+  newdata.ord  <- newdata
+
+  for (ord in ordered)
+    newdata.ord[,ordered] <- reindex(newdata.ord[,ordered])
 
   PROBS <- getPROBS(data = olddata, ordered = ordered)
   Tau   <- stats::setNames(vector("list", length(ordered)), nm = ordered)

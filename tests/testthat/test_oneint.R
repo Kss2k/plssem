@@ -20,7 +20,4 @@ fit <- pls(m, oneIntOrdered, bootstrap = TRUE, boot.R = 50,
            boot.optimize = TRUE)
 summary(fit)
 
-P <- pls_predict(fit, approach = "earliest")
-lapply(P, head)
-P
-lapply(P, class)
+pls_predict(fit, approach = "earliest")

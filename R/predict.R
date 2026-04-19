@@ -55,16 +55,16 @@ pls_predict <- function(object,
     elemsIntTerms <- stringr::str_split(undefIntTerms, pattern = ":")
     names(elemsIntTerms) <- undefIntTerms
 
-    Y[,c(etas, undefIntTerms)] <- NA_real_
+    Y.sub <- as.data.frame(Y)[xis]
 
     for (eta in etas) {
 
       for (intTerm in undefIntTerms) {
         elems <- elemsIntTerms[[intTerm]]
 
-        if (all(elems %in% colnames(Y))) {
-          vals <- multiplyIndicatorsCpp(Y[,elems])
-          Y[,intTerm] <- vals - mean(vals)
+        if (all(elems %in% colnames(Y.sub))) {
+          vals <- multiplyIndicatorsCpp(Y.sub[elems])
+          Y.sub[[intTerm]] <- vals - mean(vals)
 
           undefIntTerms <- setdiff(undefIntTerms, intTerm)
         }
@@ -73,18 +73,20 @@ pls_predict <- function(object,
       cond <- parTable$lhs == eta & parTable$op == "~"
       predRows <- parTable[cond, , drop = FALSE]
 
-      vals <- numeric(NROW(Y))
+      vals <- numeric(NROW(Y.sub))
 
       for (i in seq_len(NROW(predRows))) {
         row  <- predRows[i, ]
         beta <- row$est
         pred <- row$rhs
 
-        vals <- vals + beta * Y[,pred]
+        vals <- vals + beta * Y.sub[[pred]]
       }
 
-      Y[,eta] <- vals
+      Y.sub[[eta]] <- vals
     }
+
+    Y <- as.matrix(Y.sub)
   }
 
   X.cont.pred <- Y %*% t(L)

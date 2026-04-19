@@ -363,7 +363,7 @@ assignScoresOrdinalMonteCarlo <- function(x, y, y.i, std.ord.exp = FALSE,
   C <- sort(probs[probs < 1])
 
   # thresholds on standard-normal scale
-  tauf <- collapse::fquantile(x, probs = C)
+  tauf <- collapse::fquantile(y, probs = C)
   tau <- c(-Inf, tauf, Inf) # length K-1
 
   # labels for interior thresholds
@@ -383,13 +383,32 @@ getOuterDataMatrices <- function(model, newdata = NULL, std.ord.exp = FALSE) {
   ordered  <- intersect(colnames(olddata), ordered)
  
   if (!is.null(newdata)) {
+    nm.o <- colnames(olddata)
+    nm.n <- colnames(newdata)
+
+    is.tmp <- grepl(TEMP_OV_PREFIX, nm.o)
+
+    if (any(is.tmp)) {
+      tmpReplacements <- stats::setNames(
+        nm.o[is.tmp], stringr::str_remove_all(nm.o[is.tmp], TEMP_OV_PREFIX)
+      )
+
+      keys <- intersect(nm.n, names(tmpReplacements))
+      nm.n <- stats::setNames(nm.n, nm = nm.n)
+      nm.n[keys] <- tmpReplacements[keys]
+
+      colnames(newdata) <- nm.n
+    }
+
     missing <- setdiff(colnames(olddata), colnames(newdata))
     stopif(length(missing), "Missing variables in `newdata`!\n",
            "Missing: ", paste0(missing, collapse = ", "))
 
-    newdata <- Rfast::standardise(
-      as.matrix(as.data.frame(newdata)[colnames(olddata)]
-    )
+    newdata.df <- as.data.frame(newdata)[colnames(olddata)]
+    is.ord <- vapply(newdata.df, FUN.VALUE = logical(1L), FUN = is.ordered)
+    newdata.df[is.ord] <- lapply(newdata.df[is.ord], reindex)
+
+    newdata <- Rfast::standardise(as.matrix(newdata.df))
 
   } else {
     newdata <- olddata
@@ -398,6 +417,20 @@ getOuterDataMatrices <- function(model, newdata = NULL, std.ord.exp = FALSE) {
 
   if (!length(ordered))
     return(list(X.cont = newdata, X.ord = NULL)) # no need to assign scores
+
+  # Check that we have the same number of categories in newdata and olddata
+  for (ord in ordered) {
+    ncatOld <- length(unique(olddata[,ord]))
+    ncatNew <- length(unique(newdata[,ord]))
+    
+    stopif(ncatNew < ncatOld,
+           "There are fewer categories for ", ord, " in the test data (", 
+           ncatNew, "),\nthan in the training data (", ncatOld, ")!")
+
+    stopif(ncatNew > ncatOld,
+           "There are more categories for ", ord, " in the test data (", 
+           ncatNew, "),\nthan in the training data (", ncatOld, ")!")
+  }
 
   newdata.cont <- newdata
   newdata.ord  <- apply(newdata, MARGIN = 2, reindex)

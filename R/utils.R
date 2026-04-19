@@ -16,9 +16,9 @@ getPLS_Data <- function(data,
 
   missingCases <- !stats::complete.cases(data)
   if (any(missingCases)) {
-    warning("Removing missing data list wise for factor scores.\n",
-            "Removing missing data pair wise in covariance matrix.\n",
-            "TODO: Add multiple imputation")
+    # "TODO: Add multiple imputation"
+    message("Removing missing data using list wise deletion...")
+    data <- data[!missingCases, , drop = FALSE]
   }
  
   if (standardize) {
@@ -128,8 +128,13 @@ warning2 <- function(...) {
 }
 
 
+stop2 <- function(...) {
+  stop(..., call. = FALSE)
+}
+
+
 stopif <- function(cond, ...) {
-  if (isTRUE(cond)) stop(..., call. = FALSE)
+  if (isTRUE(cond)) stop2(...)
 }
 
 

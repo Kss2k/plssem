@@ -10,13 +10,16 @@ pls_predict(
   newdata = NULL,
   std.ord.exp = FALSE,
   benchmark = "R2",
+  benchmark.vars = c("endog", "exog", "all"),
   ...
 )
 }
 \arguments{
 \item{object}{A fitted \code{plssem} model.}
 
-\item{approach}{Prediction approach.}
+\item{approach}{Prediction approach. If \code{approach = "earliest"} (default), then
+only indicators of exogenous benchmark.vars are used for prediction. If
+\code{approach = "direct"}, then all indicators are used.}
 
 \item{newdata}{Optional new data matrix/data frame.}
 
@@ -25,6 +28,12 @@ pls_predict(
 \item{benchmark}{Benchmark type(s). Either length 1 (recycled) or one entry
 per indicator (optionally named). Supported: \code{"r2"}, \code{"rmse"},
 \code{"mae"}, \code{"q2_predict"}, \code{"acc"}, \code{"ord_mae"}.}
+
+\item{benchmark.vars}{What predictions should be benchmarked? If \code{benchmark.vars = "endog"}
+(default), preidction benchmarks are applied to indicators of endogenous benchmark.vars.
+If \code{benchmark.vars = "exog"}, preidction benchmarks are applied to indicators
+of exogenous benchmark.vars. If \code{benchmark.vars = "all"}, preidction benchmarks are applied to
+all of the indicators in the model.}
 
 \item{...}{Additional arguments passed to internal helpers.}
 }

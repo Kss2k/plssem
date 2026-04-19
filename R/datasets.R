@@ -116,3 +116,38 @@ NULL
 #' fit <- pls(m, oneIntOrdered)
 #' summary(fit)
 NULL
+
+
+#' Titanic Passenger Survival Data Set.
+#'
+#' @name titanic
+#' @docType data
+#'
+#' @description
+#' This dataset has been re-packaged for convenience from
+#' https://github.com/paulhendricks/titanic
+#'
+#' \describe{
+#' \item{PassengerId}{Passenger ID}
+#' \item{Survived}{Passenger Survival Indicator}
+#' \item{Pclass}{Passenger Class}
+#' \item{Name}{Name}
+#' \item{Sex}{Sex}
+#' \item{Age}{Age}
+#' \item{SibSp}{Number of Siblings/Spouses Aboard}
+#' \item{Parch}{Number of Parents/Children Aboard}
+#' \item{Ticket}{Ticket Number}
+#' \item{Fare}{Passenger Fare}
+#' \item{Cabin}{Cabin}
+#' \item{Embarked}{Port of Embarkation}
+#' }
+#'
+#' @format A data frame with 1309 rows and 12 variables:
+#' @source https://www.kaggle.com/c/titanic/data
+#'
+#' @examples
+#' 
+#' fit <- pls("Survived ~ Age + Sex + Age:Sex",
+#'            data = titanic, ordered = c("Survived", "Sex"))
+#' pls_predict(fit, benchmark = c("acc"))
+NULL

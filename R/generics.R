@@ -119,21 +119,25 @@ print.SummaryPlsSem <- function(x, ...) {
                      width.out = width.out), "\n", sep = "")
   }
 
-  cat("R-squared (indicators):\n")
+  if (length(x$r2$inds)) {
+    cat("R-squared (indicators):\n")
 
-  headerNames <- names(x$r2$inds)
-  headerValues <- formatNumeric(x$r2$inds)
+    headerNames <- names(x$r2$inds)
+    headerValues <- formatNumeric(x$r2$inds)
 
-  cat(allignLhsRhs(lhs = headerNames, rhs = headerValues, pad = "  ",
-                   width.out = width.out), "\n", sep = "")
+    cat(allignLhsRhs(lhs = headerNames, rhs = headerValues, pad = "  ",
+                     width.out = width.out), "\n", sep = "")
+  }
 
-  cat("R-squared (latents):\n")
+  if (length(x$r2$etas)) {
+    cat("R-squared (latents):\n")
 
-  headerNames <- names(x$r2$etas)
-  headerValues <- formatNumeric(x$r2$etas)
+    headerNames <- names(x$r2$etas)
+    headerValues <- formatNumeric(x$r2$etas)
 
-  cat(allignLhsRhs(lhs = headerNames, rhs = headerValues, pad = "  ",
-                   width.out = width.out), "\n", sep = "")
+    cat(allignLhsRhs(lhs = headerNames, rhs = headerValues, pad = "  ",
+                     width.out = width.out), "\n", sep = "")
+  }
 
   cat(x$print$strParTable)
   invisible(x)

@@ -1,7 +1,14 @@
 #' Predict from a fitted PLS-SEM model
 #'
 #' @param object A fitted \code{plssem} model.
-#' @param approach Prediction approach.
+#' @param approach Prediction approach. If \code{approach = "earliest"} (default), then
+#'   only indicators of exogenous benchmark.vars are used for prediction. If
+#'   \code{approach = "direct"}, then all indicators are used.
+#' @param benchmark.vars What predictions should be benchmarked? If \code{benchmark.vars = "endog"}
+#'   (default), preidction benchmarks are applied to indicators of endogenous benchmark.vars.
+#'   If \code{benchmark.vars = "exog"}, preidction benchmarks are applied to indicators
+#'   of exogenous benchmark.vars. If \code{benchmark.vars = "all"}, preidction benchmarks are applied to
+#'   all of the indicators in the model.
 #' @param newdata Optional new data matrix/data frame.
 #' @param std.ord.exp Logical; standardize ordinal expectation scores.
 #' @param benchmark Benchmark type(s). Either length 1 (recycled) or one entry
@@ -16,8 +23,10 @@ pls_predict <- function(object,
                         newdata = NULL,
                         std.ord.exp = FALSE,
                         benchmark = "R2",
+                        benchmark.vars = c("endog", "exog", "all"),
                         ...) {
   approach <- match.arg(tolower(approach), c("earliest", "direct"))
+  benchmark.vars <- match.arg(tolower(benchmark.vars), c("endog", "exog", "all"))
 
   W <- object$fit$fitWeights
   L <- object$fit$fitLambda
@@ -93,25 +102,35 @@ pls_predict <- function(object,
   X.cont.pred <- plssemMatrix(X.cont.pred, is.public = TRUE)
   X.ord       <- plssemMatrix(X.ord, is.public = TRUE)
   X.ord.pred  <- plssemMatrix(X.ord.pred, is.public = TRUE)
-  vars        <- colnames(X.cont.pred)
   ordered     <- unique(c(ordered, stringr::str_remove_all(ordered, TEMP_OV_PREFIX)))
+  all.vars    <- colnames(X.cont.pred)
   benchmarked <- NULL
+
+  inds.x <- stringr::str_remove_all(object$info$inds.x, TEMP_OV_PREFIX)
+  inds.y <- stringr::str_remove_all(object$info$inds.y, TEMP_OV_PREFIX)
+
+  pred.vars <- switch(benchmark.vars,
+    all = all.vars,
+    exog = intersect(all.vars, inds.x),
+    endog = intersect(all.vars, inds.y),
+    stop2("Unrecognize value for benchmark.vars argument: ", benchmark.vars)
+  )
 
   if (!is.null(benchmark)) {
     allowedBenchmarks <- c("r2", "rmse", "mae", "acc", "ord_mae", "q2_predict")
     benchmark <- .normalizeBenchmarkType(benchmark)
 
     if (length(benchmark) == 1L) {
-      benchmarkByVar <- stats::setNames(rep(benchmark, length(vars)), vars)
+      benchmarkByVar <- stats::setNames(rep(benchmark, length(pred.vars)), pred.vars)
 
     } else if (is.null(names(benchmark)) || all(names(benchmark) == "")) {
-      stopif(length(benchmark) != length(vars),
+      stopif(length(benchmark) != length(pred.vars),
              "`benchmark` must have length 1 or one entry per variable.")
-      benchmarkByVar <- stats::setNames(benchmark, vars)
+      benchmarkByVar <- stats::setNames(benchmark, pred.vars)
 
     } else {
-      missing <- setdiff(vars, names(benchmark))
-      extra <- setdiff(names(benchmark), vars)
+      missing <- setdiff(pred.vars, names(benchmark))
+      extra <- setdiff(names(benchmark), pred.vars)
 
       stopif(length(missing),
              "Missing benchmark type(s) for variable(s): ",
@@ -120,8 +139,8 @@ pls_predict <- function(object,
              "Ignoring benchmark type(s) for unknown variable(s): ",
              paste0(extra, collapse = ", "))
 
-      benchmarkByVar <- benchmark[vars]
-      benchmarkByVar <- stats::setNames(as.character(benchmarkByVar), vars)
+      benchmarkByVar <- benchmark[pred.vars]
+      benchmarkByVar <- stats::setNames(as.character(benchmarkByVar), pred.vars)
     }
 
     invalid <- setdiff(unique(benchmarkByVar), allowedBenchmarks)
@@ -135,7 +154,7 @@ pls_predict <- function(object,
 
     values <- mapply(
       FUN = .benchmark,
-      variable = vars,
+      variable = pred.vars,
       benchmark = unname(benchmarkByVar),
       X.cont = list(X.cont),
       X.cont.pred = list(X.cont.pred),
@@ -148,7 +167,7 @@ pls_predict <- function(object,
     )
 
     benchmarked <- data.frame(
-      variable = vars,
+      variable = pred.vars,
       metric = unname(benchmarkByVar),
       value = as.numeric(values),
       stringsAsFactors = FALSE
@@ -401,7 +420,7 @@ getOuterDataMatrices <- function(model, newdata = NULL, std.ord.exp = FALSE) {
     }
 
     missing <- setdiff(colnames(olddata), colnames(newdata))
-    stopif(length(missing), "Missing variables in `newdata`!\n",
+    stopif(length(missing), "Missing benchmark.vars in `newdata`!\n",
            "Missing: ", paste0(missing, collapse = ", "))
 
     newdata.df <- as.data.frame(newdata)[colnames(olddata)]
@@ -500,7 +519,7 @@ pls_construct_scores <- function(object, ...) {
 
 .bm_check_ord_only <- function(type, variable, ordered) {
   stopif(!(variable %in% ordered),
-         "Benchmark `", type, "` is only available for ordered variables: ",
+         "Benchmark `", type, "` is only available for ordered benchmark.vars: ",
          variable)
 }
 

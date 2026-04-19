@@ -307,12 +307,12 @@ print.PlsSemPredict <- function(x, ...) {
     ),
     acc = {
       .bm_check_ord_only(type = type, variable = variable, ordered = ordered)
-      .bm_check_ord_mats(X.ord = X.ord, X.ord.pred = X.ord.pred)
+      .bm_check_ord_mats(type = type, X.ord = X.ord, X.ord.pred = X.ord.pred)
       .bm_acc(yObs = X.ord[,variable], yPred = X.ord.pred[,variable])
     },
     ord_mae = {
       .bm_check_ord_only(type = type, variable = variable, ordered = ordered)
-      .bm_check_ord_mats(X.ord = X.ord, X.ord.pred = X.ord.pred)
+      .bm_check_ord_mats(type = type, X.ord = X.ord, X.ord.pred = X.ord.pred)
       .bm_ord_mae(yObs = X.ord[,variable], yPred = X.ord.pred[,variable])
     },
     stop("Unhandled benchmark type: ", type, call. = FALSE)
@@ -539,7 +539,7 @@ pls_construct_scores <- function(object, ...) {
 }
 
 
-.bm_check_ord_mats <- function(X.ord, X.ord.pred) {
+.bm_check_ord_mats <- function(type, X.ord, X.ord.pred) {
   stopif(is.null(X.ord) || is.null(X.ord.pred),
          "Ordinal matrices are NULL; cannot compute `", type, "`.")
 }

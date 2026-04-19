@@ -83,7 +83,7 @@ bootstrap <- function(model,
 
       if (low.tol.penalty > 0 && is.mcpls) {
         k <- length(par)
-        par <- par + rnorm(k, mean = 0, sd = low.tol.penalty)
+        par <- par + stats::rnorm(k, mean = 0, sd = low.tol.penalty)
       }
 
       attr(par, "id") <- i
@@ -121,12 +121,12 @@ bootstrap <- function(model,
 
   if (is.null(iseed)) {
     if (!exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
-      runif(1)
+      stats::runif(1)
     }
 
     # identical(temp.seed, NA): Will not change .Random.seed in GlobalEnv
     temp.seed <- NA
-    iseed <- runif(1, 0, 999999999)
+    iseed <- stats::runif(1, 0, 999999999)
 
   } else {
     if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {

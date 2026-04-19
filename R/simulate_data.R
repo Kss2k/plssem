@@ -234,11 +234,16 @@ betacoef <- function(formulaString, data) {
   # is because the lm() function doesn't treat X:X as a quadratic term
 
   INTR_OP <- "__INTR__"
-  formula <- formula(stringr::str_replace_all(formulaString, pattern = ":", replacement = INTR_OP))
-  names(data) <- stringr::str_replace_all(names(data), pattern = ":", replacement = INTR_OP)
+  formula <- stats::formula(
+    stringr::str_replace_all(formulaString, pattern = ":", replacement = INTR_OP)
+  )
 
-  fit <- lm(formula, data = data)
-  beta <- coef(fit)
+  names(data) <- stringr::str_replace_all(
+    names(data), pattern = ":", replacement = INTR_OP
+  )
+
+  fit <- stats::lm(formula, data = data)
+  beta <- stats::coef(fit)
 
   names(beta) <- stringr::str_replace_all(names(beta), pattern = INTR_OP, replacement = ":")
   beta

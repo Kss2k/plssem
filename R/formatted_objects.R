@@ -13,6 +13,7 @@ plssemMatrix <- function(mat, symmetric = isSymmetric(mat), is.public = FALSE) {
       keepRn <- rep(TRUE, length(rn))
       keepRn[isTempRn][isDupTempRn] <- FALSE
       mat <- mat[keepRn, , drop = FALSE]
+      rownames(mat) <- rnClean[keepRn]
     }
 
     if (!is.null(cn)) {
@@ -23,6 +24,7 @@ plssemMatrix <- function(mat, symmetric = isSymmetric(mat), is.public = FALSE) {
       keepCn <- rep(TRUE, length(cn))
       keepCn[isTempCn][isDupTempCn] <- FALSE
       mat <- mat[ , keepCn, drop = FALSE]
+      colnames(mat) <- cnClean[keepCn]
     }
   }
 

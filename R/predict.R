@@ -25,6 +25,12 @@ pls_predict <- function(object,
                         benchmark = "R2",
                         benchmark.vars = c("endog", "exog", "all"),
                         ...) {
+  # TODO:
+  #  1. Allow the user to pass only indicators of exogenous variables, if
+  #     approach='earliest'.
+  #  2. Allow the user to pass ordinal variables with a subset of categories
+  #
+
   approach <- match.arg(tolower(approach), c("earliest", "direct"))
   benchmark.vars <- match.arg(tolower(benchmark.vars), c("endog", "exog", "all"))
 

@@ -422,7 +422,7 @@ getOuterDataMatrices <- function(model, newdata = NULL, std.ord.exp = FALSE) {
     }
 
     missing <- setdiff(colnames(olddata), colnames(newdata))
-    stopif(length(missing), "Missing benchmark.vars in `newdata`!\n",
+    stopif(length(missing), "Missing variables in `newdata`!\n",
            "Missing: ", paste0(missing, collapse = ", "))
 
     newdata.df <- as.data.frame(newdata)[colnames(olddata)]
@@ -525,7 +525,7 @@ pls_construct_scores <- function(object, ...) {
 
 .bm_check_ord_only <- function(type, variable, ordered) {
   stopif(!(variable %in% ordered),
-         "Benchmark `", type, "` is only available for ordered benchmark.vars: ",
+         "Benchmark `", type, "` is only available for ordered variables: ",
          variable)
 }
 

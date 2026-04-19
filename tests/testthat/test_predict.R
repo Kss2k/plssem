@@ -12,7 +12,8 @@ testthat::test_that("pls_predict works for continuous models", {
 
   for (approach in c("earliest", "direct")) {
     for (bm in c("r2", "rmse", "mae", "q2", "q2_predict")) {
-      pred <- pls_predict(fit, approach = approach, benchmark = bm)
+      pred <- pls_predict(fit, approach = approach, benchmark = bm,
+                          benchmark.vars = "all")
 
       testthat::expect_s3_class(pred, "PlsSemPredict")
       testthat::expect_true(is.null(pred$X.ord))
@@ -26,15 +27,16 @@ testthat::test_that("pls_predict works for continuous models", {
     }
   }
 
-  pred <- pls_predict(fit, approach = "direct", benchmark = "rmse")
+  pred <- pls_predict(fit, approach = "direct", benchmark = "rmse",
+                      benchmark.vars = "all")
   testthat::expect_output(print(pred), "PlsSemPredict object")
 
   testthat::expect_error(
-    pls_predict(fit, benchmark = "acc"),
+    pls_predict(fit, benchmark = "acc", benchmark.vars = "all"),
     "only available for ordered variables"
   )
   testthat::expect_error(
-    pls_predict(fit, benchmark = "ord_mae"),
+    pls_predict(fit, benchmark = "ord_mae", benchmark.vars = "all"),
     "only available for ordered variables"
   )
 })
@@ -56,9 +58,11 @@ testthat::test_that("pls_predict works for ordinal (non-MCPLS) models", {
   for (approach in c("earliest", "direct")) {
     for (bm in c("r2", "rmse", "mae", "q2_predict", "acc", "ord_mae")) {
       if (bm == "r2") {
-        pred <- suppressWarnings(pls_predict(fit, approach = approach, benchmark = bm))
+        pred <- suppressWarnings(pls_predict(fit, approach = approach, benchmark = bm,
+                                             benchmark.vars = "all"))
       } else {
-        pred <- pls_predict(fit, approach = approach, benchmark = bm)
+        pred <- pls_predict(fit, approach = approach, benchmark = bm,
+                            benchmark.vars = "all")
       }
 
       testthat::expect_s3_class(pred, "PlsSemPredict")
@@ -83,7 +87,8 @@ testthat::test_that("pls_predict works for ordinal (non-MCPLS) models", {
       x3 = "q2",
       w1 = "rmse",
       w2 = "rmse"
-    )
+    ),
+    benchmark.vars = "all"
   ))
 
   testthat::expect_setequal(
@@ -132,7 +137,8 @@ testthat::test_that("pls_predict works for MC-PLS ordinal interaction models", {
   )
 
   for (approach in c("earliest", "direct")) {
-    pred <- suppressWarnings(pls_predict(fit, approach = approach, benchmark = bench))
+    pred <- suppressWarnings(pls_predict(fit, approach = approach, benchmark = bench,
+                                         benchmark.vars = "all"))
 
     testthat::expect_s3_class(pred, "PlsSemPredict")
     testthat::expect_true(!is.null(pred$X.ord))

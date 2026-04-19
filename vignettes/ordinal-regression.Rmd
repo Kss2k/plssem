@@ -1,0 +1,83 @@
+---
+title: "Ordinal Regression with plssem"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Ordinal Regression with plssem}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+
+library(plssem)
+```
+
+This vignette demonstrates how to fit an ordinal regression model with `plssem`
+using the `titanic` dataset.
+
+In `plssem`, regression-style model syntax like `y ~ x1 + x2` is supported.
+When the dependent variable (and/or predictors) are ordinal.
+Ordinal variables can be supplied  via the `ordered` argument, or by
+making sure they are `ordered` in the dataset.
+
+## Data
+
+```{r data}
+head(titanic[, c("Survived", "Age", "Sex", "Pclass")])
+```
+
+## Linear ordinal regression
+
+This model predicts survival as a function of age and sex.
+
+```{r linear, message=FALSE, warning=FALSE}
+m_linear <- "Survived ~ Age + Sex"
+
+fit_linear <- pls(
+  m_linear,
+  data          = titanic,
+  ordered       = c("Survived", "Sex"),
+  boot.R        = 50,
+  bootstrap     = TRUE,
+  boot.parallel = "multicore",
+  boot.ncpus    = 2
+)
+
+summary(fit_linear)
+```
+
+Optional: evaluate predictive performance.
+
+```{r linear-predict, message=FALSE, warning=FALSE}
+pls_predict(fit_linear, benchmark = "acc")
+```
+
+## Non-linear ordinal regression (interaction)
+
+To include a non-linear (interaction) effect, add an interaction term. With
+ordinal indicators and interactions, `plssem` automatically switches to the
+Monte-Carlo ordinal PLSc estimator.
+
+```{r interaction, message=FALSE, warning=FALSE}
+m_int <- "Survived ~ Age + Sex + Age:Sex"
+
+fit_int <- pls(
+  m_int,
+  data          = titanic,
+  ordered       = c("Survived", "Sex"),
+  boot.R        = 50,
+  bootstrap     = TRUE,
+  boot.parallel = "multicore",
+  boot.ncpus    = 2
+)
+
+summary(fit_int)
+```
+
+```{r interaction-predict, message=FALSE, warning=FALSE}
+pls_predict(fit_int, benchmark = "acc")
+```

@@ -1,4 +1,15 @@
 plslmer <- function(plsModel) {
+  INTR_OP <- "__INTR__"
+
+  safeIntr <- function(x) {
+    stringr::str_replace_all(x, stringr::fixed(":"), INTR_OP)
+  }
+
+  restoreIntr <- function(x) {
+    x <- stringr::str_replace_all(x, stringr::fixed(INTR_OP), ":")
+    stringr::str_replace_all(x, stringr::fixed("`"), "")
+  }
+
   lme4.syntax <- plsModel$info$lme4.syntax
   cluster     <- plsModel$info$cluster
   consistent  <- plsModel$info$consistent
@@ -12,7 +23,11 @@ plslmer <- function(plsModel) {
   fit.u <- plsModel$fit.u
 
   selectGamma <- plsModel$matrices$select$gamma
-  Cov.lv <- fit.c$fitCov
+  # Full (corrected) covariance/correlation matrix for the structural model.
+  # Unlike `fitCov`, this retains the total covariances between endogenous and
+  # exogenous variables.
+  Cov.lv <- fit.c$fitC
+  Q <- fit.c$Q
   Correction <- fit.c$fitStructural / fit.u$fitStructural
   CorrectionCov <- fit.c$fitCov / fit.u$fitCov
 
@@ -21,8 +36,51 @@ plslmer <- function(plsModel) {
   Xc <- as.data.frame(attr(plsModel$data, "cluster"))
   X  <- cbind(Xf, Xx, Xc)
 
+  # Mean-center interaction/quadratic terms (e.g., X:Z and X:X).
+  intTerms <- plsModel$info$intTermNames
+  if (!is.null(intTerms) && length(intTerms)) {
+    intTerms <- intersect(intTerms, colnames(X))
+
+    for (term in intTerms) {
+      if (is.numeric(X[[term]]))
+        X[[term]] <- X[[term]] - mean(X[[term]], na.rm = TRUE)
+    }
+  }
+
+  # We don't want lmer to form the interaction terms on its' own, since we want
+  # them to be mean centered, matching the assumptions of our correction procedure.
+  # We threefore replace the ':' operator, and use explicitly formed interaction
+  # terms, also enaming any columns containing ':' before fitting, and map the
+  # lme4 syntax accordingly.
+  colsWithColon <- colnames(X)[grepl(":", colnames(X), fixed = TRUE)]
+  colsWithColonSafe <- safeIntr(colsWithColon)
+
+  X.safe <- X
+  if (length(colsWithColon)) {
+    colnames(X.safe)[match(colsWithColon, colnames(X.safe))] <- colsWithColonSafe
+  }
+
+  makeSafeFormula <- function(line) {
+    if (!length(colsWithColon))
+      return(line)
+
+    ord <- order(nchar(colsWithColon), decreasing = TRUE)
+    out <- line
+
+    for (i in ord) {
+      key  <- colsWithColon[[i]]
+      safe <- colsWithColonSafe[[i]]
+
+      out <- stringr::str_replace_all(out, stringr::fixed(paste0("`", key, "`")), safe)
+      out <- stringr::str_replace_all(out, stringr::fixed(key), safe)
+    }
+
+    out
+  }
+
   getNames <- function(lhs, nm) {
     rhs <- stringr::str_replace_all(nm, pattern = "\\(Intercept\\)", replacement = "1")
+    rhs <- restoreIntr(rhs)
     paste0(lhs, "~", rhs)
   }
 
@@ -48,10 +106,11 @@ plslmer <- function(plsModel) {
   SIGMA   <- list()
 
   for (line in lme4.syntax) {
-    lmerFit <- lme4::lmer(line, data = X)
-    fterms  <- stats::terms(stats::formula(line))
+    line.safe <- makeSafeFormula(line)
+    lmerFit <- lme4::lmer(line.safe, data = X.safe)
+    fterms  <- stats::terms(stats::formula(line.safe))
     vars    <- attr(fterms, "variables")
-    dep     <- as.character(vars[[2L]])
+    dep     <- restoreIntr(as.character(vars[[2L]]))
     indep   <- colnames(selectGamma)[selectGamma[,dep]]
 
     fixefFit   <- fixVecNames(lme4::fixef(lmerFit), dep = dep)
@@ -70,6 +129,13 @@ plslmer <- function(plsModel) {
       rhs.i <- rhs[[i]]
 
       if (rhs.i == "1") {
+        if (!is.null(Q) && lhs.i %in% names(Q)) {
+          term <- 1 / Q[[lhs.i]]
+
+          if (is.finite(term) && !is.na(term) && !is.nan(term))
+            correctionTerms[[i]] <- term
+        }
+
         next
 
       } else if (!lhs.i %in% colnames(Correction) || !rhs.i %in% rownames(Correction)) {
@@ -96,14 +162,21 @@ plslmer <- function(plsModel) {
     }
 
     for (c in cluster) {
-      coefFit[[c]] <- fixMatNames(as.matrix(coefFit[[c]]), dep = dep, rows = FALSE)
-      varCorrFit[[c]] <- fixMatNames(varCorrFit[[c]], dep = dep)
+      c.safe <- safeIntr(c)
+
+      coefFit[[c]] <- fixMatNames(as.matrix(coefFit[[c.safe]]), dep = dep, rows = FALSE)
+      varCorrFit[[c]] <- fixMatNames(varCorrFit[[c.safe]], dep = dep)
+
+      if (c.safe != c) {
+        coefFit[[c.safe]] <- NULL
+        varCorrFit[[c.safe]] <- NULL
+      }
      
       if (consistent) {
         vcPars <- rownames(varCorrFit[[c]])
         vcCorrection <- DCorrectionTerms[vcPars, vcPars, drop = FALSE]
 
-        coefFit[[c]] <- coefFit[[c]] %*% correctionTerms
+        coefFit[[c]] <- coefFit[[c]] %*% diag(correctionTerms[colnames(coefFit[[c]])])
         varCorrFit[[c]] <- vcCorrection %*% varCorrFit[[c]] %*% vcCorrection 
       }
 
@@ -138,12 +211,20 @@ plslmer <- function(plsModel) {
 
 
 meanDiagZGZt <- function(fit, varCorr.c, dep = NULL) {
+  INTR_OP <- "__INTR__"
+
+  restoreIntr <- function(x) {
+    x <- stringr::str_replace_all(x, stringr::fixed(INTR_OP), ":")
+    stringr::str_replace_all(x, stringr::fixed("`"), "")
+  }
+
   mf   <- stats::model.frame(fit)
   bars <- reformulas::findbars(stats::formula(fit))
 
   # helper to match your naming convention dep~(Intercept)->dep~1 etc.
   getNames <- function(lhs, nm) {
     rhs <- stringr::str_replace_all(nm, pattern="\\(Intercept\\)", replacement="1")
+    rhs <- restoreIntr(rhs)
     paste0(lhs, "~", rhs)
   }
 
@@ -154,7 +235,7 @@ meanDiagZGZt <- function(fit, varCorr.c, dep = NULL) {
 
   for (b in bars) {
     expr  <- b[[2]]                 # random part, e.g. 1 + x
-    gname <- deparse(b[[3]])        # grouping factor name
+    gname <- restoreIntr(deparse(b[[3]]))        # grouping factor name
 
     Sigma <- varCorr.c[[gname]]
     if (is.null(Sigma)) {
@@ -199,12 +280,53 @@ meanDiagZGZt <- function(fit, varCorr.c, dep = NULL) {
 
 sigma2FromUnitVarY <- function(fit, beta.c, varCorr.c, targetVarY = 1,
                                Cov.lv, dep, indep) {
-  beta.par <- paste0(dep, "~", indep)
-  beta.sub <- beta.c[beta.par]
-  Cov.x    <- Cov.lv[indep, indep]
+  if (length(indep)) {
+    beta.par <- paste0(dep, "~", indep)
+    beta.sub <- beta.c[beta.par]
+    Cov.x    <- Cov.lv[indep, indep, drop = FALSE]
+    v_fi     <- drop(t(beta.sub) %*% Cov.x %*% beta.sub)
+  } else {
+    v_fi <- 0
+  }
 
-  v_re <- meanDiagZGZt(fit, varCorr.c, dep = dep)
-  v_fi <- t(beta.sub) %*% Cov.x %*% beta.sub
+  # Expected random-effect variance contribution on the consistent (latent)
+  # scale: E[z' Sigma_u z] = tr(Sigma_u E[zz']).
+  #
+  # Here E[zz'] is built from the corrected covariance matrix of the structural
+  # variables (Cov.lv). Since all variables are standardized and centered,
+  # intercept cross-moments are assumed to be 0.
+  v_re <- 0
+
+  for (VC in varCorr.c) {
+    Sigma_u <- as.matrix(VC)
+    re_pars <- rownames(Sigma_u)
+    stopif(is.null(re_pars), "Random effect covariance matrix must have rownames.")
+
+    dep_regex <- stringr::str_replace_all(
+      dep,
+      pattern = "([\\.\\^\\$\\|\\(\\)\\[\\]\\*\\+\\?\\{\\}\\\\])",
+      replacement = "\\\\\\1"
+    )
+    rhs <- stringr::str_remove(re_pars, pattern = paste0("^", dep_regex, "~"))
+    Ezz <- matrix(0, nrow = length(re_pars), ncol = length(re_pars),
+                  dimnames = list(re_pars, re_pars))
+
+    is_int <- rhs == "1"
+    Ezz[is_int, is_int] <- 1
+
+    slope_rhs <- rhs[!is_int]
+    if (length(slope_rhs)) {
+      missing <- setdiff(slope_rhs, colnames(Cov.lv))
+      stopif(length(missing),
+             "Missing variables in covariance matrix: ",
+             paste0(missing, collapse = ", "))
+
+      slope_pars <- re_pars[!is_int]
+      Ezz[slope_pars, slope_pars] <- Cov.lv[slope_rhs, slope_rhs, drop = FALSE]
+    }
+
+    v_re <- v_re + sum(Sigma_u * Ezz)
+  }
 
   max(targetVarY - v_re - v_fi, 0)
 }
@@ -213,9 +335,8 @@ sigma2FromUnitVarY <- function(fit, beta.c, varCorr.c, targetVarY = 1,
 getSigmaFromVarCorr <- function(fit, beta, varCorr, dep, indep, CorrectionCov, Cov.lv) {
   rvdep <- sprintf("%s~~%s", dep, dep)
 
-  # If Var(Y)=1 on your reporting scale, use targetVarY=1
-  # If instead you want the "post-hoc scaled" total variance, set targetVarY = CorrectionCov[dep, dep]
-  targetVarY <- 1
+  # Match the simulation parameterization (zeta) on the consistent scale.
+  targetVarY <- if (!is.null(Cov.lv) && dep %in% colnames(Cov.lv)) Cov.lv[dep, dep] else 1
 
   sigma2 <- sigma2FromUnitVarY(fit, beta.c = beta, varCorr.c = varCorr,
                                targetVarY = targetVarY, Cov.lv = Cov.lv,

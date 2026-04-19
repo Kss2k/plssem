@@ -1,4 +1,5 @@
-PKG_INFO <- rlang::env(version = NULL)
+PKG_INFO <- rlang::env(version = NULL,
+                       debug   = FALSE)
 
 
 getPackageVersion <- function(pkgname) {

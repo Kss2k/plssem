@@ -1,5 +1,6 @@
 OPERATORS <- c("<~", "~~", "=~", "~1", "~", "|")
 
+
 specifyModel <- function(syntax,
                          data,
                          consistent         = TRUE,
@@ -83,6 +84,7 @@ specifyModel <- function(syntax,
   info$n            <- NROW(preppedData$X)
   info$estimator    <- getEstimatorFromInfo(info)
   info$verbose      <- verbose
+  info$standardized <- standardize
 
   info$mc.args <- list(
     min.iter        = mc.min.iter,
@@ -165,7 +167,7 @@ initMatrices <- function(pt) {
 
   etas <- unique(pt[pt$op == "~", "lhs"])
 
-  lvs  <- c(lvs.linear, pt[grepl(":", pt$rhs), "rhs"])
+  lvs  <- c(lvs.linear, getIntTerms(pt))
   xis  <- lvs[!lvs %in% etas]
 
   indsLvs <- vector("list", length(lvs))
@@ -347,12 +349,15 @@ getFitPLSModel <- function(model, consistent = TRUE) {
     # estimator, compared to the probit estimator. As well as the bias
     # caused by ignoring measurement error.
 
-    if (consistent) Q <- getConstructQualities(model)
-    else            Q <- stats::setNames(rep(1L, k), nm = lvs.lin) # ignore measurement error
+    Q <- getConstructQualities(model)
 
     fitMeasurement <- getConsistentLoadings(model, Q = Q)
     fitLambda[,mode.a] <- fitMeasurement[,mode.a]
     model$matrices$C <- getConsistentCorrMat(model, Q = Q)
+
+  } else {
+    Q <- NULL
+
   }
 
   # structural model
@@ -409,7 +414,9 @@ getFitPLSModel <- function(model, consistent = TRUE) {
     fitCov         = plssemMatrix(fitCov, symmetric = TRUE),
     fitTheta       = plssemMatrix(fitTheta, symmetric = TRUE),
     fitWeights     = plssemMatrix(fitWeights),
-    fitLambda      = plssemMatrix(fitLambda)
+    fitLambda      = plssemMatrix(fitLambda),
+    fitC           = plssemMatrix(model$matrices$C),
+    Q              = plssemVector(Q)
   )
 }
 

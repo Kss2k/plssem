@@ -16,9 +16,9 @@ getPLS_Data <- function(data,
 
   missingCases <- !stats::complete.cases(data)
   if (any(missingCases)) {
-    warning("Removing missing data list wise for factor scores.\n",
-            "Removing missing data pair wise in covariance matrix.\n",
-            "TODO: Add multiple imputation")
+    # "TODO: Add multiple imputation"
+    message("Removing missing data using list wise deletion...")
+    data <- data[!missingCases, , drop = FALSE]
   }
  
   if (standardize) {
@@ -128,8 +128,13 @@ warning2 <- function(...) {
 }
 
 
+stop2 <- function(...) {
+  stop(..., call. = FALSE)
+}
+
+
 stopif <- function(cond, ...) {
-  if (isTRUE(cond)) stop(..., call. = FALSE)
+  if (isTRUE(cond)) stop2(...)
 }
 
 
@@ -155,6 +160,13 @@ getPolyCorr <- function(data, ordered = NULL) {
 }
 
 
+tetracor <- function(x, y) {
+  # x is continous, y is ordinal
+  X <- data.frame(x, y)
+  lavaan::lavCor(X, ordered = "y")[1, 2]
+}
+
+
 formatNumeric <- function(x, digits = 3, scientific = FALSE,
                           justify = "right", width = NULL) {
   digits_fmt <- if (is.finite(digits)) max(0L, as.integer(digits)) else 3L
@@ -172,7 +184,9 @@ formatNumeric <- function(x, digits = 3, scientific = FALSE,
 
 
 getIntTerms <- function(parTable) {
-  unique(parTable[grepl(":", parTable$rhs), "rhs"])
+  cond1 <- grepl(":", parTable$rhs)
+  cond2 <- !grepl("\\(|\\)\\|", parTable$rhs)
+  unique(parTable[cond1 & cond2, "rhs"])
 }
 
 
@@ -338,4 +352,9 @@ lapplyNamed <- function(X, FUN, ..., names = X) {
 
 tr <- function(X) {
   sum(diag(X))
+}
+
+
+uniqueComplete <- function(x) {
+  unique(x[!is.na(x)])
 }

@@ -15,7 +15,7 @@ parseModelArguments <- function(syntax,
   parTable <- modsem::modsemify(syntax, parentheses.as.string = TRUE)
   data     <- as.data.frame(data)
 
-  intTermNames <- unique(parTable[grepl(":", parTable$rhs), "rhs"])
+  intTermNames <- getIntTerms(parTable)
   intTermElems <- stringr::str_split(intTermNames, pattern = ":")
   names(intTermElems)  <- intTermNames
   is.nlin <- length(intTermElems) > 0L

@@ -1,0 +1,11 @@
+devtools::load_all()
+
+head(titanic)
+
+m <- "Survived ~ Age + Sex + Age:Sex"
+
+fit <- pls(m, data = titanic, ordered = c("Survived", "Sex"),
+           bootstrap = TRUE, boot.parallel = "multicore", 
+           boot.ncpus = 4, boot.R = 50)
+
+pls_predict(fit, benchmark = c("q2_predict"))

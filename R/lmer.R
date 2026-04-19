@@ -12,7 +12,11 @@ plslmer <- function(plsModel) {
   fit.u <- plsModel$fit.u
 
   selectGamma <- plsModel$matrices$select$gamma
-  Cov.lv <- fit.c$fitCov
+  # Full (corrected) covariance/correlation matrix for the structural model.
+  # Unlike `fitCov`, this retains the total covariances between endogenous and
+  # exogenous variables.
+  Cov.lv <- fit.c$fitC
+  Q <- fit.c$Q
   Correction <- fit.c$fitStructural / fit.u$fitStructural
   CorrectionCov <- fit.c$fitCov / fit.u$fitCov
 
@@ -70,6 +74,13 @@ plslmer <- function(plsModel) {
       rhs.i <- rhs[[i]]
 
       if (rhs.i == "1") {
+        if (!is.null(Q) && lhs.i %in% names(Q)) {
+          term <- 1 / Q[[lhs.i]]
+
+          if (is.finite(term) && !is.na(term) && !is.nan(term))
+            correctionTerms[[i]] <- term
+        }
+
         next
 
       } else if (!lhs.i %in% colnames(Correction) || !rhs.i %in% rownames(Correction)) {
@@ -199,12 +210,53 @@ meanDiagZGZt <- function(fit, varCorr.c, dep = NULL) {
 
 sigma2FromUnitVarY <- function(fit, beta.c, varCorr.c, targetVarY = 1,
                                Cov.lv, dep, indep) {
-  beta.par <- paste0(dep, "~", indep)
-  beta.sub <- beta.c[beta.par]
-  Cov.x    <- Cov.lv[indep, indep]
+  if (length(indep)) {
+    beta.par <- paste0(dep, "~", indep)
+    beta.sub <- beta.c[beta.par]
+    Cov.x    <- Cov.lv[indep, indep, drop = FALSE]
+    v_fi     <- drop(t(beta.sub) %*% Cov.x %*% beta.sub)
+  } else {
+    v_fi <- 0
+  }
 
-  v_re <- meanDiagZGZt(fit, varCorr.c, dep = dep)
-  v_fi <- t(beta.sub) %*% Cov.x %*% beta.sub
+  # Expected random-effect variance contribution on the consistent (latent)
+  # scale: E[z' Sigma_u z] = tr(Sigma_u E[zz']).
+  #
+  # Here E[zz'] is built from the corrected covariance matrix of the structural
+  # variables (Cov.lv). Since all variables are standardized and centered,
+  # intercept cross-moments are assumed to be 0.
+  v_re <- 0
+
+  for (VC in varCorr.c) {
+    Sigma_u <- as.matrix(VC)
+    re_pars <- rownames(Sigma_u)
+    stopif(is.null(re_pars), "Random effect covariance matrix must have rownames.")
+
+    dep_regex <- stringr::str_replace_all(
+      dep,
+      pattern = "([\\.\\^\\$\\|\\(\\)\\[\\]\\*\\+\\?\\{\\}\\\\])",
+      replacement = "\\\\\\1"
+    )
+    rhs <- stringr::str_remove(re_pars, pattern = paste0("^", dep_regex, "~"))
+    Ezz <- matrix(0, nrow = length(re_pars), ncol = length(re_pars),
+                  dimnames = list(re_pars, re_pars))
+
+    is_int <- rhs == "1"
+    Ezz[is_int, is_int] <- 1
+
+    slope_rhs <- rhs[!is_int]
+    if (length(slope_rhs)) {
+      missing <- setdiff(slope_rhs, colnames(Cov.lv))
+      stopif(length(missing),
+             "Missing variables in covariance matrix: ",
+             paste0(missing, collapse = ", "))
+
+      slope_pars <- re_pars[!is_int]
+      Ezz[slope_pars, slope_pars] <- Cov.lv[slope_rhs, slope_rhs, drop = FALSE]
+    }
+
+    v_re <- v_re + sum(Sigma_u * Ezz)
+  }
 
   max(targetVarY - v_re - v_fi, 0)
 }
@@ -213,9 +265,8 @@ sigma2FromUnitVarY <- function(fit, beta.c, varCorr.c, targetVarY = 1,
 getSigmaFromVarCorr <- function(fit, beta, varCorr, dep, indep, CorrectionCov, Cov.lv) {
   rvdep <- sprintf("%s~~%s", dep, dep)
 
-  # If Var(Y)=1 on your reporting scale, use targetVarY=1
-  # If instead you want the "post-hoc scaled" total variance, set targetVarY = CorrectionCov[dep, dep]
-  targetVarY <- 1
+  # Match the simulation parameterization (zeta) on the consistent scale.
+  targetVarY <- if (!is.null(Cov.lv) && dep %in% colnames(Cov.lv)) Cov.lv[dep, dep] else 1
 
   sigma2 <- sigma2FromUnitVarY(fit, beta.c = beta, varCorr.c = varCorr,
                                targetVarY = targetVarY, Cov.lv = Cov.lv,

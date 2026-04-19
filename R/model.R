@@ -84,6 +84,7 @@ specifyModel <- function(syntax,
   info$n            <- NROW(preppedData$X)
   info$estimator    <- getEstimatorFromInfo(info)
   info$verbose      <- verbose
+  info$standardized <- standardize
 
   info$mc.args <- list(
     min.iter        = mc.min.iter,

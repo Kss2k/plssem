@@ -427,7 +427,10 @@ getOuterDataMatrices <- function(model, newdata = NULL, std.ord.exp = FALSE) {
     is.ord <- vapply(newdata.df, FUN.VALUE = logical(1L), FUN = is.ordered)
     newdata.df[is.ord] <- lapply(newdata.df[is.ord], reindex)
 
-    newdata <- Rfast::standardise(as.matrix(newdata.df))
+    if (object$info$standardized)
+      newdata <- Rfast::standardise(as.matrix(newdata.df))
+    else
+      newdata <- as.matrix(newdata.df)
 
   } else {
     newdata <- olddata

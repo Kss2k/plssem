@@ -444,8 +444,8 @@ getOuterDataMatrices <- function(model, newdata = NULL, std.ord.exp = FALSE) {
 
   # Check that we have the same number of categories in newdata and olddata
   for (ord in ordered) {
-    ncatOld <- length(unique(olddata[,ord]))
-    ncatNew <- length(unique(newdata[,ord]))
+    ncatOld <- length(uniqueComplete(olddata[,ord]))
+    ncatNew <- length(uniqueComplete(newdata[,ord]))
     
     stopif(ncatNew < ncatOld,
            "There are fewer categories for ", ord, " in the test data (", 

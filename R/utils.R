@@ -351,3 +351,8 @@ lapplyNamed <- function(X, FUN, ..., names = X) {
 tr <- function(X) {
   sum(diag(X))
 }
+
+
+uniqueComplete <- function(x) {
+  unique(x[!is.na(x)])
+}

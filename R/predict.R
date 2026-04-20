@@ -119,10 +119,11 @@ pls_predict <- function(object,
 
   # Remove rownames
   rownames(Y)           <- NULL
-  rownames(X.ord)       <- NULL
   rownames(X.cont)      <- NULL
-  rownames(X.ord.pred)  <- NULL
   rownames(X.cont.pred) <- NULL
+
+  if (!is.null(X.ord))      rownames(X.ord)      <- NULL
+  if (!is.null(X.ord.pred)) rownames(X.ord.pred) <- NULL
   
   Y           <- plssemMatrix(Y, is.public = TRUE)
   X.cont      <- plssemMatrix(X.cont, is.public = TRUE)

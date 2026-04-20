@@ -128,7 +128,7 @@
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"plssem"</span><span class="op">)</span></span></code></pre></div>
 <p>The development version of the package can be installed from <code>GitHub</code>. It should be paired with the latest development version of <code>modsem</code>.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/remotes/man/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"kss2k/modsem"</span>, <span class="st">"kss2k/plssem"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"kss2k/modsem"</span>, <span class="st">"kss2k/plssem"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="examples">Examples<a class="anchor" aria-label="anchor" href="#examples"></a>
@@ -244,7 +244,7 @@
 <span><span class="st">  Y ~ X + Z + X:Z</span></span>
 <span><span class="st">'</span></span>
 <span></span>
-<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/pls.html">pls</a></span><span class="op">(</span><span class="va">m</span>, <span class="fu">modsem</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/modsem/man/oneInt.html" class="external-link">oneInt</a></span>, bootstrap <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/pls.html">pls</a></span><span class="op">(</span><span class="va">m</span>, <span class="fu">modsem</span><span class="fu">::</span><span class="va"><a href="https://modsem.org/reference/oneInt.html" class="external-link">oneInt</a></span>, bootstrap <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
@@ -286,6 +286,7 @@
     <div class="links">
 <h2 data-toc-skip>Links</h2>
 <ul class="list-unstyled">
+<li><a href="https://cloud.r-project.org/package=plssem" class="external-link">View on CRAN</a></li>
 <li><a href="https://github.com/kss2k/plssem/" class="external-link">Browse source code</a></li>
 </ul>
 </div>

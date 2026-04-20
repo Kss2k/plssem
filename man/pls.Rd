@@ -29,6 +29,7 @@ pls(
   mc.fn.args = list(),
   verbose = interactive(),
   boot.optimize = TRUE,
+  missing = c("listwise", "pairwise"),
   mc.boot.control = list(min.iter = mc.min.iter, max.iter = mc.max.iter, mc.reps =
     floor(0.5 * mc.reps), tol = 2 * mc.tol, polyak.juditsky = FALSE, verbose = FALSE,
     fixed.seed = TRUE, reuse.p.start = TRUE),
@@ -106,6 +107,13 @@ the step size.}
 
 \item{boot.optimize}{Logical; if \code{TRUE} and \code{bootstrap = TRUE}, applies
 the settings in \code{mc.boot.control} inside each bootstrap replicate (MC-PLS only).}
+
+\item{missing}{How to handle missing values in the observed indicators.
+\code{"listwise"} removes any rows with missing values in the indicators
+(the behavior prior to introducing this argument). \code{"pairwise"} keeps
+partially observed rows and uses pairwise complete observations when
+computing covariances/correlations and when standardizing, which can be
+useful when missingness is limited but will generally change results.}
 
 \item{mc.boot.control}{List of control parameters passed to the MC-PLS algorithm
 inside each bootstrap replicate when \code{boot.optimize = TRUE}. This can be used

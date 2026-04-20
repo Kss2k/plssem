@@ -35,8 +35,8 @@ pls_predict <- function(object,
   approach <- match.arg(tolower(approach), c("earliest", "direct"))
   benchmark.vars <- match.arg(tolower(benchmark.vars), c("endog", "exog", "all"))
 
-  W <- object$fit$fitWeights
-  L <- object$fit$fitLambda
+  W  <- object$fit$fitWeights
+  L  <- object$fit$fitLambda
 
   ordered <- object$info$ordered
   outerX <- getOuterDataMatrices(object, newdata = newdata,
@@ -45,7 +45,18 @@ pls_predict <- function(object,
   X.ord  <- outerX$X.ord
   ordered <- intersect(ordered, colnames(X.cont))
 
-  Y <- X.cont %*% W
+  Y  <- matrix(NA_real_, nrow = NROW(X.cont), ncol = NCOL(W),
+               dimnames = list(NULL, colnames(W)))
+
+  # Looping over blocks is more robust then just `Y <- X.cont %*% W`, as
+  # it allows missing values for a subset of the columns, without
+  # blanking the whole row
+  for (i in seq_len(NCOL(W))) {
+    idx <- rownames(W)[W[,i] != 0]
+
+    if (length(idx))
+      Y[,i] <- X.cont[,idx, drop=FALSE] %*% W[idx,i, drop = TRUE]
+  }
 
   if (approach == "earliest") {
     parTable <- getParTableEstimates(object, rm.tmp = FALSE)
@@ -65,7 +76,7 @@ pls_predict <- function(object,
 
         if (all(elems %in% colnames(Y.sub))) {
           vals <- multiplyIndicatorsCpp(Y.sub[elems])
-          Y.sub[[intTerm]] <- vals - mean(vals)
+          Y.sub[[intTerm]] <- vals - mean(vals, na.rm = TRUE)
 
           undefIntTerms <- setdiff(undefIntTerms, intTerm)
         }
@@ -106,6 +117,13 @@ pls_predict <- function(object,
 
   }
 
+  # Remove rownames
+  rownames(Y)           <- NULL
+  rownames(X.ord)       <- NULL
+  rownames(X.cont)      <- NULL
+  rownames(X.ord.pred)  <- NULL
+  rownames(X.cont.pred) <- NULL
+  
   Y           <- plssemMatrix(Y, is.public = TRUE)
   X.cont      <- plssemMatrix(X.cont, is.public = TRUE)
   X.cont.pred <- plssemMatrix(X.cont.pred, is.public = TRUE)
@@ -439,7 +457,7 @@ getOuterDataMatrices <- function(model, newdata = NULL, std.ord.exp = FALSE) {
     newdata.df[is.ord] <- lapply(newdata.df[is.ord], reindex)
 
     if (model$info$standardized)
-      newdata <- Rfast::standardise(as.matrix(newdata.df))
+      newdata <- standardizeMatrix(as.matrix(newdata.df), use = model$info$cov.use)
     else
       newdata <- as.matrix(newdata.df)
 
@@ -469,7 +487,7 @@ getOuterDataMatrices <- function(model, newdata = NULL, std.ord.exp = FALSE) {
   newdata.ord  <- newdata
 
   for (ord in ordered)
-    newdata.ord[,ordered] <- reindex(newdata.ord[,ordered])
+    newdata.ord[,ord] <- reindex(newdata.ord[,ord])
 
   PROBS <- getPROBS(data = olddata, ordered = ordered)
   Tau   <- stats::setNames(vector("list", length(ordered)), nm = ordered)

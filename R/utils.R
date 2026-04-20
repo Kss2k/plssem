@@ -1,64 +1,5 @@
-getPLS_Data <- function(data,
-                        indicators,
-                        cluster = NULL,
-                        consistent = TRUE,
-                        standardize = TRUE,
-                        ordered = NULL,
-                        is.probit = NULL,
-                        is.cexp = NULL) {
-  vars <- c(indicators, cluster)
-  missing <- !vars %in% colnames(data)
-
-  if (any(missing))
-    stop("Missing variables: ", paste0(vars[missing], collapse = ", "))
-
-  data <- as.data.frame(data)[vars]
-
-  missingCases <- !stats::complete.cases(data)
-  if (any(missingCases)) {
-    # "TODO: Add multiple imputation"
-    message("Removing missing data using list wise deletion...")
-    data <- data[!missingCases, , drop = FALSE]
-  }
- 
-  if (standardize) {
-    data <- standardizeDataFrame(
-      data    = data,
-      cluster = cluster
-    )
-  }
-
-  S <- getCorrMat(data[indicators], probit = is.probit, ordered = ordered)
-  X <- as.matrix(data[indicators])
-
-  if (!is.null(cluster)) {
-    if (!is.character(cluster))
-      stop("`cluster` must be a character string, if lme4.syntax is provided!")
-
-    attr(X, "cluster") <- data[, cluster, drop = FALSE]
-  }
-
-  list(X = X, S = S)
-}
-
-
 getNonZeroElems <- function(x) {
   as.vector(x[!is.na(x) & x != 0])
-}
-
-
-standardizeDataFrame <- function(data, cluster = NULL, subset = colnames(data)) {
-  subset <- setdiff(subset, cluster)
-
-  Z <- lapply(data[subset], FUN = standardizeAtomic)
-  data[subset] <- Z
-
-  data
-}
-
-
-standardizeAtomic <- function(x) {
-  (x - mean(x)) / stats::sd(x)
 }
 
 
@@ -68,7 +9,6 @@ getPathCoefs <- function(y, X, C) {
   # C: correlation matrix
   solve(C[X, X]) %*% C[X, y]
 }
-
 
 
 weightsProdInds <- function(wx, wy) {
@@ -110,19 +50,6 @@ printf <- function(...) {
 }
 
 
-cov2cor <- function(vcov) {
-  if (is.null(vcov))
-    return(NULL)
-
-  sd <- sqrt(abs(diag(vcov))) # use `abs()`, in case some variances are negative
-
-  if (length(sd) == 1L) D <- matrix(1 / sd, nrow = 1L, ncol = 1L)
-  else                  D <- diag(1 / sd)
-
-  structure(D %*% vcov %*% D, dimnames = dimnames(vcov))
-}
-
-
 warning2 <- function(...) {
   warning(..., call. = FALSE)
 }
@@ -140,30 +67,6 @@ stopif <- function(cond, ...) {
 
 warnif <- function(cond, ...) {
   if (isTRUE(cond)) warning2(...)
-}
-
-
-getCorrMat <- function(data, probit = FALSE, ordered = NULL) {
-  if (probit) getPolyCorr(data, ordered = ordered)
-  else        getPearsonCorr(data)
-}
-
-
-getPearsonCorr <- function(data) {
-  stats::cor(as.data.frame(data), use = "pairwise.complete.obs")
-}
-
-
-getPolyCorr <- function(data, ordered = NULL) {
-  data <- as.data.frame(data)
-  lavaan::lavCor(data, ordered = ordered)
-}
-
-
-tetracor <- function(x, y) {
-  # x is continous, y is ordinal
-  X <- data.frame(x, y)
-  lavaan::lavCor(X, ordered = "y")[1, 2]
 }
 
 
@@ -187,13 +90,6 @@ getIntTerms <- function(parTable) {
   cond1 <- grepl(":", parTable$rhs)
   cond2 <- !grepl("\\(|\\)\\|", parTable$rhs)
   unique(parTable[cond1 & cond2, "rhs"])
-}
-
-
-quickdf <- function(l) {
-  class(l) <- "data.frame"
-  attr(l, "row.names") <- .set_row_names(length(l[[1]]))
-  l
 }
 
 

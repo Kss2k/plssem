@@ -24,7 +24,11 @@ specifyModel <- function(syntax,
                          boot.R             = 50L,
                          boot.iseed         = NULL,
                          boot.optimize      = FALSE,
-                         mc.boot.control    = list()) {
+                         mc.boot.control    = list(),
+                         missing            = c("listwise", "pairwise")) {
+
+  boot.parallel <-  match.arg(tolower(boot.parallel), c("no", "multicore", "snow"))
+  missing <- match.arg(tolower(missing), c("listwise", "pairwise"))
 
   parsed <- parseModelArguments(
     syntax     = syntax,
@@ -60,7 +64,8 @@ specifyModel <- function(syntax,
     cluster     = cluster,
     standardize = standardize,
     ordered     = ordered,
-    is.probit   = is.probit
+    is.probit   = is.probit,
+    missing     = missing
   )
 
   inds.x    <- info$inds.x
@@ -85,6 +90,8 @@ specifyModel <- function(syntax,
   info$estimator    <- getEstimatorFromInfo(info)
   info$verbose      <- verbose
   info$standardized <- standardize
+  info$cov.use      <- switch(missing, pairwise = "pairwise", listwise = "everything")
+  info$missing      <- missing
 
   info$mc.args <- list(
     min.iter        = mc.min.iter,
@@ -491,7 +498,21 @@ getFactorScores <- function(model) {
   W <- model$matrices$lambda
   X <- model$data
 
-  Rfast::standardise(X %*% W)
+  if (model$info$cov.use == "everything")
+    return(Rfast::standardise(X %*% W)) # fastest if we no there aren't missing values
+
+  WI <- matrices$select$lambda
+  F  <- matrix(NA_real_, nrow = NROW(X), ncol = NCOL(W),
+               dimnames = list(NULL, colnames(W)))
+
+  for (i in seq_len(NCOL(W))) {
+    idx <- WI[,i]
+
+    if (any(idx))
+      F[,i] <- X[,idx, drop=FALSE] %*% W[idx,i, drop = TRUE]
+  }
+
+  standardizeMatrix(F, use = model$info$cov.use)
 }
 
 

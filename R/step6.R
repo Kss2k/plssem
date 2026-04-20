@@ -17,7 +17,7 @@ estimatePLS_Step6 <- function(model) {
       X[,xz] <- Rfast::rowprods(X[,elems.xz])
     }
 
-    Cxz <- Rfast::cova(X)
+    Cxz <- getCovMat(X, use = model$info$cov.use)
     par <- colnames(X)
 
     model$factorScores <- X

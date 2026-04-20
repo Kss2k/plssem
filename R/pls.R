@@ -80,6 +80,13 @@ USE_NON_LINEAR_PROBIT_CORR_MAT <- FALSE # for now we stick with the linear assum
 #' @param boot.optimize Logical; if \code{TRUE} and \code{bootstrap = TRUE}, applies
 #'   the settings in \code{mc.boot.control} inside each bootstrap replicate (MC-PLS only).
 #'
+#' @param missing How to handle missing values in the observed indicators.
+#'   \code{"listwise"} removes any rows with missing values in the indicators
+#'   (the behavior prior to introducing this argument). \code{"pairwise"} keeps
+#'   partially observed rows and uses pairwise complete observations when
+#'   computing covariances/correlations and when standardizing, which can be
+#'   useful when missingness is limited but will generally change results.
+#'
 #' @param mc.boot.control List of control parameters passed to the MC-PLS algorithm
 #'   inside each bootstrap replicate when \code{boot.optimize = TRUE}. This can be used
 #'   to speed up bootstrapping by, for example, increasing the tolerance or reducing
@@ -228,6 +235,7 @@ pls <- function(syntax,
                 mc.fn.args = list(),
                 verbose = interactive(),
                 boot.optimize = TRUE,
+                missing = c("listwise", "pairwise"),
                 mc.boot.control = list(
                   min.iter        = mc.min.iter,
                   max.iter        = mc.max.iter,
@@ -240,7 +248,8 @@ pls <- function(syntax,
                 ),
                 ...) {
 
-  boot.parallel <- match.arg(boot.parallel)
+  boot.parallel <-  match.arg(tolower(boot.parallel), c("no", "multicore", "snow"))
+  missing <- match.arg(tolower(missing), c("listwise", "pairwise"))
 
   if (!is.null(sample)) {
     warning("The sample argument is deprecated, please use the boot.R argument instead!")
@@ -275,7 +284,8 @@ pls <- function(syntax,
     boot.R             = boot.R,
     boot.iseed         = boot.iseed,
     boot.optimize      = boot.optimize,
-    mc.boot.control    = mc.boot.control
+    mc.boot.control    = mc.boot.control,
+    missing            = missing
   )
 
   # Fit model

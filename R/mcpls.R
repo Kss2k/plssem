@@ -37,6 +37,8 @@ mcpls <- function(
     fit.sim <- fit0.base
     fit.sim$data <- Rfast::standardise(as.matrix(sim.ov[vars]))
     fit.sim$matrices$S <- Rfast::cova(fit.sim$data)
+    fit.sim$info$cov.use <- "everything"
+    fit.sim$info$missing <- "listwise"
 
     fit2 <- estimatePLS_Inner(fit.sim)
     par2 <- getFreeParamsTable(fit2)

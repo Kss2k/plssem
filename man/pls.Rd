@@ -11,7 +11,7 @@ pls(
   consistent = TRUE,
   bootstrap = FALSE,
   ordered = NULL,
-  missing = c("listwise", "kNN"),
+  missing = c("listwise", "mean", "kNN"),
   knn.k = 5,
   mcpls = NULL,
   probit = NULL,
@@ -60,13 +60,17 @@ should be treated as ordered when computing polychoric correlations.}
 
 \item{missing}{Character string specifying how to handle missing indicator data.
 \code{"listwise"} removes rows with missing values (listwise deletion).
-\code{"knn"} imputes missing indicator values using k-nearest neighbors
-imputation (kNN). When \code{missing = "knn"}, rows with all indicators missing
-are removed prior to imputation, and rows with missing \code{cluster} values are
-removed for multilevel models.}
+\code{"mean"} imputes missing indicator values using simple univariate
+imputation: the mean for continuous variables, the median for ordered variables
+with more than two categories, and the mode for binary ordered variables (two
+categories) or nominal variables.
+\code{"kNN"} (or \code{"knn"}) imputes missing indicator values using
+k-nearest neighbors imputation (kNN). When \code{missing = "kNN"}, rows with
+all indicators missing are removed prior to imputation, and rows with missing
+\code{cluster} values are removed for multilevel models.}
 
 \item{knn.k}{Integer specifying the number of neighbors (\code{k}) used when
-\code{missing = "knn"}.}
+\code{missing = "kNN"}.}
 
 \item{mcpls}{Should a Monte-Carlo consistency correction be applied?}
 

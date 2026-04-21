@@ -1,0 +1,109 @@
+---
+title: "Handling Missing Values with plssem"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Handling Missing Values with plssem}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE
+)
+
+library(plssem)
+```
+
+The `pls()` function offers some very basic approaches for handling missing
+values in the data, specified via the `missing` argument. Currently, 
+there are three options.
+
+  1. Listwise deletion (`missing = "listwise"`)
+  2. Mean imputation (`missing = "mean"`)
+  3. k nearest neighbors (kNN) imputation (`missing = "kNN"`)
+
+The last two options are single imputation approaches. The `pls()` function
+does not currently offer any multiple imputation approaches, but we show
+how this can be done by the user itself, using the `mice` package, at the
+end of the vignette.
+
+# Listwise Deletion
+
+With `missing="listwise"` (the default) any observation (i.e., a row) containing
+missing values for the variables used in the model are removed. Here we
+can see an example.
+
+```{r}
+model <- "Survived ~ Age + Female + Age:Female"
+fit <- pls(model, data = titanic, missing = "listwise", ordered = "Survived")
+```
+
+# Mean Imputation
+
+With `missing="mean"` missing values are imputed with (univariate) expected 
+values. For continous values missing values are imputed using the mean.
+For ordinal variables with more than two categories, missing values are imputed
+with the median. For binary ordered variables missing values are imputed
+with the mode.
+
+In our example, missing values in `Age` are imputed with the mean of age.
+Both `Survived` and `Female` are binary variables, where the missing values
+get imputed with the most common value.
+
+```{r}
+model <- "Survived ~ Age + Female + Age:Female"
+fit <- pls(model, data = titanic, missing = "mean", ordered = "Survived")
+```
+
+# kNN Imputation
+
+With `missing="kNN"` missing values are imputed by finding the k nearest 
+(complete data) neighbors of an observation with missing data. The values
+of the values of the k neighbors are then aggregated using either the mean, median or the
+mode, depending on the data type of the variable. The k number of neighbors
+to be used, can be specified using the `knn.k` argument.
+
+```{r}
+model <- "Survived ~ Age + Female + Age:Female"
+fit <- pls(model, data = titanic, missing = "kNN",
+           ordered = "Survived", knn.k = 5) # use the 5 nearest neighbors
+```
+
+# Multiple Imputation
+
+Multiple imputation cannot be performed just using the `pls()` function,
+but it can be performed using other available multiple imputation packages
+in `R`. Here we use the `mice` package, but other packages can be used
+as well (e.g., the `Amelia` package).
+
+```{r}
+library(mice)
+
+m <- 20 # Number of imputations
+vars <- c("Survived", "Age", "Female") # Variables to impute/use in the analysis
+
+imputations <- mice(titanic[vars], m = m)
+
+COEF <- NULL # Matrix with estimated coefficients for each imputation
+BOOT <- NULL # Matrix with all the bootstraps from all imputations
+
+model <- "Survived ~ Age + Female + Age:Female"
+
+for (i in seq_len(m)) {
+  fit.i <- pls(model, data = complete(imputations, i), # get the ith imputation
+               ordered = "Survived",
+               bootstrap = TRUE,
+               boot.R = 100,
+               boot.parallel = "multicore", # Use parallel bootstrap
+               boot.ncpus = 2L)
+
+  COEF <- rbind(COEF, coef(fit.i))
+  BOOT <- rbind(BOOT, boot(fit.i))
+}
+
+apply(COEF, MARGIN = 2, FUN = mean) # Mean estimate across imputations
+apply(BOOT, MARGIN = 2, FUN = sd)   # Standard errors
+```

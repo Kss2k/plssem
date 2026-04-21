@@ -85,6 +85,9 @@ Dummy variable for Sex="female"
       <a href="../articles/linear-models.html">Linear Models with plssem</a>
     </li>
     <li>
+      <a href="../articles/missing-imputation.html">Handling Missing Values with plssem</a>
+    </li>
+    <li>
       <a href="../articles/multilevel-models.html">Multilevel Models with plssem</a>
     </li>
     <li>
@@ -174,37 +177,37 @@ https://github.com/paulhendricks/titanic</p>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="pls.html">pls</a></span><span class="op">(</span><span class="st">"Survived ~ Age + Female + Age:Female"</span>,</span></span>
 <span class="r-in"><span>           data <span class="op">=</span> <span class="va">titanic</span>, ordered <span class="op">=</span> <span class="st">"Survived"</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Removing missing data using list wise deletion...</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Removing missing data using listwise deletion...</span>
 <span class="r-in"><span><span class="fu"><a href="pls_predict.html">pls_predict</a></span><span class="op">(</span><span class="va">fit</span>, benchmark <span class="op">=</span> <span class="st">"acc"</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PlsSemPredict object</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Available fields: $Y, $X.cont, $X.cont.pred, $X.ord, $X.ord.pred, $benchmark</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Y [714 x 4] (head)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Survvd    Age Female Ag:Fml</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1 -0.368 -0.530 -0.759  0.495</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 -0.367 -0.530 -0.759  0.495</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 2  1.088  0.571  1.317  0.845</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3  0.876 -0.255  1.317 -0.242</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3  0.878 -0.255  1.317 -0.242</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 4  1.035  0.365  1.317  0.574</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5 -0.601  0.365 -0.759 -0.184</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 7 -0.943  1.673 -0.759 -1.176</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5 -0.603  0.365 -0.759 -0.184</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 7 -0.946  1.673 -0.759 -1.176</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> X.cont [714 x 3] (head)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Survvd    Age Female</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1 -0.645 -0.530 -0.759</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2  0.924  0.571  1.317</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3  0.924 -0.255  1.317</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4  0.924  0.365  1.317</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5 -0.645  0.365 -0.759</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 7 -0.645  1.673 -0.759</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 -0.646 -0.530 -0.759</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2  0.944  0.571  1.317</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3  0.944 -0.255  1.317</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4  0.944  0.365  1.317</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5 -0.646  0.365 -0.759</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 7 -0.646  1.673 -0.759</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> X.cont.pred [714 x 3] (head)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Survvd    Age Female</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1 -0.368 -0.530 -0.759</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 -0.367 -0.530 -0.759</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 2  1.088  0.571  1.317</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3  0.876 -0.255  1.317</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3  0.878 -0.255  1.317</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 4  1.035  0.365  1.317</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5 -0.601  0.365 -0.759</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 7 -0.943  1.673 -0.759</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5 -0.603  0.365 -0.759</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 7 -0.946  1.673 -0.759</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> X.ord [714 x 3] (head)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Survvd    Age Female</span>

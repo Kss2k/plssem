@@ -300,6 +300,7 @@ pls <- function(syntax,
   if (model$info$boot$bootstrap) {
     model$boot <- bootstrap(model)
     model$params$se <- model$boot$se
+    model$params$vcov <- model$boot$vcov
   }
 
   model$parTable <- getParTableEstimates(model)

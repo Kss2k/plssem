@@ -146,7 +146,8 @@ specifyModel <- function(syntax,
     names      = parnames,
     values     = rep(NA_real_, k),
     values.old = NULL,
-    se         = rep(NA_real_, k)
+    se         = rep(NA_real_, k),
+    vcov       = NULL
   )
 
   model

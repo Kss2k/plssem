@@ -180,13 +180,17 @@ bootstrap <- function(model,
     cat("\n")
   }
 
-  resultsMat <- do.call(rbind, results) 
-  names(resultsMat) <- names(model$params$values)
+  ids <- vapply(results, FUN.VALUE = integer(1L), FUN = \(x) attr(x, "id"))
 
-  se <- apply(resultsMat, MARGIN = 2, FUN = stats::sd, na.rm = TRUE)
+  resultsMat <- do.call(rbind, results)
+  rownames(resultsMat) <- ids
+  colnames(resultsMat) <- names(model$params$values)
+
+  vcov <- cov(resultsMat, use = "complete.obs")
+  se <- sqrt(diag(vcov))
   se[se <= zero.tol] <- NA_real_
 
-  list(se = se, boot = resultsMat)
+  list(se = se, boot = resultsMat, vcov = vcov)
 }
 
 

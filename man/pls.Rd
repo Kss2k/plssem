@@ -11,6 +11,8 @@ pls(
   consistent = TRUE,
   bootstrap = FALSE,
   ordered = NULL,
+  missing = c("listwise", "kNN"),
+  knn.k = 5,
   mcpls = NULL,
   probit = NULL,
   tolerance = 1e-05,
@@ -55,6 +57,16 @@ are computed with \code{boot.R} resamples.}
 
 \item{ordered}{Optional character vector naming manifest indicators that
 should be treated as ordered when computing polychoric correlations.}
+
+\item{missing}{Character string specifying how to handle missing indicator data.
+\code{"listwise"} removes rows with missing values (listwise deletion).
+\code{"knn"} imputes missing indicator values using k-nearest neighbors
+imputation (kNN). When \code{missing = "knn"}, rows with all indicators missing
+are removed prior to imputation, and rows with missing \code{cluster} values are
+removed for multilevel models.}
+
+\item{knn.k}{Integer specifying the number of neighbors (\code{k}) used when
+\code{missing = "knn"}.}
 
 \item{mcpls}{Should a Monte-Carlo consistency correction be applied?}
 

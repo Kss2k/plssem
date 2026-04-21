@@ -29,6 +29,16 @@ USE_NON_LINEAR_PROBIT_CORR_MAT <- FALSE # for now we stick with the linear assum
 #' @param ordered Optional character vector naming manifest indicators that
 #'   should be treated as ordered when computing polychoric correlations.
 #'
+#' @param missing Character string specifying how to handle missing indicator data.
+#'   \code{"listwise"} removes rows with missing values (listwise deletion).
+#'   \code{"knn"} imputes missing indicator values using k-nearest neighbors
+#'   imputation (kNN). When \code{missing = "knn"}, rows with all indicators missing
+#'   are removed prior to imputation, and rows with missing \code{cluster} values are
+#'   removed for multilevel models.
+#'
+#' @param knn.k Integer specifying the number of neighbors (\code{k}) used when
+#'   \code{missing = "knn"}.
+#'
 #' @param mcpls Should a Monte-Carlo consistency correction be applied?
 #'
 #' @param probit Logical; overrides the automatic choice of probit factor scores
@@ -210,6 +220,8 @@ pls <- function(syntax,
                 consistent = TRUE,
                 bootstrap = FALSE,
                 ordered = NULL,
+                missing = c("listwise", "kNN"),
+                knn.k = 5,
                 mcpls = NULL,
                 probit = NULL,
                 tolerance = 1e-5,
@@ -240,6 +252,7 @@ pls <- function(syntax,
                 ),
                 ...) {
 
+  missing <- match.arg(tolower(missing), c("listwise", "knn"))
   boot.parallel <- match.arg(boot.parallel)
 
   if (!is.null(sample)) {
@@ -255,6 +268,7 @@ pls <- function(syntax,
     syntax             = syntax,
     data               = data,
     consistent         = consistent,
+    missing            = missing,
     standardize        = standardize,
     ordered            = ordered,
     probit             = probit,
@@ -275,7 +289,8 @@ pls <- function(syntax,
     boot.R             = boot.R,
     boot.iseed         = boot.iseed,
     boot.optimize      = boot.optimize,
-    mc.boot.control    = mc.boot.control
+    mc.boot.control    = mc.boot.control,
+    knn.k              = knn.k
   )
 
   # Fit model
@@ -285,6 +300,7 @@ pls <- function(syntax,
   if (model$info$boot$bootstrap) {
     model$boot <- bootstrap(model)
     model$params$se <- model$boot$se
+    model$params$vcov <- model$boot$vcov
   }
 
   model$parTable <- getParTableEstimates(model)

@@ -4,6 +4,7 @@ OPERATORS <- c("<~", "~~", "=~", "~1", "~", "|")
 specifyModel <- function(syntax,
                          data,
                          consistent         = TRUE,
+                         missing            = "listwise",
                          standardize        = TRUE,
                          ordered            = NULL,
                          probit             = NULL,
@@ -24,7 +25,8 @@ specifyModel <- function(syntax,
                          boot.R             = 50L,
                          boot.iseed         = NULL,
                          boot.optimize      = FALSE,
-                         mc.boot.control    = list()) {
+                         mc.boot.control    = list(),
+                         knn.k              = 5) {
 
   parsed <- parseModelArguments(
     syntax     = syntax,
@@ -60,7 +62,9 @@ specifyModel <- function(syntax,
     cluster     = cluster,
     standardize = standardize,
     ordered     = ordered,
-    is.probit   = is.probit
+    is.probit   = is.probit,
+    missing     = missing,
+    knn.k       = knn.k
   )
 
   inds.x    <- info$inds.x
@@ -142,7 +146,8 @@ specifyModel <- function(syntax,
     names      = parnames,
     values     = rep(NA_real_, k),
     values.old = NULL,
-    se         = rep(NA_real_, k)
+    se         = rep(NA_real_, k),
+    vcov       = NULL
   )
 
   model

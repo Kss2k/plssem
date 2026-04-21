@@ -159,6 +159,27 @@ print.plssem <- function(x, ...) {
 }
 
 
+#' @export
+#' @importFrom stats coefficients
+coefficients.plssem <- function(object, ...) {
+  object$params$values
+}
+
+
+#' @export
+#' @importFrom stats coef
+coef.plssem <- function(object, ...) {
+  coefficients.plssem(object, ...)
+}
+
+
+#' @export
+#' @importFrom stats vcov
+vcov.plssem <- function(object, ...) {
+  object$params$vcov
+}
+
+
 #' Parameter estimates for \code{plssem} objects
 #'
 #' @param object An object of class \code{plssem}.

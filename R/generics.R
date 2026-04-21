@@ -162,7 +162,7 @@ print.plssem <- function(x, ...) {
 #' @export
 #' @importFrom stats coefficients
 coefficients.plssem <- function(object, ...) {
-  object$params$values
+  plssemVector(object$params$values, is.public = TRUE)
 }
 
 
@@ -176,7 +176,7 @@ coef.plssem <- function(object, ...) {
 #' @export
 #' @importFrom stats vcov
 vcov.plssem <- function(object, ...) {
-  object$params$vcov
+  plssemMatrix(object$params$vcov, is.public = TRUE)
 }
 
 

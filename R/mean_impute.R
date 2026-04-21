@@ -36,8 +36,18 @@ meanImputeMissing <- function(data, ordered = NULL) {
 
 
 strictMedian <- function(x) {
-  # Median which garuantees that we don't use an average
-  # Given that we have no missing values
+  # Median that always returns an observed value (no averaging).
+  #
+  # For even-length inputs, this returns the *lower* of the two middle values
+  # (after sorting), which is well-defined for ordinal/integer-coded data.
+  x <- x[!is.na(x)]
   n <- length(x)
-  if (n %% 2 == 0 && n > 1) median(x[-n]) else median(x)
+  if (!n) return(NA)
+
+  x <- sort(x)
+
+  if (n %% 2L == 1L)
+    return(x[(n + 1L) / 2L])
+
+  x[n / 2L]
 }

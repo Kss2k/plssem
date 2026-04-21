@@ -169,7 +169,7 @@ coefficients.plssem <- function(object, ...) {
 #' @export
 #' @importFrom stats coef
 coef.plssem <- function(object, ...) {
-  coefficients(object, ...)
+  coefficients.plssem(object, ...)
 }
 
 

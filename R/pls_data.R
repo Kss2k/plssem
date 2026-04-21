@@ -6,10 +6,10 @@ getPLS_Data <- function(data,
                         ordered = NULL,
                         is.probit = NULL,
                         is.cexp = NULL,
-                        missing = c("listwise", "knn"),
+                        missing = c("listwise", "mean", "kNN"),
                         knn.k = 5) {
 
-  missing <- match.arg(tolower(missing), c("listwise", "knn"))
+  missing <- match.arg(tolower(missing), c("listwise", "mean", "knn"))
 
   vars <- c(indicators, cluster)
   varIsMissing <- !vars %in% colnames(data)
@@ -42,7 +42,7 @@ getPLS_Data <- function(data,
     data <- data[!missingCases, , drop = FALSE]
 
   } else if (anyMissing && missing == "knn") {
-    message("Imputing missing data using k-Nearest Neighbors (kNN), k = ", knn.k, ".")
+    message("Imputing missing data using k-Nearest Neighbors (kNN), k = ", knn.k, "...")
 
     # Remove rows where all indicators are missing
     allMissing <- as.logical(matrixStats::rowProds(
@@ -56,6 +56,11 @@ getPLS_Data <- function(data,
       k       = knn.k,
       ordered = ordered
     )
+
+  } else if (anyMissing && missing == "mean") {
+    message("Imputing missing data using mean imputation...")
+
+    data[indicators] <- meanImputeMissing(data[indicators])
   }
  
   if (standardize) {

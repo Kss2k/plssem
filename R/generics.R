@@ -230,3 +230,34 @@ isMC_PLS.plssem <- function(object) {
 isMC_PLS <- function(object) {
   UseMethod("isMC_PLS")
 }
+
+
+#' Get bootstrapped coefficients from PLS model
+#'
+#' @param object A fitted model object.
+#' @return Matrix with bootstrapped coefficients.
+#'
+#' @examples
+#' library(modsem)
+#' library(plssem)
+#'
+#' m <- "
+#'   X =~ x1 + x2 + x3
+#'   Z =~ z1 + z2 + z3
+#'   Y =~ y1 + y2 + y3
+#'   Y ~ X + Z + X:Z
+#' "
+#' 
+#' fit <- pls(m, oneInt, bootstrap = TRUE, boot.R = 50)
+#' boot(fit)
+#' 
+#' @export
+boot <- function(object) {
+  UseMethod("boot")
+}
+
+
+#' @export
+boot.plssem <- function(object) {
+  plssemMatrix(object$boot$boot, is.public = TRUE)
+}

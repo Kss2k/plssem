@@ -60,7 +60,7 @@ getPLS_Data <- function(data,
   } else if (anyMissing && missing == "mean") {
     message("Imputing missing data using mean imputation...")
 
-    data[indicators] <- meanImputeMissing(data[indicators])
+    data[indicators] <- meanImputeMissing(data[indicators], ordered = ordered)
   }
  
   if (standardize) {

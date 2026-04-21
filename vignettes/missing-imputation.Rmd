@@ -2,7 +2,7 @@
 title: "Handling Missing Values with plssem"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Categorical Models with plssem}
+  %\VignetteIndexEntry{Handling Missing Values with plssem}
   %\VignetteEngine{knitr::rmarkdown}
   \usepackage[utf8]{inputenc}
 ---

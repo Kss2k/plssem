@@ -19,6 +19,9 @@
     <loc>/articles/linear-models.html</loc>
   </url>
   <url>
+    <loc>/articles/missing-imputation.html</loc>
+  </url>
+  <url>
     <loc>/articles/multilevel-models.html</loc>
   </url>
   <url>
@@ -35,6 +38,9 @@
   </url>
   <url>
     <loc>/reference/TPB_Ordered.html</loc>
+  </url>
+  <url>
+    <loc>/reference/boot.html</loc>
   </url>
   <url>
     <loc>/reference/index.html</loc>

@@ -42,8 +42,7 @@ getPLS_Data <- function(data,
     data <- data[!missingCases, , drop = FALSE]
 
   } else if (anyMissing && missing == "knn") {
-    message("Imputing missing data using k-Nearest Neighbors (kNN),
-            k = ", knn.k, ".")
+    message("Imputing missing data using k-Nearest Neighbors (kNN), k = ", knn.k, ".")
 
     # Remove rows where all indicators are missing
     allMissing <- as.logical(matrixStats::rowProds(

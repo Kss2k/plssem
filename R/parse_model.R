@@ -30,6 +30,7 @@ parseModelArguments <- function(syntax,
   ovs       <- ovs[!grepl("\\(|\\)", ovs)]
 
   vars       <- intersect(ovs, colnames(data))
+  data       <- checkAndFixDTypesPLS_Data(data, check = vars)
   is.ordered <- vapply(data[vars], FUN.VALUE = logical(1L), FUN = is.ordered)
   ordered    <- intersect(union(ordered, vars[is.ordered]), vars)
 

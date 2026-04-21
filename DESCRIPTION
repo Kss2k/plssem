@@ -50,7 +50,8 @@ Imports:
     collapse,
     mvnfast,
     reformulas,
-    parallel
+    parallel,
+    FNN
 Depends: 
     R (>= 4.1.0)
 URL: https://github.com/kss2k/plssem,

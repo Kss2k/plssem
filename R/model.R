@@ -226,12 +226,14 @@ initMatrices <- function(pt) {
   succs.linear[,is.nlin] <- FALSE
 
   is.cfa <- !any(preds.linear) && !any(succs.linear)
-  preds.cfa           <- preds
-  preds.cfa[TRUE]     <- TRUE
-  diag(preds.cfa)     <- FALSE
+
+  preds.cfa                       <- preds
+  preds.cfa[TRUE]                 <- FALSE
+  preds.cfa[upper.tri(preds.cfa)] <- TRUE
+
   preds.cfa[is.nlin,] <- FALSE
   preds.cfa[,is.nlin] <- FALSE
-  succs.cfa           <- preds.cfa
+  succs.cfa           <- t(preds.cfa)
 
   # Covariance Matrix xis ------------------------------------------------------
   xis <- lvs[!lvs %in% pt[pt$op == "~", "lhs"]]

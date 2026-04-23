@@ -141,7 +141,8 @@ getFreeParamsTable <- function(model) {
 
 updateModelFromFreeParTableMC <- function(parTable, model, mc.reps,
                                           PROBS, ordered, seed = NULL) {
-  sim <- simulateDataParTable(parTable, N = mc.reps, seed = seed)
+  sim <- simulateDataParTable(parTable, N = mc.reps, seed = seed,
+                              check.hi.ord = model$info$is.high.ord)
   sim.ord <- ordinalizeDataFrame(sim$ov, PROBS = PROBS, ordered = ordered)
 
   lvs <- getLVs(parTable)
@@ -152,8 +153,8 @@ updateModelFromFreeParTableMC <- function(parTable, model, mc.reps,
   ovs <- colnames(model$matrices$S)
   lvs <- colnames(model$matrices$C)
 
-  model$matrices$S.ord.expected <- cov2cor(Rfast::cova(as.matrix(sim.ord)))
-  model$matrices$S.ord.observed <- cov2cor(Rfast::cova(model$data))
+  model$matrices$S.ord.expected <- cov2cor(Rfast::cova(as.matrix(sim.ord)[,ovs]))
+  model$matrices$S.ord.observed <- cov2cor(Rfast::cova(model$data[,ovs]))
 
   model$matrices$sim.ov.cont <- sim$ov
   model$matrices$sim.ov.ord  <- sim.ord
@@ -242,7 +243,7 @@ updateModelFromFreeParTableMC <- function(parTable, model, mc.reps,
     seed     = seed
   )
 
-  estimatePLS_Step8(model)
+  estimatePLS_Step8(model, update.names = TRUE)
 }
 
 

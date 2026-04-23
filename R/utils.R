@@ -291,3 +291,13 @@ getParTableFromParNames <- function(parnames) {
 
   list(lhs = lhs, op = op, rhs = rhs)
 }
+
+
+namedListUnion <- function(x, y) {
+  if      (is.null(y)) return(x)
+  else if (is.null(x)) return(y)
+
+  new <- setdiff(names(y), names(x))
+  x[new] <- y[new]
+  x
+}

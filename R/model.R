@@ -68,6 +68,7 @@ specifyModel <- function(syntax, data, ...) {
 
       mode.a       = union(info1$mode.a, info2$mode.a),
       mode.b       = union(info1$mode.b, info2$mode.b),
+      modes        = namedListUnion(info1$modes, info2$modes),
 
       inds.x       = inds.x, # Observed indicators
       inds.y       = inds.y, # Observed indicators
@@ -75,10 +76,10 @@ specifyModel <- function(syntax, data, ...) {
       cluster      = info1$cluster,
       ordered      = info1$ordered,
 
-      is.mlm       = info1$is.mlm    %|<->|% info2$is.mlm,
-      is.mcpls     = info1$is.mcpls  %|<->|% info2$is.mcpls,
-      is.probit    = info1$is.probit %|<->|% info2$is.probit,
-      is.cfa       = info1$is.cfa && (is.null(info1$is.cfa) || info1$is.cfa),
+      is.mlm       = isTRUE(info1$is.mlm) || isTRUE(info2$is.mlm),
+      is.mcpls     = isTRUE(info1$is.mcpls) || isTRUE(info2$is.mcpls),
+      is.probit    = isTRUE(info1$is.probit) || isTRUE(info2$is.probit),
+      is.cfa       = isTRUE(info1$is.cfa) && (is.null(info1$is.cfa) || info1$is.cfa),
       is.high.ord  = !is.null(secondOrder),
 
       n            = info1$n,

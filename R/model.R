@@ -1,35 +1,157 @@
 OPERATORS <- c("<~", "~~", "=~", "~1", "~", "|")
+MOPS <- c("<~", "=~")
+MAT_STRUCT <- matrix(0, nrow = 0, ncol = 0)
+DF_STRUCT <- data.frame(NULL)
+VEC_STRUCT <- numeric(0)
 
 
-specifyModel <- function(syntax,
-                         data,
-                         consistent         = TRUE,
-                         missing            = "listwise",
-                         standardize        = TRUE,
-                         ordered            = NULL,
-                         probit             = NULL,
-                         mcpls              = NULL,
-                         tolerance          = 1e-5,
-                         max.iter.0_5       = 100,
-                         mc.max.iter        = 250,
-                         mc.min.iter        = 5,
-                         mc.reps            = 20000,
-                         mc.tol             = 1e-3,
-                         mc.fixed.seed      = FALSE,
-                         mc.polyak.juditsky = FALSE,
-                         mc.fn.args         = list(),
-                         verbose            = interactive(),
-                         bootstrap          = FALSE,
-                         boot.ncpus         = 1L,
-                         boot.parallel      = "no",
-                         boot.R             = 50L,
-                         boot.iseed         = NULL,
-                         boot.optimize      = FALSE,
-                         mc.boot.control    = list(),
-                         knn.k              = 5) {
+`%|<->|%` <- function(x, y) {
+  (!is.null(x) && x) || (!is.null(y) && y)
+}
+
+
+specifyModel <- function(syntax, data, ...) {
+  split      <- splitHigherOrderModel(syntax)
+  parTableO2 <- split$parTableO2
+  parTableO1 <- split$parTableO1
+  hiOrdLVs   <- split$higherOrderLVs
+
+  firstOrder <- specifySubModel(parTable = parTableO1, data = data, ...)
+  secondOrder <- specifySubModel(
+    parTable       = parTableO2,
+    data           = firstOrder$data %*% firstOrder$matrices$lambda, # placeholder
+    higherOrderLVs = hiOrdLVs 
+  )
+
+  info1 <- firstOrder$info
+  info2 <- secondOrder$info
+
+  if (is.null(secondOrder)) {
+    inds.x <- info1$inds.x
+    inds.y <- info1$inds.y
+
+  } else {
+    lvs     <- info1$lvs
+    etas    <- info2$etas
+    ovInds  <- info1$allInds
+    lvInds  <- intersect(info2$allInds, lvs)
+    indsMap <- c(info1$indsLvs, info2$indsLvs)
+
+    lowInds <- unique(unlist(indsMap[lvInds])) # inds which are downstream of HOLVs
+    etaInds <- unique(unlist(indsMap[etas]))
+    yInds   <- c(lowInds, etaInds)
+
+    inds.y <- intersect(ovInds, yInds)
+    inds.x <- setdiff(ovInds, yInds)
+  }
+
+  # Class Fields
+  out <- list(
+    submodels = list(
+      firstOrder  = firstOrder,
+      secondOrder = secondOrder
+    ),
+
+    matrices = list(
+      S           = MAT_STRUCT,
+      C           = MAT_STRUCT,
+      firstOrder  = firstOrder$matrices,
+      secondOrder = secondOrder$matrices
+    ),
+
+    data = firstOrder$data,
+
+    info = list(
+      lvs.linear   = union(info1$lvs.linear, info2$lvs.linear),
+      lvs          = union(info1$lvs, info2$lvs),
+      lvs.hi.ord   = hiOrdLVs,
+
+      mode.a       = union(info1$mode.a, info2$mode.a),
+      mode.b       = union(info1$mode.b, info2$mode.b),
+
+      inds.x       = inds.x, # Observed indicators
+      inds.y       = inds.y, # Observed indicators
+
+      cluster      = info1$cluster,
+      ordered      = info1$ordered,
+
+      is.mlm       = info1$is.mlm    %|<->|% info2$is.mlm,
+      is.mcpls     = info1$is.mcpls  %|<->|% info2$is.mcpls,
+      is.probit    = info1$is.probit %|<->|% info2$is.probit,
+      is.cfa       = info1$is.cfa && (is.null(info1$is.cfa) || info1$is.cfa),
+      is.high.ord  = !is.null(secondOrder),
+
+      n            = info1$n,
+      estimator    = info1$estimator,
+      standardized = info1$standardized,
+      verbose      = info1$verbose %|<->|% info2$verbose,
+
+      mc.args      = info1$mc.args,
+      boot         = info1$boot,
+      args         = list(...)
+    ),
+
+    status = firstOrder$status,
+
+    parTable = DF_STRUCT,
+
+    params = list(
+      names  = VEC_STRUCT,
+      values = VEC_STRUCT,
+      se     = VEC_STRUCT,
+      vcov   = NULL
+    ),
+
+    fit = list(
+      fitMeasurement = MAT_STRUCT,
+      fitLambda      = MAT_STRUCT,
+      fitWeights     = MAT_STRUCT,
+      fitTheta       = MAT_STRUCT,
+      fitC           = MAT_STRUCT,
+      fitCov         = MAT_STRUCT,
+      fitStructural  = MAT_STRUCT,
+      Q              = VEC_STRUCT
+    )
+  )
+
+  class(out) <- "plssem"
+  out
+}
+
+
+specifySubModel <- function(parTable,
+                            data,
+                            consistent         = TRUE,
+                            missing            = "listwise",
+                            standardize        = TRUE,
+                            ordered            = NULL,
+                            probit             = NULL,
+                            mcpls              = NULL,
+                            tolerance          = 1e-5,
+                            max.iter.0_5       = 100,
+                            mc.max.iter        = 250,
+                            mc.min.iter        = 5,
+                            mc.reps            = 20000,
+                            mc.tol             = 1e-3,
+                            mc.fixed.seed      = FALSE,
+                            mc.polyak.juditsky = FALSE,
+                            mc.fn.args         = list(),
+                            verbose            = interactive(),
+                            bootstrap          = FALSE,
+                            boot.ncpus         = 1L,
+                            boot.parallel      = "no",
+                            boot.R             = 50L,
+                            boot.iseed         = NULL,
+                            boot.optimize      = FALSE,
+                            mc.boot.control    = list(),
+                            knn.k              = 5,
+                            reliabilities      = NULL,
+                            higherOrderLVs     = NULL) {
+  if (is.null(parTable))
+    return(NULL)
 
   parsed <- parseModelArguments(
-    syntax     = syntax,
+    parTable   = parTable,
     data       = data,
     ordered    = ordered,
     probit     = probit,
@@ -51,7 +173,7 @@ specifyModel <- function(syntax,
   is.probit     <- parsed$is.probit
   consistent    <- parsed$consistent
 
-  matricesAndInfo <- initMatrices(pt)
+  matricesAndInfo <- initMatrices(pt, higherOrderLVs = higherOrderLVs)
   matrices        <- matricesAndInfo$matrices
   info            <- matricesAndInfo$info
 
@@ -72,23 +194,24 @@ specifyModel <- function(syntax,
   ordered.x <- intersect(inds.x, ordered)
   ordered.y <- intersect(inds.y, ordered)
 
-  info$lme4.syntax  <- lme4.syntax
-  info$is.mlm       <- is.mlm
-  info$is.mcpls     <- is.mcpls
-  info$is.probit    <- is.probit
-  info$cluster      <- cluster
-  info$consistent   <- consistent
-  info$ordered      <- ordered
-  info$ordered.x    <- ordered.x
-  info$ordered.y    <- ordered.y
-  info$intTermElems <- intTermElems
-  info$intTermNames <- intTermNames
-  info$is.nlin      <- is.nlin
-  info$rng.seed     <- floor(stats::runif(1L, min=0, max=9999999))
-  info$n            <- NROW(preppedData$X)
-  info$estimator    <- getEstimatorFromInfo(info)
-  info$verbose      <- verbose
-  info$standardized <- standardize
+  info$lme4.syntax   <- lme4.syntax
+  info$is.mlm        <- is.mlm
+  info$is.mcpls      <- is.mcpls
+  info$is.probit     <- is.probit
+  info$cluster       <- cluster
+  info$consistent    <- consistent
+  info$ordered       <- ordered
+  info$ordered.x     <- ordered.x
+  info$ordered.y     <- ordered.y
+  info$intTermElems  <- intTermElems
+  info$intTermNames  <- intTermNames
+  info$is.nlin       <- is.nlin
+  info$rng.seed      <- floor(stats::runif(1L, min=0, max=9999999))
+  info$n             <- NROW(preppedData$X)
+  info$estimator     <- getEstimatorFromInfo(info)
+  info$verbose       <- verbose
+  info$standardized  <- standardize
+  info$reliabilities <- reliabilities
 
   info$mc.args <- list(
     min.iter        = mc.min.iter,
@@ -128,11 +251,9 @@ specifyModel <- function(syntax,
     fit.u          = NULL,
     params         = NULL,
     status         = list(
-      finished       = FALSE,
       convergence    = FALSE,
       iterations     = 0L,
       iterations.0_5 = 0L,
-      iterations.0_9 = 0L,
       tolerance      = tolerance,
       max.iter.0_5   = max.iter.0_5,
       is.admissible  = TRUE
@@ -150,12 +271,13 @@ specifyModel <- function(syntax,
     vcov       = NULL
   )
 
+  class(model) <- "plssemSubModel"
   model
 }
 
 
 # badly named function -- since if also returns some useful info
-initMatrices <- function(pt) {
+initMatrices <- function(pt, higherOrderLVs = NULL) {
   lvs.linear <- getLVs(pt)
 
   k      <- length(lvs.linear)
@@ -226,12 +348,14 @@ initMatrices <- function(pt) {
   succs.linear[,is.nlin] <- FALSE
 
   is.cfa <- !any(preds.linear) && !any(succs.linear)
-  preds.cfa           <- preds
-  preds.cfa[TRUE]     <- TRUE
-  diag(preds.cfa)     <- FALSE
+
+  preds.cfa                       <- preds
+  preds.cfa[TRUE]                 <- FALSE
+  preds.cfa[upper.tri(preds.cfa)] <- TRUE
+
   preds.cfa[is.nlin,] <- FALSE
   preds.cfa[,is.nlin] <- FALSE
-  succs.cfa           <- preds.cfa
+  succs.cfa           <- t(preds.cfa)
 
   # Covariance Matrix xis ------------------------------------------------------
   xis <- lvs[!lvs %in% pt[pt$op == "~", "lhs"]]
@@ -250,6 +374,7 @@ initMatrices <- function(pt) {
   diag(selectTheta) <- TRUE
   is.formative <- allInds %in% inds.b
   selectTheta[outer(is.formative, is.formative, "&")] <- TRUE
+  selectTheta[upper.tri(selectTheta, diag = FALSE)] <- FALSE
 
   # Selection Matric Indicators ------------------------------------------------
   Ip <- diag(nrow = nrow(lambda))
@@ -260,6 +385,13 @@ initMatrices <- function(pt) {
 
   C <- diag(nrow(gamma))
   dimnames(C) <- dimnames(gamma)
+
+  # Higher Order Composites ----------------------------------------------------
+  isHigherOrderComposite <- stats::setNames(
+    lvs.linear %in% mode.b & lvs.linear %in% higherOrderLVs, nm = lvs.linear
+  )
+  higherOrderComposites <- lvs.linear[isHigherOrderComposite]
+
 
   # Create output lists --------------------------------------------------------
   matrices <- list(
@@ -286,20 +418,23 @@ initMatrices <- function(pt) {
   )
 
   info <- list(
-    indsLvs    = indsLvs,
-    allInds    = allInds,
-    lvs        = lvs,
-    lvs.linear = lvs.linear,
-    etas       = etas,
-    xis        = xis,
-    inds.x     = inds.x,
-    inds.y     = inds.y,
-    inds.a     = inds.a,
-    inds.b     = inds.b,
-    mode.a     = mode.a,
-    mode.b     = mode.b,
-    modes      = modes,
-    is.cfa     = is.cfa
+    indsLvs                = indsLvs,
+    allInds                = allInds,
+    lvs                    = lvs,
+    lvs.linear             = lvs.linear,
+    etas                   = etas,
+    xis                    = xis,
+    inds.x                 = inds.x,
+    inds.y                 = inds.y,
+    inds.a                 = inds.a,
+    inds.b                 = inds.b,
+    mode.a                 = mode.a,
+    mode.b                 = mode.b,
+    modes                  = modes,
+    is.cfa                 = is.cfa,
+    higherOrderLVs         = higherOrderLVs,
+    isHigherOrderComposite = isHigherOrderComposite,
+    higherOrderComposites  = higherOrderComposites
   )
 
   list(

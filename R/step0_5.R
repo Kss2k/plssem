@@ -20,7 +20,8 @@ estimatePLS_Step0_5 <- function(model) {
     }
   }
 
-  model$status$iterations <- model$status$iterations + i
+  model$status$iterations.0_5 <- model$status$iterations.0_5 + i
+  model$status$iterations     <- model$status$iterations + i
 
   model
 }

@@ -17,6 +17,7 @@ mcpls <- function(
   data <- fit0.base$data
   vars <- colnames(data)
   ordered <- fit0$info$ordered
+  is.hi.ord <- fit0$info$is.high.ord
 
   PROBS <- getPROBS(data = data, ordered = ordered)
 
@@ -31,12 +32,15 @@ mcpls <- function(
   .f <- function(p) {
     par1[par1$is.free, "est"] <- p
 
-    sim <- simulateDataParTable(par1, N = mc.reps, seed = rng.seed)
+    sim <- simulateDataParTable(par1, N = mc.reps, seed = rng.seed, check.hi.ord = is.hi.ord)
     sim.ov <- ordinalizeDataFrame(sim$ov, PROBS = PROBS, ordered = ordered)
 
     fit.sim <- fit0.base
-    fit.sim$data <- Rfast::standardise(as.matrix(sim.ov[vars]))
-    fit.sim$matrices$S <- Rfast::cova(fit.sim$data)
+    X <- Rfast::standardise(as.matrix(sim.ov[vars]))
+    S <- Rfast::cova(X)
+
+    fit.sim$submodels$firstOrder$data <- X
+    fit.sim$submodels$firstOrder$matrices$S <- S
 
     fit2 <- estimatePLS_Inner(fit.sim)
     par2 <- getFreeParamsTable(fit2)
@@ -164,7 +168,7 @@ updateModelFromFreeParTableMC <- function(parTable, model, mc.reps,
   fitCov         <- fit$fitCov
   fitTheta       <- fit$fitTheta
 
-  select <- model$matrices$select
+  select       <- model$matrices$select
   selectLambda <- select$lambda
   selectGamma  <- select$gamma
   selectCov    <- select$cov
@@ -223,10 +227,10 @@ updateModelFromFreeParTableMC <- function(parTable, model, mc.reps,
     fitCov[i, j] <- fitCov[j, i] <- par
   }
 
-  model$fit$fitMeasurement <- fitMeasurement
-  model$fit$fitStructural  <- fitStructural
-  model$fit$fitCov         <- fitCov
-  model$fit$fitTheta       <- fitTheta
+  model$fit$fitMeasurement   <- fitMeasurement
+  model$fit$fitStructural    <- fitStructural
+  model$fit$fitCov           <- fitCov
+  model$fit$fitTheta         <- fitTheta
   model$status$is.admissible <- sim$is.admissible
 
   model$status$mcpls.update.args <- list(

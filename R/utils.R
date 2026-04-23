@@ -262,3 +262,32 @@ tr <- function(X) {
 uniqueComplete <- function(x) {
   unique(x[!is.na(x)])
 }
+
+
+getHigherOrderLVs <- function(parTable) {
+  lVs                  <- getLVs(parTable)
+  isHigherOrder        <- logical(length(lVs))
+  names(isHigherOrder) <- lVs
+
+  for (lV in lVs) {
+    inds <- parTable[parTable$lhs == lV & parTable$op %in% c("<~", "=~"), "rhs"] |>
+      stringr::str_split(pattern = ":") |> unlist()
+
+    if (any(inds %in% lVs)) isHigherOrder[[lV]] <- TRUE
+  }
+
+  if (!any(isHigherOrder)) NULL else lVs[isHigherOrder]
+}
+
+
+getParTableFromParNames <- function(parnames) {
+  OP <- "~~|=~|~1|~|<~"
+  op <- stringr::str_extract(parnames, pattern = OP)
+  lr <- stringr::str_split_fixed(parnames, pattern = OP, n = 2)
+
+  lhs <- lr[, 1]
+  rhs <- lr[, 2]
+  op[is.na(op)] <- "~"
+
+  list(lhs = lhs, op = op, rhs = rhs)
+}

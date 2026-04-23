@@ -1,4 +1,5 @@
-simulateDataParTable <- function(parTable, N = 1e5, seed = NULL, .covtol = .95) {
+simulateDataParTable <- function(parTable, N = 1e5, seed = NULL, .covtol = .95,
+                                 check.hi.ord = FALSE) {
   if (!is.null(seed) && exists(".Random.seed")) .Random.seed.orig <- .Random.seed
   else                                          .Random.seed.orig <- NULL
 
@@ -50,7 +51,10 @@ simulateDataParTable <- function(parTable, N = 1e5, seed = NULL, .covtol = .95) 
     )
   )
 
-  xis     <- getXis(parTable)
+  if (check.hi.ord)
+    parTable <- highOrdMeasrAsStructParTable(parTable)
+
+  xis     <- getXis(parTable, isLV = !check.hi.ord)
   etas    <- getSortedEtas(parTable)
   mode.a  <- getReflectiveLVs(parTable)
   mode.b  <- getFormativeLVs(parTable)

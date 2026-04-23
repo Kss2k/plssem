@@ -51,5 +51,5 @@ tpb_uk <- "
 "
 
 fit <- pls(tpb_uk, TPB_UK, ordered = colnames(TPB_UK),
-           max.iter.mc = 500, consistent = FALSE)
+           mc.max.iter = 500, consistent = FALSE)
 summary(fit)

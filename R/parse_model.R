@@ -1,7 +1,7 @@
 TEMP_OV_PREFIX <- ".TEMP_OV__"
 
 
-parseModelArguments <- function(syntax,
+parseModelArguments <- function(parTable,
                                 data,
                                 pi.match = NULL,
                                 pi.match.recycle = NULL,
@@ -9,10 +9,7 @@ parseModelArguments <- function(syntax,
                                 probit = NULL,
                                 mcpls = FALSE,
                                 consistent = TRUE) {
-  stopif(length(syntax) > 1L || !is.character(syntax),
-         "`syntax` must be a string of length 1!")
 
-  parTable <- modsem::modsemify(syntax, parentheses.as.string = TRUE)
   data     <- as.data.frame(data)
 
   intTermNames <- getIntTerms(parTable)
@@ -78,7 +75,7 @@ parseModelArguments <- function(syntax,
     cluster <- NULL
     lme4.syntax <- NULL
   }
-
+ 
   is.mcpls  <- if (is.null(mcpls)) length(ordered) > 0L && is.nlin else mcpls
   is.probit <- if (is.null(probit)) length(ordered) > 0L && !is.mcpls else probit
   is.mlm    <- length(lme4.syntax) > 0L

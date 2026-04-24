@@ -7,6 +7,7 @@ splitHigherOrderModel <- function(syntax) {
   inds <- getIndicators(parTable, observed = FALSE)
   hiOrd <- getHigherOrderLVs(parTable)
   isHigherOrder <- length(hiOrd) > 0
+  structOVs <- getStructOVs(parTable)
 
   if (isHigherOrder) {
     stopif(any(hiOrd %in% inds),
@@ -26,6 +27,14 @@ splitHigherOrderModel <- function(syntax) {
       ]
     } else {
       parStrO1 <- NULL
+    }
+
+    if (length(structOVs)) {
+      # Make sure structOVs are passed on to the model parsing for the lower
+      # order model, not just the higher order model
+      parStrO1 <- rbind(parStrO1,
+        data.frame(lhs = structOVs, op = "~~", rhs = structOVs, mod = "")
+      )
     }
 
     parMsrO2 <- parTable[

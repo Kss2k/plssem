@@ -154,8 +154,22 @@ getStructVars <- function(parTable) {
 }
 
 
+getCovOnlyVars <- function(parTable) {
+  covRows <- parTable[parTable$op == "~~", , drop = FALSE]
+  if (!NROW(covRows)) return(NULL)
+
+  covVars <- unique(c(covRows$lhs, covRows$rhs))
+  inds    <- getIndicators(parTable)
+
+  setdiff(covVars, inds)
+}
+
+
 getStructOVs <- function(parTable) {
-  intersect(getStructVars(parTable), getOVs(parTable))
+  struct <- getStructVars(parTable)
+  cov    <- getCovOnlyVars(parTable)
+
+  intersect(union(struct, cov), getOVs(parTable))
 }
 
 

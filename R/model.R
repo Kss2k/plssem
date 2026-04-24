@@ -20,7 +20,7 @@ specifyModel <- function(syntax, data, ...) {
 
   secondOrder <- specifySubModel(
     parTable       = parTableO2,
-    data           = firstOrder$data %*% firstOrder$matrices$lambda, # placeholder
+    data           = getSecondOrderData(firstOrder), # placeholder
     higherOrderLVs = hiOrdLVs,
     is.lower.order = FALSE,
     ...

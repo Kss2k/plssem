@@ -51,9 +51,9 @@ parseModelArguments <- function(parTable,
 
   syntax <- parTableToSyntax(parTable)
 
-  isMultilevel <- grepl("\\(.*\\|.*\\)", parTable$rhs) & parTable$op == "~"
+  isMultilevel <- grepl("\\(.*\\|.*\\)", parTable$rhs) & parTable$op %in% c("~", "~~")
   if (any(isMultilevel)) {
-    multilevelEtas <- unique(parTable[isMultilevel, "lhs"])
+    multilevelEtas <- unique(parTable[isMultilevel & parTable$op == "~", "lhs"])
     lme4.syntax <- character(0L)
 
     for (eta in multilevelEtas) {

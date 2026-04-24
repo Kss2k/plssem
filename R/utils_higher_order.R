@@ -19,22 +19,16 @@ splitHigherOrderModel <- function(syntax) {
       parTable$op %in% MOPS & !parTable$lhs %in% hiOrd, , drop = FALSE
     ]
 
-    isMultiLevel <- grepl("\\(.*\\|.*\\)", parTable$rhs) & parTable$op == "~"
-
-    if (any(isMultiLevel)) {
-      parStrO1 <- parTable[ # Keep multilevel info
-        isMultiLevel, , drop = FALSE
-      ]
-    } else {
-      parStrO1 <- NULL
-    }
-
     if (length(structOVs)) {
       # Make sure structOVs are passed on to the model parsing for the lower
-      # order model, not just the higher order model
-      parStrO1 <- rbind(parStrO1,
-        data.frame(lhs = structOVs, op = "~~", rhs = structOVs, mod = "")
-      )
+      # order model, not just the higher order model. This also appends multilevel
+      # cluster exprs. Since they are counted as structural variables, not
+      # observed in the measurement model.
+      parStrO1 <- data.frame(lhs = structOVs, op = "~~", rhs = structOVs, mod = "")
+
+    } else {
+      parStrO1 <- NULL
+
     }
 
     parMsrO2 <- parTable[
@@ -304,4 +298,19 @@ correctLoadingsAndWeightsSecondOrder <- function(firstOrder, secondOrder) {
 
   # Update coefficients
   estimatePLS_Step8(secondOrder)  
+}
+
+
+getSecondOrderData <- function(firstOrder) {
+  secOrdData <- as.data.frame(
+    firstOrder$data %*% firstOrder$matrices$lambda
+  )
+
+  clusterVals <- attr(firstOrder$data, "cluster")
+  clusterName <- firstOrder$info$cluster
+
+  if (!is.null(clusterName) && !is.null(clusterVals))
+    secOrdData[,clusterName] <- clusterVals
+
+  secOrdData
 }

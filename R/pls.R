@@ -367,8 +367,11 @@ estimatePLS_Inner <- function(model) {
     stopif(!all(have %in% want), "Missing construct scores for: ",
            paste0(setdiff(want, have), collapse = ", "))
 
-    secondOrder$data <- scores[,want]
-    secondOrder$matrices$S <- Rfast::cova(secondOrder$data)
+    newdata <- scores[,want] # Copy possible cluster attribute
+    attr(newdata, "cluster") <- attr(secondOrder$data, "cluster")
+
+    secondOrder$data <- newdata
+    secondOrder$matrices$S <- Rfast::cova(newdata)
     secondOrder$info$reliabilities <- firstOrder$fit$Q^2
 
     secondOrder <- estimatePLS_SubModelInner(secondOrder)

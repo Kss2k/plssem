@@ -39,6 +39,9 @@ lme4-style random effects terms inside the structural model."><!-- mathjax --><s
       <a href="../articles/categorical-models.html">Categorical Models with plssem</a>
     </li>
     <li>
+      <a href="../articles/higher-order.html">Higher Order Models</a>
+    </li>
+    <li>
       <a href="../articles/interaction-models.html">Interaction Models with plssem</a>
     </li>
     <li>
@@ -116,6 +119,7 @@ factor scores, and supports multilevel specifications expressed with
 <span>  mc.boot.control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>min.iter <span class="op">=</span> <span class="va">mc.min.iter</span>, max.iter <span class="op">=</span> <span class="va">mc.max.iter</span>, mc.reps <span class="op">=</span></span>
 <span>    <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">floor</a></span><span class="op">(</span><span class="fl">0.5</span> <span class="op">*</span> <span class="va">mc.reps</span><span class="op">)</span>, tol <span class="op">=</span> <span class="fl">2</span> <span class="op">*</span> <span class="va">mc.tol</span>, polyak.juditsky <span class="op">=</span> <span class="cn">FALSE</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>    fixed.seed <span class="op">=</span> <span class="cn">TRUE</span>, reuse.p.start <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
+<span>  reliabilities <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -267,8 +271,15 @@ to speed up bootstrapping by, for example, increasing the tolerance or reducing
 original <code>p.start</code> for the bootstrap replicates.</p></dd>
 
 
+<dt>reliabilities</dt>
+<dd><p>Optional named numeric vector of user-supplied reliabilities
+used for the PLSc consistency correction. Values are interpreted as construct
+reliabilities (i.e., squared construct quality, \(Q^2\)) for the named
+constructs. These override the internally computed construct qualities.</p></dd>
+
+
 <dt>...</dt>
-<dd><p>Currently unused, reserved for future extensions.</p></dd>
+<dd><p>Internal arguments. For advanced users only.</p></dd>
 
 </dl></div>
     <div id="value">
@@ -311,7 +322,7 @@ original <code>p.start</code> for the bootstrap replicates.</p></dd>
 <span class="r-out co"><span class="r-pr">#&gt;</span> plssem (0.1.1) ended normally after 3 iterations</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Estimator                                       PLSc</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Link                                          LINEAR</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Link                                          PROBIT</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                                                       </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Number of observations                          2000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Number of iterations                               3</span>
@@ -543,7 +554,7 @@ original <code>p.start</code> for the bootstrap replicates.</p></dd>
 <span class="r-out co"><span class="r-pr">#&gt;</span> plssem (0.1.1) ended normally after 3 iterations</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Estimator                                   PLSc-MLM</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Link                                          LINEAR</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Link                                          PROBIT</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                                                       </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Number of observations                          5000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Number of iterations                               3</span>
@@ -552,7 +563,7 @@ original <code>p.start</code> for the bootstrap replicates.</p></dd>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Fit Measures:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Chi-Square                                   127.210</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Degrees of Freedom                                50</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Degrees of Freedom                                49</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   SRMR                                           0.008</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   RMSEA                                          0.018</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
@@ -615,7 +626,7 @@ original <code>p.start</code> for the bootstrap replicates.</p></dd>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     Y~1            -0.004      0.006   -0.630    0.528</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Y~Z ~~        </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     Y~1            -0.025      0.016   -1.579    0.114</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     Y~X             0.012      0.007    1.646    0.100</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     Y~X             0.012      0.007    1.647    0.100</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   W~X ~~        </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     W~1             0.003      0.010    0.296    0.767</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   W~Z ~~        </span>
@@ -642,8 +653,8 @@ original <code>p.start</code> for the bootstrap replicates.</p></dd>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    .w3              0.229      0.021   10.828    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     Y~1             0.086      0.021    4.176    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     Y~X             0.018      0.005    3.376    0.001</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     Y~Z             0.105      0.015    6.931    0.000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     W~1             0.059      0.011    5.279    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     Y~Z             0.105      0.015    6.930    0.000</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     W~1             0.059      0.011    5.280    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     W~X             0.095      0.018    5.278    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     W~Z             0.144      0.032    4.490    0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
@@ -672,9 +683,9 @@ original <code>p.start</code> for the bootstrap replicates.</p></dd>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Fit Measures:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Chi-Square                                   263.372</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Degrees of Freedom                                50</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Degrees of Freedom                                49</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   SRMR                                           0.010</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   RMSEA                                          0.029</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   RMSEA                                          0.030</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> R-squared (indicators):</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   x1                                             0.870</span>
@@ -779,7 +790,7 @@ original <code>p.start</code> for the bootstrap replicates.</p></dd>
 <span class="r-out co"><span class="r-pr">#&gt;</span> plssem (0.1.1) ended normally after 2 iterations</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Estimator                                   PLSc-MLM</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Link                                          LINEAR</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Link                                          PROBIT</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                                                       </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Number of observations                         10000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Number of iterations                               2</span>
@@ -788,9 +799,9 @@ original <code>p.start</code> for the bootstrap replicates.</p></dd>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Fit Measures:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Chi-Square                                    24.372</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Degrees of Freedom                                20</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Degrees of Freedom                                10</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   SRMR                                           0.003</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   RMSEA                                          0.005</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   RMSEA                                          0.012</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> R-squared (indicators):</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   y1                                             0.891</span>
@@ -871,9 +882,9 @@ original <code>p.start</code> for the bootstrap replicates.</p></dd>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Fit Measures:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Chi-Square                                    25.508</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Degrees of Freedom                                20</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Degrees of Freedom                                10</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   SRMR                                           0.003</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   RMSEA                                          0.005</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   RMSEA                                          0.012</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> R-squared (indicators):</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   y1                                             0.885</span>
@@ -948,7 +959,7 @@ original <code>p.start</code> for the bootstrap replicates.</p></dd>
 <span class="r-out co"><span class="r-pr">#&gt;</span> plssem (0.1.1) ended normally after 3 iterations</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Estimator                                       PLSc</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Link                                          LINEAR</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Link                                          PROBIT</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                                                       </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Number of observations                          2000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Number of iterations                               3</span>
@@ -957,9 +968,9 @@ original <code>p.start</code> for the bootstrap replicates.</p></dd>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Fit Measures:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Chi-Square                                    56.757</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Degrees of Freedom                                24</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Degrees of Freedom                                21</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   SRMR                                           0.006</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   RMSEA                                          0.026</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   RMSEA                                          0.029</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> R-squared (indicators):</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   x1                                             0.863</span>
@@ -1048,7 +1059,7 @@ original <code>p.start</code> for the bootstrap replicates.</p></dd>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Fit Measures:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Chi-Square                                    19.620</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Degrees of Freedom                                24</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Degrees of Freedom                                21</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   SRMR                                           0.012</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   RMSEA                                          0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>

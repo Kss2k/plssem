@@ -1,0 +1,53 @@
+---
+title: "Higher Order Models"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Higher Order Models}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+EVAL_DEFAULT <- FALSE
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(plssem)
+```
+
+# Higher Order Constructs
+
+It is possible to estimate models with second order construcst with the `pls()` function,
+using the two-stage approach. Here we see an example using the `TPB_2SO` dataset,
+from the `modsem` package.
+The model below contains two second order latent variables,
+`INT` (intention) which is a second order latent variable of `ATT` (attitude) and `SN` (subjective norm),
+and `PBC` (perceived behavioural control) which is a second order latent variable of
+`PC` (perceived control) and `PB` (perceived behaviour).
+
+```{r}
+library(modsem)
+
+tpb_2so <- '
+  # First order latent variables
+  ATT =~ att1 + att2 + att3
+  SN  =~ sn1 + sn2 + sn3
+  PB =~ pb1 + pb2 + pb3
+  PC =~ pc1 + pc2 + pc3
+  BEH =~ b1 + b2
+
+  # Higher order latent variables
+  INT =~ ATT + SN
+  PBC =~ PC + PB
+
+  # Structural model
+  BEH ~ PBC + INT + INT:PBC
+'
+
+fit <- pls(tpb_2so, data = TPB_2SO, bootstrap = TRUE, boot.R = 50)
+summary(fit)
+```

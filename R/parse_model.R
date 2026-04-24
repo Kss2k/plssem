@@ -1,19 +1,14 @@
 TEMP_OV_PREFIX <- ".TEMP_OV__"
 
 
-parseModelArguments <- function(syntax,
+parseModelArguments <- function(parTable,
                                 data,
-                                pi.match = NULL,
-                                pi.match.recycle = NULL,
                                 ordered = NULL,
                                 probit = NULL,
                                 mcpls = FALSE,
-                                consistent = TRUE) {
-  stopif(length(syntax) > 1L || !is.character(syntax),
-         "`syntax` must be a string of length 1!")
-
-  parTable <- modsem::modsemify(syntax, parentheses.as.string = TRUE)
-  data     <- as.data.frame(data)
+                                consistent = TRUE,
+                                is.lower.order = FALSE) {
+  data <- as.data.frame(data)
 
   intTermNames <- getIntTerms(parTable)
   intTermElems <- stringr::str_split(intTermNames, pattern = ":")
@@ -56,9 +51,9 @@ parseModelArguments <- function(syntax,
 
   syntax <- parTableToSyntax(parTable)
 
-  isMultilevel <- grepl("\\(.*\\|.*\\)", parTable$rhs) & parTable$op == "~"
+  isMultilevel <- grepl("\\(.*\\|.*\\)", parTable$rhs) & parTable$op %in% c("~", "~~")
   if (any(isMultilevel)) {
-    multilevelEtas <- unique(parTable[isMultilevel, "lhs"])
+    multilevelEtas <- unique(parTable[isMultilevel & parTable$op == "~", "lhs"])
     lme4.syntax <- character(0L)
 
     for (eta in multilevelEtas) {
@@ -79,8 +74,9 @@ parseModelArguments <- function(syntax,
     lme4.syntax <- NULL
   }
 
-  is.mcpls  <- if (is.null(mcpls)) length(ordered) > 0L && is.nlin else mcpls
-  is.probit <- if (is.null(probit)) length(ordered) > 0L && !is.mcpls else probit
+  has.ord <- length(ordered) > 0L
+  is.mcpls  <- if (is.null(mcpls)) has.ord && (is.nlin || is.lower.order) else mcpls
+  is.probit <- if (is.null(probit)) has.ord && !is.mcpls else probit
   is.mlm    <- length(lme4.syntax) > 0L
 
   list(

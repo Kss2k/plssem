@@ -53,6 +53,9 @@
       <a href="../articles/categorical-models.html">Categorical Models with plssem</a>
     </li>
     <li>
+      <a href="../articles/higher-order.html">Higher Order Models</a>
+    </li>
+    <li>
       <a href="../articles/interaction-models.html">Interaction Models with plssem</a>
     </li>
     <li>
@@ -148,9 +151,9 @@
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fit Measures:</span></span>
 <span><span class="co">#&gt;   Chi-Square                                     0.000</span></span>
-<span><span class="co">#&gt;   Degrees of Freedom                                 1</span></span>
+<span><span class="co">#&gt;   Degrees of Freedom                                 0</span></span>
 <span><span class="co">#&gt;   SRMR                                           0.000</span></span>
-<span><span class="co">#&gt;   RMSEA                                          0.000</span></span>
+<span><span class="co">#&gt;   RMSEA                                            NaN</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; R-squared (latents):</span></span>
 <span><span class="co">#&gt;   Survived                                       0.347</span></span>
@@ -158,17 +161,17 @@
 <span><span class="co">#&gt; Regressions:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   Survived ~    </span></span>
-<span><span class="co">#&gt;     Age            -0.043      0.041   -1.048    0.295</span></span>
-<span><span class="co">#&gt;     Female          0.584      0.026   22.367    0.000</span></span>
+<span><span class="co">#&gt;     Age            -0.043      0.043   -1.021    0.307</span></span>
+<span><span class="co">#&gt;     Female          0.584      0.030   19.353    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Covariances:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   Age ~~        </span></span>
-<span><span class="co">#&gt;     Female         -0.093      0.035   -2.658    0.008</span></span>
+<span><span class="co">#&gt;     Female         -0.093      0.036   -2.616    0.009</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Variances:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;    .Survived        0.653      0.032   20.371    0.000</span></span>
+<span><span class="co">#&gt;    .Survived        0.653      0.035   18.669    0.000</span></span>
 <span><span class="co">#&gt;     Age             1.000                             </span></span>
 <span><span class="co">#&gt;     Female          1.000</span></span></code></pre></div>
 <p>Optional: evaluate predictive performance.</p>
@@ -245,43 +248,43 @@
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit_int</span><span class="op">)</span></span>
-<span><span class="co">#&gt; plssem (0.1.1) ended normally after 71 iterations</span></span>
+<span><span class="co">#&gt; plssem (0.1.1) ended normally after 51 iterations</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Estimator                                  MCOrdPLSc</span></span>
 <span><span class="co">#&gt;   Link                                          PROBIT</span></span>
 <span><span class="co">#&gt;                                                       </span></span>
 <span><span class="co">#&gt;   Number of observations                           714</span></span>
-<span><span class="co">#&gt;   Number of iterations                              71</span></span>
+<span><span class="co">#&gt;   Number of iterations                              51</span></span>
 <span><span class="co">#&gt;   Number of latent variables                         0</span></span>
 <span><span class="co">#&gt;   Number of observed variables                       3</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fit Measures:</span></span>
-<span><span class="co">#&gt;   Chi-Square                                     0.042</span></span>
-<span><span class="co">#&gt;   Degrees of Freedom                                 0</span></span>
-<span><span class="co">#&gt;   SRMR                                           0.003</span></span>
-<span><span class="co">#&gt;   RMSEA                                            Inf</span></span>
+<span><span class="co">#&gt;   Chi-Square                                     0.099</span></span>
+<span><span class="co">#&gt;   Degrees of Freedom                                -3</span></span>
+<span><span class="co">#&gt;   SRMR                                           0.004</span></span>
+<span><span class="co">#&gt;   RMSEA                                            NaN</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; R-squared (latents):</span></span>
-<span><span class="co">#&gt;   Survived                                       0.555</span></span>
+<span><span class="co">#&gt;   Survived                                       0.568</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Regressions:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   Survived ~    </span></span>
-<span><span class="co">#&gt;     Age            -0.071      0.038   -1.895    0.058</span></span>
-<span><span class="co">#&gt;     Female          0.695      0.035   19.722    0.000</span></span>
-<span><span class="co">#&gt;     Age:Female      0.253      0.060    4.224    0.000</span></span>
+<span><span class="co">#&gt;     Age            -0.071      0.033   -2.183    0.029</span></span>
+<span><span class="co">#&gt;     Female          0.697      0.041   16.849    0.000</span></span>
+<span><span class="co">#&gt;     Age:Female      0.253      0.076    3.316    0.001</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Covariances:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   Age ~~        </span></span>
-<span><span class="co">#&gt;     Female         -0.092      0.037   -2.489    0.013</span></span>
-<span><span class="co">#&gt;     Age:Female      0.013      0.014    0.941    0.347</span></span>
+<span><span class="co">#&gt;     Female         -0.093      0.037   -2.492    0.013</span></span>
+<span><span class="co">#&gt;     Age:Female      0.000      0.015    0.026    0.979</span></span>
 <span><span class="co">#&gt;   Female ~~     </span></span>
-<span><span class="co">#&gt;     Age:Female     -0.015      0.015   -1.020    0.308</span></span>
+<span><span class="co">#&gt;     Age:Female      0.011      0.015    0.723    0.470</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Variances:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;    .Survived        0.445      0.066    6.762    0.000</span></span>
+<span><span class="co">#&gt;    .Survived        0.432      0.085    5.067    0.000</span></span>
 <span><span class="co">#&gt;     Age             1.000                             </span></span>
 <span><span class="co">#&gt;     Female          1.000                             </span></span>
 <span><span class="co">#&gt;     Age:Female      1.000</span></span></code></pre></div>
@@ -292,30 +295,30 @@
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Y [714 x 4] (head)</span></span>
 <span><span class="co">#&gt;   Survvd    Age Female Ag:Fml</span></span>
-<span><span class="co">#&gt; 1 -0.365 -0.530 -0.759  0.495</span></span>
-<span><span class="co">#&gt; 2  1.088  0.571  1.317  0.845</span></span>
-<span><span class="co">#&gt; 3  0.873 -0.255  1.317 -0.242</span></span>
-<span><span class="co">#&gt; 4  1.034  0.365  1.317  0.574</span></span>
-<span><span class="co">#&gt; 5 -0.600  0.365 -0.759 -0.184</span></span>
-<span><span class="co">#&gt; 7 -0.944  1.673 -0.759 -1.176</span></span>
+<span><span class="co">#&gt; 1 -0.366 -0.530 -0.759  0.495</span></span>
+<span><span class="co">#&gt; 2  1.091  0.571  1.317  0.845</span></span>
+<span><span class="co">#&gt; 3  0.875 -0.255  1.317 -0.242</span></span>
+<span><span class="co">#&gt; 4  1.037  0.365  1.317  0.574</span></span>
+<span><span class="co">#&gt; 5 -0.601  0.365 -0.759 -0.184</span></span>
+<span><span class="co">#&gt; 7 -0.946  1.673 -0.759 -1.176</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; X.cont [714 x 3] (head)</span></span>
 <span><span class="co">#&gt;   Survvd    Age Female</span></span>
-<span><span class="co">#&gt; 1 -0.635 -0.530 -0.759</span></span>
+<span><span class="co">#&gt; 1 -0.637 -0.530 -0.759</span></span>
 <span><span class="co">#&gt; 2  0.933  0.571  1.317</span></span>
 <span><span class="co">#&gt; 3  0.933 -0.255  1.317</span></span>
 <span><span class="co">#&gt; 4  0.933  0.365  1.317</span></span>
-<span><span class="co">#&gt; 5 -0.635  0.365 -0.759</span></span>
-<span><span class="co">#&gt; 7 -0.635  1.673 -0.759</span></span>
+<span><span class="co">#&gt; 5 -0.637  0.365 -0.759</span></span>
+<span><span class="co">#&gt; 7 -0.637  1.673 -0.759</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; X.cont.pred [714 x 3] (head)</span></span>
 <span><span class="co">#&gt;   Survvd    Age Female</span></span>
-<span><span class="co">#&gt; 1 -0.365 -0.530 -0.759</span></span>
-<span><span class="co">#&gt; 2  1.088  0.571  1.317</span></span>
-<span><span class="co">#&gt; 3  0.873 -0.255  1.317</span></span>
-<span><span class="co">#&gt; 4  1.034  0.365  1.317</span></span>
-<span><span class="co">#&gt; 5 -0.600  0.365 -0.759</span></span>
-<span><span class="co">#&gt; 7 -0.944  1.673 -0.759</span></span>
+<span><span class="co">#&gt; 1 -0.366 -0.530 -0.759</span></span>
+<span><span class="co">#&gt; 2  1.091  0.571  1.317</span></span>
+<span><span class="co">#&gt; 3  0.875 -0.255  1.317</span></span>
+<span><span class="co">#&gt; 4  1.037  0.365  1.317</span></span>
+<span><span class="co">#&gt; 5 -0.601  0.365 -0.759</span></span>
+<span><span class="co">#&gt; 7 -0.946  1.673 -0.759</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; X.ord [714 x 3] (head)</span></span>
 <span><span class="co">#&gt;   Survvd    Age Female</span></span>

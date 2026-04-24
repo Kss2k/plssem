@@ -100,7 +100,12 @@ USE_NON_LINEAR_PROBIT_CORR_MAT <- FALSE # for now we stick with the linear assum
 #'   \code{mc.reps}. The element \code{reuse.p.start} controls whether to reuse the
 #'   original \code{p.start} for the bootstrap replicates.
 #'
-#' @param ... Currently unused, reserved for future extensions.
+#' @param reliabilities Optional named numeric vector of user-supplied reliabilities
+#'   used for the PLSc consistency correction. Values are interpreted as construct
+#'   reliabilities (i.e., squared construct quality, \eqn{Q^2}) for the named
+#'   constructs. These override the internally computed construct qualities.
+#'
+#' @param ... Internal arguments. For advanced users only.
 #'
 #' @return An object of class \code{plssem} containing the estimated parameters, fit
 #'   measures, factor scores, and any bootstrap results. Methods such as
@@ -254,6 +259,7 @@ pls <- function(syntax,
                   fixed.seed      = TRUE,
                   reuse.p.start   = TRUE
                 ),
+                reliabilities = NULL,
                 ...) {
 
   missing <- match.arg(tolower(missing), c("listwise", "mean", "knn"))
@@ -268,6 +274,7 @@ pls <- function(syntax,
   data <- as.data.frame(data)
 
   # Define model
+  # If there is no higher order model we only have the path
   model <- specifyModel(
     syntax             = syntax,
     data               = data,
@@ -294,7 +301,9 @@ pls <- function(syntax,
     boot.iseed         = boot.iseed,
     boot.optimize      = boot.optimize,
     mc.boot.control    = mc.boot.control,
-    knn.k              = knn.k
+    knn.k              = knn.k,
+    reliabilities      = reliabilities,
+    ...
   )
 
   # Fit model
@@ -313,7 +322,7 @@ pls <- function(syntax,
 }
 
 
-resetPLS_Model <- function(model, hard.reset = FALSE) {
+resetPLS_SubModel <- function(model, hard.reset = FALSE) {
   model$status$finished       <- FALSE
   model$status$convergence    <- FALSE
   model$status$iterations.0_5 <- 0L
@@ -328,14 +337,55 @@ resetPLS_Model <- function(model, hard.reset = FALSE) {
 }
 
 
-estimatePLS_Inner <- function(model) {
-  model <- resetPLS_Model(model, hard.reset = TRUE)
+estimatePLS_SubModelInner <- function(submodel) {
+  submodel <- resetPLS_SubModel(submodel, hard.reset = TRUE)
 
-  resetPLS_Model(model) |>
+  resetPLS_SubModel(submodel) |>
     estimatePLS_Step0_5() |>
     estimatePLS_Step6() |>
     estimatePLS_Step7() |>
     estimatePLS_Step8()
+}
+
+
+estimatePLS_Inner <- function(model) {
+  submodels   <- model$submodels
+  firstOrder  <- submodels$firstOrder
+  secondOrder <- submodels$secondOrder
+
+  firstOrder <- estimatePLS_SubModelInner(firstOrder)
+
+  if (!is.null(secondOrder)) {
+    scores <- getFactorScores(firstOrder)
+    
+    want <- colnames(secondOrder$data)
+    have <- colnames(scores)
+
+    have[!have %in% want] <- paste0(TEMP_OV_PREFIX, have[!have %in% want])
+    colnames(scores) <- have
+
+    stopif(!all(have %in% want), "Missing construct scores for: ",
+           paste0(setdiff(want, have), collapse = ", "))
+
+    newdata <- scores[,want] # Copy possible cluster attribute
+    attr(newdata, "cluster") <- attr(firstOrder$data, "cluster")
+
+    secondOrder$data <- newdata
+    secondOrder$matrices$S <- Rfast::cova(newdata)
+    secondOrder$info$reliabilities <- firstOrder$fit$Q^2
+
+    secondOrder <- estimatePLS_SubModelInner(secondOrder)
+    secondOrder <- correctLoadingsAndWeightsSecondOrder(
+      firstOrder = firstOrder, secondOrder = secondOrder
+    )
+  }
+
+  model$submodels <- list(
+    firstOrder  = firstOrder,
+    secondOrder = secondOrder
+  )
+
+  combineModelResultsFirstSecondOrder(model)
 }
 
 

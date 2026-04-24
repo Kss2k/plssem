@@ -154,8 +154,22 @@ getStructVars <- function(parTable) {
 }
 
 
+getCovOnlyVars <- function(parTable) {
+  covRows <- parTable[parTable$op == "~~", , drop = FALSE]
+  if (!NROW(covRows)) return(NULL)
+
+  covVars <- unique(c(covRows$lhs, covRows$rhs))
+  inds    <- getIndicators(parTable)
+
+  setdiff(covVars, inds)
+}
+
+
 getStructOVs <- function(parTable) {
-  intersect(getStructVars(parTable), getOVs(parTable))
+  struct <- getStructVars(parTable)
+  cov    <- getCovOnlyVars(parTable)
+
+  intersect(union(struct, cov), getOVs(parTable))
 }
 
 
@@ -261,4 +275,43 @@ tr <- function(X) {
 
 uniqueComplete <- function(x) {
   unique(x[!is.na(x)])
+}
+
+
+getHigherOrderLVs <- function(parTable) {
+  lVs                  <- getLVs(parTable)
+  isHigherOrder        <- logical(length(lVs))
+  names(isHigherOrder) <- lVs
+
+  for (lV in lVs) {
+    inds <- parTable[parTable$lhs == lV & parTable$op %in% c("<~", "=~"), "rhs"] |>
+      stringr::str_split(pattern = ":") |> unlist()
+
+    if (any(inds %in% lVs)) isHigherOrder[[lV]] <- TRUE
+  }
+
+  if (!any(isHigherOrder)) NULL else lVs[isHigherOrder]
+}
+
+
+getParTableFromParNames <- function(parnames) {
+  OP <- "~~|=~|~1|~|<~"
+  op <- stringr::str_extract(parnames, pattern = OP)
+  lr <- stringr::str_split_fixed(parnames, pattern = OP, n = 2)
+
+  lhs <- lr[, 1]
+  rhs <- lr[, 2]
+  op[is.na(op)] <- "~"
+
+  list(lhs = lhs, op = op, rhs = rhs)
+}
+
+
+namedListUnion <- function(x, y) {
+  if      (is.null(y)) return(x)
+  else if (is.null(x)) return(y)
+
+  new <- setdiff(names(y), names(x))
+  x[new] <- y[new]
+  x
 }

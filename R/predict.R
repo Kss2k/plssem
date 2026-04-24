@@ -31,6 +31,7 @@ pls_predict <- function(object,
   #  2. Allow the user to pass ordinal variables with a subset of categories
   #  3. Use standardization parameters from the training data, don't just
   #     standardize the test data directly.
+  info <- object$info
 
   approach <- match.arg(tolower(approach), c("earliest", "direct"))
   benchmark.vars <- match.arg(tolower(benchmark.vars), c("endog", "exog", "all"))
@@ -45,12 +46,28 @@ pls_predict <- function(object,
   X.ord  <- outerX$X.ord
   ordered <- intersect(ordered, colnames(X.cont))
 
+  if (info$is.high.ord) {
+    lvs.hi.ord <- info$lvs.hi.ord
+
+    W.lv <- W[rownames(W) %in% colnames(W), lvs.hi.ord, drop = FALSE]
+    W.ov <- W[rownames(W) %in% colnames(X.cont),
+              colnames(W) %in% rownames(W.lv), drop = FALSE]
+
+    # Redefine measurement model as repeated indicators
+    W <- W[rownames(W) %in% colnames(X.cont), , drop = FALSE]
+    W[,lvs.hi.ord] <- W.ov %*% W.lv
+  }
+
   Y <- X.cont %*% W
 
   if (approach == "earliest") {
     parTable <- getParTableEstimates(object, rm.tmp = FALSE)
-    xis      <- getXis(parTable)
-    etas     <- getSortedEtas(parTable)
+
+    if (info$is.high.ord)
+      parTable <- highOrdMeasrAsStructParTable(parTable)
+
+    xis  <- getXis(parTable, isLV = !info$is.high.ord)
+    etas <- getSortedEtas(parTable)
 
     undefIntTerms <- getIntTerms(parTable)
     elemsIntTerms <- stringr::str_split(undefIntTerms, pattern = ":")
@@ -90,7 +107,8 @@ pls_predict <- function(object,
     Y <- as.matrix(Y.sub[colnames(Y)])
   }
 
-  X.cont.pred <- Y %*% t(L)
+  L.ov <- L[rownames(L) %in% colnames(X.cont), , drop = FALSE]
+  X.cont.pred <- Y %*% t(L.ov)
 
   if (length(ordered)) {
     Tau <- outerX$Tau

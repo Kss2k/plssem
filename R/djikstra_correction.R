@@ -92,21 +92,49 @@ getConsistentLoadings <- function(model, Q) {
 
 getConstructQualities <- function(model) {
   gamma   <- model$matrices$gamma
+  lambda  <- model$matrices$lambda
+
   lvs     <- model$info$lvs.linear
   modes   <- model$info$modes
   indsLvs <- model$info$indsLvs
-  lambda  <- model$matrices$lambda
+  rel     <- model$info$reliabilities # user supplied reliabilities (Q^2)
+
+  isHigherOrderComposite <- model$info$isHigherOrderComposite
+  
   # S = sample covariance matrix
   S <- model$matrices$S
+
   Q <- vector("numeric", length(lvs))
   names(Q) <- lvs
 
   for (lv in lvs) {
     inds.lv <- indsLvs[[lv]]
 
-    if (length(inds.lv) <= 1L || modes[[lv]] != "A") {
+    if (lv %in% names(rel)) {
+      Q[[lv]] <- sqrt(rel[[lv]])
+      next
+
+    } else if (isHigherOrderComposite[[lv]] && !is.null(rel)) {
+
+      w.i   <- lambda[inds.lv, lv, drop = FALSE]
+      S.ii  <- S[inds.lv, inds.lv, drop = FALSE]
+      w.i.t <- t(w.i)
+
+      # Indicator Reliabilities
+      idx <- intersect(inds.lv, names(rel))
+      diag(S.ii)[idx] <- rel[idx]
+
+      # Check if reliabilites are specified for indicators
+      # Used for higher order constructs
+      Q.i2 <- c(w.i.t %*% S.ii %*% w.i)
+      Q[[lv]] <- sqrt(Q.i2)
+
+      next
+
+    } else if (length(inds.lv) <= 1L || modes[[lv]] != "A") {
       Q[[lv]] <- 1
       next
+
     }
 
     w.i   <- lambda[inds.lv, lv, drop = FALSE]
@@ -119,9 +147,7 @@ getConstructQualities <- function(model) {
     )
 
     Q.i2 <- (w.i.t %*% w.i)^2 * c.i^2
-    Q.i  <- sqrt(Q.i2)
-
-    Q[[lv]] <- Q.i
+    Q[[lv]] <- sqrt(Q.i2)
   }
 
   Q

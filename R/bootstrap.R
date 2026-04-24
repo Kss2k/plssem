@@ -50,10 +50,12 @@ bootstrap <- function(model,
     if (verbose) progress(i)
 
     tryCatch({
-      sampleData         <- resample(data, cluster = cluster)
-      model.b            <- model.base
-      model.b$matrices$S <- getCorrMat(sampleData, ordered = ordered, probit = is.probit)
-      model.b$data       <- sampleData
+      sampleData <- resample(data, cluster = cluster)
+      sampleS    <- getCorrMat(sampleData, ordered = ordered, probit = is.probit)
+      model.b    <- model.base
+
+      model.b$submodels$firstOrder$data       <- sampleData
+      model.b$submodels$firstOrder$matrices$S <- sampleS
 
       mc.args         <- model.b$info$mc.args
       boot.fixed.seed <- mc.boot.control$fixed.seed
@@ -186,7 +188,7 @@ bootstrap <- function(model,
   rownames(resultsMat) <- ids
   colnames(resultsMat) <- names(model$params$values)
 
-  vcov <- cov(resultsMat, use = "complete.obs")
+  vcov <- stats::cov(resultsMat, use = "complete.obs")
   se <- sqrt(diag(vcov))
   se[se <= zero.tol] <- NA_real_
 

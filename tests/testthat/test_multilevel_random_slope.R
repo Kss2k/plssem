@@ -9,10 +9,11 @@ syntax <- "
   W ~ X + Z + (1 + X + Z | cluster)
 "
 
-fit.c <- pls(syntax, data = randomSlopes,
-           consistent = TRUE, bootstrap = TRUE)
-summary(fit.c)
-
+testthat::expect_no_error({
+  fit.c <- pls(syntax, data = randomSlopes,
+             consistent = TRUE, bootstrap = TRUE)
+  summary(fit.c)
+})
 
 syntax <- "
   X =~ x1 + x2 + x3
@@ -23,10 +24,11 @@ syntax <- "
   W ~ X + Z + (1 + X + Z | cluster)
 "
 
-fit.o <- pls(syntax, data = randomSlopesOrdered,
-           consistent = TRUE, bootstrap = TRUE)
-summary(fit.o)
-
+testthat::expect_no_error({
+  fit.o <- pls(syntax, data = randomSlopesOrdered,
+             consistent = TRUE, bootstrap = TRUE)
+  summary(fit.o)
+})
 
 # With interaction terms
 
@@ -39,6 +41,8 @@ syntax <- "
   W ~ X + Z + X:Z + (1 + X + Z + X:Z | cluster)
 "
 
-fit.c <- pls(syntax, data = randomSlopes,
-             consistent = TRUE, bootstrap = FALSE)
-summary(fit.c)
+testthat::expect_no_error({
+  fit.c <- pls(syntax, data = randomSlopes,
+               consistent = TRUE, bootstrap = FALSE)
+  summary(fit.c)
+})

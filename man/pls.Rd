@@ -34,6 +34,7 @@ pls(
   mc.boot.control = list(min.iter = mc.min.iter, max.iter = mc.max.iter, mc.reps =
     floor(0.5 * mc.reps), tol = 2 * mc.tol, polyak.juditsky = FALSE, verbose = FALSE,
     fixed.seed = TRUE, reuse.p.start = TRUE),
+  reliabilities = NULL,
   ...
 )
 }
@@ -129,7 +130,12 @@ to speed up bootstrapping by, for example, increasing the tolerance or reducing
 \code{mc.reps}. The element \code{reuse.p.start} controls whether to reuse the
 original \code{p.start} for the bootstrap replicates.}
 
-\item{...}{Currently unused, reserved for future extensions.}
+\item{reliabilities}{Optional named numeric vector of user-supplied reliabilities
+used for the PLSc consistency correction. Values are interpreted as construct
+reliabilities (i.e., squared construct quality, \eqn{Q^2}) for the named
+constructs. These override the internally computed construct qualities.}
+
+\item{...}{Internal arguments. For advanced users only.}
 }
 \value{
 An object of class \code{plssem} containing the estimated parameters, fit

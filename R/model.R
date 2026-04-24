@@ -5,11 +5,6 @@ DF_STRUCT <- data.frame(NULL)
 VEC_STRUCT <- numeric(0)
 
 
-`%|<->|%` <- function(x, y) {
-  (!is.null(x) && x) || (!is.null(y) && y)
-}
-
-
 specifyModel <- function(syntax, data, ...) {
   split      <- splitHigherOrderModel(syntax)
   parTableO2 <- split$parTableO2

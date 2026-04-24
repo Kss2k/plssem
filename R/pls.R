@@ -100,6 +100,11 @@ USE_NON_LINEAR_PROBIT_CORR_MAT <- FALSE # for now we stick with the linear assum
 #'   \code{mc.reps}. The element \code{reuse.p.start} controls whether to reuse the
 #'   original \code{p.start} for the bootstrap replicates.
 #'
+#' @param reliabilities Optional named numeric vector of user-supplied reliabilities
+#'   used for the PLSc consistency correction. Values are interpreted as construct
+#'   reliabilities (i.e., squared construct quality, \eqn{Q^2}) for the named
+#'   constructs. These override the internally computed construct qualities.
+#'
 #' @param ... Internal arguments. For advanced users only.
 #'
 #' @return An object of class \code{plssem} containing the estimated parameters, fit

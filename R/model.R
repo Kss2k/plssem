@@ -11,11 +11,19 @@ specifyModel <- function(syntax, data, ...) {
   parTableO1 <- split$parTableO1
   hiOrdLVs   <- split$higherOrderLVs
 
-  firstOrder <- specifySubModel(parTable = parTableO1, data = data, ...)
+  firstOrder <- specifySubModel(
+    parTable       = parTableO1,
+    data           = data,
+    is.lower.order = NROW(parTableO2) > 0,
+    ...
+  )
+
   secondOrder <- specifySubModel(
     parTable       = parTableO2,
     data           = firstOrder$data %*% firstOrder$matrices$lambda, # placeholder
-    higherOrderLVs = hiOrdLVs 
+    higherOrderLVs = hiOrdLVs,
+    is.lower.order = FALSE,
+    ...
   )
 
   info1 <- firstOrder$info
@@ -38,6 +46,21 @@ specifyModel <- function(syntax, data, ...) {
 
     inds.y <- intersect(ovInds, yInds)
     inds.x <- setdiff(ovInds, yInds)
+  }
+
+  is.high.ord <- !is.null(secondOrder)
+  ordered <- union(info1$ordered, info2$ordered)
+
+  is.mcpls <- (
+    isTRUE(info1$is.mcpls) || isTRUE(info2$is.mcpls) || # check if eiter sub model is
+    (length(ordered) > 0 && is.high.ord)                # We also switch to MC-PLS for
+  )                                                     # higher order probit models
+    
+  if (is.mcpls && isTRUE(firstOrder$info$is.probit)) {
+    # If the full model uses MC-PLS we should disable probit estimation
+    # for the first order model
+    firstOrder$info$is.probit <- FALSE
+    firstOrder$matrices$S <- getCorrMat(firstOrder$data, probit = FALSE)
   }
 
   # Class Fields
@@ -72,15 +95,15 @@ specifyModel <- function(syntax, data, ...) {
       ordered      = info1$ordered,
 
       is.mlm       = isTRUE(info1$is.mlm) || isTRUE(info2$is.mlm),
-      is.mcpls     = isTRUE(info1$is.mcpls) || isTRUE(info2$is.mcpls),
+      is.mcpls     = is.mcpls,
       is.probit    = isTRUE(info1$is.probit) || isTRUE(info2$is.probit),
       is.cfa       = isTRUE(info1$is.cfa) && (is.null(info1$is.cfa) || info1$is.cfa),
-      is.high.ord  = !is.null(secondOrder),
+      is.high.ord  = is.high.ord,
 
       n            = info1$n,
       estimator    = info1$estimator,
       standardized = info1$standardized,
-      verbose      = info1$verbose %|<->|% info2$verbose,
+      verbose      = isTRUE(info1$verbose) || isTRUE(info2$verbose),
 
       mc.args      = info1$mc.args,
       boot         = info1$boot,
@@ -117,6 +140,7 @@ specifyModel <- function(syntax, data, ...) {
 
 specifySubModel <- function(parTable,
                             data,
+                            is.lower.order     = FALSE,
                             consistent         = TRUE,
                             missing            = "listwise",
                             standardize        = TRUE,
@@ -147,12 +171,13 @@ specifySubModel <- function(parTable,
     return(NULL)
 
   parsed <- parseModelArguments(
-    parTable   = parTable,
-    data       = data,
-    ordered    = ordered,
-    probit     = probit,
-    mcpls      = mcpls,
-    consistent = consistent
+    parTable       = parTable,
+    data           = data,
+    ordered        = ordered,
+    probit         = probit,
+    mcpls          = mcpls,
+    consistent     = consistent,
+    is.lower.order = is.lower.order
   )
 
   syntax        <- parsed$syntax

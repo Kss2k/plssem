@@ -75,5 +75,7 @@ sem.syntax <- '
 
 fit <- pls(sem.syntax, data = data)
 summary(fit)
+pls_predict(fit)
 
-fit <- pls(sem.syntax, data = data, mcpls = TRUE, consistent = TRUE)
+fit <- pls(sem.syntax, data = data, mcpls = TRUE)
+pls_predict(fit)

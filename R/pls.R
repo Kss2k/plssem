@@ -368,7 +368,7 @@ estimatePLS_Inner <- function(model) {
            paste0(setdiff(want, have), collapse = ", "))
 
     newdata <- scores[,want] # Copy possible cluster attribute
-    attr(newdata, "cluster") <- attr(secondOrder$data, "cluster")
+    attr(newdata, "cluster") <- attr(firstOrder$data, "cluster")
 
     secondOrder$data <- newdata
     secondOrder$matrices$S <- Rfast::cova(newdata)

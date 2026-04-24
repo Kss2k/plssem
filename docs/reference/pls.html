@@ -39,6 +39,9 @@ lme4-style random effects terms inside the structural model."><!-- mathjax --><s
       <a href="../articles/categorical-models.html">Categorical Models with plssem</a>
     </li>
     <li>
+      <a href="../articles/higher-order.html">Higher Order Models</a>
+    </li>
+    <li>
       <a href="../articles/interaction-models.html">Interaction Models with plssem</a>
     </li>
     <li>
@@ -116,6 +119,7 @@ factor scores, and supports multilevel specifications expressed with
 <span>  mc.boot.control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>min.iter <span class="op">=</span> <span class="va">mc.min.iter</span>, max.iter <span class="op">=</span> <span class="va">mc.max.iter</span>, mc.reps <span class="op">=</span></span>
 <span>    <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">floor</a></span><span class="op">(</span><span class="fl">0.5</span> <span class="op">*</span> <span class="va">mc.reps</span><span class="op">)</span>, tol <span class="op">=</span> <span class="fl">2</span> <span class="op">*</span> <span class="va">mc.tol</span>, polyak.juditsky <span class="op">=</span> <span class="cn">FALSE</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>    fixed.seed <span class="op">=</span> <span class="cn">TRUE</span>, reuse.p.start <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
+<span>  reliabilities <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -267,8 +271,15 @@ to speed up bootstrapping by, for example, increasing the tolerance or reducing
 original <code>p.start</code> for the bootstrap replicates.</p></dd>
 
 
+<dt>reliabilities</dt>
+<dd><p>Optional named numeric vector of user-supplied reliabilities
+used for the PLSc consistency correction. Values are interpreted as construct
+reliabilities (i.e., squared construct quality, \(Q^2\)) for the named
+constructs. These override the internally computed construct qualities.</p></dd>
+
+
 <dt>...</dt>
-<dd><p>Currently unused, reserved for future extensions.</p></dd>
+<dd><p>Internal arguments. For advanced users only.</p></dd>
 
 </dl></div>
     <div id="value">
@@ -320,9 +331,9 @@ original <code>p.start</code> for the bootstrap replicates.</p></dd>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Fit Measures:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Chi-Square                                   106.316</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Degrees of Freedom                                82</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Degrees of Freedom                               115</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   SRMR                                           0.008</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   RMSEA                                          0.012</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   RMSEA                                          0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> R-squared (indicators):</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   att1                                           0.847</span>
@@ -438,9 +449,9 @@ original <code>p.start</code> for the bootstrap replicates.</p></dd>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Fit Measures:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Chi-Square                                   263.165</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Degrees of Freedom                                82</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Degrees of Freedom                               115</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   SRMR                                           0.011</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   RMSEA                                          0.033</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   RMSEA                                          0.025</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> R-squared (indicators):</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   att1                                           0.862</span>
@@ -552,9 +563,9 @@ original <code>p.start</code> for the bootstrap replicates.</p></dd>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Fit Measures:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Chi-Square                                   127.210</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Degrees of Freedom                                50</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Degrees of Freedom                                74</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   SRMR                                           0.008</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   RMSEA                                          0.018</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   RMSEA                                          0.012</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> R-squared (indicators):</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   x1                                             0.860</span>
@@ -672,9 +683,9 @@ original <code>p.start</code> for the bootstrap replicates.</p></dd>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Fit Measures:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Chi-Square                                   263.372</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Degrees of Freedom                                50</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Degrees of Freedom                                74</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   SRMR                                           0.010</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   RMSEA                                          0.029</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   RMSEA                                          0.023</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> R-squared (indicators):</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   x1                                             0.870</span>
@@ -788,9 +799,9 @@ original <code>p.start</code> for the bootstrap replicates.</p></dd>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Fit Measures:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Chi-Square                                    24.372</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Degrees of Freedom                                20</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Degrees of Freedom                                31</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   SRMR                                           0.003</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   RMSEA                                          0.005</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   RMSEA                                          0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> R-squared (indicators):</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   y1                                             0.891</span>
@@ -871,9 +882,9 @@ original <code>p.start</code> for the bootstrap replicates.</p></dd>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Fit Measures:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Chi-Square                                    25.508</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Degrees of Freedom                                20</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Degrees of Freedom                                31</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   SRMR                                           0.003</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   RMSEA                                          0.005</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   RMSEA                                          0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> R-squared (indicators):</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   y1                                             0.885</span>
@@ -957,9 +968,9 @@ original <code>p.start</code> for the bootstrap replicates.</p></dd>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Fit Measures:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Chi-Square                                    56.757</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Degrees of Freedom                                24</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Degrees of Freedom                                42</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   SRMR                                           0.006</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   RMSEA                                          0.026</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   RMSEA                                          0.013</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> R-squared (indicators):</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   x1                                             0.863</span>
@@ -1048,7 +1059,7 @@ original <code>p.start</code> for the bootstrap replicates.</p></dd>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Fit Measures:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Chi-Square                                    19.620</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Degrees of Freedom                                24</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Degrees of Freedom                                42</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   SRMR                                           0.012</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   RMSEA                                          0.000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>

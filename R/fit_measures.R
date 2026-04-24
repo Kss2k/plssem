@@ -19,7 +19,7 @@ calcImpliedConstructCorrMat <- function(model, saturated = FALSE) {
     C <- calcImpliedIndicatorCorrMat(secondOrder, saturated = saturated)
 
     Lambda <- firstOrder$fit$fitLambda
-    Gamma  <- firstOrder$fit$fitStructural
+    Gamma  <- t(firstOrder$fit$fitStructural)
     cols   <- colnames(Gamma)
     Phi    <- C[cols, cols, drop = FALSE]
 

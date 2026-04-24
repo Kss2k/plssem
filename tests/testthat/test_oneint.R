@@ -11,16 +11,6 @@ m <- '
 # summary(modsem::modsem(m, oneIntOrdered, "lms"), standardized = TRUE)
 fit <- pls(m, modsem::oneInt, bootstrap = TRUE, boot.R = 100,
            boot.parallel = "snow", boot.ncpus = 2)
-fit$fit$Q
-fit2 <- pls(m, modsem::oneInt, reliabilities = c(X = 1, Z = 1, Y = 1))
-
-library(cSEM)
-summarize(csem(
-  modsem::oneInt, stringr::str_replace_all(m, ":", "."),
-  .reliabilities = fit$fit$Q^2
-))
-
-
 summary(fit)
 
 

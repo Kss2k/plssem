@@ -8,16 +8,18 @@ m <- '
   Y ~ X + Z + X:Z + X:X
 '
 
-# summary(modsem::modsem(m, oneIntOrdered, "lms"), standardized = TRUE)
-fit <- pls(m, modsem::oneInt, bootstrap = TRUE, boot.R = 100,
-           boot.parallel = "snow", boot.ncpus = 2)
-summary(fit)
+testthat::expect_no_error({
+  fit <- pls(m, modsem::oneInt, bootstrap = TRUE, boot.R = 100,
+             boot.parallel = "snow", boot.ncpus = 2)
+  summary(fit)
+})
 
 
-
-fit <- pls(m, oneIntOrdered, bootstrap = TRUE, boot.R = 50,
-           boot.parallel = "multicore", boot.ncpus = 4,
-           boot.optimize = TRUE)
-summary(fit)
+testthat::expect_no_error({
+  fit <- pls(m, oneIntOrdered, bootstrap = TRUE, boot.R = 50,
+             boot.parallel = "multicore", boot.ncpus = 4,
+             boot.optimize = TRUE)
+  summary(fit)
+})
 
 pls_predict(fit, approach = "earliest")

@@ -73,9 +73,14 @@ sem.syntax <- '
 '
 
 
-fit <- pls(sem.syntax, data = data)
-summary(fit)
-pls_predict(fit)
+testthat::expect_no_error({
+  fit <- pls(sem.syntax, data = data)
+  summary(fit)
+  pls_predict(fit)
+})
 
-fit <- pls(sem.syntax, data = data, mcpls = TRUE)
-pls_predict(fit)
+
+testthat::expect_no_error({
+  fit <- pls(sem.syntax, data = data, mcpls = TRUE)
+  pls_predict(fit)
+})

@@ -13,8 +13,11 @@ tpb <- '
   BEH ~ INT + PBC + INT:PBC
 '
 
-fit <- pls(tpb, modsem::TPB, bootstrap = TRUE, boot.R = 50)
-summary(fit)
+
+testthat::expect_no_error({
+  fit <- pls(tpb, modsem::TPB, bootstrap = TRUE, boot.R = 50)
+  summary(fit)
+})
 
 
 tpb <- ' 
@@ -30,9 +33,10 @@ tpb <- '
   BEH ~ INT + PBC 
 '
 
-fit <- pls(tpb, TPB_Ordered, bootstrap = TRUE)
-summary(fit)
-
+testthat::expect_no_error({
+  fit <- pls(tpb, TPB_Ordered, bootstrap = TRUE)
+  summary(fit)
+})
 
 TPB_UK <- modsem::TPB_UK
 
@@ -50,6 +54,8 @@ tpb_uk <- "
   BEH ~ INT:PBC
 "
 
-fit <- pls(tpb_uk, TPB_UK, ordered = colnames(TPB_UK),
-           mc.max.iter = 500, consistent = FALSE)
-summary(fit)
+testthat::expect_no_error({
+  fit <- pls(tpb_uk, TPB_UK, ordered = colnames(TPB_UK),
+             mc.max.iter = 500, consistent = FALSE)
+  summary(fit)
+})

@@ -201,7 +201,7 @@ calcChisqDf <- function(model, saturated = FALSE) {
       df <- df - df.cor
     }
 
-    if (!info$is.cfa || !saturated) {
+    if (!info$is.cfa && !saturated) {
       # Structural model specified by directed paths.
       # In the standardized case, path coefficients still count as free parameters.
       df.structural <- sum(M$select$gamma)

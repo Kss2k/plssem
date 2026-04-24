@@ -110,7 +110,7 @@ specifyModel <- function(syntax, data, ...) {
       is.mlm       = isTRUE(info1$is.mlm) || isTRUE(info2$is.mlm),
       is.mcpls     = is.mcpls,
       is.probit    = is.probit,
-      is.cfa       = isTRUE(info1$is.cfa) && (is.null(info1$is.cfa) || info1$is.cfa),
+      is.cfa       = isTRUE(info1$is.cfa) && (is.null(info2$is.cfa) || info2$is.cfa),
       is.high.ord  = is.high.ord,
 
       n            = info1$n,

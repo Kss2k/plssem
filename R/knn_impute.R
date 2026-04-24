@@ -1,6 +1,6 @@
 kNN_ImputeMissing <- function(data, k = 5, ordered = NULL) {
   X <- as.matrix(data)
-  complete <- complete.cases(X)
+  complete <- stats::complete.cases(X)
 
   if (all(complete))
     return(as.data.frame(X))
@@ -55,7 +55,7 @@ kNN_ImputeMissing <- function(data, k = 5, ordered = NULL) {
 
     for (variable in cols[!p.i]) {
       if      (variable %in% nominal) .f <- calcMode 
-      else if (variable %in% ordered) .f <- median
+      else if (variable %in% ordered) .f <- stats::median
       else                            .f <- mean
 
       y <- Y[,variable]

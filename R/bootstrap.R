@@ -188,7 +188,7 @@ bootstrap <- function(model,
   rownames(resultsMat) <- ids
   colnames(resultsMat) <- names(model$params$values)
 
-  vcov <- cov(resultsMat, use = "complete.obs")
+  vcov <- stats::cov(resultsMat, use = "complete.obs")
   se <- sqrt(diag(vcov))
   se[se <= zero.tol] <- NA_real_
 

@@ -4,7 +4,7 @@ meanImputeMissing <- function(data, ordered = NULL) {
   # Median for ordinal variables
 
   X <- as.data.frame(data)
-  complete <- complete.cases(X)
+  complete <- stats::complete.cases(X)
 
   if (all(complete))
     return(X)

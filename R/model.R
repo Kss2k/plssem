@@ -32,6 +32,8 @@ specifyModel <- function(syntax, data, ...) {
   if (is.null(secondOrder)) {
     inds.x <- info1$inds.x
     inds.y <- info1$inds.y
+    etas   <- info1$etas
+    xis    <- info1$xis
 
   } else {
     lvs     <- info1$lvs
@@ -46,6 +48,9 @@ specifyModel <- function(syntax, data, ...) {
 
     inds.y <- intersect(ovInds, yInds)
     inds.x <- setdiff(ovInds, yInds)
+
+    etas <- union(info1$etas, info2$etas)
+    xis  <- setdiff(union(info1$xis, info2$xis), etas)
   }
 
   is.high.ord <- !is.null(secondOrder)
@@ -55,6 +60,10 @@ specifyModel <- function(syntax, data, ...) {
     isTRUE(info1$is.mcpls) || isTRUE(info2$is.mcpls) || # check if eiter sub model is
     (length(ordered) > 0 && is.high.ord)                # We also switch to MC-PLS for
   )                                                     # higher order probit models
+
+  is.probit <- (
+    (isTRUE(info1$is.probit) || isTRUE(info2$is.probit)) || !is.mcpls
+  )
     
   if (is.mcpls && isTRUE(firstOrder$info$is.probit)) {
     # If the full model uses MC-PLS we should disable probit estimation
@@ -84,19 +93,23 @@ specifyModel <- function(syntax, data, ...) {
       lvs          = union(info1$lvs, info2$lvs),
       lvs.hi.ord   = hiOrdLVs,
 
+      xis          = xis,
+      etas         = etas,
+
       mode.a       = union(info1$mode.a, info2$mode.a),
       mode.b       = union(info1$mode.b, info2$mode.b),
       modes        = namedListUnion(info1$modes, info2$modes),
 
       inds.x       = inds.x, # Observed indicators
       inds.y       = inds.y, # Observed indicators
+      indsLvs      = namedListUnion(info1$indsLvs, info2$indsLvs),
 
       cluster      = info1$cluster,
       ordered      = info1$ordered,
 
       is.mlm       = isTRUE(info1$is.mlm) || isTRUE(info2$is.mlm),
       is.mcpls     = is.mcpls,
-      is.probit    = isTRUE(info1$is.probit) || isTRUE(info2$is.probit),
+      is.probit    = is.probit,
       is.cfa       = isTRUE(info1$is.cfa) && (is.null(info1$is.cfa) || info1$is.cfa),
       is.high.ord  = is.high.ord,
 

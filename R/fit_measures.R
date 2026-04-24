@@ -153,7 +153,7 @@ calcChisq <- function(model,
 }
 
 
-calcChisqDf <- function(model, saturated = FALSE, count.diag = TRUE) {
+calcChisqDf <- function(model, saturated = FALSE) {
   tryCatch({
 
     info <- model$info
@@ -163,54 +163,51 @@ calcChisqDf <- function(model, saturated = FALSE, count.diag = TRUE) {
     mode.a <- info$mode.a   # reflective blocks
     mode.b <- info$mode.b   # formative/composite blocks
     lvs    <- info$lvs.linear
+    xis    <- info$xis
     inds   <- info$indsLvs
 
     p <- NCOL(M$S)
     Gamma <- fit$fitStructural
 
     # Standardized model: work with correlations only, not variances
-    c <- if (count.diag) 1 else -1
-    total.df <- p * (p + c) / 2
+    total.df <- p * (p - 1) / 2
     df <- total.df
 
-    #  For now we don't distinguish between mode A and mode B
-    #
-    #  # Reflective blocks:
-    #  # standardized case -> count only free loadings
-    #  for (lv in mode.a) {
-    #    pa <- length(inds[[lv]])
-    #    df.block <- pa
-    #    df <- df - df.block
-    #  }
-
-    #  # Formative/composite blocks:
-    #  # within-block correlation matrix is saturated
-    #  for (lv in mode.b) {
-    #    pb <- length(inds[[lv]])
-    #    df.block <- pb * (pb - 1) / 2
-    #    df <- df - df.block
-    #  }
-
-    for (lv in lvs) {
-      pb <- length(inds[[lv]])
-      df.block <- pb * (pb + c) / 2
+    # Reflective blocks:
+    #   In the standardized case we only count the loading, as the loading
+    #   gives the error term.
+    for (lv in mode.a) {
+      df.block <- length(inds[[lv]]) # number of loadings
       df <- df - df.block
     }
 
-    if (info$is.cfa || saturated) {
+    # Formative/composite blocks:
+    #   standardized case -> count n(weights) - 1
+    #   The weights are not independent when they are not standardized,
+    #   so we get n - 1 (instead of n). We also count intra-block correlations
+    for (lv in mode.b) {
+      nw <- length(inds[[lv]]) # number of weights
+      ic <- nw * (nw - 1) / 2  # number of (unique) intra-block correlations
+      df.block <- nw - 1 + ic
+
+      df <- df - df.block
+    }
+
+    if (length(xis)) {
       # Freely correlated constructs/composites, standardized:
       # count only off-diagonal latent correlations
-      ps <- NROW(Gamma)
-      df.structural <- ps * (ps + c) / 2
-      df <- df - df.structural
+      ps <- length(xis)
+      df.cor <- ps * (ps - 1) / 2
+      df <- df - df.cor
+    }
 
-    } else {
+    if (!info$is.cfa || !saturated) {
       # Structural model specified by directed paths.
       # In the standardized case, path coefficients still count as free parameters.
       df.structural <- sum(M$select$gamma)
       df <- df - df.structural
     }
-
+   
     df
 
   }, error = function(e) {

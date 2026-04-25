@@ -1,7 +1,7 @@
 Package: plssem
 Type: Package
 Title: Complex Partial Least Squares Structural Equation Modeling
-Version: 0.1.1
+Version: 0.1.2
 Authors@R: 
     person(given = "Kjell", family = "Solem Slupphaug", 
            email = "slupphaugkjell@gmail.com", role = c("aut", "cre"),

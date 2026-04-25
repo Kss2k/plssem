@@ -9,8 +9,6 @@ sketches
 ^pkgdown$
 CONTRIBUTING.md
 CLONE.md
-^.*\.csv$
-^.*\.rds$
 ^inst/.*\.csv$
 ^inst/.*\.rds$
 ^inst/\..*\.R$

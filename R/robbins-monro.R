@@ -9,8 +9,7 @@ robbinsMonro1951 <- function(p, f, tol, min.iter, max.iter, verbose,
       miniter         = min.iter,
       maxiter         = max.iter,
       verbose         = verbose,
-      Polyak_Juditsky = polyak.juditsky,
-      pk.n            = polyak.juditsky.n
+      Polyak_Juditsky = polyak.juditsky
   )
 
   args <- c(args.required, fn.args, list(...))

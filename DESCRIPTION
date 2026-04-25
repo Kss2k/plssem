@@ -45,7 +45,6 @@ Imports:
     stringr,
     purrr,
     matrixStats,
-    SimDesign,
     Rfast,
     collapse,
     mvnfast,

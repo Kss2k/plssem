@@ -256,28 +256,6 @@ resampleMCPLS_Fit <- function(model, ...) {
 }
 
 
-robbinsMonro1951 <- function(p, f, tol, min.iter, max.iter, verbose,
-                             polyak.juditsky, fn.args, ...) {
-
-  args.required <- list(
-      p               = p,
-      f               = f,
-      tol             = tol,
-      miniter         = min.iter,
-      maxiter         = max.iter,
-      verbose         = verbose,
-      Polyak_Juditsky = polyak.juditsky
-  )
-
-  args <- c(args.required, fn.args, list(...))
-
-  mcfit <- do.call(SimDesign::RobbinsMonro, args)
-  if (verbose) cat("\n")
-
-  mcfit
-}
-
-
 getPROBS <- function(data, ordered) {
   PROBS <- stats::setNames(vector("list", length(ordered)), nm = ordered)
 

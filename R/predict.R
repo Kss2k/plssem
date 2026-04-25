@@ -487,7 +487,7 @@ getOuterDataMatrices <- function(model, newdata = NULL, std.ord.exp = FALSE) {
   newdata.ord  <- newdata
 
   for (ord in ordered)
-    newdata.ord[,ordered] <- reindex(newdata.ord[,ordered])
+    newdata.ord[,ord] <- reindex(newdata.ord[,ord])
 
   PROBS <- getPROBS(data = olddata, ordered = ordered)
   Tau   <- stats::setNames(vector("list", length(ordered)), nm = ordered)

@@ -9,10 +9,10 @@ sketches
 ^pkgdown$
 CONTRIBUTING.md
 CLONE.md
-^.*\\.csv$
-^.*\\.rds$
-inst/^.*\\.csv$
-inst/^.*\\.rds$
+^.*\.csv$
+^.*\.rds$
+^inst/.*\.csv$
+^inst/.*\.rds$
 ^inst/\..*\.R$
 tests/testthat/test_data
 tests/testthat/test_inadmissible.R

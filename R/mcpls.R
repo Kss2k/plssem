@@ -229,7 +229,7 @@ updateModelFromFreeParTableMC <- function(parTable, model, mc.reps,
     seed     = seed
   )
 
-  updateModelParams(model, update.names = TRUE)
+  refreshModelParams(model, update.names = TRUE)
 }
 
 

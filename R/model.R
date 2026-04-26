@@ -622,3 +622,42 @@ getEstimatorFromInfo <- function(info) {
 
   estimator
 }
+
+
+refreshModelParams <- function(model, update.names = TRUE) {
+  # Should we update names?
+  if (update.names)
+    model@params$names <- getParamVecNames(model)
+
+  # Single level params
+  model@params$values <- extractCoefs(model)
+  model@params$se     <- rep(NA_real_, length(model@params$values))
+
+  # Multilevel/Mixed-Effect params
+  if (isMLM(model))
+    model <- refreshLmerParams(model)
+
+  model
+}
+
+
+refreshLmerParams <- function(model) {
+  lmerFit <- modelFitLmer(model)
+
+  if (!isMLM(model) || is.null(lmerFit))
+    return(model)
+
+  coefs.x <- model@params$values
+  coefs.y <- lmerFit$values
+
+  common  <- intersect(names(coefs.x), names(coefs.y))
+  new     <- setdiff(names(coefs.y),   names(coefs.x))
+
+  coefs.x[common] <- coefs.y[common]
+  coefs.all       <- c(coefs.x, coefs.y[new])
+
+  model@params$values <- plssemVector(coefs.all)
+  model@params$se     <- rep(NA_real_, length(coefs.all))
+
+  model
+}

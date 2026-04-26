@@ -173,6 +173,12 @@ setMethod("isAdmissible<-", "PlsBaseModel", function(object, value) {
 })
 
 
+setGeneric("isMLM", function(object) standardGeneric("isMLM"))
+setMethod("isMLM", "PlsBaseModel", function(object) {
+  isTRUE(object@info$is.mlm)
+})
+
+
 setGeneric("constructReliabilities", function(object) standardGeneric("constructReliabilities"))
 setMethod("constructReliabilities", "PlsBaseModel", function(object) modelFit(object)$Q^2)
 

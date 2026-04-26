@@ -14,7 +14,7 @@ setClass(
     fit            = "list",
     fitConsistent  = "list",
     fitUncorrected = "list",
-    fitLmer        = "list",
+    fitLmer        = "ANY",  # NULL or list
     factorScores   = "ANY"   # NULL or matrix
   ),
   prototype = list(
@@ -26,7 +26,7 @@ setClass(
     fit            = list(),
     fitConsistent  = list(),
     fitUncorrected = list(),
-    fitLmer        = list(),
+    fitLmer        = NULL,
     factorScores   = NULL
   )
 )

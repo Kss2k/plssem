@@ -2,6 +2,9 @@
 # Internal generics follow camelCase, whilst public ones follow snake_case
 # Replaces the former S3 methods (summary.plssem, print.plssem, coef.plssem, …).
 
+################################################################################
+### PUBLIC GENERICS                                                          ###
+################################################################################
 
 #' Show a \code{PlsModel} object
 #'

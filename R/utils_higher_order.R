@@ -170,7 +170,7 @@ combineModelResultsFirstSecondOrder <- function(model) {
     model@fit      <- fit
 
     # Update parameters
-    model <- updateModelParams(model, update.names = TRUE)
+    model <- refreshModelParams(model, update.names = TRUE)
   }
 
   model
@@ -252,7 +252,7 @@ correctLoadingsAndWeightsSecondOrder <- function(firstOrder, secondOrder) {
   secondOrder@fit$fitWeights     <- Weights
   secondOrder@fit$fitMeasurement <- Measurement
 
-  estimatePLS_Step8(secondOrder)
+  refreshModelParams(secondOrder)
 }
 
 

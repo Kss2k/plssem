@@ -229,7 +229,7 @@ updateModelFromFreeParTableMC <- function(parTable, model, mc.reps,
     seed     = seed
   )
 
-  estimatePLS_Step8(model, update.names = TRUE)
+  updateModelParams(model, update.names = TRUE)
 }
 
 

@@ -144,15 +144,6 @@ combineModelResultsFirstSecondOrder <- function(model) {
       theta  = diagPartitioned(selectTheta1, selectTheta2) != 0
     )
 
-    # Set params to empty, get them from estimatePLS_Step8 after initiliazing model
-
-    params <- list(
-      names  = NULL,
-      values = NULL,
-      se     = NULL,
-      vcov   = NULL
-    )
-
     # status
     s1 <- fo@status
     s2 <- so@status
@@ -176,11 +167,13 @@ combineModelResultsFirstSecondOrder <- function(model) {
 
     model@data     <- fo@data
     model@status   <- status
-    model@params   <- params
     model@fit      <- fit
+
+    # Update parameters
+    model <- updateModelParams(model, update.names = TRUE)
   }
 
-  estimatePLS_Step8(model, update.names = TRUE)
+  model
 }
 
 

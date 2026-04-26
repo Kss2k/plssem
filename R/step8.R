@@ -1,9 +1,5 @@
 estimatePLS_Step8 <- function(model, update.names = FALSE) {
-  if (update.names)
-    model@params$names <- getParamVecNames(model)
-
-  model@params$values <- extractCoefs(model)
-  model@params$se     <- rep(NA_real_, length(model@params$values))
+  model <- updateModelParams(model, update.names = update.names)
 
   if (!model@info$is.mlm)
     return(model)
@@ -22,5 +18,16 @@ estimatePLS_Step8 <- function(model, update.names = FALSE) {
 
   model@params$values <- plssemVector(coefs.all)
   model@params$se     <- rep(NA_real_, length(coefs.all))
+  model
+}
+
+
+updateModelParams <- function(model, update.names = FALSE) {
+  if (update.names)
+    model@params$names <- getParamVecNames(model)
+
+  model@params$values <- extractCoefs(model)
+  model@params$se     <- rep(NA_real_, length(model@params$values))
+
   model
 }

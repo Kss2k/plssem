@@ -10,19 +10,19 @@ plslmer <- function(plsModel) {
     stringr::str_replace_all(x, stringr::fixed("`"), "")
   }
 
-  lme4.syntax <- plsModel$info$lme4.syntax
-  cluster     <- plsModel$info$cluster
-  consistent  <- plsModel$info$consistent
+  lme4.syntax <- plsModel@info$lme4.syntax
+  cluster     <- plsModel@info$cluster
+  consistent  <- plsModel@info$consistent
 
   stopif(!is.character(lme4.syntax), "`lme4.syntax` must be a character vector!")
 
   stopif(length(cluster) != 1L || !is.character(cluster),
          "`cluster` must be a character string of length 1. If lme4.syntax is provided!")
-    
-  fit.c <- plsModel$fit.c
-  fit.u <- plsModel$fit.u
 
-  selectGamma <- plsModel$matrices$select$gamma
+  fit.c <- plsModel@fitConsistent
+  fit.u <- plsModel@fitUncorrected
+
+  selectGamma <- plsModel@matrices$select$gamma
   # Full (corrected) covariance/correlation matrix for the structural model.
   # Unlike `fitCov`, this retains the total covariances between endogenous and
   # exogenous variables.
@@ -31,13 +31,13 @@ plslmer <- function(plsModel) {
   Correction <- fit.c$fitStructural / fit.u$fitStructural
   CorrectionCov <- fit.c$fitCov / fit.u$fitCov
 
-  Xf <- as.data.frame(plsModel$factorScores)
-  Xx <- as.data.frame(plsModel$data)
-  Xc <- as.data.frame(attr(plsModel$data, "cluster"))
+  Xf <- as.data.frame(plsModel@factorScores)
+  Xx <- as.data.frame(plsModel@data)
+  Xc <- as.data.frame(attr(plsModel@data, "cluster"))
   X  <- cbind(Xf, Xx, Xc)
 
   # Mean-center interaction/quadratic terms (e.g., X:Z and X:X).
-  intTerms <- plsModel$info$intTermNames
+  intTerms <- plsModel@info$intTermNames
   if (!is.null(intTerms) && length(intTerms)) {
     intTerms <- intersect(intTerms, colnames(X))
 
@@ -97,12 +97,12 @@ plslmer <- function(plsModel) {
       colnames(mat) <- getNames(dep, colnames(mat))
     mat
   }
-  
-  FITS    <- list() 
+
+  FITS    <- list()
   FIXEF   <- list()
   COEF    <- list()
-  VCOV    <- list() 
-  VARCORR <- list() 
+  VCOV    <- list()
+  VARCORR <- list()
   SIGMA   <- list()
 
   for (line in lme4.syntax) {
@@ -140,14 +140,14 @@ plslmer <- function(plsModel) {
 
       } else if (!lhs.i %in% colnames(Correction) || !rhs.i %in% rownames(Correction)) {
         warning("Unable to identify correction term for ", params[[i]], "!")
-        next 
+        next
       }
-    
+
       term <- Correction[rhs.i, lhs.i]
 
       if (is.na(term) || is.nan(term)) {
         warning("Correction term for ", params[[i]], " is NaN!")
-        next 
+        next
       }
 
       correctionTerms[[i]] <- term
@@ -171,13 +171,13 @@ plslmer <- function(plsModel) {
         coefFit[[c.safe]] <- NULL
         varCorrFit[[c.safe]] <- NULL
       }
-     
+
       if (consistent) {
         vcPars <- rownames(varCorrFit[[c]])
         vcCorrection <- DCorrectionTerms[vcPars, vcPars, drop = FALSE]
 
         coefFit[[c]] <- coefFit[[c]] %*% diag(correctionTerms[colnames(coefFit[[c]])])
-        varCorrFit[[c]] <- vcCorrection %*% varCorrFit[[c]] %*% vcCorrection 
+        varCorrFit[[c]] <- vcCorrection %*% varCorrFit[[c]] %*% vcCorrection
       }
 
       attr(varCorrFit[[c]], "stddev") <- sqrt(diag(varCorrFit[[c]]))

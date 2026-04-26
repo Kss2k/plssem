@@ -1,6 +1,6 @@
 #' Predict from a fitted PLS-SEM model
 #'
-#' @param object A fitted \code{plssem} model.
+#' @param object A fitted \code{PlsModel} object.
 #' @param approach Prediction approach. If \code{approach = "earliest"} (default), then
 #'   only indicators of exogenous benchmark.vars are used for prediction. If
 #'   \code{approach = "direct"}, then all indicators are used.
@@ -18,28 +18,32 @@
 #' @return A \code{PlsSemPredict} object with matrices and benchmark results.
 #'
 #' @export
-pls_predict <- function(object,
-                        approach = c("earliest", "direct"),
-                        newdata = NULL,
-                        std.ord.exp = FALSE,
-                        benchmark = "R2",
-                        benchmark.vars = c("endog", "exog", "all"),
-                        ...) {
+setGeneric("pls_predict", function(object, ...) standardGeneric("pls_predict"))
+
+#' @rdname pls_predict
+#' @export
+setMethod("pls_predict", "PlsModel", function(object,
+                                               approach = c("earliest", "direct"),
+                                               newdata = NULL,
+                                               std.ord.exp = FALSE,
+                                               benchmark = "R2",
+                                               benchmark.vars = c("endog", "exog", "all"),
+                                               ...) {
   # TODO:
   #  1. Allow the user to pass only indicators of exogenous variables, if
   #     approach='earliest'.
   #  2. Allow the user to pass ordinal variables with a subset of categories
   #  3. Use standardization parameters from the training data, don't just
   #     standardize the test data directly.
-  info <- object$info
+  info <- object@info
 
   approach <- match.arg(tolower(approach), c("earliest", "direct"))
   benchmark.vars <- match.arg(tolower(benchmark.vars), c("endog", "exog", "all"))
 
-  W <- object$fit$fitWeights
-  L <- object$fit$fitLambda
+  W <- object@fit$fitWeights
+  L <- object@fit$fitLambda
 
-  ordered <- object$info$ordered
+  ordered <- object@info$ordered
   outerX <- getOuterDataMatrices(object, newdata = newdata,
                                  std.ord.exp = std.ord.exp)
   X.cont <- outerX$X.cont
@@ -133,8 +137,8 @@ pls_predict <- function(object,
   all.vars    <- colnames(X.cont.pred)
   benchmarked <- NULL
 
-  inds.x <- stringr::str_remove_all(object$info$inds.x, TEMP_OV_PREFIX)
-  inds.y <- stringr::str_remove_all(object$info$inds.y, TEMP_OV_PREFIX)
+  inds.x <- stringr::str_remove_all(object@info$inds.x, TEMP_OV_PREFIX)
+  inds.y <- stringr::str_remove_all(object@info$inds.y, TEMP_OV_PREFIX)
 
   pred.vars <- switch(benchmark.vars,
     all = all.vars,
@@ -175,7 +179,7 @@ pls_predict <- function(object,
            "Invalid `benchmark` type(s): ", paste0(invalid, collapse = ", "),
            "\nAllowed: ", paste0(allowedBenchmarks, collapse = ", "))
 
-    trainOuterX <- getOuterDataMatrices(object, newdata = object$data,
+    trainOuterX <- getOuterDataMatrices(object, newdata = object@data,
                                         std.ord.exp = std.ord.exp)
     trainMean <- colMeans(
       plssemMatrix(trainOuterX$X.cont, is.public = TRUE), na.rm = TRUE
@@ -214,7 +218,20 @@ pls_predict <- function(object,
 
   class(out) <- "PlsSemPredict"
   out
-}
+})
+
+
+#' Predict from a fitted \code{PlsModel} (alias for \code{\link{pls_predict}})
+#'
+#' @param object A fitted \code{PlsModel} object.
+#' @param newdata Optional new data matrix/data frame.
+#' @param ... Further arguments passed to \code{\link{pls_predict}}.
+#' @return A \code{PlsSemPredict} object.
+#' @importFrom stats predict
+#' @export
+setMethod("predict", "PlsModel", function(object, newdata = NULL, ...) {
+  pls_predict(object, newdata = newdata, ...)
+})
 
 
 #' Print a \code{PlsSemPredict} object
@@ -425,11 +442,11 @@ assignScoresOrdinalMonteCarlo <- function(x, y, y.i, std.ord.exp = FALSE,
 
 
 getOuterDataMatrices <- function(model, newdata = NULL, std.ord.exp = FALSE) {
-  ordered  <- model$info$ordered
-  is.mcpls <- model$info$is.mcpls
-  olddata  <- model$data
+  ordered  <- model@info$ordered
+  is.mcpls <- model@info$is.mcpls
+  olddata  <- model@data
   ordered  <- intersect(colnames(olddata), ordered)
- 
+
   if (!is.null(newdata)) {
     nm.o <- colnames(olddata)
     nm.n <- colnames(newdata)
@@ -456,7 +473,7 @@ getOuterDataMatrices <- function(model, newdata = NULL, std.ord.exp = FALSE) {
     is.ord <- vapply(newdata.df, FUN.VALUE = logical(1L), FUN = is.ordered)
     newdata.df[is.ord] <- lapply(newdata.df[is.ord], reindex)
 
-    if (model$info$standardized)
+    if (model@info$standardized)
       newdata <- Rfast::standardise(as.matrix(newdata.df))
     else
       newdata <- as.matrix(newdata.df)
@@ -473,13 +490,13 @@ getOuterDataMatrices <- function(model, newdata = NULL, std.ord.exp = FALSE) {
   for (ord in ordered) {
     ncatOld <- length(uniqueComplete(olddata[,ord]))
     ncatNew <- length(uniqueComplete(newdata[,ord]))
-    
+
     stopif(ncatNew < ncatOld,
-           "There are fewer categories for ", ord, " in the test data (", 
+           "There are fewer categories for ", ord, " in the test data (",
            ncatNew, "),\nthan in the training data (", ncatOld, ")!")
 
     stopif(ncatNew > ncatOld,
-           "There are more categories for ", ord, " in the test data (", 
+           "There are more categories for ", ord, " in the test data (",
            ncatNew, "),\nthan in the training data (", ncatOld, ")!")
   }
 
@@ -493,8 +510,8 @@ getOuterDataMatrices <- function(model, newdata = NULL, std.ord.exp = FALSE) {
   Tau   <- stats::setNames(vector("list", length(ordered)), nm = ordered)
 
   if (is.mcpls) {
-    sim.ov.cont <- model$matrices$sim.ov.cont
-    sim.ov.ord  <- model$matrices$sim.ov.ord
+    sim.ov.cont <- model@matrices$sim.ov.cont
+    sim.ov.ord  <- model@matrices$sim.ov.ord
 
     for (ord in ordered) {
       y <- assignScoresOrdinalMonteCarlo(
@@ -533,7 +550,7 @@ getOuterDataMatrices <- function(model, newdata = NULL, std.ord.exp = FALSE) {
 #' Convenience wrapper around [pls_predict()] returning only the predicted
 #' latent scores matrix.
 #'
-#' @param object A fitted \code{plssem} model.
+#' @param object A fitted \code{Plssem} model.
 #' @param ... Passed to [pls_predict()].
 #' @return A \code{PlsSemMatrix} of predicted latent scores.
 #'

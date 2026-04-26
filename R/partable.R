@@ -2,9 +2,8 @@ CI_QUANTILE <- qnorm(0.05)
 
 
 getParTableEstimates <- function(model, rm.tmp = TRUE) {
-  params <- model$params
-  est    <- model$params$values
-  se     <- model$params$se
+  est    <- model@params$values
+  se     <- model@params$se
   names  <- names(est)
 
   split    <- splitParameterNames(names)
@@ -62,10 +61,10 @@ removeTempOV_RowsParTable <- function(parTable) {
   tmp <- startsWith(parTable$lhs, TEMP_OV_PREFIX) | startsWith(parTable$rhs, TEMP_OV_PREFIX)
   parTable[!tmp, , drop = FALSE]
 }
-  
+
 
 addColonPI_ParTable <- function(parTable, model, label.renamed.prod = FALSE) {
-  elems <- model$info$intTermElems
+  elems <- model@info$intTermElems
 
   if (length(elems) && !"label" %in% colnames(parTable))
     parTable$label <- ""

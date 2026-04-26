@@ -37,7 +37,8 @@ License: GPL-3
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.3.3
-Imports: 
+Imports:
+    methods,
     stats,
     modsem (>= 1.0.17),
     lme4,
@@ -55,5 +56,5 @@ Depends:
     R (>= 4.1.0)
 URL: https://github.com/kss2k/plssem,
   https://kss2k.github.io/plssem/
-Suggests: knitr, rmarkdown, mice, mvtnorm
+Suggests: knitr, rmarkdown, mice, mvtnorm, pkgload
 VignetteBuilder: knitr

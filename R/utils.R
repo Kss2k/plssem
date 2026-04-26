@@ -315,3 +315,14 @@ namedListUnion <- function(x, y) {
   x[new] <- y[new]
   x
 }
+
+
+isPositiveDefinite <- function(X, tol.eigen = .Machine$double.eps ^ (3/4)) {
+  if (is.null(X) || !isSymmetric(X))
+    return(FALSE)
+
+  eigenvalues <- tryCatch(eigen(X, only.values = TRUE)$values,
+                          error = \(e) rep(NA, min(1L, NCOL(X))))
+
+  !any(is.na(eigenvalues)) & !any(eigenvalues <= tol.eigen)
+}

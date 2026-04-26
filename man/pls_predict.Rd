@@ -2,9 +2,12 @@
 % Please edit documentation in R/predict.R
 \name{pls_predict}
 \alias{pls_predict}
+\alias{pls_predict,PlsModel-method}
 \title{Predict from a fitted PLS-SEM model}
 \usage{
-pls_predict(
+pls_predict(object, ...)
+
+\S4method{pls_predict}{PlsModel}(
   object,
   approach = c("earliest", "direct"),
   newdata = NULL,
@@ -15,7 +18,9 @@ pls_predict(
 )
 }
 \arguments{
-\item{object}{A fitted \code{plssem} model.}
+\item{object}{A fitted \code{PlsModel} object.}
+
+\item{...}{Additional arguments passed to internal helpers.}
 
 \item{approach}{Prediction approach. If \code{approach = "earliest"} (default), then
 only indicators of exogenous benchmark.vars are used for prediction. If
@@ -34,8 +39,6 @@ per indicator (optionally named). Supported: \code{"r2"}, \code{"rmse"},
 If \code{benchmark.vars = "exog"}, preidction benchmarks are applied to indicators
 of exogenous benchmark.vars. If \code{benchmark.vars = "all"}, preidction benchmarks are applied to
 all of the indicators in the model.}
-
-\item{...}{Additional arguments passed to internal helpers.}
 }
 \value{
 A \code{PlsSemPredict} object with matrices and benchmark results.

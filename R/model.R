@@ -1,7 +1,7 @@
 OPERATORS <- c("<~", "~~", "=~", "~1", "~", "|")
-MOPS <- c("<~", "=~")
+MOPS      <- c("<~", "=~")
 MAT_STRUCT <- matrix(0, nrow = 0, ncol = 0)
-DF_STRUCT <- data.frame(NULL)
+DF_STRUCT  <- data.frame(NULL)
 VEC_STRUCT <- numeric(0)
 
 
@@ -20,16 +20,17 @@ specifyModel <- function(syntax, data, ...) {
 
   secondOrder <- specifySubModel(
     parTable       = parTableO2,
-    data           = getSecondOrderData(firstOrder), # placeholder
+    data           = getSecondOrderInputData(firstOrder),
     higherOrderLVs = hiOrdLVs,
     is.lower.order = FALSE,
     ...
   )
 
-  info1 <- firstOrder$info
-  info2 <- secondOrder$info
+  info1       <- firstOrder@info
+  is.high.ord <- !is.null(secondOrder)
+  info2       <- if (is.high.ord) secondOrder@info else list()
 
-  if (is.null(secondOrder)) {
+  if (!is.high.ord) {
     inds.x <- info1$inds.x
     inds.y <- info1$inds.y
     etas   <- info1$etas
@@ -42,7 +43,7 @@ specifyModel <- function(syntax, data, ...) {
     lvInds  <- intersect(info2$allInds, lvs)
     indsMap <- c(info1$indsLvs, info2$indsLvs)
 
-    lowInds <- unique(unlist(indsMap[lvInds])) # inds which are downstream of HOLVs
+    lowInds <- unique(unlist(indsMap[lvInds]))
     etaInds <- unique(unlist(indsMap[etas]))
     yInds   <- c(lowInds, etaInds)
 
@@ -53,87 +54,69 @@ specifyModel <- function(syntax, data, ...) {
     xis  <- setdiff(union(info1$xis, info2$xis), etas)
   }
 
-  is.high.ord <- !is.null(secondOrder)
   ordered <- union(info1$ordered, info2$ordered)
 
   is.mcpls <- (
-    isTRUE(info1$is.mcpls) || isTRUE(info2$is.mcpls) || # check if eiter sub model is
-    (length(ordered) > 0 && is.high.ord)                # We also switch to MC-PLS for
-  )                                                     # higher order probit models
+    isTRUE(info1$is.mcpls) || isTRUE(info2$is.mcpls) ||
+    (length(ordered) > 0 && is.high.ord)
+  )
 
   is.probit <- (
     (isTRUE(info1$is.probit) || isTRUE(info2$is.probit)) || !is.mcpls
   )
-    
-  if (is.mcpls && isTRUE(firstOrder$info$is.probit)) {
-    # If the full model uses MC-PLS we should disable probit estimation
-    # for the first order model
-    firstOrder$info$is.probit <- FALSE
-    firstOrder$matrices$S <- getCorrMat(firstOrder$data, probit = FALSE)
+
+  if (is.mcpls && isTRUE(firstOrder@info$is.probit)) {
+    firstOrder@info$is.probit  <- FALSE
+    firstOrder@matrices$S      <- getCorrMat(firstOrder@data, probit = FALSE)
   }
 
-  # Class Fields
-  out <- list(
+  PlsModel(
     submodels = list(
       firstOrder  = firstOrder,
       secondOrder = secondOrder
     ),
-
     matrices = list(
       S           = MAT_STRUCT,
       C           = MAT_STRUCT,
-      firstOrder  = firstOrder$matrices,
-      secondOrder = secondOrder$matrices
+      firstOrder  = firstOrder@matrices,
+      secondOrder = if (is.high.ord) secondOrder@matrices else list()
     ),
-
-    data = firstOrder$data,
-
-    info = list(
+    data   = firstOrder@data,
+    info   = list(
       lvs.linear   = union(info1$lvs.linear, info2$lvs.linear),
       lvs          = union(info1$lvs, info2$lvs),
       lvs.hi.ord   = hiOrdLVs,
-
       xis          = xis,
       etas         = etas,
-
       mode.a       = union(info1$mode.a, info2$mode.a),
       mode.b       = union(info1$mode.b, info2$mode.b),
       modes        = namedListUnion(info1$modes, info2$modes),
-
-      inds.x       = inds.x, # Observed indicators
-      inds.y       = inds.y, # Observed indicators
+      inds.x       = inds.x,
+      inds.y       = inds.y,
       indsLvs      = namedListUnion(info1$indsLvs, info2$indsLvs),
-
       cluster      = info1$cluster,
       ordered      = info1$ordered,
-
       is.mlm       = isTRUE(info1$is.mlm) || isTRUE(info2$is.mlm),
       is.mcpls     = is.mcpls,
       is.probit    = is.probit,
       is.cfa       = isTRUE(info1$is.cfa) && (is.null(info2$is.cfa) || info2$is.cfa),
       is.high.ord  = is.high.ord,
-
       n            = info1$n,
       estimator    = info1$estimator,
       standardized = info1$standardized,
       verbose      = isTRUE(info1$verbose) || isTRUE(info2$verbose),
-
       mc.args      = info1$mc.args,
       boot         = info1$boot,
       args         = list(...)
     ),
-
-    status = firstOrder$status,
-
-    parTable = DF_STRUCT,
-
-    params = list(
-      names  = VEC_STRUCT,
-      values = VEC_STRUCT,
-      se     = VEC_STRUCT,
-      vcov   = NULL
+    status   = firstOrder@status,
+    parTable = NULL,
+    params   = list(
+      names      = VEC_STRUCT,
+      values     = VEC_STRUCT,
+      se         = VEC_STRUCT,
+      vcov       = NULL
     ),
-
     fit = list(
       fitMeasurement = MAT_STRUCT,
       fitLambda      = MAT_STRUCT,
@@ -145,9 +128,6 @@ specifyModel <- function(syntax, data, ...) {
       Q              = VEC_STRUCT
     )
   )
-
-  class(out) <- "plssem"
-  out
 }
 
 
@@ -193,19 +173,19 @@ specifySubModel <- function(parTable,
     is.lower.order = is.lower.order
   )
 
-  syntax        <- parsed$syntax
-  data          <- parsed$data
-  pt            <- parsed$parTable.pls
-  cluster       <- parsed$cluster
-  lme4.syntax   <- parsed$lme4.syntax
-  is.mlm        <- parsed$is.mlm
-  is.mcpls      <- parsed$is.mcpls
-  intTermElems  <- parsed$intTermElems
-  intTermNames  <- parsed$intTermNames
-  is.nlin       <- parsed$is.nlin
-  ordered       <- parsed$ordered
-  is.probit     <- parsed$is.probit
-  consistent    <- parsed$consistent
+  syntax       <- parsed$syntax
+  data         <- parsed$data
+  pt           <- parsed$parTable.pls
+  cluster      <- parsed$cluster
+  lme4.syntax  <- parsed$lme4.syntax
+  is.mlm       <- parsed$is.mlm
+  is.mcpls     <- parsed$is.mcpls
+  intTermElems <- parsed$intTermElems
+  intTermNames <- parsed$intTermNames
+  is.nlin      <- parsed$is.nlin
+  ordered      <- parsed$ordered
+  is.probit    <- parsed$is.probit
+  consistent   <- parsed$consistent
 
   matricesAndInfo <- initMatrices(pt, higherOrderLVs = higherOrderLVs)
   matrices        <- matricesAndInfo$matrices
@@ -240,7 +220,7 @@ specifySubModel <- function(parTable,
   info$intTermElems  <- intTermElems
   info$intTermNames  <- intTermNames
   info$is.nlin       <- is.nlin
-  info$rng.seed      <- floor(stats::runif(1L, min=0, max=9999999))
+  info$rng.seed      <- floor(stats::runif(1L, min = 0, max = 9999999))
   info$n             <- NROW(preppedData$X)
   info$estimator     <- getEstimatorFromInfo(info)
   info$verbose       <- verbose
@@ -260,31 +240,24 @@ specifySubModel <- function(parTable,
   )
 
   info$boot <- list(
-    bootstrap = bootstrap,
-    ncpus     = boot.ncpus,
-    parallel  = boot.parallel,
-    R         = boot.R,
-    iseed     = boot.iseed,
-    optimize  = boot.optimize,
+    bootstrap       = bootstrap,
+    ncpus           = boot.ncpus,
+    parallel        = boot.parallel,
+    R               = boot.R,
+    iseed           = boot.iseed,
+    optimize        = boot.optimize,
     mc.boot.control = mc.boot.control
   )
 
   matrices$S  <- preppedData$S
   matrices$SC <- diagPartitioned(matrices$S, matrices$C)
 
-  model <- list(
-    parTable.input = pt,
-    parTable       = NULL,
-    matrices       = matrices,
-    data           = preppedData$X,
-    factorScores   = NULL,
-    info           = info,
-    params         = NULL,
-    fit            = NULL,
-    fit.c          = NULL,
-    fit.u          = NULL,
-    params         = NULL,
-    status         = list(
+  model <- PlsSubModel(
+    parTableInput = pt,
+    matrices      = matrices,
+    data          = preppedData$X,
+    info          = info,
+    status        = list(
       convergence    = FALSE,
       iterations     = 0L,
       iterations.0_5 = 0L,
@@ -297,7 +270,7 @@ specifySubModel <- function(parTable,
   parnames <- getParamVecNames(model)
   k        <- length(parnames)
 
-  model$params <- list(
+  model@params <- list(
     names      = parnames,
     values     = rep(NA_real_, k),
     values.old = NULL,
@@ -305,16 +278,14 @@ specifySubModel <- function(parTable,
     vcov       = NULL
   )
 
-  class(model) <- "plssemSubModel"
   model
 }
 
 
-# badly named function -- since if also returns some useful info
+# badly named function -- since it also returns some useful info
 initMatrices <- function(pt, higherOrderLVs = NULL) {
   lvs.linear <- getLVs(pt)
 
-  k      <- length(lvs.linear)
   mode.a <- getReflectiveLVs(pt)
   mode.b <- getFormativeLVs(pt)
 
@@ -327,122 +298,109 @@ initMatrices <- function(pt, higherOrderLVs = NULL) {
   )
 
   etas <- unique(pt[pt$op == "~", "lhs"])
-
   lvs  <- c(lvs.linear, getIntTerms(pt))
   xis  <- lvs[!lvs %in% etas]
 
-  indsLvs <- vector("list", length(lvs))
-
+  indsLvs        <- vector("list", length(lvs))
   names(indsLvs) <- lvs
   for (lv in lvs) {
-    indsLv <- pt[pt$lhs == lv & pt$op %in% c("=~", "<~"), "rhs"]
-    indsLvs[[lv]] <- indsLv
+    indsLvs[[lv]] <- pt[pt$lhs == lv & pt$op %in% c("=~", "<~"), "rhs"]
   }
 
   allInds <- unique(unlist(indsLvs))
-  inds.x <- unique(unlist(indsLvs[xis]))
-  inds.y <- unique(unlist(indsLvs[etas]))
-  inds.a <- unique(unlist(indsLvs[mode.a]))
-  inds.b <- unique(unlist(indsLvs[mode.b]))
+  inds.x  <- unique(unlist(indsLvs[xis]))
+  inds.y  <- unique(unlist(indsLvs[etas]))
+  inds.a  <- unique(unlist(indsLvs[mode.a]))
+  inds.b  <- unique(unlist(indsLvs[mode.b]))
 
-  # Lamdba ---------------------------------------------------------------------
-  lambda <- matrix(0, nrow = length(allInds), ncol = length(lvs),
-                   dimnames = list(allInds, lvs))
+  # Lambda -----------------------------------------------------------------
+  lambda       <- matrix(0,     nrow = length(allInds), ncol = length(lvs),
+                         dimnames = list(allInds, lvs))
   selectLambda <- matrix(FALSE, nrow = length(allInds), ncol = length(lvs),
-                   dimnames = list(allInds, lvs))
+                         dimnames = list(allInds, lvs))
   for (lv in lvs) {
-    lambda[indsLvs[[lv]], lv] <- 1
+    lambda[indsLvs[[lv]], lv]       <- 1
     selectLambda[indsLvs[[lv]], lv] <- TRUE
   }
 
-  # Gamma ----------------------------------------------------------------------
-  gamma <- matrix(0, nrow = length(lvs), ncol = length(lvs),
-                  dimnames = list(lvs, lvs))
-  # Selection Matrix
+  # Gamma ------------------------------------------------------------------
+  gamma       <- matrix(0,     nrow = length(lvs), ncol = length(lvs),
+                        dimnames = list(lvs, lvs))
   selectGamma <- matrix(FALSE, nrow = length(lvs), ncol = length(lvs),
-                  dimnames = list(lvs, lvs))
-  # Predecessors and successors
+                        dimnames = list(lvs, lvs))
   preds <- succs <- matrix(FALSE, nrow = length(lvs), ncol = length(lvs),
                            dimnames = list(lvs, lvs))
   for (lv in lvs) {
     predsLv <- pt[pt$lhs == lv & pt$op == "~", "rhs"]
     succsLv <- pt[pt$rhs == lv & pt$op == "~", "lhs"]
-    preds[predsLv, lv] <- TRUE
-    succs[succsLv, lv] <- TRUE
-    # selectionmatrix
+    preds[predsLv, lv]       <- TRUE
+    succs[succsLv, lv]       <- TRUE
     selectGamma[predsLv, lv] <- TRUE
   }
 
   is.nlin      <- grepl(":", lvs)
   preds.linear <- preds
   succs.linear <- succs
-  preds.linear[is.nlin,] <- FALSE
-  preds.linear[,is.nlin] <- FALSE
-  succs.linear[is.nlin,] <- FALSE
-  succs.linear[,is.nlin] <- FALSE
+  preds.linear[is.nlin, ] <- FALSE
+  preds.linear[, is.nlin] <- FALSE
+  succs.linear[is.nlin, ] <- FALSE
+  succs.linear[, is.nlin] <- FALSE
 
   is.cfa <- !any(preds.linear) && !any(succs.linear)
 
-  preds.cfa                       <- preds
-  preds.cfa[TRUE]                 <- FALSE
+  preds.cfa              <- preds
+  preds.cfa[TRUE]        <- FALSE
   preds.cfa[upper.tri(preds.cfa)] <- TRUE
+  preds.cfa[is.nlin, ]   <- FALSE
+  preds.cfa[, is.nlin]   <- FALSE
+  succs.cfa              <- t(preds.cfa)
 
-  preds.cfa[is.nlin,] <- FALSE
-  preds.cfa[,is.nlin] <- FALSE
-  succs.cfa           <- t(preds.cfa)
-
-  # Covariance Matrix xis ------------------------------------------------------
-  xis <- lvs[!lvs %in% pt[pt$op == "~", "lhs"]]
-  selectCov <- matrix(
-    FALSE, nrow = length(lvs), ncol = length(lvs),
-    dimnames = list(lvs, lvs)
-  )
-
+  # Covariance xis ---------------------------------------------------------
+  xis       <- lvs[!lvs %in% pt[pt$op == "~", "lhs"]]
+  selectCov <- matrix(FALSE, nrow = length(lvs), ncol = length(lvs),
+                      dimnames = list(lvs, lvs))
   diag(selectCov) <- TRUE
   selectCov[xis, xis][lower.tri(selectCov[xis, xis])] <- TRUE
 
-  # Residual Covariance Matrix indicators --------------------------------------
-  k <- length(allInds)
+  # Residual covariances ---------------------------------------------------
+  k           <- length(allInds)
   selectTheta <- matrix(FALSE, nrow = k, ncol = k,
                         dimnames = list(allInds, allInds))
-  diag(selectTheta) <- TRUE
-  is.formative <- allInds %in% inds.b
+  diag(selectTheta)     <- TRUE
+  is.formative          <- allInds %in% inds.b
   selectTheta[outer(is.formative, is.formative, "&")] <- TRUE
-  selectTheta[upper.tri(selectTheta, diag = FALSE)] <- FALSE
+  selectTheta[upper.tri(selectTheta, diag = FALSE)]   <- FALSE
 
-  # Selection Matric Indicators ------------------------------------------------
   Ip <- diag(nrow = nrow(lambda))
   colnames(Ip) <- rownames(Ip) <- rownames(lambda)
 
-  nlinSelectFrom <- outer(lvs, lvs, Vectorize(f1))
+  nlinSelectFrom          <- outer(lvs, lvs, Vectorize(f1))
   dimnames(nlinSelectFrom) <- list(lvs, lvs)
 
   C <- diag(nrow(gamma))
   dimnames(C) <- dimnames(gamma)
 
-  # Higher Order Composites ----------------------------------------------------
   isHigherOrderComposite <- stats::setNames(
-    lvs.linear %in% mode.b & lvs.linear %in% higherOrderLVs, nm = lvs.linear
+    lvs.linear %in% mode.b & lvs.linear %in% higherOrderLVs,
+    nm = lvs.linear
   )
   higherOrderComposites <- lvs.linear[isHigherOrderComposite]
 
-
-  # Create output lists --------------------------------------------------------
   matrices <- list(
-    lambda = lambda,
-    gamma = gamma,
-    preds = preds,
-    succs = succs,
+    lambda       = lambda,
+    gamma        = gamma,
+    preds        = preds,
+    succs        = succs,
     succs.linear = succs.linear,
     preds.linear = preds.linear,
     preds.cfa    = preds.cfa,
     succs.cfa    = succs.cfa,
     outerWeights = getNonZeroElems(lambda),
-    Ip = Ip,
-    C  = C,
-    S  = NULL,
-    SC = NULL,
-    select = list(
+    Ip           = Ip,
+    C            = C,
+    S            = NULL,
+    SC           = NULL,
+    select       = list(
       lambda   = selectLambda,
       gamma    = selectGamma,
       cov      = selectCov,
@@ -471,32 +429,27 @@ initMatrices <- function(pt, higherOrderLVs = NULL) {
     higherOrderComposites  = higherOrderComposites
   )
 
-  list(
-    matrices = matrices,
-    info = info
-  )
+  list(matrices = matrices, info = info)
 }
 
 
 getFitPLSModel <- function(model, consistent = TRUE) {
-  lambda  <- model$matrices$lambda
-  gamma   <- model$matrices$gamma
-  preds   <- model$matrices$preds
-  etas    <- model$info$etas
-  xis     <- model$info$xis
-  lvs     <- model$info$lvs
-  lvs.lin <- model$info$lvs.linear
-  inds    <- model$info$allInds
-  inds.a  <- model$info$inds.a
-  inds.b  <- model$info$inds.b
-  indsLvs <- model$info$indsLvs
-  modes   <- model$info$modes
-  mode.a  <- model$info$mode.a
-  ptl     <- model$parTable.input
-  SC      <- model$matrices$SC
-  k       <- length(lvs.lin)
+  lambda  <- model@matrices$lambda
+  gamma   <- model@matrices$gamma
+  preds   <- model@matrices$preds
+  etas    <- model@info$etas
+  xis     <- model@info$xis
+  lvs     <- model@info$lvs
+  lvs.lin <- model@info$lvs.linear
+  inds    <- model@info$allInds
+  inds.a  <- model@info$inds.a
+  inds.b  <- model@info$inds.b
+  indsLvs <- model@info$indsLvs
+  modes   <- model@info$modes
+  mode.a  <- model@info$mode.a
+  ptl     <- model@parTableInput
+  SC      <- model@matrices$SC
 
-  # measurement model
   fitMeasurement <- fitLambda <- fitWeights <- lambda
   fitMeasurement[TRUE] <- fitLambda[TRUE] <- fitWeights[TRUE] <- 0
 
@@ -506,67 +459,47 @@ getFitPLSModel <- function(model, consistent = TRUE) {
 
     wq <- lambda[inds.lv, lv]
     lq <- SC[inds.lv, lv]
-    pq <- switch(mode.lv,
-      A = lq,
-      B = wq,
-      NA_real_
-    )
+    pq <- switch(mode.lv, A = lq, B = wq, NA_real_)
 
     fitMeasurement[inds.lv, lv] <- pq
     fitWeights[inds.lv, lv]     <- wq
     fitLambda[inds.lv, lv]      <- lq
   }
 
-  # Caluculate consistent weights and correlations
   if (consistent) {
-    # We want to correct both for the errors causes by using the CEXP
-    # estimator, compared to the probit estimator. As well as the bias
-    # caused by ignoring measurement error.
-
-    Q <- getConstructQualities(model)
-
+    Q              <- getConstructQualities(model)
     fitMeasurement <- getConsistentLoadings(model, Q = Q)
-    fitLambda[,mode.a] <- fitMeasurement[,mode.a]
-    model$matrices$C <- getConsistentCorrMat(model, Q = Q)
-
+    fitLambda[, mode.a] <- fitMeasurement[, mode.a]
+    model@matrices$C    <- getConsistentCorrMat(model, Q = Q)
   } else {
     Q <- NULL
-
   }
 
-  # structural model
   fitStructural       <- gamma
   fitStructural[TRUE] <- 0
   for (lv in lvs) {
-    predsLv <- lvs[preds[ , lv, drop = TRUE]]
-
+    predsLv <- lvs[preds[, lv, drop = TRUE]]
     if (length(predsLv))
-      fitStructural[predsLv, lv] <- getPathCoefs(lv, predsLv,  model$matrices$C)
+      fitStructural[predsLv, lv] <- getPathCoefs(lv, predsLv, model@matrices$C)
   }
 
-  # Covariance matrix
-  fitCovXi  <- model$matrices$C[xis, xis, drop = FALSE]
-  fitCov    <- model$matrices$C
-  fitCovProj <- t(fitStructural) %*% model$matrices$C %*% fitStructural
-  fitCovRes  <- diag2(fitCov) - diag2(fitCovProj) # Removing diag2() might be better here
-                                                  # But I'm not sure the residual covariances
-                                                  # will be consistent estimates
-  fitCov[etas, etas] <- fitCovRes[etas, etas]
-  fitCov[etas, xis] <- fitCov[xis, etas] <- 0
+  fitCov     <- model@matrices$C
+  fitCovProj <- t(fitStructural) %*% model@matrices$C %*% fitStructural
+  fitCovRes  <- diag2(fitCov) - diag2(fitCovProj)
+  fitCov[etas, etas]  <- fitCovRes[etas, etas]
+  fitCov[etas, xis]   <- fitCov[xis, etas] <- 0
 
-  # Indicator Residuals
-  k <- length(inds)
-  fitTheta <- matrix(0, nrow = k, ncol = k,
-                     dimnames = list(inds, inds))
+  k        <- length(inds)
+  fitTheta <- matrix(0, nrow = k, ncol = k, dimnames = list(inds, inds))
   crossLoaded <- apply(
     X      = fitMeasurement,
     MARGIN = 1L,
     FUN    = \(x) sum(abs(x) > .Machine$double.xmin) > 1L
   )
 
-  fitThetaFull <- model$matrices$SC[inds, inds]
+  fitThetaFull <- model@matrices$SC[inds, inds]
   is.formative <- inds %in% inds.b
-  mask <- outer(is.formative, is.formative, FUN = "&")
+  mask         <- outer(is.formative, is.formative, FUN = "&")
   fitTheta[mask] <- fitThetaFull[mask]
 
   warnif(any(crossLoaded),
@@ -574,12 +507,10 @@ getFitPLSModel <- function(model, consistent = TRUE) {
          "when calculating indicator residuals!")
 
   for (ind in inds.a) {
-    j  <- which.max(abs(fitMeasurement[ind, ]))
-    r  <- fitMeasurement[ind, j]
-    v  <- SC[ind, ind]
-    res <- v - r^2
-
-    fitTheta[ind, ind] <- res
+    j   <- which.max(abs(fitMeasurement[ind, ]))
+    r   <- fitMeasurement[ind, j]
+    v   <- SC[ind, ind]
+    fitTheta[ind, ind] <- v - r^2
   }
 
   list(
@@ -589,42 +520,53 @@ getFitPLSModel <- function(model, consistent = TRUE) {
     fitTheta       = plssemMatrix(fitTheta, symmetric = TRUE),
     fitWeights     = plssemMatrix(fitWeights),
     fitLambda      = plssemMatrix(fitLambda),
-    fitC           = plssemMatrix(model$matrices$C),
+    fitC           = plssemMatrix(model@matrices$C),
     Q              = plssemVector(Q)
   )
 }
 
 
+modelFitIsAdmissible <- function(fit) {
+  # Simple check to see if model fit is (in)admissible
+
+  (
+    !anyNA(fit$fitWeights)       &&
+    !anyNA(fit$fitLambda)        &&
+    !anyNA(fit$fitStructural)    &&
+    !anyNA(fit$fitTheta)         &&
+    !anyNA(fit$fitCov)           &&
+    !anyNA(fit$fitC)             &&
+    isPositiveDefinite(fit$fitC) &&
+    all(diag(fit$fitTheta) >= 0) &&
+    all(diag(fit$fitCov) >= 0)
+  )
+}
+
+
 getParamVecNames <- function(model) {
-  selectLambda <- model$matrices$select$lambda
-  modes        <- model$info$modes
-  lvs.linear   <- model$info$lvs.linear
+  selectLambda <- model@matrices$select$lambda
+  modes        <- model@info$modes
+  lvs.linear   <- model@info$lvs.linear
   lambda       <- selectLambda
 
   for (j in lvs.linear) {
-    mode <- modes[[j]]
-    op <- switch(mode, A = "=~", B = "<~", "=~")
-
+    op <- switch(modes[[j]], A = "=~", B = "<~", "=~")
     for (i in rownames(lambda))
       lambda[i, j] <- paste0(j, op, i)
-
   }
 
-  selectGamma <- model$matrices$select$gamma
+  selectGamma <- model@matrices$select$gamma
   gamma       <- selectGamma
-
   for (j in colnames(gamma)) for (i in rownames(gamma))
     gamma[i, j] <- paste0(j, "~", i)
 
-  selectCov <- model$matrices$select$cov
+  selectCov <- model@matrices$select$cov
   psi       <- selectCov
-
   for (j in colnames(psi)) for (i in rownames(psi))
     psi[i, j] <- paste0(j, "~~", i)
 
-  selectTheta <- model$matrices$select$theta
+  selectTheta <- model@matrices$select$theta
   theta       <- selectTheta
-
   for (j in colnames(theta)) for (i in rownames(theta))
     theta[i, j] <- paste0(j, "~~", i)
 
@@ -633,19 +575,19 @@ getParamVecNames <- function(model) {
 
 
 extractCoefs <- function(model) {
-  fit <- model$fit
+  fit <- model@fit
 
   lambda       <- fit$fitMeasurement
-  selectLambda <- model$matrices$select$lambda
+  selectLambda <- model@matrices$select$lambda
 
   gamma       <- fit$fitStructural
-  selectGamma <- model$matrices$select$gamma
+  selectGamma <- model@matrices$select$gamma
 
   fitCov    <- fit$fitCov
-  selectCov <- model$matrices$select$cov
+  selectCov <- model@matrices$select$cov
 
   fitTheta    <- fit$fitTheta
-  selectTheta <- model$matrices$select$theta
+  selectTheta <- model@matrices$select$theta
 
   out <- c(
     lambda[selectLambda],
@@ -654,17 +596,14 @@ extractCoefs <- function(model) {
     fitTheta[selectTheta]
   )
 
-  names(out) <- model$params$names
-
+  names(out) <- model@params$names
   plssemVector(out)
 }
 
 
-getFactorScores <- function(model) {
-  matrices <- model$matrices
-  W <- model$matrices$lambda
-  X <- model$data
-
+computeFactorScores <- function(model) {
+  W <- model@matrices$lambda
+  X <- model@data
   Rfast::standardise(X %*% W)
 }
 
@@ -675,8 +614,7 @@ getEstimatorFromInfo <- function(info) {
   is.mlm     <- info$is.mlm
   is.ord     <- info$is.probit || (info$is.mcpls && length(info$ordered))
 
-  estimator  <- "PLS"
-
+  estimator <- "PLS"
   if (consistent || is.mcpls) estimator <- paste0(estimator, "c")
   if (is.mlm)                 estimator <- paste0(estimator, "-MLM")
   if (is.ord)                 estimator <- paste0("Ord", estimator)

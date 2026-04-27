@@ -2,9 +2,6 @@
 # Internal generics follow camelCase, whilst public ones follow snake_case
 # Replaces the former S3 methods (summary.plssem, print.plssem, coef.plssem, …).
 
-################################################################################
-### PUBLIC GENERICS                                                          ###
-################################################################################
 
 #' Show a \code{PlsModel} object
 #'
@@ -78,7 +75,7 @@ setMethod("summary", "PlsModel", function(object, fit = TRUE, ...) {
       etas = r2.etas,
       inds = r2.inds
     ),
-    fit.measures = if (fit) fitMeasures(object) else NULL
+    fit.measures = if (fit) fit_measures(object) else NULL
   )
 
   class(out) <- "SummaryPlsSem"
@@ -283,3 +280,74 @@ setGeneric("is_admissible", function(object) standardGeneric("is_admissible"))
 #' @rdname is_admissible
 #' @export
 setMethod("is_admissible", "PlsModel", function(object) isAdmissible(object))
+
+
+#' Implied Construct Correlation Matrix
+#'
+#' Returns the implied construct correlation matrix for a fitted model.
+#'
+#' For higher-order models, this is computed for the combined model returned by
+#' [combinedModel()].
+#'
+#' @param object A fitted [PlsModel] object.
+#' @param saturated Logical; if `TRUE`, return the saturated implied matrix.
+#' @param ... Reserved for future extensions.
+#' @return A [PlsSemMatrix].
+#' @export
+setGeneric(
+  "implied_construct_corr",
+  function(object, saturated = FALSE, ...) standardGeneric("implied_construct_corr")
+)
+
+#' @export
+setMethod("implied_construct_corr", "PlsModel", function(object, saturated = FALSE, ...) {
+  object <- combinedModel(object)
+  plssemMatrix(impliedConstructCorrMat(object, saturated = saturated), is.public = TRUE)
+})
+
+
+#' Implied Indicator Correlation Matrix
+#'
+#' Returns the implied indicator correlation matrix for a fitted model.
+#'
+#' For higher-order models, this is computed for the combined model returned by
+#' [combinedModel()].
+#'
+#' @param object A fitted [PlsModel] object.
+#' @param saturated Logical; if `TRUE`, return the saturated implied matrix.
+#' @param ... Reserved for future extensions.
+#' @return A numeric matrix.
+#' @export
+setGeneric(
+  "implied_indicator_corr",
+  function(object, saturated = FALSE, ...) standardGeneric("implied_indicator_corr")
+)
+
+#' @export
+setMethod("implied_indicator_corr", "PlsModel", function(object, saturated = FALSE, ...) {
+  object <- combinedModel(object)
+  plssemMatrix(impliedIndicatorCorrMat(object, saturated = saturated), is.public = TRUE)
+})
+
+
+#' Fit Measures
+#'
+#' Computes global fit measures (e.g., chi-square, SRMR, RMSEA) for a fitted
+#' model.
+#'
+#' @param object A fitted [PlsModel] object.
+#' @param saturated Logical; if `TRUE`, compute the saturated fit.
+#' @param mc.reps Integer; number of Monte Carlo resamples used for MC-PLSc fit.
+#' @param ... Reserved for future extensions.
+#' @return A named list with fit statistics.
+#' @export
+setGeneric(
+  "fit_measures",
+  function(object, saturated = FALSE, mc.reps = 1e6, ...) standardGeneric("fit_measures")
+)
+
+#' @export
+setMethod("fit_measures", "PlsModel", function(object, saturated = FALSE, mc.reps = 1e6, ...) {
+  object <- combinedModel(object)
+  fitMeasures(object, saturated = saturated, mc.reps = mc.reps)
+})

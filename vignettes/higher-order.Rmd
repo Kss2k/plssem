@@ -8,10 +8,11 @@ vignette: >
 ---
 
 ```{r, include = FALSE}
-EVAL_DEFAULT <- FALSE
+EVAL_DEFAULT <- identical(Sys.getenv("PLSSEM_VIGNETTES"), "true")
 knitr::opts_chunk$set(
   collapse = TRUE,
-  comment = "#>"
+  comment = "#>",
+  eval = EVAL_DEFAULT
 )
 ```
 
@@ -48,6 +49,6 @@ tpb_2so <- '
   BEH ~ PBC + INT + INT:PBC
 '
 
-fit <- pls(tpb_2so, data = TPB_2SO, bootstrap = TRUE, boot.R = 50)
+fit <- pls(tpb_2so, data = TPB_2SO, bootstrap = TRUE, boot.R = 20)
 summary(fit)
 ```

@@ -1,4 +1,6 @@
 estimatePLS_Step1 <- function(model) {
+  force(model)
+
   lvs   <- model@info$lvs.linear
   succs <- model@matrices$succs.linear
   preds <- model@matrices$preds.linear

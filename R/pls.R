@@ -214,12 +214,20 @@ pls <- function(syntax,
     modelBoot(model) <- bootstrap(model)
   }
 
-  modelParTable(model) <- getParTableEstimates(model)
+  cm <- combinedModel(model)
+  cm@parTable <- getParTableEstimates(cm)
+
+  if (is(model@combinedModel, "PlsModel") || hasHigherOrderModel(model)) {
+    model@combinedModel <- cm
+  } else {
+    model@parTable <- cm@parTable
+  }
+
   model
 }
 
 
-resetPLS_SubModel <- function(model, hard.reset = FALSE) {
+resetPLS_ModelLowerOrder <- function(model, hard.reset = FALSE) {
   model@status$finished       <- FALSE
   model@status$convergence    <- FALSE
   model@status$iterations.0_5 <- 0L
@@ -234,10 +242,10 @@ resetPLS_SubModel <- function(model, hard.reset = FALSE) {
 }
 
 
-estimatePLS_SubModelInner <- function(submodel) {
-  submodel <- resetPLS_SubModel(submodel, hard.reset = TRUE)
+estimatePLS_InnerLocal <- function(model) {
+  model <- resetPLS_ModelLowerOrder(model, hard.reset = TRUE)
 
-  resetPLS_SubModel(submodel) |>
+  resetPLS_ModelLowerOrder(model) |>
     estimatePLS_Step0_5() |>
     estimatePLS_Step6()   |>
     estimatePLS_Step7()   |>
@@ -246,30 +254,38 @@ estimatePLS_SubModelInner <- function(submodel) {
 
 
 estimatePLS_Inner <- function(model) {
-  fo <- firstOrder(model)
-  so <- secondOrder(model)
+  model <- estimatePLS_InnerLocal(model)
+  model@combinedModel <- NULL
 
-  fo <- estimatePLS_SubModelInner(fo)
-
-  if (!is.null(so)) {
-    newdata <- getSecondOrderDataMatrix(firstOrder = fo, secondOrder = so)
-
-    modelData(so)  <- newdata
-    corrMatrix(so) <- Rfast::cova(newdata)
-    inputReliabilities(so) <- constructReliabilities(fo)
-
-    so <- estimatePLS_SubModelInner(so)
-    so <- correctLoadingsAndWeightsSecondOrder(firstOrder = fo, secondOrder = so)
+  if (!hasHigherOrderModel(model)) {
+    return(model)
   }
 
-  firstOrder(model)  <- fo
-  secondOrder(model) <- so
+  ho <- higherOrderModel(model)
+  stopif(is.null(ho), "Expected a higher-order model")
 
-  combineModelResultsFirstSecondOrder(model)
+  # Prepare the higher-order model input.
+  newdata <- getSecondOrderDataMatrix(firstOrder = model, secondOrder = ho)
+  modelData(ho)  <- newdata
+  corrMatrix(ho) <- Rfast::cova(newdata)
+  inputReliabilities(ho) <- constructReliabilities(model)
+
+  # Estimate the higher-order chain.
+  ho <- estimatePLS_Inner(ho)
+
+  # Apply edge-specific corrections for this level.
+  ho <- correctLoadingsAndWeightsSecondOrder(firstOrder = model, secondOrder = ho)
+  higherOrderModel(model) <- ho
+
+  # Cache combined representation.
+  model@combinedModel <- computeCombinedModel(model)
+  model
 }
 
 
 estimatePLS_Outer <- function(model, ...) {
+  force(model)
+
   if (is_mcpls(model))
     return(mcpls(model, ...))
 

@@ -1,4 +1,6 @@
 estimatePLS_Step0_5 <- function(model) {
+  force(model)
+
   max.iter.0_5 <- model@status$max.iter.0_5
 
   model <- estimatePLS_Step0(model)

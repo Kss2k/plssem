@@ -1,4 +1,6 @@
 estimatePLS_Step3 <- function(model) {
+  force(model)
+
   lvs     <- model@info$lvs.linear
   indsLvs <- model@info$indsLvs
   lambda  <- model@matrices$lambda

@@ -15,13 +15,14 @@
 #' @return \code{object}, invisibly.
 #' @export
 setMethod("show", "PlsModel", function(object) {
+  combined <- combinedModel(object)
   admissible <- isAdmissible(object)
   statusString <- if (admissible) "ended normally" else "did NOT END NORMALLY"
 
   printf("plssem (%s) %s after %i iterations\n",
          PKG_INFO$version, statusString, object@status$iterations)
 
-  print(parameter_estimates(object))
+  print(parameter_estimates(combined))
   invisible(object)
 })
 
@@ -34,7 +35,8 @@ setMethod("show", "PlsModel", function(object) {
 #' @return A \code{SummaryPlsSem} list with formatted results.
 #' @export
 setMethod("summary", "PlsModel", function(object, fit = TRUE, ...) {
-  parTable <- parameter_estimates(object)
+  combined <- combinedModel(object)
+  parTable <- parameter_estimates(combined)
 
   lvs    <- getLVs(parTable)
   ovs    <- getOVs(parTable)
@@ -45,7 +47,7 @@ setMethod("summary", "PlsModel", function(object, fit = TRUE, ...) {
   strParTableLines <- utils::capture.output(modsem::summarize_partable(parTable))
   strParTable <- paste0(paste0(strParTableLines[-(1:6)], collapse = "\n"), "\n")
 
-  is.ord <- object@info$is.probit || (length(object@info$ordered) && object@info$is.mcpls)
+  is.ord <- combined@info$is.probit || (length(combined@info$ordered) && combined@info$is.mcpls)
   link   <- if (is.ord) "PROBIT" else "LINEAR"
 
   getR2 <- function(x, pt = parTable) {
@@ -63,9 +65,9 @@ setMethod("summary", "PlsModel", function(object, fit = TRUE, ...) {
     ),
     fit  = object,
     info = list(
-      iterations = object@status$iterations,
-      estimator  = object@info$estimator,
-      n          = object@info$n,
+      iterations = combined@status$iterations,
+      estimator  = combined@info$estimator,
+      n          = combined@info$n,
       nlvs       = length(lvs),
       novs       = length(ovs),
       link       = link,
@@ -165,7 +167,8 @@ print.SummaryPlsSem <- function(x, ...) {
 #' @importFrom stats coef
 #' @export
 setMethod("coef", "PlsModel", function(object, ...) {
-  plssemVector(object@params$values, is.public = TRUE)
+  combined <- combinedModel(object)
+  plssemVector(combined@params$values, is.public = TRUE)
 })
 
 
@@ -185,7 +188,8 @@ setMethod("coefficients", "PlsModel", function(object, ...) {
 #' @importFrom stats vcov
 #' @export
 setMethod("vcov", "PlsModel", function(object, ...) {
-  plssemMatrix(object@params$vcov, is.public = TRUE)
+  combined <- combinedModel(object)
+  plssemMatrix(combined@params$vcov, is.public = TRUE)
 })
 
 
@@ -211,6 +215,7 @@ setGeneric("parameter_estimates",
 #' @export
 setMethod("parameter_estimates", "PlsModel",
           function(object, colon.pi = TRUE, label.renamed.prod = FALSE, ...) {
+  object <- combinedModel(object)
   parTable <- object@parTable
 
   if (colon.pi)
@@ -230,6 +235,7 @@ setGeneric("is_mcpls", function(object) standardGeneric("is_mcpls"))
 #' @rdname is_mcpls
 #' @export
 setMethod("is_mcpls", "PlsModel", function(object) {
+  object <- combinedModel(object)
   isTRUE(object@info$is.mcpls)
 })
 
@@ -260,6 +266,7 @@ setGeneric("boot", function(object) standardGeneric("boot"))
 #' @rdname boot
 #' @export
 setMethod("boot", "PlsModel", function(object) {
+  object <- combinedModel(object)
   plssemMatrix(object@boot$boot, is.public = TRUE)
 })
 

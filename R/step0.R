@@ -1,4 +1,6 @@
 estimatePLS_Step0 <- function(model) {
+  force(model)
+
   lambda <- model@matrices$lambda
 
   for (i in seq_len(ncol(lambda))) {

@@ -58,7 +58,7 @@ getConsistentLoadings <- function(model, Q) {
 }
 
 
-getConstructQualities <- function(model) {
+getConstructQualities <- function(model, zero.tol = 1e-5) {
   lambda  <- model@matrices$lambda
   lvs     <- model@info$lvs.linear
   modes   <- model@info$modes
@@ -84,6 +84,7 @@ getConstructQualities <- function(model) {
 
       idx         <- intersect(inds.lv, names(rel))
       diag(S.ii)[idx] <- rel[idx]
+
       Q[[lv]] <- sqrt(c(w.i.t %*% S.ii %*% w.i))
       next
 
@@ -102,6 +103,40 @@ getConstructQualities <- function(model) {
     )
 
     Q[[lv]] <- sqrt((w.i.t %*% w.i)^2 * c.i^2)
+  }
+
+  if (any(Q > 1 | Q < zero.tol)) {
+    attr(Q, "admissible") <- FALSE
+
+    for (lv in lvs)
+       Q[[lv]] <- limitQ(Q[[lv]], lv = lv)
+
+  } else {
+    attr(Q, "admissible") <- TRUE
+
+  }
+
+  Q
+}
+
+
+limitQ <- function(Q, lv, zero.tol = 1e-5) {
+  if (Q > 1) {
+    warning2(sprintf(
+      "Reliability for %s is larger than 1! Q\u00B2(%s) = %.2f",
+      lv, lv, Q^2
+    ))
+
+    return(1)
+
+  } else if (Q <= zero.tol) {
+    
+    warning2(sprintf(
+      "Reliability is close too or smaller than zero! Q\u00B2(%s) = %.2g",
+      lv, lv, Q^2
+    ))
+
+    return(zero.tol)
   }
 
   Q

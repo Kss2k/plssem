@@ -1,4 +1,6 @@
 estimatePLS_Step2 <- function(model) {
+  force(model)
+
   Ip         <- model@matrices$Ip
   lambda     <- model@matrices$lambda
   gamma      <- model@matrices$gamma
@@ -6,9 +8,12 @@ estimatePLS_Step2 <- function(model) {
   S          <- model@matrices$S
   SC         <- model@matrices$SC
 
+  if (NROW(gamma) <= 1)
+    return(model)
+
   partLambda <- cbind(Ip, lambda)
   partGamma  <- rbind(
-    cbind(Ip,                                      matrix(0, nrow = nrow(Ip),    ncol = ncol(gamma))),
+    cbind(Ip, matrix(0, nrow = nrow(Ip), ncol = ncol(gamma))),
     cbind(matrix(0, nrow = nrow(gamma), ncol = ncol(Ip)), gamma)
   )
 

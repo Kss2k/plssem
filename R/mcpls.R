@@ -13,14 +13,16 @@ mcpls <- function(
   ...
 ) {
   fit0.base <- fit0
+  fit0.combined <- combinedModel(fit0.base)
+
   data      <- fit0.base@data
   vars      <- colnames(data)
   ordered   <- fit0@info$ordered
-  is.hi.ord <- fit0@info$is.high.ord
+  is.hi.ord <- isTRUE(fit0.combined@info$is.high.ord)
 
   PROBS <- getPROBS(data = data, ordered = ordered)
 
-  par0 <- getFreeParamsTable(fit0)
+  par0 <- getFreeParamsTable(fit0.combined)
   par1 <- par0[c("lhs", "op", "rhs", "est", "is.free")]
 
   if (fixed.seed && is.null(rng.seed)) {
@@ -38,14 +40,12 @@ mcpls <- function(
     X       <- Rfast::standardise(as.matrix(sim.ov[vars]))
     S       <- Rfast::cova(X)
 
-    # Update first-order sub-model data and correlation matrix
-    fo       <- firstOrder(fit.sim)
-    fo@data         <- X
-    fo@matrices$S   <- S
-    firstOrder(fit.sim) <- fo
+    # Update observed-data (lowest-order) model input
+    fit.sim@data       <- X
+    fit.sim@matrices$S <- S
 
     fit2 <- estimatePLS_Inner(fit.sim)
-    par2 <- getFreeParamsTable(fit2)
+    par2 <- getFreeParamsTable(combinedModel(fit2))
 
     eps <- par2$est - par0$est + sim$penalty
     eps[par0$is.free]
@@ -88,18 +88,22 @@ mcpls <- function(
   }
 
   par1[par1$is.free, "est"] <- as.vector(mcfit$root)
-  fit1 <- updateModelFromFreeParTableMC(
+  fit1.combined <- updateModelFromFreeParTableMC(
     parTable = par1,
-    model    = fit0.base,
+    model    = fit0.combined,
     mc.reps  = mc.reps,
     PROBS    = PROBS,
     ordered  = ordered,
     seed     = rng.seed
   )
 
-  fit1@status$iterations      <- mcfit$iter
-  fit1@info$mc.args$p.start   <- as.vector(mcfit$root)
-  fit1
+  fit1.combined@status$iterations    <- mcfit$iter
+  fit1.combined@info$mc.args$p.start <- as.vector(mcfit$root)
+
+  fit0.base@combinedModel <- fit1.combined
+  fit0.base@status$iterations    <- mcfit$iter
+  fit0.base@info$mc.args$p.start <- as.vector(mcfit$root)
+  fit0.base
 }
 
 
@@ -121,7 +125,10 @@ ordinalizeDataFrame <- function(df, PROBS, ordered = NULL) {
 
 
 getFreeParamsTable <- function(model) {
-  parTable <- getParTableEstimates(model, rm.tmp = FALSE)
+  model <- combinedModel(model)
+  parTable <- getParTableEstimates(
+    model, rm.tmp.ov = FALSE, clean.tmp.ind = FALSE
+  )
 
   lhs <- parTable$lhs
   op  <- parTable$op

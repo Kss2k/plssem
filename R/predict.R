@@ -29,6 +29,8 @@ setMethod("pls_predict", "PlsModel", function(object,
                                                benchmark = "R2",
                                                benchmark.vars = c("endog", "exog", "all"),
                                                ...) {
+  object <- combinedModel(object)
+
   # TODO:
   #  1. Allow the user to pass only indicators of exogenous variables, if
   #     approach='earliest'.
@@ -50,7 +52,7 @@ setMethod("pls_predict", "PlsModel", function(object,
   X.ord  <- outerX$X.ord
   ordered <- intersect(ordered, colnames(X.cont))
 
-  if (info$is.high.ord) {
+  if (isTRUE(info$is.high.ord)) {
     lvs.hi.ord <- info$lvs.hi.ord
 
     W.lv <- W[rownames(W) %in% colnames(W), lvs.hi.ord, drop = FALSE]
@@ -65,12 +67,12 @@ setMethod("pls_predict", "PlsModel", function(object,
   Y <- X.cont %*% W
 
   if (approach == "earliest") {
-    parTable <- getParTableEstimates(object, rm.tmp = FALSE)
+    parTable <- getParTableEstimates(object, rm.tmp.ov = FALSE, clean.tmp.ind = FALSE)
 
-    if (info$is.high.ord)
+    if (isTRUE(info$is.high.ord))
       parTable <- highOrdMeasrAsStructParTable(parTable)
 
-    xis  <- getXis(parTable, isLV = !info$is.high.ord)
+    xis  <- getXis(parTable, isLV = !isTRUE(info$is.high.ord))
     etas <- getSortedEtas(parTable)
 
     undefIntTerms <- getIntTerms(parTable)
@@ -133,12 +135,12 @@ setMethod("pls_predict", "PlsModel", function(object,
   X.cont.pred <- plssemMatrix(X.cont.pred, is.public = TRUE)
   X.ord       <- plssemMatrix(X.ord, is.public = TRUE)
   X.ord.pred  <- plssemMatrix(X.ord.pred, is.public = TRUE)
-  ordered     <- unique(c(ordered, stringr::str_remove_all(ordered, TEMP_OV_PREFIX)))
+  ordered     <- unique(c(ordered, removeTempOvPrefix(ordered)))
   all.vars    <- colnames(X.cont.pred)
   benchmarked <- NULL
 
-  inds.x <- stringr::str_remove_all(object@info$inds.x, TEMP_OV_PREFIX)
-  inds.y <- stringr::str_remove_all(object@info$inds.y, TEMP_OV_PREFIX)
+  inds.x <- removeTempOvPrefix(object@info$inds.x)
+  inds.y <- removeTempOvPrefix(object@info$inds.y)
 
   pred.vars <- switch(benchmark.vars,
     all = all.vars,
@@ -455,7 +457,7 @@ getOuterDataMatrices <- function(model, newdata = NULL, std.ord.exp = FALSE) {
 
     if (any(is.tmp)) {
       tmpReplacements <- stats::setNames(
-        nm.o[is.tmp], stringr::str_remove_all(nm.o[is.tmp], TEMP_OV_PREFIX)
+        nm.o[is.tmp], removeTempOvPrefix(nm.o[is.tmp])
       )
 
       keys <- intersect(nm.n, names(tmpReplacements))

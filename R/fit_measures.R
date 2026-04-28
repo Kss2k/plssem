@@ -1,49 +1,54 @@
-setGeneric("impliedConstructCorrMat",
-           function(object, saturated = FALSE) standardGeneric("impliedConstructCorrMat"))
+impliedConstructCorrMat <- function(model, saturated = FALSE) {
+  fit  <- model@fit
+  info <- model@info
+  M    <- model@matrices
 
-setMethod("impliedConstructCorrMat", "PlsBaseModel", function(object, saturated = FALSE) {
-  fit <- object@fit
-  M   <- object@matrices
+  higherOrder <- higherOrderModel(model)
 
-  if (saturated) return(M$C)
+  if (!is.null(higherOrder)) {
 
-  Gamma  <- t(fit$fitStructural)
-  Lambda <- fit$fitLambda
-  Phi    <- fit$fitCov
+    CTmp <- impliedIndicatorCorrMat(higherOrder, saturated = saturated)
+    C <- plssemMatrix(CTmp, is.public = TRUE) # handle any tmp variables
 
-  I     <- diag(NCOL(Gamma))
-  B     <- I - Gamma
+    Gamma  <- t(fit$fitStructural)
+    cols   <- colnames(Gamma)
+    C      <- C[cols, cols, drop = FALSE]
+
+    if (saturated)
+      return(C)
+
+    # Whenever there exists a higher order model, we should have Gamma = 0
+    # Such that we always return saturated. This is however not garuanteed
+    # for future behaviours. Thus we do it properly anyways.
+    xis  <- info$xis
+    etas <- info$etas
+
+    Cproj <- Gamma %*% C %*% Gamma 
+    Phi   <- diag2(C) - diag2(Cproj)
+
+    Phi[xis, xis]   <- C[xis, xis]
+    Phi[etas, etas] <- Phi[etas, etas]
+    Phi[etas, xis]  <- Phi[xis, etas] <- 0
+
+  } else {
+
+    if (saturated)
+      return(M$C)
+
+    Gamma  <- t(fit$fitStructural)
+    Phi    <- fit$fitCov
+
+  }
+
+  I <- diag(NCOL(Gamma))
+  B <- I - Gamma
   B.inv <- solve(B)
+
   B.inv %*% Phi %*% t(B.inv)
-})
-
-setMethod("impliedConstructCorrMat", "PlsModel", function(object, saturated = FALSE) {
-  is.hi.ord <- object@info$is.high.ord
-
-  if (is.null(is.hi.ord) || !is.hi.ord)
-    return(callNextMethod())
-
-  fo <- firstOrder(object)
-  so <- secondOrder(object)
-
-  C      <- impliedIndicatorCorrMat(so, saturated = saturated)
-  C      <- plssemMatrix(C, is.public = TRUE)
-  Lambda <- fo@fit$fitLambda
-  Gamma  <- t(fo@fit$fitStructural)
-  cols   <- colnames(Gamma)
-  Phi    <- C[cols, cols, drop = FALSE]
-
-  I     <- diag(NCOL(Gamma))
-  B     <- I - Gamma
-  B.inv <- solve(B)
-  B.inv %*% Phi %*% t(B.inv)
-})
+}
 
 
-setGeneric("impliedIndicatorCorrMat",
-           function(object, saturated = FALSE) standardGeneric("impliedIndicatorCorrMat"))
-
-setMethod("impliedIndicatorCorrMat", "PlsBaseModel", function(object, saturated = FALSE) {
+impliedIndicatorCorrMat <- function(object, saturated = FALSE) {
   fit    <- object@fit
   M      <- object@matrices
   mode.b <- object@info$mode.b
@@ -70,13 +75,13 @@ setMethod("impliedIndicatorCorrMat", "PlsBaseModel", function(object, saturated 
   }
 
   Implied
-})
+}
 
 
 fitMeasures <- function(model, saturated = FALSE, mc.reps = 1e6) {
   tryCatch({
 
-    if (model@info$is.mcpls) {
+    if (isMCPLS(model)) {
       warning2("Fit measures for MC-PLSc models are under development!\n",
                "Traditional fit criteria will likely be too strict.")
       message(sprintf("Resampling MC-PLSc Model (R = %d)...", mc.reps))

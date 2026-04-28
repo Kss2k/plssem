@@ -54,10 +54,8 @@ bootstrap <- function(model,
       sampleS    <- getCorrMat(sampleData, ordered = ordered, probit = is.probit)
       model.b    <- model.base
 
-      fo <- firstOrder(model.b)
-      fo@data       <- sampleData
-      fo@matrices$S <- sampleS
-      firstOrder(model.b) <- fo
+      model.b@data       <- sampleData
+      model.b@matrices$S <- sampleS
 
       mc.args         <- model.b@info$mc.args
       boot.fixed.seed <- mc.boot.control$fixed.seed
@@ -83,7 +81,7 @@ bootstrap <- function(model,
 
       })
 
-      par <- model.b@params$values
+      par <- combinedModel(model.b)@params$values
 
       if (low.tol.penalty > 0 && is.mcpls) {
         k <- length(par)
@@ -158,9 +156,21 @@ bootstrap <- function(model,
       results <- parallel::mclapply(seq_len(R), .bootf, mc.cores = ncpus)
 
     } else if (is.snow) {
+      cl <- tryCatch(
+        parallel::makePSOCKcluster(rep("localhost", ncpus)),
+        error = function(e) {
+          warning2(
+            "Failed to start PSOCK cluster; falling back to serial bootstrap.\n",
+            "Message: ", conditionMessage(e)
+          )
+          NULL
+        }
+      )
 
-      cl <- parallel::makePSOCKcluster(rep("localhost", ncpus))
-      on.exit(parallel::stopCluster(cl), add = TRUE)
+      if (is.null(cl)) {
+        results <- lapply(seq_len(R), .bootf)
+      } else {
+        on.exit(parallel::stopCluster(cl), add = TRUE)
 
       # Ensure workers have the package namespace loaded so internal helper
       # functions referenced by `.bootf` resolve correctly.
@@ -181,7 +191,9 @@ bootstrap <- function(model,
       # if(RNGkind()[1L] == "L'Ecuyer-CMRG")
       # clusterSetRNGStream() always calls `RNGkind("L'Ecuyer-CMRG")`
       parallel::clusterSetRNGStream(cl, iseed = iseed)
-      results <- parallel::parLapply(cl, seq_len(R), .bootf)
+        results <- parallel::parLapply(cl, seq_len(R), .bootf)
+
+      }
 
     }
 
@@ -199,7 +211,7 @@ bootstrap <- function(model,
 
   resultsMat <- do.call(rbind, results)
   rownames(resultsMat) <- ids
-  colnames(resultsMat) <- names(model@params$values)
+  colnames(resultsMat) <- names(combinedModel(model)@params$values)
 
   vcov <- stats::cov(resultsMat, use = "complete.obs")
   se <- sqrt(diag(vcov))

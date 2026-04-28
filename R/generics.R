@@ -2,9 +2,6 @@
 # Internal generics follow camelCase, whilst public ones follow snake_case
 # Replaces the former S3 methods (summary.plssem, print.plssem, coef.plssem, …).
 
-################################################################################
-### PUBLIC GENERICS                                                          ###
-################################################################################
 
 #' Show a \code{PlsModel} object
 #'
@@ -15,13 +12,19 @@
 #' @return \code{object}, invisibly.
 #' @export
 setMethod("show", "PlsModel", function(object) {
-  admissible <- isAdmissible(object)
+  combined <- combinedModel(object)
+  admissible <- isAdmissible(combined)
+
   statusString <- if (admissible) "ended normally" else "did NOT END NORMALLY"
 
   printf("plssem (%s) %s after %i iterations\n",
-         PKG_INFO$version, statusString, object@status$iterations)
+         PKG_INFO$version, statusString, combined@status$iterations)
 
-  print(parameter_estimates(object))
+  parTable <- parameter_estimates(combined)
+  
+  if (NROW(parTable)) print(parTable)
+  else                print(object@parTableInput)
+
   invisible(object)
 })
 
@@ -34,7 +37,8 @@ setMethod("show", "PlsModel", function(object) {
 #' @return A \code{SummaryPlsSem} list with formatted results.
 #' @export
 setMethod("summary", "PlsModel", function(object, fit = TRUE, ...) {
-  parTable <- parameter_estimates(object)
+  combined <- combinedModel(object)
+  parTable <- parameter_estimates(combined)
 
   lvs    <- getLVs(parTable)
   ovs    <- getOVs(parTable)
@@ -45,7 +49,7 @@ setMethod("summary", "PlsModel", function(object, fit = TRUE, ...) {
   strParTableLines <- utils::capture.output(modsem::summarize_partable(parTable))
   strParTable <- paste0(paste0(strParTableLines[-(1:6)], collapse = "\n"), "\n")
 
-  is.ord <- object@info$is.probit || (length(object@info$ordered) && object@info$is.mcpls)
+  is.ord <- combined@info$is.probit || (length(combined@info$ordered) && combined@info$is.mcpls)
   link   <- if (is.ord) "PROBIT" else "LINEAR"
 
   getR2 <- function(x, pt = parTable) {
@@ -63,9 +67,9 @@ setMethod("summary", "PlsModel", function(object, fit = TRUE, ...) {
     ),
     fit  = object,
     info = list(
-      iterations = object@status$iterations,
-      estimator  = object@info$estimator,
-      n          = object@info$n,
+      iterations = combined@status$iterations,
+      estimator  = combined@info$estimator,
+      n          = combined@info$n,
       nlvs       = length(lvs),
       novs       = length(ovs),
       link       = link,
@@ -76,7 +80,7 @@ setMethod("summary", "PlsModel", function(object, fit = TRUE, ...) {
       etas = r2.etas,
       inds = r2.inds
     ),
-    fit.measures = if (fit) fitMeasures(object) else NULL
+    fit.measures = if (fit) fit_measures(object) else NULL
   )
 
   class(out) <- "SummaryPlsSem"
@@ -165,7 +169,8 @@ print.SummaryPlsSem <- function(x, ...) {
 #' @importFrom stats coef
 #' @export
 setMethod("coef", "PlsModel", function(object, ...) {
-  plssemVector(object@params$values, is.public = TRUE)
+  combined <- combinedModel(object)
+  plssemVector(combined@params$values, is.public = TRUE)
 })
 
 
@@ -185,7 +190,8 @@ setMethod("coefficients", "PlsModel", function(object, ...) {
 #' @importFrom stats vcov
 #' @export
 setMethod("vcov", "PlsModel", function(object, ...) {
-  plssemMatrix(object@params$vcov, is.public = TRUE)
+  combined <- combinedModel(object)
+  plssemMatrix(combined@params$vcov, is.public = TRUE)
 })
 
 
@@ -211,6 +217,7 @@ setGeneric("parameter_estimates",
 #' @export
 setMethod("parameter_estimates", "PlsModel",
           function(object, colon.pi = TRUE, label.renamed.prod = FALSE, ...) {
+  object <- combinedModel(object)
   parTable <- object@parTable
 
   if (colon.pi)
@@ -230,6 +237,7 @@ setGeneric("is_mcpls", function(object) standardGeneric("is_mcpls"))
 #' @rdname is_mcpls
 #' @export
 setMethod("is_mcpls", "PlsModel", function(object) {
+  object <- combinedModel(object)
   isTRUE(object@info$is.mcpls)
 })
 
@@ -260,6 +268,7 @@ setGeneric("boot", function(object) standardGeneric("boot"))
 #' @rdname boot
 #' @export
 setMethod("boot", "PlsModel", function(object) {
+  object <- combinedModel(object)
   plssemMatrix(object@boot$boot, is.public = TRUE)
 })
 
@@ -276,3 +285,74 @@ setGeneric("is_admissible", function(object) standardGeneric("is_admissible"))
 #' @rdname is_admissible
 #' @export
 setMethod("is_admissible", "PlsModel", function(object) isAdmissible(object))
+
+
+#' Implied Construct Correlation Matrix
+#'
+#' Returns the implied construct correlation matrix for a fitted model.
+#'
+#' For higher-order models, this is computed for the combined model returned by
+#' [combinedModel()].
+#'
+#' @param object A fitted [PlsModel] object.
+#' @param saturated Logical; if `TRUE`, return the saturated implied matrix.
+#' @param ... Reserved for future extensions.
+#' @return A [PlsSemMatrix].
+#' @export
+setGeneric(
+  "implied_construct_corr",
+  function(object, saturated = FALSE, ...) standardGeneric("implied_construct_corr")
+)
+
+#' @export
+setMethod("implied_construct_corr", "PlsModel", function(object, saturated = FALSE, ...) {
+  object <- combinedModel(object)
+  plssemMatrix(impliedConstructCorrMat(object, saturated = saturated), is.public = TRUE)
+})
+
+
+#' Implied Indicator Correlation Matrix
+#'
+#' Returns the implied indicator correlation matrix for a fitted model.
+#'
+#' For higher-order models, this is computed for the combined model returned by
+#' [combinedModel()].
+#'
+#' @param object A fitted [PlsModel] object.
+#' @param saturated Logical; if `TRUE`, return the saturated implied matrix.
+#' @param ... Reserved for future extensions.
+#' @return A numeric matrix.
+#' @export
+setGeneric(
+  "implied_indicator_corr",
+  function(object, saturated = FALSE, ...) standardGeneric("implied_indicator_corr")
+)
+
+#' @export
+setMethod("implied_indicator_corr", "PlsModel", function(object, saturated = FALSE, ...) {
+  object <- combinedModel(object)
+  plssemMatrix(impliedIndicatorCorrMat(object, saturated = saturated), is.public = TRUE)
+})
+
+
+#' Fit Measures
+#'
+#' Computes global fit measures (e.g., chi-square, SRMR, RMSEA) for a fitted
+#' model.
+#'
+#' @param object A fitted [PlsModel] object.
+#' @param saturated Logical; if `TRUE`, compute the saturated fit.
+#' @param mc.reps Integer; number of Monte Carlo resamples used for MC-PLSc fit.
+#' @param ... Reserved for future extensions.
+#' @return A named list with fit statistics.
+#' @export
+setGeneric(
+  "fit_measures",
+  function(object, saturated = FALSE, mc.reps = 1e6, ...) standardGeneric("fit_measures")
+)
+
+#' @export
+setMethod("fit_measures", "PlsModel", function(object, saturated = FALSE, mc.reps = 1e6, ...) {
+  object <- combinedModel(object)
+  fitMeasures(object, saturated = saturated, mc.reps = mc.reps)
+})

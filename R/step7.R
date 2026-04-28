@@ -1,4 +1,6 @@
 estimatePLS_Step7 <- function(model) {
+  force(model)
+
   is.mlm     <- model@info$is.mlm
   is.mcpls   <- model@info$is.mcpls
   consistent <- model@info$consistent

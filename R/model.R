@@ -6,128 +6,42 @@ VEC_STRUCT <- numeric(0)
 
 
 specifyModel <- function(syntax, data, ...) {
-  split      <- splitHigherOrderModel(syntax)
+  parTable <- modsem::modsemify(syntax, parentheses.as.string = TRUE)
+  hiOrd    <- getHigherOrderLVs(parTable)
+  specifyModelParTable(parTable = parTable, data = data, higherOrderLVs = hiOrd, ...)
+}
+
+
+specifyModelParTable <- function(parTable, data, higherOrderLVs = NULL, ...) {
+  split      <- splitHigherOrderParTable(parTable)
   parTableO2 <- split$parTableO2
   parTableO1 <- split$parTableO1
-  hiOrdLVs   <- split$higherOrderLVs
 
   firstOrder <- specifySubModel(
     parTable       = parTableO1,
     data           = data,
     is.lower.order = NROW(parTableO2) > 0,
+    higherOrderLVs = higherOrderLVs,
     ...
   )
 
-  secondOrder <- specifySubModel(
-    parTable       = parTableO2,
-    data           = getSecondOrderInputData(firstOrder),
-    higherOrderLVs = hiOrdLVs,
-    is.lower.order = FALSE,
-    ...
-  )
+  if (NROW(parTableO2) > 0) {
 
-  info1       <- firstOrder@info
-  is.high.ord <- !is.null(secondOrder)
-  info2       <- if (is.high.ord) secondOrder@info else list()
-
-  if (!is.high.ord) {
-    inds.x <- info1$inds.x
-    inds.y <- info1$inds.y
-    etas   <- info1$etas
-    xis    <- info1$xis
+    higherOrder <- specifyModelParTable(
+      parTable       = parTableO2,
+      data           = getSecondOrderInputData(firstOrder),
+      higherOrderLVs = higherOrderLVs,
+      ...
+    )
 
   } else {
-    lvs     <- info1$lvs
-    etas    <- info2$etas
-    ovInds  <- info1$allInds
-    lvInds  <- intersect(info2$allInds, lvs)
-    indsMap <- c(info1$indsLvs, info2$indsLvs)
+    higherOrder <- NULL
 
-    lowInds <- unique(unlist(indsMap[lvInds]))
-    etaInds <- unique(unlist(indsMap[etas]))
-    yInds   <- c(lowInds, etaInds)
-
-    inds.y <- intersect(ovInds, yInds)
-    inds.x <- setdiff(ovInds, yInds)
-
-    etas <- union(info1$etas, info2$etas)
-    xis  <- setdiff(union(info1$xis, info2$xis), etas)
   }
 
-  ordered <- union(info1$ordered, info2$ordered)
-
-  is.mcpls <- (
-    isTRUE(info1$is.mcpls) || isTRUE(info2$is.mcpls) ||
-    (length(ordered) > 0 && is.high.ord)
-  )
-
-  is.probit <- (
-    (isTRUE(info1$is.probit) || isTRUE(info2$is.probit)) || !is.mcpls
-  )
-
-  if (is.mcpls && isTRUE(firstOrder@info$is.probit)) {
-    firstOrder@info$is.probit  <- FALSE
-    firstOrder@matrices$S      <- getCorrMat(firstOrder@data, probit = FALSE)
-  }
-
-  PlsModel(
-    submodels = list(
-      firstOrder  = firstOrder,
-      secondOrder = secondOrder
-    ),
-    matrices = list(
-      S           = MAT_STRUCT,
-      C           = MAT_STRUCT,
-      firstOrder  = firstOrder@matrices,
-      secondOrder = if (is.high.ord) secondOrder@matrices else list()
-    ),
-    data   = firstOrder@data,
-    info   = list(
-      lvs.linear   = union(info1$lvs.linear, info2$lvs.linear),
-      lvs          = union(info1$lvs, info2$lvs),
-      lvs.hi.ord   = hiOrdLVs,
-      xis          = xis,
-      etas         = etas,
-      mode.a       = union(info1$mode.a, info2$mode.a),
-      mode.b       = union(info1$mode.b, info2$mode.b),
-      modes        = namedListUnion(info1$modes, info2$modes),
-      inds.x       = inds.x,
-      inds.y       = inds.y,
-      indsLvs      = namedListUnion(info1$indsLvs, info2$indsLvs),
-      cluster      = info1$cluster,
-      ordered      = info1$ordered,
-      is.mlm       = isTRUE(info1$is.mlm) || isTRUE(info2$is.mlm),
-      is.mcpls     = is.mcpls,
-      is.probit    = is.probit,
-      is.cfa       = isTRUE(info1$is.cfa) && (is.null(info2$is.cfa) || info2$is.cfa),
-      is.high.ord  = is.high.ord,
-      n            = info1$n,
-      estimator    = info1$estimator,
-      standardized = info1$standardized,
-      verbose      = isTRUE(info1$verbose) || isTRUE(info2$verbose),
-      mc.args      = info1$mc.args,
-      boot         = info1$boot,
-      args         = list(...)
-    ),
-    status   = firstOrder@status,
-    parTable = NULL,
-    params   = list(
-      names      = VEC_STRUCT,
-      values     = VEC_STRUCT,
-      se         = VEC_STRUCT,
-      vcov       = NULL
-    ),
-    fit = list(
-      fitMeasurement = MAT_STRUCT,
-      fitLambda      = MAT_STRUCT,
-      fitWeights     = MAT_STRUCT,
-      fitTheta       = MAT_STRUCT,
-      fitC           = MAT_STRUCT,
-      fitCov         = MAT_STRUCT,
-      fitStructural  = MAT_STRUCT,
-      Q              = VEC_STRUCT
-    )
-  )
+  higherOrderModel(firstOrder) <- higherOrder
+  firstOrder@info$is.high.ord <- !is.null(higherOrder)
+  firstOrder
 }
 
 
@@ -226,6 +140,8 @@ specifySubModel <- function(parTable,
   info$verbose       <- verbose
   info$standardized  <- standardize
   info$reliabilities <- reliabilities
+  info$is.high.ord   <- FALSE
+  info$is.lower.order <- isTRUE(is.lower.order)
 
   info$mc.args <- list(
     min.iter        = mc.min.iter,
@@ -252,7 +168,7 @@ specifySubModel <- function(parTable,
   matrices$S  <- preppedData$S
   matrices$SC <- diagPartitioned(matrices$S, matrices$C)
 
-  model <- PlsSubModel(
+  model <- PlsModel(
     parTableInput = pt,
     matrices      = matrices,
     data          = preppedData$X,
@@ -467,12 +383,15 @@ getFitPLSModel <- function(model, consistent = TRUE) {
   }
 
   if (consistent) {
-    Q              <- getConstructQualities(model)
-    fitMeasurement <- getConsistentLoadings(model, Q = Q)
+    Q                   <- getConstructQualities(model)
+    fitMeasurement      <- getConsistentLoadings(model, Q = Q)
     fitLambda[, mode.a] <- fitMeasurement[, mode.a]
     model@matrices$C    <- getConsistentCorrMat(model, Q = Q)
+
   } else {
     Q <- NULL
+    attr(Q, "admissible") <- TRUE
+
   }
 
   fitStructural       <- gamma
@@ -506,10 +425,11 @@ getFitPLSModel <- function(model, consistent = TRUE) {
          "Did not expect any cross loaded indicators,\n",
          "when calculating indicator residuals!")
 
-  for (ind in inds.a) {
-    j   <- which.max(abs(fitMeasurement[ind, ]))
+  for (ind in inds.a) {                                  # Guard for NaN in fitMeasurement
+    j   <- max(which.max(abs(fitMeasurement[ind, ])), 1) # max(numeric(0), 1) = 1
     r   <- fitMeasurement[ind, j]
     v   <- SC[ind, ind]
+
     fitTheta[ind, ind] <- v - r^2
   }
 
@@ -528,6 +448,11 @@ getFitPLSModel <- function(model, consistent = TRUE) {
 
 modelFitIsAdmissible <- function(fit) {
   # Simple check to see if model fit is (in)admissible
+   
+  Q.admissible <- (
+    is.null(attr(fit$Q, "admissible")) ||
+    isTRUE(attr(fit$Q, "admissible"))
+  )
 
   (
     !anyNA(fit$fitWeights)       &&
@@ -538,7 +463,8 @@ modelFitIsAdmissible <- function(fit) {
     !anyNA(fit$fitC)             &&
     isPositiveDefinite(fit$fitC) &&
     all(diag(fit$fitTheta) >= 0) &&
-    all(diag(fit$fitCov) >= 0)
+    all(diag(fit$fitCov) >= 0)   &&
+    Q.admissible
   )
 }
 

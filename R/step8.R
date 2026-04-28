@@ -1,4 +1,6 @@
 estimatePLS_Step8 <- function(model) {
+  force(model)
+
   model@params$values <- extractCoefs(model)
   model@params$se     <- rep(NA_real_, length(model@params$values))
 

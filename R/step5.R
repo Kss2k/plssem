@@ -1,4 +1,6 @@
 estimatePLS_Step5 <- function(model) {
+  force(model)
+
   oldWeights <- model@matrices$outerWeights
   newWeights <- getNonZeroElems(model@matrices$lambda)
 

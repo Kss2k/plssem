@@ -39,6 +39,9 @@ diagPartitioned <- function(X, Y) {
 
 
 diag2 <- function(X) {
+  if (NROW(X) <= 1L)
+    return(X[1, 1, drop=FALSE])
+
   Y <- diag(diag(X))
   dimnames(Y) <- dimnames(X)
   Y
@@ -218,12 +221,12 @@ getSortedEtas <- function(parTable, isLV = FALSE, checkAny = TRUE) {
       if ((eta <- structExprs[i, "lhs"]) %in% structExprs$rhs) next
 
       sortedEtas  <- c(eta, sortedEtas)
-      structExprs <- structExprs[!grepl(eta, structExprs$lhs), ]
+      structExprs <- structExprs[structExprs$lhs != eta, , drop = FALSE]
       break
     }
   }
 
-  if (!all(sortedEtas %in% unsortedEtas) &&
+  if (!all(unsortedEtas %in% sortedEtas) ||
       length(sortedEtas) != length(unsortedEtas)) {
       warning("unable to sort etas")
       return(unsortedEtas)
@@ -325,4 +328,29 @@ isPositiveDefinite <- function(X, tol.eigen = .Machine$double.eps ^ (3/4)) {
                           error = \(e) rep(NA, min(1L, NCOL(X))))
 
   !any(is.na(eigenvalues)) & !any(eigenvalues <= tol.eigen)
+}
+
+
+removeTempOvPrefix <- function(x) {
+  stringr::str_remove_all(x, TEMP_OV_PREFIX_PATTERN)
+}
+
+
+removeTempIndSuffix <- function(x) {
+  stringr::str_remove_all(x, TEMP_IND_SUFFIX_PATTERN)
+}
+
+
+hasTempOvPrefix <- function(x) {
+  stringr::str_detect(x, TEMP_OV_PREFIX_PATTERN)
+}
+
+
+hasTempIndSuffix <- function(x) {
+  stringr::str_detect(x, TEMP_IND_SUFFIX_PATTERN)
+}
+
+
+removeTempAffixes <- function(x) {
+  removeTempIndSuffix(removeTempOvPrefix(x))
 }

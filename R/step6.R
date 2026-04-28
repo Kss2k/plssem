@@ -1,4 +1,6 @@
 estimatePLS_Step6 <- function(model) {
+  force(model)
+
   model@factorScores <- computeFactorScores(model)
 
   if (!model@info$is.nlin)

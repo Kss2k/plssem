@@ -411,7 +411,7 @@ getSecondOrderDataMatrix <- function(firstOrder, secondOrder) {
   # Finalize
   checkMissingConstructScores(have = colnames(Scores), want = want)
 
-  newdata <- Scores[, want]
+  newdata <- Scores[, want, drop = FALSE]
   attr(newdata, "cluster") <- attr(modelData(firstOrder), "cluster")
 
   newdata

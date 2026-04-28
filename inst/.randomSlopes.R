@@ -15,7 +15,7 @@ model.lme4 <- 'Y ~ X + Z + (1 + X + Z | cluster)'
 
 var_X      <- 1
 var_Z      <- 1
-cov_X_Z    <- 0.2
+cov_X_Z    <- 0.2 
 
 beta_Y     <- 0
 gamma_Y_X  <- 0.3
@@ -65,13 +65,13 @@ sim_data <- function(N = n, K = k) {
   SXI <- matrix(c(var_X, cov_X_Z,
                   cov_X_Z, var_Z), nrow = 2)
   XI <- rmvnorm(N, sigma = SXI)
-
+  
   X <- XI[, 1]
   Z <- XI[, 2]
-
+  
   Y <- rep(0, N)
   W <- rep(0, N)
-
+  
   cluster <- sample(K, n, replace = TRUE)
 
   for (i in unique(cluster)) {
@@ -80,18 +80,18 @@ sim_data <- function(N = n, K = k) {
     dgammax <- gamma_Y_X + rnorm(1L, mean = 0, sd = sqrt(var_gamma_Y_X))
     dgammaz <- gamma_Y_Z + rnorm(1L, mean = 0, sd = sqrt(var_gamma_Y_Z))
     dgammaxz <- gamma_Y_XZ + rnorm(1L, mean = 0, sd = sqrt(var_gamma_Y_XZ))
-
-    Y[cond] <- Y[cond] + dbeta +
-      dgammax * X[cond] + dgammaz * Z[cond] +
+    
+    Y[cond] <- Y[cond] + dbeta + 
+      dgammax * X[cond] + dgammaz * Z[cond] + 
       dgammaxz * (X * Z)[cond]
-
+    
     dbeta <- beta_W + rnorm(1L, mean = 0, sd = sqrt(var_beta_W))
     dgammax <- gamma_W_X + rnorm(1L, mean = 0, sd = sqrt(var_gamma_W_X))
     dgammaz <- gamma_W_Z + rnorm(1L, mean = 0, sd = sqrt(var_gamma_W_Z))
     dgammaxz <- gamma_W_XZ + rnorm(1L, mean = 0, sd = sqrt(var_gamma_W_XZ))
-
-    W[cond] <- W[cond] + dbeta +
-      dgammax * X[cond] + dgammaz * Z[cond] +
+    
+    W[cond] <- W[cond] + dbeta + 
+      dgammax * X[cond] + dgammaz * Z[cond] + 
       dgammaxz * (X * Z)[cond]
   }
 
@@ -103,11 +103,11 @@ sim_data <- function(N = n, K = k) {
   x1 <- create_ind(X, beta_1, lambda_1, epsilon)
   x2 <- create_ind(X, beta_2, lambda_2, epsilon)
   x3 <- create_ind(X, beta_3, lambda_3, epsilon)
-
+  
   z1 <- create_ind(Z, beta_1, lambda_1, epsilon)
   z2 <- create_ind(Z, beta_2, lambda_2, epsilon)
   z3 <- create_ind(Z, beta_3, lambda_3, epsilon)
-
+  
   y1 <- create_ind(Y, beta_1, lambda_1, epsilon)
   y2 <- create_ind(Y, beta_2, lambda_2, epsilon)
   y3 <- create_ind(Y, beta_3, lambda_3, epsilon)
@@ -115,7 +115,7 @@ sim_data <- function(N = n, K = k) {
   w1 <- create_ind(W, beta_1, lambda_1, epsilon)
   w2 <- create_ind(W, beta_2, lambda_2, epsilon)
   w3 <- create_ind(W, beta_3, lambda_3, epsilon)
-
+  
   data <- data.frame(
     x1, x2, x3,
     z1, z2, z3,
@@ -128,7 +128,7 @@ sim_data <- function(N = n, K = k) {
   # print(
   #   lmer('Y ~ X + Z + (1 + X + Z | cluster)', data = data.frame(X, Z, Y, cluster))
   # )
-  #
+  # 
   cat("Standardized results:\n")
   print(
     lmer('Y ~ X + Z + (1 + X + Z | cluster)',

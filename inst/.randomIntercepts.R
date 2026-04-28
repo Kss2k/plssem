@@ -58,11 +58,11 @@ sim_data <- function(N = n, K = k) {
   SXI[2, 3] <- SXI[3, 2] <- cov_x2_x3
 
   XI <- rmvnorm(N, sigma = SXI)
-
+  
   x1 <- XI[, 1]
   x2 <- XI[, 2]
   x3 <- XI[, 3]
-
+  
   cluster <- sample(K, N, replace = TRUE)
 
   x1 <- x1 - ave(x1, cluster)
@@ -70,14 +70,14 @@ sim_data <- function(N = n, K = k) {
   x3 <- x3 - ave(x3, cluster)
   w1 <- rnorm(K, mean = 0, sd = sqrt(var_ov))[cluster]
   w2 <- rnorm(K, mean = 0, sd = sqrt(var_ov))[cluster]
-
+ 
   fw <- beta_f + gamma_f_x1 * x1 + gamma_f_x2 * x2 + gamma_f_x3 * x3 + residual(zeta_fw)
 
   fb <- rep(0, N)
   for (i in unique(cluster)) {
     cond <- cluster == i
 
-
+     
     dbeta <- rnorm(1L, mean = 0, sd = sqrt(var_beta_f))
     fb[cond] <- fb[cond] + dbeta + gamma_f_w1 * w1[cond] + gamma_f_w2 * w2[cond] + rnorm(1L, mean = 0, sqrt(zeta_fb))
   }
@@ -87,7 +87,7 @@ sim_data <- function(N = n, K = k) {
   y1 <- lambda_1 * f + residual(epsilon)
   y2 <- lambda_2 * f + residual(epsilon)
   y3 <- lambda_3 * f + residual(epsilon)
-
+  
   data <- data.frame(
     y1, y2, y3, x1, x2, x3, w1, w2,
     cluster
@@ -105,20 +105,20 @@ sim_data <- function(N = n, K = k) {
     lmer('f ~ x1 + x2 + x3 + w1 + w2 + (1 | cluster)', data = data.lv)
   )
   #> Fixed Effects:
-  #> (Intercept)           x1           x2
-  #>     1.47350      0.29505      0.20201
-  #>          x3           w1           w2
-  #>     0.09237      0.15636      0.11234
-
+  #> (Intercept)           x1           x2  
+  #>     1.47350      0.29505      0.20201  
+  #>          x3           w1           w2  
+  #>     0.09237      0.15636      0.11234  
+  
   cat("Standardized results:\n")
   print(
     lmer('f ~ x1 + x2 + x3 + w1 + w2 + (1 | cluster)', data = data.lv.std)
   )
   #> Fixed Effects:
-  #> (Intercept)           x1           x2
-  #>    -0.01216      0.23596      0.16155
-  #>          x3           w1           w2
-  #>     0.07467      0.12640      0.09235
+  #> (Intercept)           x1           x2  
+  #>    -0.01216      0.23596      0.16155  
+  #>          x3           w1           w2  
+  #>     0.07467      0.12640      0.09235  
   data
 }
 

@@ -4,7 +4,7 @@ on:
   push:
     branches: [ main, test-workflow ]
   pull_request:
-    branches: [ main, test-workflow, s4 ]
+    branches: [ main, test-workflow ]
 
 jobs:
   R-CMD-CHECK-Native:

@@ -1,29 +1,29 @@
 bootstrap <- function(model,
                       zero.tol = 1e-10,
-                      verbose  = model@info$verbose,
-                      parallel = model@info$boot$parallel,
-                      ncpus    = model@info$boot$ncpus,
-                      R        = model@info$boot$R,
-                      iseed    = model@info$boot$iseed) {
+                      verbose  = model$info$verbose,
+                      parallel = model$info$boot$parallel,
+                      ncpus    = model$info$boot$ncpus,
+                      R        = model$info$boot$R,
+                      iseed    = model$info$boot$iseed) {
 
   # The logic here follows the lavaan package
   is.mc <- is.snow <- FALSE
   if (is.null(parallel)) parallel <- "no"
   parallel <- match.arg(parallel, c("no", "multicore", "snow"))
 
-  data      <- model@data
-  cluster   <- model@info$cluster
-  is.probit <- model@info$is.probit
-  is.mcpls  <- model@info$is.mcpls
-  ordered   <- model@info$ordered
+  data      <- model$data
+  cluster   <- model$info$cluster
+  is.probit <- model$info$is.probit
+  is.mcpls  <- model$info$is.mcpls
+  ordered   <- model$info$ordered
   results   <- vector("list", R)
   verbose   <- verbose && !is.snow
 
   model.base <- model
 
-  boot.optimize <- isTRUE(model@info$boot$optimize)
+  boot.optimize <- isTRUE(model$info$boot$optimize)
   mc.boot.control <- prepMCBootControl(
-    boot.control  = model@info$boot$mc.boot.control,
+    boot.control  = model$info$boot$mc.boot.control,
     boot.optimize = boot.optimize,
     model         = model
   )
@@ -41,10 +41,10 @@ bootstrap <- function(model,
     )
   }
 
-  na.par <- stats::setNames(rep(NA_real_, length(model@params$values)),
-                            names(model@params$values))
+  na.par <- stats::setNames(rep(NA_real_, length(model$params$values)),
+                            names(model$params$values))
 
-  P_START <- model@info$mc.args$p.start
+  P_START <- model$info$mc.args$p.start
 
   .bootf <- function(i) {
     if (verbose) progress(i)
@@ -54,10 +54,10 @@ bootstrap <- function(model,
       sampleS    <- getCorrMat(sampleData, ordered = ordered, probit = is.probit)
       model.b    <- model.base
 
-      model.b@data       <- sampleData
-      model.b@matrices$S <- sampleS
+      model.b$submodels$firstOrder$data       <- sampleData
+      model.b$submodels$firstOrder$matrices$S <- sampleS
 
-      mc.args         <- model.b@info$mc.args
+      mc.args         <- model.b$info$mc.args
       boot.fixed.seed <- mc.boot.control$fixed.seed
       boot.polyak     <- mc.boot.control$polyak.juditsky
       boot.tol        <- mc.boot.control$tol
@@ -81,7 +81,7 @@ bootstrap <- function(model,
 
       })
 
-      par <- combinedModel(model.b)@params$values
+      par <- model.b$params$values
 
       if (low.tol.penalty > 0 && is.mcpls) {
         k <- length(par)
@@ -113,7 +113,7 @@ bootstrap <- function(model,
   }
 
   # iseed:
-  # this is adapted from the lavaan package
+  # this is adapted from the Lavaan package
   # - iseed is used for both serial and parallel
   # - if iseed is not set, iseed is generated + .Random.seed created/updated
   #     -> tmp.seed <- NA
@@ -156,44 +156,19 @@ bootstrap <- function(model,
       results <- parallel::mclapply(seq_len(R), .bootf, mc.cores = ncpus)
 
     } else if (is.snow) {
-      cl <- tryCatch(
-        parallel::makePSOCKcluster(rep("localhost", ncpus)),
-        error = function(e) {
-          warning2(
-            "Failed to start PSOCK cluster; falling back to serial bootstrap.\n",
-            "Message: ", conditionMessage(e)
-          )
-          NULL
-        }
-      )
 
-      if (is.null(cl)) {
-        results <- lapply(seq_len(R), .bootf)
-      } else {
-        on.exit(parallel::stopCluster(cl), add = TRUE)
+      cl <- parallel::makePSOCKcluster(rep("localhost", ncpus))
+      on.exit(parallel::stopCluster(cl), add = TRUE)
 
       # Ensure workers have the package namespace loaded so internal helper
       # functions referenced by `.bootf` resolve correctly.
-      # When running via devtools::test() the package is loaded from source
-      # but not installed — workers must load from the same source tree.
-      pkg_path <- if (requireNamespace("pkgload", quietly = TRUE)) {
-        tryCatch(pkgload::package_file(), error = function(e) NULL)
-      } else {
-        NULL
-      }
-      if (!is.null(pkg_path)) {
-        parallel::clusterCall(cl, function(p) pkgload::load_all(p, quiet = TRUE), pkg_path)
-      } else {
-        parallel::clusterEvalQ(cl, loadNamespace("plssem"))
-      }
+      parallel::clusterEvalQ(cl, loadNamespace("plssem"))
 
       # No need for
       # if(RNGkind()[1L] == "L'Ecuyer-CMRG")
       # clusterSetRNGStream() always calls `RNGkind("L'Ecuyer-CMRG")`
       parallel::clusterSetRNGStream(cl, iseed = iseed)
-        results <- parallel::parLapply(cl, seq_len(R), .bootf)
-
-      }
+      results <- parallel::parLapply(cl, seq_len(R), .bootf)
 
     }
 
@@ -211,7 +186,7 @@ bootstrap <- function(model,
 
   resultsMat <- do.call(rbind, results)
   rownames(resultsMat) <- ids
-  colnames(resultsMat) <- names(combinedModel(model)@params$values)
+  colnames(resultsMat) <- names(model$params$values)
 
   vcov <- stats::cov(resultsMat, use = "complete.obs")
   se <- sqrt(diag(vcov))
@@ -268,7 +243,7 @@ CONFIG_BOOT_CONTROL <- list(
 
 
 prepMCBootControl <- function(boot.control, boot.optimize, model) {
-  mc.args <- model@info$mc.args
+  mc.args <- model$info$mc.args
 
   if (!boot.optimize) {
     # Overwrite fields by arguments in mc.args
@@ -293,7 +268,7 @@ prepMCBootControl <- function(boot.control, boot.optimize, model) {
 
   if (is.null(boot.control$max.iter))
     boot.control$max.iter <- CONFIG_BOOT_CONTROL$max.iter
-
+  
   if (is.null(boot.control$polyak.juditsky))
     boot.control$polyak.juditsky <- CONFIG_BOOT_CONTROL$polyak.juditsky
 

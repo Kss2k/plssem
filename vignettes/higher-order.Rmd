@@ -12,7 +12,7 @@ EVAL_DEFAULT <- identical(Sys.getenv("PLSSEM_VIGNETTES"), "true")
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
-  eval = EVAL_DEFAULT
+  eval = TRUE
 )
 ```
 
@@ -49,6 +49,6 @@ tpb_2so <- '
   BEH ~ PBC + INT + INT:PBC
 '
 
-fit <- pls(tpb_2so, data = TPB_2SO, bootstrap = TRUE, boot.R = 20)
+fit <- pls(tpb_2so, data = TPB_2SO, bootstrap = TRUE, boot.R = 50)
 summary(fit)
 ```

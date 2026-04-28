@@ -296,18 +296,23 @@ setMethod("is_admissible", "PlsModel", function(object) isAdmissible(object))
 #'
 #' @param object A fitted [PlsModel] object.
 #' @param saturated Logical; if `TRUE`, return the saturated implied matrix.
+#' @param mc.reps Integer; number of Monte Carlo resamples used for MC-PLSc.
 #' @param ... Reserved for future extensions.
 #' @return A [PlsSemMatrix].
 #' @export
 setGeneric(
   "implied_construct_corr",
-  function(object, saturated = FALSE, ...) standardGeneric("implied_construct_corr")
+  function(object, saturated = FALSE, mc.reps = 1e6, ...) standardGeneric("implied_construct_corr")
 )
 
 #' @rdname implied_construct_corr
 #' @export
-setMethod("implied_construct_corr", "PlsModel", function(object, saturated = FALSE, ...) {
-  plssemMatrix(impliedConstructCorrMat(object, saturated = saturated), is.public = TRUE)
+setMethod("implied_construct_corr", "PlsModel",
+          function(object, saturated = FALSE, mc.reps = 1e6, ...) {
+  plssemMatrix(
+    impliedConstructCorrMat(object, saturated = saturated, mc.reps = mc.reps),
+    is.public = TRUE
+  )
 })
 
 
@@ -320,19 +325,24 @@ setMethod("implied_construct_corr", "PlsModel", function(object, saturated = FAL
 #'
 #' @param object A fitted [PlsModel] object.
 #' @param saturated Logical; if `TRUE`, return the saturated implied matrix.
+#' @param mc.reps Integer; number of Monte Carlo resamples used for MC-PLSc.
 #' @param ... Reserved for future extensions.
 #' @return A numeric matrix.
 #' @export
 setGeneric(
   "implied_indicator_corr",
-  function(object, saturated = FALSE, ...) standardGeneric("implied_indicator_corr")
+  function(object, saturated = FALSE, mc.reps = 1e6, ...) standardGeneric("implied_indicator_corr")
 )
 
 
 #' @rdname implied_indicator_corr 
 #' @export
-setMethod("implied_indicator_corr", "PlsModel", function(object, saturated = FALSE, ...) {
-  plssemMatrix(impliedIndicatorCorrMat(object, saturated = saturated), is.public = TRUE)
+setMethod("implied_indicator_corr", "PlsModel",
+          function(object, saturated = FALSE, mc.reps = 1e6, ...) {
+  plssemMatrix(
+    impliedIndicatorCorrMat(object, saturated = saturated, mc.reps = mc.reps),
+    is.public = TRUE
+  )
 })
 
 

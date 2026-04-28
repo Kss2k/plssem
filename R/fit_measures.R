@@ -1,4 +1,12 @@
-impliedConstructCorrMat <- function(model, saturated = FALSE) {
+impliedConstructCorrMat <- function(model, saturated = FALSE, mc.reps = 1e6) {
+  
+  if (is_mcpls(model)) {
+    message(sprintf("Resampling MC-PLSc Model (R = %d)...", mc.reps))
+    combined <- combinedModel(model)
+    resampled <- resampleMCPLS_Fit(combined, mc.reps = mc.reps)
+    return(resampled@matrices$C)
+  }
+
   fit  <- model@fit
   info <- model@info
   M    <- model@matrices
@@ -48,7 +56,15 @@ impliedConstructCorrMat <- function(model, saturated = FALSE) {
 }
 
 
-impliedIndicatorCorrMat <- function(object, saturated = FALSE) {
+impliedIndicatorCorrMat <- function(object, saturated = FALSE, mc.reps = 1e6) {
+
+  if (is_mcpls(object)) {
+    message(sprintf("Resampling MC-PLSc Model (R = %d)...", mc.reps))
+    combined <- combinedModel(object)
+    resampled <- resampleMCPLS_Fit(combined, mc.reps = mc.reps)
+    return(resampled@matrices$S.ord.expected)
+  }
+
   fit    <- object@fit
   M      <- object@matrices
   mode.b <- object@info$mode.b

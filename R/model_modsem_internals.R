@@ -7,7 +7,7 @@
 
 
 parTableToSyntax      <- .internalModsemAPI("parTableToSyntax")
-getStructOVs          <- .internalModsemAPI("getStructOVs")
+modsemGetStructOVs    <- .internalModsemAPI("getStructOVs")
 getParTableLabels     <- .internalModsemAPI("getParTableLabels")
 multiplyIndicatorsCpp <- .internalModsemAPI("multiplyIndicatorsCpp")
 # simulateDataParTable  <- .internalModsemAPI("simulateDataParTable")

@@ -13,13 +13,18 @@
 #' @export
 setMethod("show", "PlsModel", function(object) {
   combined <- combinedModel(object)
-  admissible <- isAdmissible(object)
+  admissible <- isAdmissible(combined)
+
   statusString <- if (admissible) "ended normally" else "did NOT END NORMALLY"
 
   printf("plssem (%s) %s after %i iterations\n",
-         PKG_INFO$version, statusString, object@status$iterations)
+         PKG_INFO$version, statusString, combined@status$iterations)
 
-  print(parameter_estimates(combined))
+  parTable <- parameter_estimates(combined)
+  
+  if (NROW(parTable)) print(parTable)
+  else                print(object@parTableInput)
+
   invisible(object)
 })
 

@@ -126,7 +126,9 @@ ordinalizeDataFrame <- function(df, PROBS, ordered = NULL) {
 
 getFreeParamsTable <- function(model) {
   model <- combinedModel(model)
-  parTable <- getParTableEstimates(model, rm.tmp.ov = FALSE, clean.tmp.ind = FALSE)
+  parTable <- getParTableEstimates(
+    model, rm.tmp.ov = FALSE, clean.tmp.ind = FALSE
+  )
 
   lhs <- parTable$lhs
   op  <- parTable$op

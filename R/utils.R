@@ -221,12 +221,12 @@ getSortedEtas <- function(parTable, isLV = FALSE, checkAny = TRUE) {
       if ((eta <- structExprs[i, "lhs"]) %in% structExprs$rhs) next
 
       sortedEtas  <- c(eta, sortedEtas)
-      structExprs <- structExprs[!grepl(eta, structExprs$lhs), ]
+      structExprs <- structExprs[structExprs$lhs != eta, , drop = FALSE]
       break
     }
   }
 
-  if (!all(sortedEtas %in% unsortedEtas) &&
+  if (!all(unsortedEtas %in% sortedEtas) ||
       length(sortedEtas) != length(unsortedEtas)) {
       warning("unable to sort etas")
       return(unsortedEtas)

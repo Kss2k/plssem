@@ -249,7 +249,8 @@ estimatePLS_InnerLocal <- function(model) {
     estimatePLS_Step0_5() |>
     estimatePLS_Step6()   |>
     estimatePLS_Step7()   |>
-    estimatePLS_Step8()
+    estimatePLS_Step8()   |>
+    estimatePLS_Status()
 }
 
 
@@ -257,9 +258,8 @@ estimatePLS_Inner <- function(model) {
   model <- estimatePLS_InnerLocal(model)
   model@combinedModel <- NULL
 
-  if (!hasHigherOrderModel(model)) {
+  if (!hasHigherOrderModel(model))
     return(model)
-  }
 
   ho <- higherOrderModel(model)
   stopif(is.null(ho), "Expected a higher-order model")
@@ -278,7 +278,7 @@ estimatePLS_Inner <- function(model) {
   higherOrderModel(model) <- ho
 
   # Cache combined representation.
-  model@combinedModel <- computeCombinedModel(model)
+  model@combinedModel <- combinedModel(model)
   model
 }
 

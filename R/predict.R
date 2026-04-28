@@ -30,6 +30,7 @@ setMethod("pls_predict", "PlsModel", function(object,
                                                benchmark.vars = c("endog", "exog", "all"),
                                                ...) {
   object <- combinedModel(object)
+
   # TODO:
   #  1. Allow the user to pass only indicators of exogenous variables, if
   #     approach='earliest'.
@@ -66,7 +67,7 @@ setMethod("pls_predict", "PlsModel", function(object,
   Y <- X.cont %*% W
 
   if (approach == "earliest") {
-    parTable <- getParTableEstimates(object, rm.tmp = FALSE)
+    parTable <- getParTableEstimates(object, rm.tmp.ov = FALSE, clean.tmp.ind = FALSE)
 
     if (isTRUE(info$is.high.ord))
       parTable <- highOrdMeasrAsStructParTable(parTable)

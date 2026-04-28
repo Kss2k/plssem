@@ -5,7 +5,7 @@ devtools::load_all()
 # first-, second-, and third-order predictors.
 
 set.seed(812341)
-N <- 1200L
+N <- 10000L
 
 std <- function(x) (x - mean(x)) / stats::sd(x)
 
@@ -98,6 +98,7 @@ testthat::expect_no_error({
   fit <- pls(syntax, data = data, consistent = TRUE)
   summary(fit)
 
+  pls_predict(fit)
   pt <- parameter_estimates(fit)
   testthat::expect_true(any(pt$lhs == "Y" & pt$op == "~" & pt$rhs == "ABCD"))
   testthat::expect_true(any(pt$lhs == "Y" & pt$op == "~" & pt$rhs == "EF"))

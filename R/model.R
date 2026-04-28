@@ -25,19 +25,22 @@ specifyModelParTable <- function(parTable, data, higherOrderLVs = NULL, ...) {
     ...
   )
 
-  higher <- if (NROW(parTableO2) > 0) {
-    specifyModelParTable(
+  if (NROW(parTableO2) > 0) {
+
+    higherOrder <- specifyModelParTable(
       parTable       = parTableO2,
       data           = getSecondOrderInputData(firstOrder),
       higherOrderLVs = higherOrderLVs,
       ...
     )
+
   } else {
-    NULL
+    higherOrder <- NULL
+
   }
 
-  higherOrderModel(firstOrder) <- higher
-  firstOrder@info$is.high.ord <- !is.null(higher)
+  higherOrderModel(firstOrder) <- higherOrder
+  firstOrder@info$is.high.ord <- !is.null(higherOrder)
   firstOrder
 }
 
@@ -380,12 +383,15 @@ getFitPLSModel <- function(model, consistent = TRUE) {
   }
 
   if (consistent) {
-    Q              <- getConstructQualities(model)
-    fitMeasurement <- getConsistentLoadings(model, Q = Q)
+    Q                   <- getConstructQualities(model)
+    fitMeasurement      <- getConsistentLoadings(model, Q = Q)
     fitLambda[, mode.a] <- fitMeasurement[, mode.a]
     model@matrices$C    <- getConsistentCorrMat(model, Q = Q)
+
   } else {
     Q <- NULL
+    attr(Q, "admissible") <- TRUE
+
   }
 
   fitStructural       <- gamma
@@ -442,6 +448,11 @@ getFitPLSModel <- function(model, consistent = TRUE) {
 
 modelFitIsAdmissible <- function(fit) {
   # Simple check to see if model fit is (in)admissible
+   
+  Q.admissible <- (
+    is.null(attr(fit$Q, "admissible")) ||
+    isTRUE(attr(fit$Q, "admissible"))
+  )
 
   (
     !anyNA(fit$fitWeights)       &&
@@ -452,7 +463,8 @@ modelFitIsAdmissible <- function(fit) {
     !anyNA(fit$fitC)             &&
     isPositiveDefinite(fit$fitC) &&
     all(diag(fit$fitTheta) >= 0) &&
-    all(diag(fit$fitCov) >= 0)
+    all(diag(fit$fitCov) >= 0)   &&
+    Q.admissible
   )
 }
 

@@ -5,14 +5,16 @@
 \alias{implied_indicator_corr,PlsModel-method}
 \title{Implied Indicator Correlation Matrix}
 \usage{
-implied_indicator_corr(object, saturated = FALSE, ...)
+implied_indicator_corr(object, saturated = FALSE, mc.reps = 1e+06, ...)
 
-\S4method{implied_indicator_corr}{PlsModel}(object, saturated = FALSE, ...)
+\S4method{implied_indicator_corr}{PlsModel}(object, saturated = FALSE, mc.reps = 1e+06, ...)
 }
 \arguments{
 \item{object}{A fitted [PlsModel] object.}
 
 \item{saturated}{Logical; if `TRUE`, return the saturated implied matrix.}
+
+\item{mc.reps}{Integer; number of Monte Carlo resamples used for MC-PLSc.}
 
 \item{...}{Reserved for future extensions.}
 }

@@ -233,14 +233,12 @@ resetPLS_ModelLowerOrder <- function(model, hard.reset = FALSE) {
 
 
 estimatePLS_InnerLocal <- function(model) {
-  model <- resetPLS_ModelLowerOrder(model, hard.reset = TRUE)
-
-  resetPLS_ModelLowerOrder(model) |>
-    estimatePLS_Step0_5() |>
-    estimatePLS_Step6()   |>
-    estimatePLS_Step7()   |>
-    estimatePLS_Step8()   |>
-    estimatePLS_Status()
+  model |>
+    updateOuterWeights() |>
+    updateFactorScores() |>
+    updateFitObjects()   |>
+    updateParamVector()  |>
+    updateEstimationStatus()
 }
 
 

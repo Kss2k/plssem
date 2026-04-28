@@ -1,4 +1,4 @@
-init_model_status <- function(tolerance, max.iter.0_5) {
+initModelStatus <- function(tolerance, max.iter.0_5) {
   list(
     convergence    = FALSE,
     iterations     = 0L,
@@ -10,7 +10,7 @@ init_model_status <- function(tolerance, max.iter.0_5) {
 }
 
 
-init_model_params <- function(model) {
+initModelParams <- function(model) {
   parnames <- getParamVecNames(model)
   k <- length(parnames)
 
@@ -24,4 +24,3 @@ init_model_params <- function(model) {
 
   model
 }
-

@@ -173,13 +173,13 @@ specifySubModel <- function(parTable,
     matrices      = matrices,
     data          = preppedData$X,
     info          = info,
-    status        = init_model_status(
+    status        = initModelStatus(
       tolerance = tolerance,
       max.iter.0_5 = max.iter.0_5
     )
   )
 
-  init_model_params(model)
+  initModelParams(model)
 }
 
 

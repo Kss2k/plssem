@@ -41,8 +41,11 @@ bootstrap <- function(model,
     )
   }
 
-  na.par <- stats::setNames(rep(NA_real_, length(model@params$values)),
-                            names(model@params$values))
+  combinedCoefs <- combinedModel(model)@params$values
+  na.par <- stats::setNames(
+    rep(NA_real_, length(combinedCoefs)),
+    names(combinedCoefs)
+  )
 
   P_START <- model@info$mc.args$p.start
 

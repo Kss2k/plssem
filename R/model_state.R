@@ -10,6 +10,19 @@ initModelStatus <- function(tolerance, max.iter.0_5) {
 }
 
 
+resetModelStatusLowerOrder <- function(model, hard.reset = FALSE) {
+  model@status$convergence <- FALSE
+  model@status$iterations.0_5 <- 0L
+
+  if (hard.reset) {
+    model@status$iterations <- 0L
+    model@params$values.old <- NULL
+  }
+
+  model
+}
+
+
 initModelParams <- function(model) {
   parnames <- getParamVecNames(model)
   k <- length(parnames)

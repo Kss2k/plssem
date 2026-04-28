@@ -228,15 +228,7 @@ pls <- function(syntax,
 
 
 resetPLS_ModelLowerOrder <- function(model, hard.reset = FALSE) {
-  model@status$convergence    <- FALSE
-  model@status$iterations.0_5 <- 0L
-
-  if (hard.reset) {
-    model@status$iterations     <- 0L
-    model@params$values.old     <- NULL
-  }
-
-  model
+  resetModelStatusLowerOrder(model, hard.reset = hard.reset)
 }
 
 

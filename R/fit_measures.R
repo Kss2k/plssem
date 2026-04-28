@@ -80,6 +80,7 @@ impliedIndicatorCorrMat <- function(object, saturated = FALSE) {
 
 fitMeasures <- function(model, saturated = FALSE, mc.reps = 1e6) {
   tryCatch({
+
     if (is_mcpls(model)) {
       warning2("Fit measures for MC-PLSc models are under development!\n",
                "Traditional fit criteria will likely be too strict.")

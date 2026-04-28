@@ -217,10 +217,10 @@ computeCombinedModel <- function(model, lowerOrderAsEta = FALSE) {
   ordered  <- union(info1$ordered, info2$ordered)
   ordered.base <- info1$ordered
 
-  is.mcpls <- (
-    isTRUE(info1$is.mcpls) || isTRUE(info2$is.mcpls) ||
-      (length(ordered) > 0)
-  )
+  # MC-PLSc is an estimator choice, not merely the presence of ordered
+  # indicators. A combined model should only be flagged MC-PLSc if any level
+  # was actually fitted with MC-PLSc.
+  is.mcpls <- isTRUE(info1$is.mcpls) || isTRUE(info2$is.mcpls)
 
   is.probit <- (
     (isTRUE(info1$is.probit) || isTRUE(info2$is.probit)) || !is.mcpls
@@ -412,7 +412,7 @@ getSecondOrderDataMatrix <- function(firstOrder, secondOrder) {
   checkMissingConstructScores(have = colnames(Scores), want = want)
 
   newdata <- Scores[, want]
-  attr(newdata, "cluster") <- attr(olddata, "cluster")
+  attr(newdata, "cluster") <- attr(modelData(firstOrder), "cluster")
 
   newdata
 }

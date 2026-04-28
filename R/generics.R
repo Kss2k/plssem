@@ -304,6 +304,7 @@ setGeneric(
   function(object, saturated = FALSE, ...) standardGeneric("implied_construct_corr")
 )
 
+#' @rdname implied_construct_corr
 #' @export
 setMethod("implied_construct_corr", "PlsModel", function(object, saturated = FALSE, ...) {
   plssemMatrix(impliedConstructCorrMat(object, saturated = saturated), is.public = TRUE)
@@ -327,6 +328,8 @@ setGeneric(
   function(object, saturated = FALSE, ...) standardGeneric("implied_indicator_corr")
 )
 
+
+#' @rdname implied_indicator_corr 
 #' @export
 setMethod("implied_indicator_corr", "PlsModel", function(object, saturated = FALSE, ...) {
   plssemMatrix(impliedIndicatorCorrMat(object, saturated = saturated), is.public = TRUE)
@@ -349,6 +352,8 @@ setGeneric(
   function(object, saturated = FALSE, mc.reps = 1e6, ...) standardGeneric("fit_measures")
 )
 
+
+#' @rdname fit_measures
 #' @export
 setMethod("fit_measures", "PlsModel", function(object, saturated = FALSE, mc.reps = 1e6, ...) {
   fitMeasures(object, saturated = saturated, mc.reps = mc.reps)

@@ -2,9 +2,12 @@
 % Please edit documentation in R/generics.R
 \name{implied_construct_corr}
 \alias{implied_construct_corr}
+\alias{implied_construct_corr,PlsModel-method}
 \title{Implied Construct Correlation Matrix}
 \usage{
 implied_construct_corr(object, saturated = FALSE, ...)
+
+\S4method{implied_construct_corr}{PlsModel}(object, saturated = FALSE, ...)
 }
 \arguments{
 \item{object}{A fitted [PlsModel] object.}

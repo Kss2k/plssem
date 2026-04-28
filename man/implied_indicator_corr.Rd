@@ -2,9 +2,12 @@
 % Please edit documentation in R/generics.R
 \name{implied_indicator_corr}
 \alias{implied_indicator_corr}
+\alias{implied_indicator_corr,PlsModel-method}
 \title{Implied Indicator Correlation Matrix}
 \usage{
 implied_indicator_corr(object, saturated = FALSE, ...)
+
+\S4method{implied_indicator_corr}{PlsModel}(object, saturated = FALSE, ...)
 }
 \arguments{
 \item{object}{A fitted [PlsModel] object.}

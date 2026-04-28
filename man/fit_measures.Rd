@@ -2,9 +2,12 @@
 % Please edit documentation in R/generics.R
 \name{fit_measures}
 \alias{fit_measures}
+\alias{fit_measures,PlsModel-method}
 \title{Fit Measures}
 \usage{
 fit_measures(object, saturated = FALSE, mc.reps = 1e+06, ...)
+
+\S4method{fit_measures}{PlsModel}(object, saturated = FALSE, mc.reps = 1e+06, ...)
 }
 \arguments{
 \item{object}{A fitted [PlsModel] object.}

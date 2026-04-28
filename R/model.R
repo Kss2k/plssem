@@ -389,7 +389,7 @@ getFitPLSModel <- function(model, consistent = TRUE) {
     model@matrices$C    <- getConsistentCorrMat(model, Q = Q)
 
   } else {
-    Q <- NULL
+    Q <- numeric(0)
     attr(Q, "admissible") <- TRUE
 
   }

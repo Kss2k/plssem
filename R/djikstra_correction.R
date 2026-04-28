@@ -130,7 +130,7 @@ limitQ <- function(Q, lv, zero.tol = 1e-5) {
     return(1)
 
   } else if (Q <= zero.tol) {
-    
+
     warning2(sprintf(
       "Reliability is close too or smaller than zero! Q\u00B2(%s) = %.2g",
       lv, lv, Q^2

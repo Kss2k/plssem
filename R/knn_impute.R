@@ -54,7 +54,7 @@ kNN_ImputeMissing <- function(data, k = 5, ordered = NULL) {
     neighbours <- FNN::knnx.index(data = Y.std.i, query = Z.std.i, k = k)
 
     for (variable in cols[!p.i]) {
-      if      (variable %in% nominal) .f <- calcMode 
+      if      (variable %in% nominal) .f <- calcMode
       else if (variable %in% ordered) .f <- stats::median
       else                            .f <- mean
 
@@ -70,7 +70,7 @@ kNN_ImputeMissing <- function(data, k = 5, ordered = NULL) {
   }
 
   X[!complete, ] <- Z
- 
+
   as.data.frame(X)
 }
 

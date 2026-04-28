@@ -376,7 +376,7 @@ getSecondOrderDataMatrix <- function(firstOrder, secondOrder) {
 
     Scores <- cbind(Scores, TmpOv)
   }
- 
+
   # Variables with TEMP_IND_SUFFIX
   isTmpIndCol <- hasTempIndSuffix(want)
 

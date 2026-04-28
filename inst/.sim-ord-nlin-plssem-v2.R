@@ -39,7 +39,7 @@ writeOutputToFile <- function(output) {
   parsl <- tolower(pars)
   est[setdiff(parsl, nm)] <- NA_real_
 
-  
+
   line <- paste0(c(
     output$id,
     output$cond,
@@ -63,7 +63,7 @@ Y =~ y1 + y2 + y3
 Y ~ X + Z + X:Z #+ X:X + Z:Z
 '
 
-corr_X_Z  <- 0.2 
+corr_X_Z  <- 0.2
 
 
 gamma_Y_X  <- 0.4
@@ -72,15 +72,15 @@ gamma_Y_XZ <- 0.3
 gamma_Y_ZZ <- 0 # exclude for now
 gamma_Y_XX <- 0 # exclude for now
 
-# cov(xy,uv) = E(x)E(u)cov(y,v) + 
+# cov(xy,uv) = E(x)E(u)cov(y,v) +
 #              E(x)E(v)cov(y,u) +
 #              E(y)E(u)cov(x,v) +
-#              E(y)E(v)cov(x,u) + 
+#              E(y)E(v)cov(x,u) +
 #              cov(x,u)cov(y,v) +
 #              cov(x,v)cov(y,u)
 #
 # E(x) = E(y) = E(u) = E(v) = 0
-# 
+#
 # cov(xy,uv) = cov(x,u)cov(y,v) +
 #              cov(x,v)cov(y,u)
 
@@ -136,26 +136,26 @@ sim_cont_data <- function(N = n[1]) {
   X <- XI[, 1]
   Z <- XI[, 2]
 
-  Y <- 
-    gamma_Y_X * X + 
-    gamma_Y_Z * Z + 
+  Y <-
+    gamma_Y_X * X +
+    gamma_Y_Z * Z +
     gamma_Y_XZ * X * Z +
     gamma_Y_XX * X * X +
     gamma_Y_ZZ * Z * Z +
     residual(zeta_Y)
- 
+
   x1 <- create_ind(X, lambda_1)
   x2 <- create_ind(X, lambda_2)
   x3 <- create_ind(X, lambda_2)
-  
+
   z1 <- create_ind(Z, lambda_1)
   z2 <- create_ind(Z, lambda_2)
   z3 <- create_ind(Z, lambda_2)
-  
+
   y1 <- create_ind(Y, lambda_1)
   y2 <- create_ind(Y, lambda_2)
   y3 <- create_ind(Y, lambda_2)
-  
+
   data <- data.frame(
     x1, x2, x3,
     z1, z2, z3,
@@ -274,7 +274,7 @@ get_output <- function(expr,
   if (!is.null(seed))
     set.seed(seed)
 
-  fit <- tryCatch(eval(expr), 
+  fit <- tryCatch(eval(expr),
                   error = \(e) {
                     warning(sprintf("%s (%d) failed!, message:\n %s",
                                     method, id, e))
@@ -282,7 +282,7 @@ get_output <- function(expr,
                   })
   end <- Sys.time()
   elapsed <- end - start
- 
+
   out <- list(
     fit = NULL, #fit,
     elapsed = elapsed,
@@ -293,7 +293,7 @@ get_output <- function(expr,
     pars = if (!is.null(fit)) parfun(fit, ...) else NULL,
     seed = seed
   )
- 
+
   if (write)
     writeOutputToFile(out)
 
@@ -303,7 +303,7 @@ get_output <- function(expr,
 
 
 print.simoutput <- function(x, ...) {
-  cat(sprintf("ID: %i, Method: %s, Elapsed: %s Cond: %s, NCAT: %d\n", 
+  cat(sprintf("ID: %i, Method: %s, Elapsed: %s Cond: %s, NCAT: %d\n",
               x$id, x$method, capture.output(x$elapsed), x$cond, x$ncat))
   if (!is.null(x$pars)) print(x$pars[x$pars$op == "~", ])
   else cat("<FAILED>: NULL")
@@ -355,17 +355,17 @@ seeds <- floor(runif(total, min = 0, max = 9999999))
 for (i in seq_len(R)) {
   results_sub <- vector("list", length=K)
 
-  k <- 0  
+  k <- 0
   for (cond in names(list_thresholds)) {
     categories <- names(list_thresholds[[cond]])
-  
+
     for (ncat in categories) {
       thresholds <- list_thresholds[[cond]][[ncat]]
 
       cat(sprintf("k=%i, i=%i, id=%i, seed = %i\n", k, i, id, seeds[id]))
       k  <- k + 1
       id <- id + 1
-  
+
       if (i <= R.skip) {
         message(sprintf("Skipping iteration %i, as it has already been run...", id))
         next
@@ -380,9 +380,9 @@ for (i in seq_len(R)) {
       ordered <- colnames(data_cat_i)
 
       print_sep()
-      cat(sprintf("Iteration %d/%d:\n", id, total)) 
+      cat(sprintf("Iteration %d/%d:\n", id, total))
       print_sep()
-      
+
       fitted_i <- list(
         plsc.ord = get_output(
           expr = pls(model, data = data_cat_i, ordered = ordered, mc.reps = 20000),
@@ -422,25 +422,25 @@ for (i in seq_len(R)) {
           method = "cSEM (OrdPLS+2SMM)", id = id, cond = cond, ncat = ncat,
           seed = seeds[id], parfun = parameter_estimates.cSEMResults
         ),
-       
+
         mplus = get_output(
           expr = modsem(model, data = data_cat_i, method = "mplus", categorical = ordered,
                         processors = 8),
           method = "mplus", id = id, cond = cond, ncat = ncat, parfun = modsem::standardized_estimates,
           seed = seeds[id]
         )
-      ) 
-      
+      )
+
       print(fitted_i)
-      
+
       results_sub[[k]] <- fitted_i
     }
   }
-  
+
   filename.sub.rds <- sprintf("inst/subset/results-R%i-%s-%s-sim-ord-%s.rds", i, cond, ncat, substr(Sys.time(), 1, 16)) |>
     stringr::str_replace_all(" ", "-") |>
     stringr::str_replace_all(":", "-")
-  
+
   saveRDS(results_sub, filename.sub.rds)
   results <- c(results, results_sub)
 }
@@ -450,7 +450,7 @@ for (i in seq_len(R)) {
 # Parameter Estimates
 # ──────────────────────────────────────────────────────────────────────────────
 resd <- NULL
-cols <- c("id", "method", "lhs", "op", "rhs", 
+cols <- c("id", "method", "lhs", "op", "rhs",
           "par", "est", "se", "pvalue", "elapsed",
           "ncat", "cond")
 
@@ -481,7 +481,7 @@ for (id in seq_along(results)) {
 
   resid <- NULL
   for (fitted in results_id) {
-    if (is.null(fitted$pars)) resi <- failed.pars  
+    if (is.null(fitted$pars)) resi <- failed.pars
     else                      resi <- fitted$pars
     resi$id <- fitted$id
 
@@ -489,7 +489,7 @@ for (id in seq_along(results)) {
       string = colnames(resi),
       pattern = c(std.error = "se", p.value = "pvalue")
     )
-    
+
     resi$method <- fitted$method
     resi$ncat   <- fitted$ncat
     resi$cond   <- fitted$cond
@@ -502,7 +502,7 @@ for (id in seq_along(results)) {
 
   results_dfs[[id]] <- resid
 }
-    
+
 resd <- do.call("rbind", results_dfs)
 cat("\n")
 
@@ -524,19 +524,19 @@ plot_results <- function(compare = methods, param = "Y~X:Z") {
     facet_grid(rows = vars(cond), cols = vars(ncat), scales = "fixed") +
     ggtitle(sprintf("Bias for %s by method", param)) +
     ylab("Bias") +
-    xlab("Method") + 
+    xlab("Method") +
     theme_bw()
 }
 
 
 table_results <- function(compare = methods, alpha = 0.05) {
   resd |>
-    filter(op == "~" & method %in% compare) |> 
+    filter(op == "~" & method %in% compare) |>
     group_by(par, method) |>
     summarize(est.mean = mean(est, na.rm = TRUE),
               se.obs = sd(est, na.rm = TRUE),
               se.exp = mean(se, na.rm = TRUE),
-              percent.sig = sum(pvalue < alpha, na.rm = TRUE) / 
+              percent.sig = sum(pvalue < alpha, na.rm = TRUE) /
                             sum(!is.na(pvalue))) |>
     print(n=Inf)
 }

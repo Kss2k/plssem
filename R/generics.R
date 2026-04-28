@@ -21,7 +21,7 @@ setMethod("show", "PlsModel", function(object) {
          PKG_INFO$version, statusString, combined@status$iterations)
 
   parTable <- parameter_estimates(combined)
-  
+
   if (NROW(parTable)) print(parTable)
   else                print(object@parTableInput)
 

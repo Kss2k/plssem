@@ -448,7 +448,7 @@ getFitPLSModel <- function(model, consistent = TRUE) {
 
 modelFitIsAdmissible <- function(fit) {
   # Simple check to see if model fit is (in)admissible
-   
+
   Q.admissible <- (
     is.null(attr(fit$Q, "admissible")) ||
     isTRUE(attr(fit$Q, "admissible"))

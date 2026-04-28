@@ -23,7 +23,7 @@ impliedConstructCorrMat <- function(model, saturated = FALSE) {
     xis  <- info$xis
     etas <- info$etas
 
-    Cproj <- Gamma %*% C %*% Gamma 
+    Cproj <- Gamma %*% C %*% Gamma
     Phi   <- diag2(C) - diag2(Cproj)
 
     Phi[xis, xis]   <- C[xis, xis]

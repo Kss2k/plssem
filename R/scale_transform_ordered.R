@@ -58,10 +58,10 @@ rescaleOrderedVariableMonteCarlo <- function(name,
 
     if (any(idx)) {
       mu[i] <- mean(y[idx])
-      sim.y.rescaled[idx] <- mu[i] 
+      sim.y.rescaled[idx] <- mu[i]
     }
   }
-  
+
   # exact centering to remove residual drift (weighted by observed category probs)
   mu <- mu - sum(p_obs * mu, na.rm = TRUE)
 

@@ -37,7 +37,7 @@ parseModelArguments <- function(parTable,
   dupMsr <- unique(indicators[duplicated(indicators)])     # Case 1
   dupStr <- unique(indicators[indicators %in% structvars]) # Case 2
   dupAll <- unique(c(dupMsr, dupStr))
-  
+
   for (ind in dupAll) {
 
     cond <- isind & parTable$rhs == ind

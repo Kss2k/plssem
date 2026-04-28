@@ -22,7 +22,7 @@ Y =~ y1 + y2 + y3
 Y ~ X + Z + X:Z #+ X:X + Z:Z
 '
 
-corr_X_Z  <- 0.2 
+corr_X_Z  <- 0.2
 
 
 gamma_Y_X  <- 0.4
@@ -31,15 +31,15 @@ gamma_Y_XZ <- 0.3
 gamma_Y_ZZ <- 0 # exclude for now
 gamma_Y_XX <- 0 # exclude for now
 
-# cov(xy,uv) = E(x)E(u)cov(y,v) + 
+# cov(xy,uv) = E(x)E(u)cov(y,v) +
 #              E(x)E(v)cov(y,u) +
 #              E(y)E(u)cov(x,v) +
-#              E(y)E(v)cov(x,u) + 
+#              E(y)E(v)cov(x,u) +
 #              cov(x,u)cov(y,v) +
 #              cov(x,v)cov(y,u)
 #
 # E(x) = E(y) = E(u) = E(v) = 0
-# 
+#
 # cov(xy,uv) = cov(x,u)cov(y,v) +
 #              cov(x,v)cov(y,u)
 
@@ -96,7 +96,7 @@ get_output <- function(expr,
   if (!is.null(seed))
     set.seed(seed)
 
-  fit <- tryCatch(eval(expr), 
+  fit <- tryCatch(eval(expr),
                   error = \(e) {
                     warning(sprintf("%s (%d) failed!, message:\n %s",
                                     method, id, e))
@@ -104,7 +104,7 @@ get_output <- function(expr,
                   })
   end <- Sys.time()
   elapsed <- end - start
- 
+
   out <- list(
     fit = NULL, #fit,
     elapsed = elapsed,
@@ -115,7 +115,7 @@ get_output <- function(expr,
     pars = if (!is.null(fit)) parfun(fit, ...) else NULL,
     seed = seed
   )
- 
+
   if (write)
     writeOutputToFile(out)
 
@@ -125,7 +125,7 @@ get_output <- function(expr,
 
 
 print.simoutput <- function(x, ...) {
-  cat(sprintf("ID: %i, Method: %s, Elapsed: %s Cond: %s, NCAT: %d\n", 
+  cat(sprintf("ID: %i, Method: %s, Elapsed: %s Cond: %s, NCAT: %d\n",
               x$id, x$method, capture.output(x$elapsed), x$cond, x$ncat))
   if (!is.null(x$pars)) print(x$pars[x$pars$op == "~", ])
   else cat("<FAILED>: NULL")
@@ -177,7 +177,7 @@ results <- results[!drop]
 # Parameter Estimates
 # ──────────────────────────────────────────────────────────────────────────────
 resd <- NULL
-cols <- c("id", "method", "lhs", "op", "rhs", 
+cols <- c("id", "method", "lhs", "op", "rhs",
           "par", "est", "se", "pvalue", "elapsed",
           "ncat", "cond")
 
@@ -208,7 +208,7 @@ for (id in seq_along(results)) {
 
   resid <- NULL
   for (fitted in results_id) {
-    if (is.null(fitted$pars)) resi <- failed.pars  
+    if (is.null(fitted$pars)) resi <- failed.pars
     else                      resi <- fitted$pars
     resi$id <- fitted$id
 
@@ -216,7 +216,7 @@ for (id in seq_along(results)) {
       string = colnames(resi),
       pattern = c(std.error = "se", p.value = "pvalue")
     )
-    
+
     resi$method <- fitted$method
     resi$ncat   <- fitted$ncat
     resi$cond   <- fitted$cond
@@ -229,7 +229,7 @@ for (id in seq_along(results)) {
 
   results_dfs[[id]] <- resid
 }
-    
+
 resd <- do.call("rbind", results_dfs)
 cat("\n")
 
@@ -258,19 +258,19 @@ plot_results <- function(compare = methods, param = "Y~X:Z") {
     facet_grid(rows = vars(cond), cols = vars(ncat), scales = "fixed") +
     ggtitle(sprintf("Bias for %s by method with 95%s CI", param, "%")) +
     ylab("Bias") +
-    xlab("Method") + 
+    xlab("Method") +
     theme_bw()
 }
 
 
 table_results <- function(compare = methods, alpha = 0.05) {
   resd |>
-    filter(op == "~" & method %in% compare) |> 
+    filter(op == "~" & method %in% compare) |>
     group_by(par, method) |>
     summarize(est.mean = mean(est, na.rm = TRUE),
               se.obs = sd(est, na.rm = TRUE),
               se.exp = mean(se, na.rm = TRUE),
-              percent.sig = sum(pvalue < alpha, na.rm = TRUE) / 
+              percent.sig = sum(pvalue < alpha, na.rm = TRUE) /
                             sum(!is.na(pvalue))) |>
     print(n=Inf)
 }

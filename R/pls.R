@@ -213,7 +213,7 @@ pls <- function(syntax,
   if (isTRUE(modelInfo(model)$boot$bootstrap)) {
     tryCatch(
       modelBoot(model) <- bootstrap(model),
-      error = \(e) stop2("Bootstrapping FAILED!\nMessage: ", conditionMessage(e))
+      error = \(e) warning2("Bootstrapping FAILED!\nMessage: ", conditionMessage(e))
     )
   }
 

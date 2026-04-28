@@ -267,8 +267,13 @@ estimatePLS_Status <- function(model, ...) {
 
 
 estimatePLS <- function(model, ...) {
-  model |>
-    estimatePLS_Inner() |>
-    estimatePLS_Outer(...) |>
-    updateEstimationStatus()
+  tryCatch({
+    model |>
+      estimatePLS_Inner() |>
+      estimatePLS_Outer(...) |>
+      updateEstimationStatus()
+
+  }, error = function(e) {
+    stop2("Model estimation FAILED!\n", "Message: ", conditionMessage(e))
+  })
 }

@@ -122,7 +122,7 @@ getConstructQualities <- function(model, zero.tol = 1e-5) {
 
 limitQ <- function(Q, lv, zero.tol = 1e-5) {
   if (is.na(Q)) {
-    warning2(sprintf("Reliability for %s is NA!" lv, lv, Q^2))
+    warning2(sprintf("Reliability for %s is NA!", lv))
     return(1)
 
   } else if (Q > 1) {

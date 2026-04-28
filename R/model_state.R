@@ -5,7 +5,8 @@ initModelStatus <- function(tolerance, max.iter.0_5) {
     iterations.0_5 = 0L,
     tolerance      = tolerance,
     max.iter.0_5   = max.iter.0_5,
-    is.admissible  = TRUE
+    is.admissible  = TRUE,
+    mcpls.update.args = NULL
   )
 }
 

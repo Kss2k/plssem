@@ -137,7 +137,8 @@ combineModelResultsFirstSecondOrder <- function(model) {
     iterations.0_5 = s1$iterations + s2$iterations,
     tolerance      = c(s1$tolerance, s2$tolerance),
     max.iter.0_5   = c(s1$max.iter.0_5, s2$max.iter.0_5),
-    is.admissible  = s1$is.admissible && s2$is.admissible
+    is.admissible  = s1$is.admissible && s2$is.admissible,
+    mcpls.update.args = NULL
   )
 
   model@matrices <- list(
@@ -235,7 +236,6 @@ computeCombinedModel <- function(model) {
     verbose      = isTRUE(info1$verbose) || isTRUE(info2$verbose),
     mc.args      = info1$mc.args,
     boot         = info1$boot,
-    args         = info1$args,
     # Preserve additional fields used elsewhere.
     ordered.x     = intersect(inds.x, ordered.base),
     ordered.y     = intersect(inds.y, ordered.base),

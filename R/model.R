@@ -117,45 +117,19 @@ specifySubModel <- function(parTable,
     knn.k       = knn.k
   )
 
-  inds.x    <- info$inds.x
-  inds.y    <- info$inds.y
-  ordered.x <- intersect(inds.x, ordered)
-  ordered.y <- intersect(inds.y, ordered)
+  n <- NROW(preppedData$X)
 
-  info$lme4.syntax   <- lme4.syntax
-  info$is.mlm        <- is.mlm
-  info$is.mcpls      <- is.mcpls
-  info$is.probit     <- is.probit
-  info$cluster       <- cluster
-  info$consistent    <- consistent
-  info$ordered       <- ordered
-  info$ordered.x     <- ordered.x
-  info$ordered.y     <- ordered.y
-  info$intTermElems  <- intTermElems
-  info$intTermNames  <- intTermNames
-  info$is.nlin       <- is.nlin
-  info$rng.seed      <- floor(stats::runif(1L, min = 0, max = 9999999))
-  info$n             <- NROW(preppedData$X)
-  info$estimator     <- getEstimatorFromInfo(info)
-  info$verbose       <- verbose
-  info$standardized  <- standardize
-  info$reliabilities <- reliabilities
-  info$is.high.ord   <- FALSE
-  info$is.lower.order <- isTRUE(is.lower.order)
-
-  info$mc.args <- list(
+  mc.args <- initModelMcArgs(
     min.iter        = mc.min.iter,
     max.iter        = mc.max.iter,
     mc.reps         = mc.reps,
     tol             = mc.tol,
     fixed.seed      = mc.fixed.seed,
     polyak.juditsky = mc.polyak.juditsky,
-    fn.args         = mc.fn.args,
-    rng.seed        = NULL,
-    p.start         = NULL
+    fn.args         = mc.fn.args
   )
 
-  info$boot <- list(
+  boot.info <- initModelBootInfo(
     bootstrap       = bootstrap,
     ncpus           = boot.ncpus,
     parallel        = boot.parallel,
@@ -163,6 +137,20 @@ specifySubModel <- function(parTable,
     iseed           = boot.iseed,
     optimize        = boot.optimize,
     mc.boot.control = mc.boot.control
+  )
+
+  info <- initModelInfo(
+    baseInfo       = info,
+    parsed         = parsed,
+    n              = n,
+    ordered        = ordered,
+    consistent     = consistent,
+    verbose        = verbose,
+    standardize    = standardize,
+    reliabilities  = reliabilities,
+    is.lower.order = is.lower.order,
+    mc.args        = mc.args,
+    boot           = boot.info
   )
 
   matrices$S  <- preppedData$S

@@ -105,7 +105,7 @@ getConstructQualities <- function(model, zero.tol = 1e-5) {
     Q[[lv]] <- sqrt((w.i.t %*% w.i)^2 * c.i^2)
   }
 
-  if (any(Q > 1 | Q < zero.tol)) {
+  if (any(is.na(Q) | Q > 1 | Q < zero.tol)) {
     attr(Q, "admissible") <- FALSE
 
     for (lv in lvs)
@@ -121,7 +121,11 @@ getConstructQualities <- function(model, zero.tol = 1e-5) {
 
 
 limitQ <- function(Q, lv, zero.tol = 1e-5) {
-  if (Q > 1) {
+  if (is.na(Q)) {
+    warning2(sprintf("Reliability for %s is NA!" lv, lv, Q^2))
+    return(1)
+
+  } else if (Q > 1) {
     warning2(sprintf(
       "Reliability for %s is larger than 1! Q\u00B2(%s) = %.2f",
       lv, lv, Q^2

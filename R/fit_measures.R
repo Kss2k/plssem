@@ -99,15 +99,15 @@ fitMeasures <- function(model, saturated = FALSE, mc.reps = 1e6) {
     Observed <- cov2cor(Observed)
 
     N        <- NROW(model@data)
-    chisq    <- calcChisq(model, saturated = saturated, E = Expected, O = Observed)
+    chisq    <- calcChisq(Expected = Expected, Observed = Observed, N = N)
     chisq.df <- calcChisqDf(model, saturated = saturated)
 
     list(
       chisq    = chisq,
       chisq.df = chisq.df,
       rmsea    = calcRMSEA(chisq, df = chisq.df, N = N)$rmsea,
-      srmr     = calcSRMR(model, saturated = saturated,
-                          Expected = Expected, Observed = Observed)
+      srmr     = calcSRMR(Expected = Expected, Observed = Observed,
+                          saturated = saturated)
     )
 
   }, error = function(e) {
@@ -119,11 +119,7 @@ fitMeasures <- function(model, saturated = FALSE, mc.reps = 1e6) {
 }
 
 
-calcSRMR <- function(model,
-                     saturated = FALSE,
-                     diagonal  = TRUE,
-                     Expected  = impliedIndicatorCorrMat(model, saturated = saturated),
-                     Observed  = model@matrices$S) {
+calcSRMR <- function(Expected, Observed, saturated = FALSE, diagonal  = TRUE) {
   tryCatch({
     Diff <- cov2cor(Expected) - cov2cor(Observed)
     sqrt(mean(Diff[lower.tri(Diff, diag = diagonal)]^2))
@@ -134,15 +130,10 @@ calcSRMR <- function(model,
 }
 
 
-calcChisq <- function(model,
-                      saturated = FALSE,
-                      O         = model@matrices$S,
-                      E         = impliedIndicatorCorrMat(model, saturated = saturated),
-                      N         = NROW(model@data),
-                      p         = NCOL(O)) {
+calcChisq <- function(Observed, Expected, N, p = NCOL(Observed)) {
   tryCatch({
-    Einv <- solve(E)
-    as.vector((N - 1) * (tr(O %*% Einv) - log(det(O %*% Einv)) - p))
+    Einv <- solve(Expected)
+    as.vector((N - 1) * (tr(Observed %*% Einv) - log(det(Observed %*% Einv)) - p))
   }, error = function(e) {
     warning2("Calculation of chi-square failed! Message:\n", conditionMessage(e))
     NA_real_
@@ -185,6 +176,9 @@ calcChisqDf <- function(model, saturated = FALSE) {
 
     if (!info$is.cfa && !saturated)
       df <- df - sum(M$select$gamma)
+
+    if (hasHigherOrderModel(model))
+      df <- df + calcChisqDf(higherOrderModel(model))
 
     df
 

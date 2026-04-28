@@ -159,7 +159,7 @@ combineModelResultsFirstSecondOrder <- function(model) {
 }
 
 
-computeCombinedModel <- function(model) {
+computeCombinedModel <- function(model, lowerOrderAsEta = FALSE) {
   stopif(!is(model, "PlsModel"), "Expected a PlsModel")
 
   if (is.null(higherOrderModel(model)))
@@ -197,7 +197,17 @@ computeCombinedModel <- function(model) {
 
   lowInds <- unique(unlist(indsMap[lvInds]))
   etaInds <- unique(unlist(indsMap[etas]))
-  yInds   <- c(lowInds, etaInds)
+
+  etaIndsOv <- intersect(etaInds, ovInds)
+  etaIndsLv <- intersect(etaInds, lvs)
+
+  # Technically lower order (latent) variables/indicators are endogenous variables
+  # in the model, but this is seldom how people think of these variables. From
+  # a PLS sentered standpoint they are predictor variables, not dependent variables.
+  # For now we allow lower order variables to be treated as exogenous variables,
+  # if their parent is exogenous.
+  if (lowerOrderAsEta) yInds <- c(lowInds, etaInds)
+  else yInds <- unique(c(etaIndsOv, unlist(indsMap[etaIndsLv])))
 
   inds.y <- intersect(ovInds, yInds)
   inds.x <- setdiff(ovInds, yInds)
@@ -413,4 +423,23 @@ checkMissingConstructScores <- function(have, want) {
     stop2("Missing construct scores for: ",
           paste0(setdiff(want, have), collapse = ", "))
   }
+}
+
+
+getRepeatedIndicatorWeights <- function(model) {
+  if (!hasHigherOrderModel(model)) {
+    fit <- modelFit(model)
+    return(fit$fitWeights)
+  }
+
+  W1 <- modelFit(model)$fitWeights
+  W2 <- getRepeatedIndicatorWeights(higherOrderModel(model))
+  W2 <- plssemMatrix(W2, is.public = TRUE)
+
+  want <- colnames(W1)
+  have <- rownames(W2)
+  both <- intersect(want, have)
+
+  W3 <- W1[,both, drop=FALSE] %*% W2[both, , drop=FALSE]
+  cbind(W1, W3[,setdiff(colnames(W3), colnames(W1)), drop=FALSE])
 }

@@ -23,13 +23,13 @@ setGeneric("pls_predict", function(object, ...) standardGeneric("pls_predict"))
 #' @rdname pls_predict
 #' @export
 setMethod("pls_predict", "PlsModel", function(object,
-                                               approach = c("earliest", "direct"),
-                                               newdata = NULL,
-                                               std.ord.exp = FALSE,
-                                               benchmark = "R2",
-                                               benchmark.vars = c("endog", "exog", "all"),
-                                               ...) {
-  object <- combinedModel(object)
+                                              approach = c("earliest", "direct"),
+                                              newdata = NULL,
+                                              std.ord.exp = FALSE,
+                                              benchmark = "R2",
+                                              benchmark.vars = c("endog", "exog", "all"),
+                                              ...) {
+  combined <- combinedModel(object)
 
   # TODO:
   #  1. Allow the user to pass only indicators of exogenous variables, if
@@ -37,37 +37,26 @@ setMethod("pls_predict", "PlsModel", function(object,
   #  2. Allow the user to pass ordinal variables with a subset of categories
   #  3. Use standardization parameters from the training data, don't just
   #     standardize the test data directly.
-  info <- object@info
+  info <- combined@info
 
   approach <- match.arg(tolower(approach), c("earliest", "direct"))
   benchmark.vars <- match.arg(tolower(benchmark.vars), c("endog", "exog", "all"))
 
-  W <- object@fit$fitWeights
-  L <- object@fit$fitLambda
-
-  ordered <- object@info$ordered
-  outerX <- getOuterDataMatrices(object, newdata = newdata,
+  ordered <- combined@info$ordered
+  outerX <- getOuterDataMatrices(combined, newdata = newdata,
                                  std.ord.exp = std.ord.exp)
   X.cont <- outerX$X.cont
   X.ord  <- outerX$X.ord
   ordered <- intersect(ordered, colnames(X.cont))
 
-  if (isTRUE(info$is.high.ord)) {
-    lvs.hi.ord <- info$lvs.hi.ord
-
-    W.lv <- W[rownames(W) %in% colnames(W), lvs.hi.ord, drop = FALSE]
-    W.ov <- W[rownames(W) %in% colnames(X.cont),
-              colnames(W) %in% rownames(W.lv), drop = FALSE]
-
-    # Redefine measurement model as repeated indicators
-    W <- W[rownames(W) %in% colnames(X.cont), , drop = FALSE]
-    W[,lvs.hi.ord] <- W.ov %*% W.lv
-  }
+  L <- combined@fit$fitLambda
+  W <- getRepeatedIndicatorWeights(object)
+  W <- W[colnames(X.cont), ,drop=FALSE]
 
   Y <- X.cont %*% W
 
   if (approach == "earliest") {
-    parTable <- getParTableEstimates(object, rm.tmp.ov = FALSE, clean.tmp.ind = FALSE)
+    parTable <- getParTableEstimates(combined, rm.tmp.ov = FALSE, clean.tmp.ind = FALSE)
 
     if (isTRUE(info$is.high.ord))
       parTable <- highOrdMeasrAsStructParTable(parTable)
@@ -113,7 +102,7 @@ setMethod("pls_predict", "PlsModel", function(object,
     Y <- as.matrix(Y.sub[colnames(Y)])
   }
 
-  L.ov <- L[rownames(L) %in% colnames(X.cont), , drop = FALSE]
+  L.ov <- L[rownames(L) %in% colnames(X.cont), colnames(Y), drop = FALSE]
   X.cont.pred <- Y %*% t(L.ov)
 
   if (length(ordered)) {
@@ -139,8 +128,8 @@ setMethod("pls_predict", "PlsModel", function(object,
   all.vars    <- colnames(X.cont.pred)
   benchmarked <- NULL
 
-  inds.x <- removeTempOvPrefix(object@info$inds.x)
-  inds.y <- removeTempOvPrefix(object@info$inds.y)
+  inds.x <- removeTempOvPrefix(combined@info$inds.x)
+  inds.y <- removeTempOvPrefix(combined@info$inds.y)
 
   pred.vars <- switch(benchmark.vars,
     all = all.vars,
@@ -181,7 +170,7 @@ setMethod("pls_predict", "PlsModel", function(object,
            "Invalid `benchmark` type(s): ", paste0(invalid, collapse = ", "),
            "\nAllowed: ", paste0(allowedBenchmarks, collapse = ", "))
 
-    trainOuterX <- getOuterDataMatrices(object, newdata = object@data,
+    trainOuterX <- getOuterDataMatrices(combined, newdata = combined@data,
                                         std.ord.exp = std.ord.exp)
     trainMean <- colMeans(
       plssemMatrix(trainOuterX$X.cont, is.public = TRUE), na.rm = TRUE

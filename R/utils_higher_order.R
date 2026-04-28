@@ -236,7 +236,6 @@ computeCombinedModel <- function(model) {
     verbose      = isTRUE(info1$verbose) || isTRUE(info2$verbose),
     mc.args      = info1$mc.args,
     boot         = info1$boot,
-    args         = info1$args,
     # Preserve additional fields used elsewhere.
     ordered.x     = intersect(inds.x, ordered.base),
     ordered.y     = intersect(inds.y, ordered.base),

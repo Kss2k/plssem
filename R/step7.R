@@ -25,8 +25,7 @@ estimatePLS_Step7 <- function(model) {
   model.u <- model
 
   if (is.probit || is.mcpls) {
-    model.u@info$is.probit  <- FALSE
-    model.u@info$is.mcpls   <- FALSE
+    model.u <- updateModelInfo(model.u, is.probit = FALSE, is.mcpls = FALSE)
     model.u@matrices$S      <- getCorrMat(model.u@data, probit = FALSE)
     model.u <- estimatePLS_Step0_5(model.u) |> estimatePLS_Step6()
   }

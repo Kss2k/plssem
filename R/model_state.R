@@ -24,6 +24,22 @@ resetModelStatusLowerOrder <- function(model, hard.reset = FALSE) {
 }
 
 
+updateModelInfo <- function(model, ...) {
+  updates <- list(...)
+  if (!length(updates))
+    return(model)
+
+  info <- model@info
+  for (name in names(updates)) {
+    info[[name]] <- updates[[name]]
+  }
+
+  info$estimator <- getEstimatorFromInfo(info)
+  model@info <- info
+  model
+}
+
+
 initModelParams <- function(model) {
   parnames <- getParamVecNames(model)
   k <- length(parnames)

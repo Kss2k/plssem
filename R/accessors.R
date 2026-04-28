@@ -213,16 +213,6 @@ isMLM <- function(object) {
 }
 
 
-isMCPLS <- function(object) {
-  combined <- combinedModel(object)
-  higherOrder <- higherOrderModel(object)
-
-  if      (!is.null(combined))    isTRUE(combined@info$is.mcpls)
-  else if (!is.null(higherOrder)) isMCPLS(higherOrder)
-  else                            isTRUE(object@info$is.mlm)
-}
-
-
 constructReliabilities <- function(object) {
   modelFit(object)$Q^2
 }
@@ -248,4 +238,3 @@ corrMatrix <- function(object) {
   object@matrices$S <- value
   object
 }
-

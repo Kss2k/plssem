@@ -16,6 +16,8 @@ estimatePLS_Step7 <- function(model) {
       modelFitUncorrected(model) <- getFitPLSModel(model, consistent = FALSE)
       modelFit(model)            <- modelFitUncorrected(model)
     }
+
+    model@matrices$C <- model@fit$fitC
     return(model)
   }
 
@@ -32,5 +34,7 @@ estimatePLS_Step7 <- function(model) {
   modelFitConsistent(model)  <- getFitPLSModel(model.c, consistent = consistent)
   modelFitUncorrected(model) <- getFitPLSModel(model.u, consistent = FALSE)
   modelFit(model)            <- modelFitConsistent(model)
+
+  model@matrices$C <- model@fit$fitC
   model
 }

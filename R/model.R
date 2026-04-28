@@ -369,6 +369,8 @@ getFitPLSModel <- function(model, consistent = TRUE) {
   fitMeasurement <- fitLambda <- fitWeights <- lambda
   fitMeasurement[TRUE] <- fitLambda[TRUE] <- fitWeights[TRUE] <- 0
 
+  C <- model@matrices$C
+
   for (lv in lvs.lin) {
     inds.lv <- indsLvs[[lv]]
     mode.lv <- modes[[lv]]
@@ -386,7 +388,7 @@ getFitPLSModel <- function(model, consistent = TRUE) {
     Q                   <- getConstructQualities(model)
     fitMeasurement      <- getConsistentLoadings(model, Q = Q)
     fitLambda[, mode.a] <- fitMeasurement[, mode.a]
-    model@matrices$C    <- getConsistentCorrMat(model, Q = Q)
+    C                   <- getConsistentCorrMat(model, Q = Q)
 
   } else {
     Q <- numeric(0)
@@ -399,11 +401,11 @@ getFitPLSModel <- function(model, consistent = TRUE) {
   for (lv in lvs) {
     predsLv <- lvs[preds[, lv, drop = TRUE]]
     if (length(predsLv))
-      fitStructural[predsLv, lv] <- getPathCoefs(lv, predsLv, model@matrices$C)
+      fitStructural[predsLv, lv] <- getPathCoefs(lv, predsLv, C)
   }
 
-  fitCov     <- model@matrices$C
-  fitCovProj <- t(fitStructural) %*% model@matrices$C %*% fitStructural
+  fitCov     <- C
+  fitCovProj <- t(fitStructural) %*% C %*% fitStructural
   fitCovRes  <- diag2(fitCov) - diag2(fitCovProj)
   fitCov[etas, etas]  <- fitCovRes[etas, etas]
   fitCov[etas, xis]   <- fitCov[xis, etas] <- 0
@@ -440,7 +442,7 @@ getFitPLSModel <- function(model, consistent = TRUE) {
     fitTheta       = plssemMatrix(fitTheta, symmetric = TRUE),
     fitWeights     = plssemMatrix(fitWeights),
     fitLambda      = plssemMatrix(fitLambda),
-    fitC           = plssemMatrix(model@matrices$C),
+    fitC           = plssemMatrix(C),
     Q              = plssemVector(Q)
   )
 }

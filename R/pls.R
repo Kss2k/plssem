@@ -217,7 +217,7 @@ pls <- function(syntax,
   cm <- combinedModel(model)
   cm@parTable <- getParTableEstimates(cm)
 
-  if (is(model@combinedModel, "PlsModel") || hasHigherOrderModel(model)) {
+  if (hasCombinedModel(model) || hasHigherOrderModel(model)) {
     model@combinedModel <- cm
   } else {
     model@parTable <- cm@parTable

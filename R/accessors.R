@@ -135,8 +135,13 @@ hasHigherOrderModel <- function(object) {
 }
 
 
+hasCombinedModel <- function(object) {
+  is(object@combinedModel, "PlsModel")
+}
+
+
 combinedModel <- function(object, refresh = FALSE) {
-  if (!refresh && is(object@combinedModel, "PlsModel"))
+  if (!refresh && hasCombinedModel(object))
     return(object@combinedModel)
 
   if (!hasHigherOrderModel(object))
@@ -187,7 +192,7 @@ modelBoot <- function(object) {
   object@params$se   <- value$se
   object@params$vcov <- value$vcov
 
-  if (is(object@combinedModel, "PlsModel")) {
+  if (hasCombinedModel(object)) {
     object@combinedModel@boot <- value
     object@combinedModel@params$se   <- value$se
     object@combinedModel@params$vcov <- value$vcov

@@ -211,10 +211,16 @@ pls <- function(syntax,
   model <- estimatePLS(model = model)
 
   if (isTRUE(modelInfo(model)$boot$bootstrap)) {
-    tryCatch(
-      modelBoot(model) <- bootstrap(model),
-      error = \(e) warning2("Bootstrapping FAILED!\nMessage: ", conditionMessage(e))
+    boot <- tryCatch(
+      bootstrap(model),
+      error = \(e) {
+        warning2("Bootstrapping FAILED!\nMessage: ", conditionMessage(e))
+        NULL
+      }
     )
+
+    if (!is.null(boot))
+      modelBoot(model) <- boot
   }
 
   cm <- combinedModel(model)

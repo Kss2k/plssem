@@ -1,28 +1,19 @@
 estimatePLS_Step2 <- function(model) {
-  force(model)
-
-  Ip         <- model@matrices$Ip
-  lambda     <- model@matrices$lambda
-  gamma      <- model@matrices$gamma
-  C          <- model@matrices$C
-  S          <- model@matrices$S
-  SC         <- model@matrices$SC
-
-  if (NROW(gamma) <= 1)
-    return(model)
-
+  lvs        <- model$info$lvs.linear
+  Ip         <- model$matrices$Ip
+  lambda     <- model$matrices$lambda
   partLambda <- cbind(Ip, lambda)
-  partGamma  <- rbind(
-    cbind(Ip, matrix(0, nrow = nrow(Ip), ncol = ncol(gamma))),
-    cbind(matrix(0, nrow = nrow(gamma), ncol = ncol(Ip)), gamma)
-  )
+  gamma      <- model$matrices$gamma
+  partGamma  <- rbind(cbind(Ip, matrix(0, nrow = nrow(Ip), ncol = ncol(gamma))),
+                      cbind(matrix(0, nrow = nrow(gamma), ncol = ncol(Ip)), gamma))
 
-  newC  <- t(gamma) %*% C %*% gamma
-  newSC <- t(partGamma) %*% t(partLambda) %*% S %*% partLambda %*% partGamma
+  S  <- model$matrices$S
+  C  <- model$matrices$C
+  SC <- model$matrices$SC
 
-  dimnames(newSC) <- dimnames(SC)
+  model$matrices$C <- t(gamma) %*% C %*% gamma
+  model$matrices$SC <- t(partGamma) %*% t(partLambda) %*% S %*% partLambda %*% partGamma
 
-  model@matrices$C  <- newC
-  model@matrices$SC <- newSC
+  dimnames(model$matrices$SC) <- dimnames(SC)
   model
 }

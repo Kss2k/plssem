@@ -1,56 +1,26 @@
-# S4 generics and methods for the PlsModel class.
-# Internal generics follow camelCase, whilst public ones follow snake_case
-# Replaces the former S3 methods (summary.plssem, print.plssem, coef.plssem, …).
-
-
-#' Show a \code{PlsModel} object
+#' Summarize a fitted \code{plssem} model
 #'
-#' Called automatically when an object is printed at the prompt.  Displays
-#' the package version, iteration count, and the parameter table.
+#' @param object An object of class \code{plssem}.
+#' @param fit Should fit measures be calculated?
+#' @param ... Additional arguments passed to or from methods.
+#' @return A \code{SummaryPlsSem} object containing formatted parameter estimates.
 #'
-#' @param object A \code{PlsModel} object.
-#' @return \code{object}, invisibly.
 #' @export
-setMethod("show", "PlsModel", function(object) {
-  combined <- combinedModel(object)
-  admissible <- isAdmissible(combined)
+summary.plssem <- function(object, fit = TRUE, ...) {
+  parTable <- parameter_estimates(object)
 
-  statusString <- if (admissible) "ended normally" else "did NOT END NORMALLY"
-
-  printf("plssem (%s) %s after %i iterations\n",
-         PKG_INFO$version, statusString, combined@status$iterations)
-
-  parTable <- parameter_estimates(combined)
-
-  if (NROW(parTable)) print(parTable)
-  else                print(object@parTableInput)
-
-  invisible(object)
-})
-
-
-#' Summarize a fitted \code{PlsModel} model
-#'
-#' @param object A \code{PlsModel} object.
-#' @param fit Logical; whether to compute fit measures.
-#' @param ... Currently unused.
-#' @return A \code{SummaryPlsSem} list with formatted results.
-#' @export
-setMethod("summary", "PlsModel", function(object, fit = TRUE, ...) {
-  combined <- combinedModel(object)
-  parTable <- parameter_estimates(combined)
-
-  lvs    <- getLVs(parTable)
-  ovs    <- getOVs(parTable)
-  etas   <- getEtas(parTable, checkAny = FALSE)
-  inds   <- getIndicators(parTable)
+  lvs <- getLVs(parTable)
+  ovs <- getOVs(parTable)
+  etas <- getEtas(parTable, checkAny=FALSE)
+  inds <- getIndicators(parTable)
   inds.a <- getReflectiveIndicators(parTable)
 
   strParTableLines <- utils::capture.output(modsem::summarize_partable(parTable))
-  strParTable <- paste0(paste0(strParTableLines[-(1:6)], collapse = "\n"), "\n")
+  strParTable <- paste0(paste0(strParTableLines[-(1:6)], collapse = "\n"), "\n") # [-(1:6)] to skip headers
 
-  is.ord <- combined@info$is.probit || (length(combined@info$ordered) && combined@info$is.mcpls)
-  link   <- if (is.ord) "PROBIT" else "LINEAR"
+  is.ord <- object$info$is.probit || (length(object$info$ordered) && object$info$is.mcpls)
+  if (is.ord) link <- "PROBIT"
+  else        link <- "LINEAR"
 
   getR2 <- function(x, pt = parTable) {
     rvar <- pt[pt$lhs == x & pt$op == "~~" & pt$rhs == x, "est"]
@@ -63,13 +33,13 @@ setMethod("summary", "PlsModel", function(object, fit = TRUE, ...) {
   out <- list(
     print = list(
       strParTable = strParTable,
-      width       = max(nchar(strParTableLines))
+      width = max(nchar(strParTableLines))
     ),
-    fit  = object,
-    info = list(
-      iterations = combined@status$iterations,
-      estimator  = combined@info$estimator,
-      n          = combined@info$n,
+    fit   = object,
+    info  = list(
+      iterations = object$status$iterations,
+      estimator  = object$info$estimator,
+      n          = object$info$n,
       nlvs       = length(lvs),
       novs       = length(ovs),
       link       = link,
@@ -80,20 +50,20 @@ setMethod("summary", "PlsModel", function(object, fit = TRUE, ...) {
       etas = r2.etas,
       inds = r2.inds
     ),
-    fit.measures = if (fit) fit_measures(object) else NULL
+    fit.measures = if (fit) fitMeasures(object) else NULL
   )
 
   class(out) <- "SummaryPlsSem"
   out
-})
+}
 
 
 #' Print a \code{SummaryPlsSem} object
 #'
-#' @param x A \code{SummaryPlsSem} object as returned by
-#'   \code{\link[=summary,PlsModel-method]{summary}()}.
+#' @param x A \code{SummaryPlsSem} object as returned by [summary.plssem()].
 #' @param ... Additional arguments for compatibility with the generic.
 #' @return The input object, invisibly.
+#'
 #' @export
 print.SummaryPlsSem <- function(x, ...) {
   formatValue <- function(val, digits = 3) {
@@ -131,28 +101,41 @@ print.SummaryPlsSem <- function(x, ...) {
 
   if (!is.null(x$fit.measures)) {
     cat("Fit Measures:\n")
-    headerNames <- c("Chi-Square", "Degrees of Freedom", "SRMR", "RMSEA")
+    headerNames <- c(
+      "Chi-Square",
+      "Degrees of Freedom",
+      "SRMR",
+      "RMSEA"
+    )
+
     headerValues <- c(
       sprintf("%.3f", x$fit.measures$chisq),
-      sprintf("%d",   x$fit.measures$chisq.df),
+      sprintf("%d", x$fit.measures$chisq.df),
       sprintf("%.3f", x$fit.measures$srmr),
       sprintf("%.3f", x$fit.measures$rmsea)
     )
+
     cat(allignLhsRhs(lhs = headerNames, rhs = headerValues, pad = "  ",
                      width.out = width.out), "\n", sep = "")
   }
 
   if (length(x$r2$inds)) {
     cat("R-squared (indicators):\n")
-    cat(allignLhsRhs(lhs = names(x$r2$inds),
-                     rhs = formatNumeric(x$r2$inds), pad = "  ",
+
+    headerNames <- names(x$r2$inds)
+    headerValues <- formatNumeric(x$r2$inds)
+
+    cat(allignLhsRhs(lhs = headerNames, rhs = headerValues, pad = "  ",
                      width.out = width.out), "\n", sep = "")
   }
 
   if (length(x$r2$etas)) {
     cat("R-squared (latents):\n")
-    cat(allignLhsRhs(lhs = names(x$r2$etas),
-                     rhs = formatNumeric(x$r2$etas), pad = "  ",
+
+    headerNames <- names(x$r2$etas)
+    headerValues <- formatNumeric(x$r2$etas)
+
+    cat(allignLhsRhs(lhs = headerNames, rhs = headerValues, pad = "  ",
                      width.out = width.out), "\n", sep = "")
   }
 
@@ -161,38 +144,63 @@ print.SummaryPlsSem <- function(x, ...) {
 }
 
 
-#' Extract coefficients from a \code{PlsModel} model
+#' Print a \code{plssem} object
 #'
-#' @param object A \code{PlsModel} object.
-#' @param ... Currently unused.
-#' @return A named \code{PlsSemVector} of parameter estimates.
-#' @importFrom stats coef
+#' @param x An object of class \code{plssem}.
+#' @param ... Additional arguments for compatibility with the generic.
+#' @return The input object, invisibly.
+#'
 #' @export
-setMethod("coef", "PlsModel", function(object, ...) {
-  combined <- combinedModel(object)
-  plssemVector(combined@params$values, is.public = TRUE)
-})
+print.plssem <- function(x, ...) {
+  printf("plssem (%s) ended normally after %i iterations\n",
+         PKG_INFO$version, x$status$iterations)
+  print(parameter_estimates(x))
+  invisible(x)
+}
 
 
-#' @rdname coef-PlsModel-method
+#' @export
 #' @importFrom stats coefficients
+coefficients.plssem <- function(object, ...) {
+  plssemVector(object$params$values, is.public = TRUE)
+}
+
+
 #' @export
-setMethod("coefficients", "PlsModel", function(object, ...) {
-  coef(object, ...)
-})
+#' @importFrom stats coef
+coef.plssem <- function(object, ...) {
+  coefficients.plssem(object, ...)
+}
 
 
-#' Extract the variance-covariance matrix from a \code{PlsModel} model
-#'
-#' @param object A \code{PlsModel} object.
-#' @param ... Currently unused.
-#' @return A \code{PlsSemMatrix} (bootstrap-based vcov, or \code{NULL}).
+#' @export
 #' @importFrom stats vcov
+vcov.plssem <- function(object, ...) {
+  plssemMatrix(object$params$vcov, is.public = TRUE)
+}
+
+
+#' Parameter estimates for \code{plssem} objects
+#'
+#' @param object An object of class \code{plssem}.
+#' @param colon.pi Logical; whether to replace labels for interaction terms with colon notation.
+#' @param label.renamed.prod Logical; whether renamed product labels should be retained when colon expansion occurs.
+#' @param ... Additional arguments (not used).
+#' @return A parameter table (data frame) describing the fitted model.
+#'
 #' @export
-setMethod("vcov", "PlsModel", function(object, ...) {
-  combined <- combinedModel(object)
-  plssemMatrix(combined@params$vcov, is.public = TRUE)
-})
+parameter_estimates.plssem <- function(object,
+                                       colon.pi = TRUE,
+                                       label.renamed.prod = FALSE,
+                                       ...) {
+  parTable <- object$parTable
+
+  if (colon.pi)
+    parTable <- addColonPI_ParTable(parTable, model = object,
+                                    label.renamed.prod = label.renamed.prod)
+
+  parTable
+}
 
 
 #' Generic accessor for model parameter estimates
@@ -200,53 +208,34 @@ setMethod("vcov", "PlsModel", function(object, ...) {
 #' @param object A fitted model object.
 #' @param ... Additional arguments passed to methods.
 #' @return A parameter table describing the fitted model.
-#' @export
-setGeneric("parameter_estimates",
-           function(object, ...) standardGeneric("parameter_estimates"))
-
-
-#' Parameter estimates for \code{PlsModel} objects
 #'
-#' @param object A \code{PlsModel} object.
-#' @param colon.pi Logical; replace product-indicator labels with colon
-#'   notation (\code{X:Z}).
-#' @param label.renamed.prod Logical; retain renamed product labels when colon
-#'   expansion occurs.
-#' @param ... Currently unused.
-#' @return A \code{PlsSemParTable} data frame.
 #' @export
-setMethod("parameter_estimates", "PlsModel",
-          function(object, colon.pi = TRUE, label.renamed.prod = FALSE, ...) {
-  object <- combinedModel(object)
-  parTable <- object@parTable
-
-  if (colon.pi)
-    parTable <- addColonPI_ParTable(parTable, model = object,
-                                    label.renamed.prod = label.renamed.prod)
-  parTable
-})
+parameter_estimates <- function(object, ...) {
+  UseMethod("parameter_estimates")
+}
 
 
-#' Check whether an object uses the MC-OrdPLSc estimator
+#' @export
+isMC_PLS.plssem <- function(object) {
+  object$info$is.mcpls 
+}
+
+
+#' Check if object is a MC-PLS model
 #'
 #' @param object A fitted model object.
-#' @return \code{TRUE} or \code{FALSE}.
+#' @return \code{TRUE}/\code{FALSE}.
+#'
 #' @export
-setGeneric("is_mcpls", function(object) standardGeneric("is_mcpls"))
-
-#' @rdname is_mcpls
-#' @export
-setMethod("is_mcpls", "PlsModel", function(object) {
-  object <- combinedModel(object)
-  isTRUE(object@info$is.mcpls)
-})
+isMC_PLS <- function(object) {
+  UseMethod("isMC_PLS")
+}
 
 
-#' Retrieve bootstrap coefficient matrix
+#' Get bootstrapped coefficients from PLS model
 #'
 #' @param object A fitted model object.
-#' @return A \code{PlsSemMatrix} of bootstrap replicate parameter vectors
-#'   (rows = replicates, cols = parameters).
+#' @return Matrix with bootstrapped coefficients.
 #'
 #' @examples
 #' library(modsem)
@@ -258,103 +247,17 @@ setMethod("is_mcpls", "PlsModel", function(object) {
 #'   Y =~ y1 + y2 + y3
 #'   Y ~ X + Z + X:Z
 #' "
-#'
+#' 
 #' fit <- pls(m, oneInt, bootstrap = TRUE, boot.R = 50)
 #' boot(fit)
-#'
+#' 
 #' @export
-setGeneric("boot", function(object) standardGeneric("boot"))
+boot <- function(object) {
+  UseMethod("boot")
+}
 
-#' @rdname boot
+
 #' @export
-setMethod("boot", "PlsModel", function(object) {
-  object <- combinedModel(object)
-  plssemMatrix(object@boot$boot, is.public = TRUE)
-})
-
-
-
-#' Check whether a fitted model has admissible parameter estimates
-#'
-#' @param object A fitted \code{PlsModel} object.
-#' @return A single logical value.
-#' @export
-setGeneric("is_admissible", function(object) standardGeneric("is_admissible"))
-
-
-#' @rdname is_admissible
-#' @export
-setMethod("is_admissible", "PlsModel", function(object) isAdmissible(object))
-
-
-#' Implied Construct Correlation Matrix
-#'
-#' Returns the implied construct correlation matrix for a fitted model.
-#'
-#' For higher-order models, this is computed for the combined model returned by
-#' [combinedModel()].
-#'
-#' @param object A fitted [PlsModel] object.
-#' @param saturated Logical; if `TRUE`, return the saturated implied matrix.
-#' @param ... Reserved for future extensions.
-#' @return A [PlsSemMatrix].
-#' @export
-setGeneric(
-  "implied_construct_corr",
-  function(object, saturated = FALSE, ...) standardGeneric("implied_construct_corr")
-)
-
-#' @rdname implied_construct_corr
-#' @export
-setMethod("implied_construct_corr", "PlsModel", function(object, saturated = FALSE, ...) {
-  plssemMatrix(impliedConstructCorrMat(object, saturated = saturated), is.public = TRUE)
-})
-
-
-#' Implied Indicator Correlation Matrix
-#'
-#' Returns the implied indicator correlation matrix for a fitted model.
-#'
-#' For higher-order models, this is computed for the combined model returned by
-#' [combinedModel()].
-#'
-#' @param object A fitted [PlsModel] object.
-#' @param saturated Logical; if `TRUE`, return the saturated implied matrix.
-#' @param ... Reserved for future extensions.
-#' @return A numeric matrix.
-#' @export
-setGeneric(
-  "implied_indicator_corr",
-  function(object, saturated = FALSE, ...) standardGeneric("implied_indicator_corr")
-)
-
-
-#' @rdname implied_indicator_corr 
-#' @export
-setMethod("implied_indicator_corr", "PlsModel", function(object, saturated = FALSE, ...) {
-  plssemMatrix(impliedIndicatorCorrMat(object, saturated = saturated), is.public = TRUE)
-})
-
-
-#' Fit Measures
-#'
-#' Computes global fit measures (e.g., chi-square, SRMR, RMSEA) for a fitted
-#' model.
-#'
-#' @param object A fitted [PlsModel] object.
-#' @param saturated Logical; if `TRUE`, compute the saturated fit.
-#' @param mc.reps Integer; number of Monte Carlo resamples used for MC-PLSc fit.
-#' @param ... Reserved for future extensions.
-#' @return A named list with fit statistics.
-#' @export
-setGeneric(
-  "fit_measures",
-  function(object, saturated = FALSE, mc.reps = 1e6, ...) standardGeneric("fit_measures")
-)
-
-
-#' @rdname fit_measures
-#' @export
-setMethod("fit_measures", "PlsModel", function(object, saturated = FALSE, mc.reps = 1e6, ...) {
-  fitMeasures(object, saturated = saturated, mc.reps = mc.reps)
-})
+boot.plssem <- function(object) {
+  plssemMatrix(object$boot$boot, is.public = TRUE)
+}

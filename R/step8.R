@@ -1,13 +1,25 @@
-estimatePLS_Step8 <- function(model) {
-  force(model)
+estimatePLS_Step8 <- function(model, update.names = FALSE) {
+  if (update.names)
+    model$params$names <- getParamVecNames(model)
 
-  model@params$values <- extractCoefs(model)
-  model@params$se     <- rep(NA_real_, length(model@params$values))
+  model$params$values <- extractCoefs(model)
+  model$params$se     <- rep(NA_real_, length(model$params$values))
 
-  if (!isMLM(model))
-    return(model)
+  if (model$info$is.mlm) {
+    model$fit.lmer <- plslmer(model)
 
-  modelFitLmer(model) <- plslmer(model)
+    coefs.x <- model$params$values
+    coefs.y <- model$fit.lmer$values
 
-  refreshLmerParams(model) # Update params with Mixed-Effects coefficients
+    common  <- intersect(names(coefs.x), names(coefs.y))
+    new     <- setdiff(names(coefs.y), names(coefs.x))
+
+    coefs.x[common] <- coefs.y[common]
+    coefs.all       <- c(coefs.x, coefs.y[new])
+
+    model$params$values <- plssemVector(coefs.all)
+    model$params$se     <- rep(NA_real_, length(coefs.all))
+  }
+
+  model
 }

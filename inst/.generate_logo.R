@@ -38,7 +38,7 @@ expand_table <- function(X, x = seq_len(NROW(X)), y = seq_len(NCOL(X)), eps = 1e
         upperx <- ceiling(xi)
         lowery <- floor(yi)
         uppery <- ceiling(yi)
-
+        
         out <- X[x == lowerx, y == lowery]
 
         if (!length(out)) 0 else out

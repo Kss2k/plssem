@@ -2,22 +2,18 @@
 % Please edit documentation in R/generics.R
 \name{boot}
 \alias{boot}
-\alias{boot,PlsModel-method}
-\title{Retrieve bootstrap coefficient matrix}
+\title{Get bootstrapped coefficients from PLS model}
 \usage{
 boot(object)
-
-\S4method{boot}{PlsModel}(object)
 }
 \arguments{
 \item{object}{A fitted model object.}
 }
 \value{
-A \code{PlsSemMatrix} of bootstrap replicate parameter vectors
-  (rows = replicates, cols = parameters).
+Matrix with bootstrapped coefficients.
 }
 \description{
-Retrieve bootstrap coefficient matrix
+Get bootstrapped coefficients from PLS model
 }
 \examples{
 library(modsem)

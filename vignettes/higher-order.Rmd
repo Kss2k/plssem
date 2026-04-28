@@ -8,11 +8,10 @@ vignette: >
 ---
 
 ```{r, include = FALSE}
-EVAL_DEFAULT <- identical(Sys.getenv("PLSSEM_VIGNETTES"), "true")
+EVAL_DEFAULT <- FALSE
 knitr::opts_chunk$set(
   collapse = TRUE,
-  comment = "#>",
-  eval = TRUE
+  comment = "#>"
 )
 ```
 

@@ -1,7 +1,5 @@
 estimatePLS_Step0_5 <- function(model) {
-  force(model)
-
-  max.iter.0_5 <- model@status$max.iter.0_5
+  max.iter.0_5 <- model$status$max.iter.0_5
 
   model <- estimatePLS_Step0(model)
 
@@ -13,16 +11,19 @@ estimatePLS_Step0_5 <- function(model) {
       estimatePLS_Step4() |>
       estimatePLS_Step5()
 
-    if (model@status$convergence) {
+    if (model$status$convergence) {
       break
+
     } else if (i >= max.iter.0_5) {
-      warning("Convergence not reached. Stopping.")
-      model@status$is.admissible <- FALSE
+      warning("Convergence reached. Stopping.")
       break
     }
   }
 
-  model@status$iterations.0_5 <- model@status$iterations.0_5 + i
-  model@status$iterations     <- model@status$iterations + i
+  model$status$iterations.0_5 <- model$status$iterations.0_5 + i
+  model$status$iterations     <- model$status$iterations + i
+
   model
 }
+
+

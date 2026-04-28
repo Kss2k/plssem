@@ -187,7 +187,12 @@ computeCombinedModel <- function(model) {
   lvs     <- info1$lvs
   etas    <- info2$etas
   ovInds  <- info1$allInds
-  lvInds  <- intersect(info2$allInds, lvs)
+
+  allInds2 <- info2$allInds
+  if (is.null(allInds2))
+    allInds2 <- unique(unlist(info2$indsLvs))
+
+  lvInds  <- intersect(allInds2, lvs)
   indsMap <- c(info1$indsLvs, info2$indsLvs)
 
   lowInds <- unique(unlist(indsMap[lvInds]))
@@ -215,6 +220,7 @@ computeCombinedModel <- function(model) {
     lvs.linear   = union(info1$lvs.linear, info2$lvs.linear),
     lvs          = union(info1$lvs, info2$lvs),
     lvs.hi.ord   = union(info1$higherOrderLVs, info2$higherOrderLVs),
+    allInds      = union(info1$allInds, allInds2),
     xis          = xis.all,
     etas         = etas.all,
     mode.a       = union(info1$mode.a, info2$mode.a),

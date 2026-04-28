@@ -306,7 +306,6 @@ setGeneric(
 
 #' @export
 setMethod("implied_construct_corr", "PlsModel", function(object, saturated = FALSE, ...) {
-  object <- combinedModel(object)
   plssemMatrix(impliedConstructCorrMat(object, saturated = saturated), is.public = TRUE)
 })
 
@@ -330,7 +329,6 @@ setGeneric(
 
 #' @export
 setMethod("implied_indicator_corr", "PlsModel", function(object, saturated = FALSE, ...) {
-  object <- combinedModel(object)
   plssemMatrix(impliedIndicatorCorrMat(object, saturated = saturated), is.public = TRUE)
 })
 
@@ -353,6 +351,5 @@ setGeneric(
 
 #' @export
 setMethod("fit_measures", "PlsModel", function(object, saturated = FALSE, mc.reps = 1e6, ...) {
-  object <- combinedModel(object)
   fitMeasures(object, saturated = saturated, mc.reps = mc.reps)
 })

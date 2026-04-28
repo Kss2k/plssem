@@ -198,7 +198,7 @@ modelBoot <- function(object) {
 
 
 isAdmissible <- function(object) {
-  isTRUE(modelStatus(object)$is.admissible)
+  isTRUE(modelStatus(combinedModel(object))$is.admissible)
 }
 
 

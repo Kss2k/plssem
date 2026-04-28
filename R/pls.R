@@ -243,31 +243,7 @@ estimatePLS_InnerLocal <- function(model) {
 
 
 estimatePLS_Inner <- function(model) {
-  model <- estimatePLS_InnerLocal(model)
-  model@combinedModel <- NULL
-
-  if (!hasHigherOrderModel(model))
-    return(model)
-
-  ho <- higherOrderModel(model)
-  stopif(is.null(ho), "Expected a higher-order model")
-
-  # Prepare the higher-order model input.
-  newdata <- getSecondOrderDataMatrix(firstOrder = model, secondOrder = ho)
-  modelData(ho)  <- newdata
-  corrMatrix(ho) <- Rfast::cova(newdata)
-  inputReliabilities(ho) <- constructReliabilities(model)
-
-  # Estimate the higher-order chain.
-  ho <- estimatePLS_Inner(ho)
-
-  # Apply edge-specific corrections for this level.
-  ho <- correctLoadingsAndWeightsSecondOrder(firstOrder = model, secondOrder = ho)
-  higherOrderModel(model) <- ho
-
-  # Cache combined representation.
-  model@combinedModel <- combinedModel(model)
-  model
+  estimateHigherOrderChain(model)
 }
 
 
@@ -294,5 +270,5 @@ estimatePLS <- function(model, ...) {
   model |>
     estimatePLS_Inner() |>
     estimatePLS_Outer(...) |>
-    estimatePLS_Status()
+    updateEstimationStatus()
 }

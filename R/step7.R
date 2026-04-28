@@ -27,7 +27,7 @@ estimatePLS_Step7 <- function(model) {
   if (is.probit || is.mcpls) {
     model.u <- updateModelInfo(model.u, is.probit = FALSE, is.mcpls = FALSE)
     model.u@matrices$S      <- getCorrMat(model.u@data, probit = FALSE)
-    model.u <- estimatePLS_Step0_5(model.u) |> estimatePLS_Step6()
+    model.u <- updateOuterWeights(model.u) |> updateFactorScores()
   }
 
   modelFitConsistent(model)  <- getFitPLSModel(model.c, consistent = consistent)

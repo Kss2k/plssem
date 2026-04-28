@@ -4,7 +4,7 @@ getNonZeroElems <- function(x) {
 
 
 getPathCoefs <- function(y, X, C) {
-  # y: dependent factor 
+  # y: dependent factor
   # X: independent factors
   # C: correlation matrix
   solve(C[X, X]) %*% C[X, y]
@@ -15,13 +15,13 @@ getPathCoefs <- function(y, X, C) {
 weightsProdInds <- function(wx, wy) {
   combos <- as.data.frame(expand.grid(wx, wy))
   colnames(combos) <- c("wx", "wy")
-  w <- apply(combos, MARGIN = 1, FUN = function(row) 
+  w <- apply(combos, MARGIN = 1, FUN = function(row)
         row[[1]] * row[[2]])
 
   if (!is.null(names(wx)) && !is.null(names(wy))) {
     comboNames <- as.data.frame(expand.grid(names(wx), names(wy)))
     colnames(comboNames) <- c("wx", "wy")
-    names(w) <- apply(comboNames, MARGIN = 1, FUN = function(row) 
+    names(w) <- apply(comboNames, MARGIN = 1, FUN = function(row)
                       paste0(row[[1]], ":", row[[2]]))
   }
 
@@ -33,12 +33,15 @@ diagPartitioned <- function(X, Y) {
   out <- rbind(cbind(X, matrix(0, nrow = nrow(X), ncol = ncol(Y))),
                cbind(matrix(0, nrow = nrow(Y), ncol = ncol(X)), Y))
   colnames(out) <- c(colnames(X), colnames(Y))
-  rownames(out) <- c(rownames(X), rownames(Y)) 
+  rownames(out) <- c(rownames(X), rownames(Y))
   out
 }
 
 
 diag2 <- function(X) {
+  if (NROW(X) <= 1L)
+    return(X[1, 1, drop=FALSE])
+
   Y <- diag(diag(X))
   dimnames(Y) <- dimnames(X)
   Y
@@ -102,7 +105,7 @@ quickdf <- function(l) {
 
 
 tryCatchNA <- function(expr) {
-  tryCatch(expr, error = \(e) NA_real_)  
+  tryCatch(expr, error = \(e) NA_real_)
 }
 
 
@@ -218,12 +221,12 @@ getSortedEtas <- function(parTable, isLV = FALSE, checkAny = TRUE) {
       if ((eta <- structExprs[i, "lhs"]) %in% structExprs$rhs) next
 
       sortedEtas  <- c(eta, sortedEtas)
-      structExprs <- structExprs[!grepl(eta, structExprs$lhs), ]
+      structExprs <- structExprs[structExprs$lhs != eta, , drop = FALSE]
       break
     }
   }
 
-  if (!all(sortedEtas %in% unsortedEtas) &&
+  if (!all(unsortedEtas %in% sortedEtas) ||
       length(sortedEtas) != length(unsortedEtas)) {
       warning("unable to sort etas")
       return(unsortedEtas)
@@ -314,4 +317,40 @@ namedListUnion <- function(x, y) {
   new <- setdiff(names(y), names(x))
   x[new] <- y[new]
   x
+}
+
+
+isPositiveDefinite <- function(X, tol.eigen = .Machine$double.eps ^ (3/4)) {
+  if (is.null(X) || !isSymmetric(X))
+    return(FALSE)
+
+  eigenvalues <- tryCatch(eigen(X, only.values = TRUE)$values,
+                          error = \(e) rep(NA, min(1L, NCOL(X))))
+
+  !any(is.na(eigenvalues)) & !any(eigenvalues <= tol.eigen)
+}
+
+
+removeTempOvPrefix <- function(x) {
+  stringr::str_remove_all(x, TEMP_OV_PREFIX_PATTERN)
+}
+
+
+removeTempIndSuffix <- function(x) {
+  stringr::str_remove_all(x, TEMP_IND_SUFFIX_PATTERN)
+}
+
+
+hasTempOvPrefix <- function(x) {
+  stringr::str_detect(x, TEMP_OV_PREFIX_PATTERN)
+}
+
+
+hasTempIndSuffix <- function(x) {
+  stringr::str_detect(x, TEMP_IND_SUFFIX_PATTERN)
+}
+
+
+removeTempAffixes <- function(x) {
+  removeTempIndSuffix(removeTempOvPrefix(x))
 }

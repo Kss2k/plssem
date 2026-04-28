@@ -1,10 +1,9 @@
 CI_QUANTILE <- qnorm(0.05)
 
 
-getParTableEstimates <- function(model, rm.tmp = TRUE) {
-  params <- model$params
-  est    <- model$params$values
-  se     <- model$params$se
+getParTableEstimates <- function(model, rm.tmp.ov = TRUE, clean.tmp.ind = TRUE) {
+  est    <- model@params$values
+  se     <- model@params$se
   names  <- names(est)
 
   split    <- splitParameterNames(names)
@@ -28,8 +27,11 @@ getParTableEstimates <- function(model, rm.tmp = TRUE) {
     ci.upper = ci.upper
   )
 
-  if (rm.tmp)
+  if (rm.tmp.ov)
     parTable <- removeTempOV_RowsParTable(parTable)
+
+  if (clean.tmp.ind)
+    parTable <- cleanTempInd_RowsParTable(parTable)
 
   plssemParTable(parTable)
 }
@@ -59,13 +61,32 @@ splitParameterNames <- function(names) {
 
 
 removeTempOV_RowsParTable <- function(parTable) {
-  tmp <- startsWith(parTable$lhs, TEMP_OV_PREFIX) | startsWith(parTable$rhs, TEMP_OV_PREFIX)
+  tmp <- hasTempOvPrefix(parTable$lhs) | hasTempOvPrefix(parTable$rhs)
   parTable[!tmp, , drop = FALSE]
 }
-  
+
+
+cleanTempInd_RowsParTable <- function(parTable) {
+  rhs <- unique(parTable$rhs) # Only injected into the rhs column
+  tmp <- rhs[hasTempIndSuffix(rhs)]
+  cln <- removeTempIndSuffix(tmp)
+
+  # We should remove any (co-)variances which are non-residuals, as it by
+  # definition is an endogenous variable in the model
+  parTable <- parTable[
+    !((parTable$lhs %in% cln | parTable$rhs %in% cln) & parTable$op == "~~"),
+    , drop = FALSE
+  ]
+
+  parTable$rhs <- removeTempIndSuffix(parTable$rhs)
+  parTable$lhs <- removeTempIndSuffix(parTable$lhs)
+
+  parTable
+}
+
 
 addColonPI_ParTable <- function(parTable, model, label.renamed.prod = FALSE) {
-  elems <- model$info$intTermElems
+  elems <- model@info$intTermElems
 
   if (length(elems) && !"label" %in% colnames(parTable))
     parTable$label <- ""

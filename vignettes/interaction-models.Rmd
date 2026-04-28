@@ -18,7 +18,7 @@ library(modsem)
 ```
 
 This vignette shows how to estimate interaction models, with
-both continuous and ordered (categorical) data. 
+both continuous and ordered (categorical) data.
 
 ## Model Syntax
 

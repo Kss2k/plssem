@@ -18,7 +18,7 @@ library(plssem)
 ```
 
 The `pls()` function offers some very basic approaches for handling missing
-values in the data, specified via the `missing` argument. Currently, 
+values in the data, specified via the `missing` argument. Currently,
 there are three options.
 
   1. Listwise deletion (`missing = "listwise"`)
@@ -43,7 +43,7 @@ fit <- pls(model, data = titanic, missing = "listwise", ordered = "Survived")
 
 # Mean Imputation
 
-With `missing="mean"` missing values are imputed with (univariate) expected 
+With `missing="mean"` missing values are imputed with (univariate) expected
 values. For continous values missing values are imputed using the mean.
 For ordinal variables with more than two categories, missing values are imputed
 with the median. For binary ordered variables missing values are imputed
@@ -60,7 +60,7 @@ fit <- pls(model, data = titanic, missing = "mean", ordered = "Survived")
 
 # kNN Imputation
 
-With `missing="kNN"` missing values are imputed by finding the k nearest 
+With `missing="kNN"` missing values are imputed by finding the k nearest
 (complete data) neighbors of an observation with missing data. The values
 of the values of the k neighbors are then aggregated using either the mean, median or the
 mode, depending on the data type of the variable. The k number of neighbors

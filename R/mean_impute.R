@@ -20,7 +20,7 @@ meanImputeMissing <- function(data, ordered = NULL) {
   variables <- colnames(X)
 
   for (variable in variables) {
-    if      (variable %in% nominal) .E <- calcMode 
+    if      (variable %in% nominal) .E <- calcMode
     else if (variable %in% ordered) .E <- strictMedian
     else                            .E <- mean
 

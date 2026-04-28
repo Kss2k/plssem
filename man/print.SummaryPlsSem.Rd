@@ -7,7 +7,8 @@
 \method{print}{SummaryPlsSem}(x, ...)
 }
 \arguments{
-\item{x}{A \code{SummaryPlsSem} object as returned by [summary.plssem()].}
+\item{x}{A \code{SummaryPlsSem} object as returned by
+\code{\link[=summary,PlsModel-method]{summary}()}.}
 
 \item{...}{Additional arguments for compatibility with the generic.}
 }

@@ -62,7 +62,7 @@ getPLS_Data <- function(data,
 
     data[indicators] <- meanImputeMissing(data[indicators], ordered = ordered)
   }
- 
+
   if (standardize) {
     data <- standardizeDataFrame(
       data    = data,
@@ -86,7 +86,7 @@ getPLS_Data <- function(data,
 
 checkAndFixDTypesPLS_Data <- function(X, check = colnames(X)) {
   if (!is.data.frame(X)) X <- as.data.frame(X)
-  
+
   varIsMissing <- !check %in% colnames(X)
   stopif(any(varIsMissing),
     "Missing variables: ", paste0(check[varIsMissing], collapse = ", ")

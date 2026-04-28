@@ -1,10 +1,11 @@
-estimatePLS_Step5 <- function(model)  {
-  oldOuterWeights <- model$matrices$outerWeights
-  newOuterWeights <- getNonZeroElems(model$matrices$lambda)
+estimatePLS_Step5 <- function(model) {
+  force(model)
 
-  weightDiff <- (oldOuterWeights - newOuterWeights) / oldOuterWeights
-  model$status$convergence <- all(abs(weightDiff) < model$status$tolerance)
+  oldWeights <- model@matrices$outerWeights
+  newWeights <- getNonZeroElems(model@matrices$lambda)
 
-  model$matrices$outerWeights <- newOuterWeights
+  weightDiff <- (oldWeights - newWeights) / oldWeights
+  model@status$convergence    <- all(abs(weightDiff) < model@status$tolerance)
+  model@matrices$outerWeights <- newWeights
   model
 }

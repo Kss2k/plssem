@@ -111,7 +111,7 @@ PLS-SEM using continuous indicators.</p>
 <h2 id="theory-of-planned-behavior-continuous-indicators">Theory of Planned Behavior (Continuous Indicators)<a class="anchor" aria-label="anchor" href="#theory-of-planned-behavior-continuous-indicators"></a>
 </h2>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">tpb</span> <span class="op">&lt;-</span> <span class="st">' </span></span>
+<code class="sourceCode R"><span><span class="va">tpb</span> <span class="op">&lt;-</span> <span class="st">'</span></span>
 <span><span class="st"># Outer Model (Based on Hagger et al., 2007)</span></span>
 <span><span class="st">  ATT =~ att1 + att2 + att3 + att4 + att5</span></span>
 <span><span class="st">  SN =~ sn1 + sn2</span></span>
@@ -121,7 +121,7 @@ PLS-SEM using continuous indicators.</p>
 <span><span class="st"></span></span>
 <span><span class="st"># Inner Model (Based on Steinmetz et al., 2011)</span></span>
 <span><span class="st">  INT ~ ATT + SN + PBC</span></span>
-<span><span class="st">  BEH ~ INT + PBC </span></span>
+<span><span class="st">  BEH ~ INT + PBC</span></span>
 <span><span class="st">'</span></span></code></pre></div>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fit_tpb</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pls.html">pls</a></span><span class="op">(</span></span>
@@ -134,7 +134,7 @@ PLS-SEM using continuous indicators.</p>
 <span><span class="co">#&gt; plssem (0.1.2) ended normally after 3 iterations</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Estimator                                       PLSc</span></span>
-<span><span class="co">#&gt;   Link                                          PROBIT</span></span>
+<span><span class="co">#&gt;   Link                                          LINEAR</span></span>
 <span><span class="co">#&gt;                                                       </span></span>
 <span><span class="co">#&gt;   Number of observations                          2000</span></span>
 <span><span class="co">#&gt;   Number of iterations                               3</span></span>

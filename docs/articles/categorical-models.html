@@ -112,7 +112,7 @@ how to run the model when the manifest variables are ordinal.</p>
 <h2 id="theory-of-planned-behavior-ordered-indicators">Theory of Planned Behavior (Ordered Indicators)<a class="anchor" aria-label="anchor" href="#theory-of-planned-behavior-ordered-indicators"></a>
 </h2>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">tpb</span> <span class="op">&lt;-</span> <span class="st">' </span></span>
+<code class="sourceCode R"><span><span class="va">tpb</span> <span class="op">&lt;-</span> <span class="st">'</span></span>
 <span><span class="st"># Outer Model (Based on Hagger et al., 2007)</span></span>
 <span><span class="st">  ATT =~ att1 + att2 + att3 + att4 + att5</span></span>
 <span><span class="st">  SN =~ sn1 + sn2</span></span>
@@ -122,7 +122,7 @@ how to run the model when the manifest variables are ordinal.</p>
 <span><span class="st"></span></span>
 <span><span class="st"># Inner Model (Based on Steinmetz et al., 2011)</span></span>
 <span><span class="st">  INT ~ ATT + SN + PBC</span></span>
-<span><span class="st">  BEH ~ INT + PBC </span></span>
+<span><span class="st">  BEH ~ INT + PBC</span></span>
 <span><span class="st">'</span></span>
 <span></span>
 <span><span class="va">fit_cat</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pls.html">pls</a></span><span class="op">(</span></span>
@@ -133,13 +133,13 @@ how to run the model when the manifest variables are ordinal.</p>
 <span>  ordered   <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">TPB_Ordered</span><span class="op">)</span> <span class="co"># explicitly specify ordered variables</span></span>
 <span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit_cat</span><span class="op">)</span></span>
-<span><span class="co">#&gt; plssem (0.1.2) ended normally after 4 iterations</span></span>
+<span><span class="co">#&gt; plssem (0.1.2) ended normally after 3 iterations</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   Estimator                                    OrdPLSc</span></span>
 <span><span class="co">#&gt;   Link                                          PROBIT</span></span>
 <span><span class="co">#&gt;                                                       </span></span>
 <span><span class="co">#&gt;   Number of observations                          2000</span></span>
-<span><span class="co">#&gt;   Number of iterations                               4</span></span>
+<span><span class="co">#&gt;   Number of iterations                               3</span></span>
 <span><span class="co">#&gt;   Number of latent variables                         5</span></span>
 <span><span class="co">#&gt;   Number of observed variables                      15</span></span>
 <span><span class="co">#&gt; </span></span>

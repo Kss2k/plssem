@@ -159,9 +159,9 @@ control) and <code>PB</code> (perceived behaviour).</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fit Measures:</span></span>
 <span><span class="co">#&gt;   Chi-Square                                   179.935</span></span>
-<span><span class="co">#&gt;   Degrees of Freedom                                47</span></span>
+<span><span class="co">#&gt;   Degrees of Freedom                                67</span></span>
 <span><span class="co">#&gt;   SRMR                                           0.010</span></span>
-<span><span class="co">#&gt;   RMSEA                                          0.038</span></span>
+<span><span class="co">#&gt;   RMSEA                                          0.029</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; R-squared (indicators):</span></span>
 <span><span class="co">#&gt;   att1                                           0.907</span></span>
@@ -176,8 +176,6 @@ control) and <code>PB</code> (perceived behaviour).</p>
 <span><span class="co">#&gt;   pc1                                            0.938</span></span>
 <span><span class="co">#&gt;   pc2                                            0.848</span></span>
 <span><span class="co">#&gt;   pc3                                            0.894</span></span>
-<span><span class="co">#&gt;   b1                                             0.833</span></span>
-<span><span class="co">#&gt;   b2                                             0.717</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; R-squared (latents):</span></span>
 <span><span class="co">#&gt;   ATT                                            0.735</span></span>
@@ -204,33 +202,37 @@ control) and <code>PB</code> (perceived behaviour).</p>
 <span><span class="co">#&gt;     pc1             0.969      0.008  121.554    0.000</span></span>
 <span><span class="co">#&gt;     pc2             0.921      0.009  107.449    0.000</span></span>
 <span><span class="co">#&gt;     pc3             0.945      0.010   95.566    0.000</span></span>
-<span><span class="co">#&gt;   BEH =~        </span></span>
+<span><span class="co">#&gt;   BEH &lt;~        </span></span>
 <span><span class="co">#&gt;     b1              0.913      0.024   37.357    0.000</span></span>
 <span><span class="co">#&gt;     b2              0.847      0.023   36.924    0.000</span></span>
 <span><span class="co">#&gt;   INT =~        </span></span>
-<span><span class="co">#&gt;     ATT             0.877      0.033   26.697    0.000</span></span>
-<span><span class="co">#&gt;     SN              0.814      0.036   22.606    0.000</span></span>
+<span><span class="co">#&gt;     ATT             0.877      0.033   26.511    0.000</span></span>
+<span><span class="co">#&gt;     SN              0.814      0.038   21.380    0.000</span></span>
 <span><span class="co">#&gt;   PBC =~        </span></span>
-<span><span class="co">#&gt;     PC              0.831      0.057   14.519    0.000</span></span>
-<span><span class="co">#&gt;     PB              0.668      0.050   13.350    0.000</span></span>
+<span><span class="co">#&gt;     PC              0.831      0.059   14.133    0.000</span></span>
+<span><span class="co">#&gt;     PB              0.668      0.054   12.441    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Regressions:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   BEH ~         </span></span>
-<span><span class="co">#&gt;     INT             0.251      0.024   10.316    0.000</span></span>
-<span><span class="co">#&gt;     PBC             0.289      0.031    9.220    0.000</span></span>
-<span><span class="co">#&gt;     INT:PBC         0.250      0.032    7.894    0.000</span></span>
+<span><span class="co">#&gt;     INT             0.251      0.026    9.715    0.000</span></span>
+<span><span class="co">#&gt;     PBC             0.289      0.031    9.424    0.000</span></span>
+<span><span class="co">#&gt;     INT:PBC         0.250      0.032    7.753    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Covariances:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   INT ~~        </span></span>
-<span><span class="co">#&gt;     PBC             0.035      0.030    1.157    0.247</span></span>
-<span><span class="co">#&gt;     INT:PBC        -0.006      0.054   -0.110    0.913</span></span>
+<span><span class="co">#&gt;     PBC             0.035      0.030    1.151    0.250</span></span>
+<span><span class="co">#&gt;     INT:PBC        -0.006      0.067   -0.089    0.929</span></span>
 <span><span class="co">#&gt;   PBC ~~        </span></span>
-<span><span class="co">#&gt;     INT:PBC        -0.108      0.048   -2.232    0.026</span></span>
+<span><span class="co">#&gt;     INT:PBC        -0.108      0.060   -1.814    0.070</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Variances:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
+<span><span class="co">#&gt;     INT             1.000                             </span></span>
+<span><span class="co">#&gt;     PBC             1.000                             </span></span>
+<span><span class="co">#&gt;    .BEH             0.802      0.026   30.559    0.000</span></span>
+<span><span class="co">#&gt;     INT:PBC         1.006      0.075   13.491    0.000</span></span>
 <span><span class="co">#&gt;    .att1            0.093      0.015    5.997    0.000</span></span>
 <span><span class="co">#&gt;    .att2            0.121      0.016    7.488    0.000</span></span>
 <span><span class="co">#&gt;    .att3            0.158      0.016    9.804    0.000</span></span>
@@ -245,14 +247,10 @@ control) and <code>PB</code> (perceived behaviour).</p>
 <span><span class="co">#&gt;    .pc3             0.106      0.019    5.709    0.000</span></span>
 <span><span class="co">#&gt;    .b1              0.167      0.045    3.698    0.000</span></span>
 <span><span class="co">#&gt;    .b2              0.283      0.039    7.323    0.000</span></span>
-<span><span class="co">#&gt;     INT             1.000                             </span></span>
-<span><span class="co">#&gt;     PBC             1.000                             </span></span>
-<span><span class="co">#&gt;    .BEH             0.802      0.027   30.081    0.000</span></span>
-<span><span class="co">#&gt;     INT:PBC         1.006      0.075   13.462    0.000</span></span>
-<span><span class="co">#&gt;    .ATT             0.265      0.055    4.840    0.000</span></span>
-<span><span class="co">#&gt;    .SN              0.395      0.053    7.430    0.000</span></span>
-<span><span class="co">#&gt;    .PC              0.335      0.091    3.671    0.000</span></span>
-<span><span class="co">#&gt;    .PB              0.577      0.064    9.000    0.000</span></span></code></pre></div>
+<span><span class="co">#&gt;    .ATT             0.265      0.056    4.748    0.000</span></span>
+<span><span class="co">#&gt;    .SN              0.395      0.053    7.426    0.000</span></span>
+<span><span class="co">#&gt;    .PC              0.335      0.091    3.690    0.000</span></span>
+<span><span class="co">#&gt;    .PB              0.577      0.062    9.363    0.000</span></span></code></pre></div>
 </div>
   </div>
 

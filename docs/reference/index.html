@@ -85,23 +85,43 @@
       </tr><tr><td>
           <p><code><a href="boot.html">boot()</a></code> </p>
         </td>
-        <td><p>Get bootstrapped coefficients from PLS model</p></td>
+        <td><p>Retrieve bootstrap coefficient matrix</p></td>
       </tr><tr><td>
-          <p><code><a href="isMC_PLS.html">isMC_PLS()</a></code> </p>
+          <p><code><a href="coef-PlsModel-method.html">coef(<i>&lt;PlsModel&gt;</i>)</a></code> <code><a href="coef-PlsModel-method.html">coefficients(<i>&lt;PlsModel&gt;</i>)</a></code> </p>
         </td>
-        <td><p>Check if object is a MC-PLS model</p></td>
+        <td><p>Extract coefficients from a <code>PlsModel</code> model</p></td>
+      </tr><tr><td>
+          <p><code><a href="fit_measures.html">fit_measures()</a></code> </p>
+        </td>
+        <td><p>Fit Measures</p></td>
+      </tr><tr><td>
+          <p><code><a href="implied_construct_corr.html">implied_construct_corr()</a></code> </p>
+        </td>
+        <td><p>Implied Construct Correlation Matrix</p></td>
+      </tr><tr><td>
+          <p><code><a href="implied_indicator_corr.html">implied_indicator_corr()</a></code> </p>
+        </td>
+        <td><p>Implied Indicator Correlation Matrix</p></td>
+      </tr><tr><td>
+          <p><code><a href="is_admissible.html">is_admissible()</a></code> </p>
+        </td>
+        <td><p>Check whether a fitted model has admissible parameter estimates</p></td>
+      </tr><tr><td>
+          <p><code><a href="is_mcpls.html">is_mcpls()</a></code> </p>
+        </td>
+        <td><p>Check whether an object uses the MC-OrdPLSc estimator</p></td>
       </tr><tr><td>
           <p><code><a href="oneIntOrdered.html">oneIntOrdered</a></code> </p>
         </td>
         <td><p>oneIntOrdered</p></td>
       </tr><tr><td>
+          <p><code><a href="parameter_estimates-PlsModel-method.html">parameter_estimates(<i>&lt;PlsModel&gt;</i>)</a></code> </p>
+        </td>
+        <td><p>Parameter estimates for <code>PlsModel</code> objects</p></td>
+      </tr><tr><td>
           <p><code><a href="parameter_estimates.html">parameter_estimates()</a></code> </p>
         </td>
         <td><p>Generic accessor for model parameter estimates</p></td>
-      </tr><tr><td>
-          <p><code><a href="parameter_estimates.plssem.html">parameter_estimates(<i>&lt;plssem&gt;</i>)</a></code> </p>
-        </td>
-        <td><p>Parameter estimates for <code>plssem</code> objects</p></td>
       </tr><tr><td>
           <p><code><a href="pls.html">pls()</a></code> </p>
         </td>
@@ -115,6 +135,10 @@
         </td>
         <td><p>Predict from a fitted PLS-SEM model</p></td>
       </tr><tr><td>
+          <p><code><a href="predict-PlsModel-method.html">predict(<i>&lt;PlsModel&gt;</i>)</a></code> </p>
+        </td>
+        <td><p>Predict from a fitted <code>PlsModel</code> (alias for <code>pls_predict</code>)</p></td>
+      </tr><tr><td>
           <p><code><a href="print.PlsSemPredict.html">print(<i>&lt;PlsSemPredict&gt;</i>)</a></code> </p>
         </td>
         <td><p>Print a <code>PlsSemPredict</code> object</p></td>
@@ -122,10 +146,6 @@
           <p><code><a href="print.SummaryPlsSem.html">print(<i>&lt;SummaryPlsSem&gt;</i>)</a></code> </p>
         </td>
         <td><p>Print a <code>SummaryPlsSem</code> object</p></td>
-      </tr><tr><td>
-          <p><code><a href="print.plssem.html">print(<i>&lt;plssem&gt;</i>)</a></code> </p>
-        </td>
-        <td><p>Print a <code>plssem</code> object</p></td>
       </tr><tr><td>
           <p><code><a href="randomIntercepts.html">randomIntercepts</a></code> </p>
         </td>
@@ -143,13 +163,21 @@
         </td>
         <td><p>randomSlopesOrdered</p></td>
       </tr><tr><td>
-          <p><code><a href="summary.plssem.html">summary(<i>&lt;plssem&gt;</i>)</a></code> </p>
+          <p><code><a href="show-PlsModel-method.html">show(<i>&lt;PlsModel&gt;</i>)</a></code> </p>
         </td>
-        <td><p>Summarize a fitted <code>plssem</code> model</p></td>
+        <td><p>Show a <code>PlsModel</code> object</p></td>
+      </tr><tr><td>
+          <p><code><a href="summary-PlsModel-method.html">summary(<i>&lt;PlsModel&gt;</i>)</a></code> </p>
+        </td>
+        <td><p>Summarize a fitted <code>PlsModel</code> model</p></td>
       </tr><tr><td>
           <p><code><a href="titanic.html">titanic</a></code> </p>
         </td>
         <td><p>Titanic Passenger Survival Data Set.</p></td>
+      </tr><tr><td>
+          <p><code><a href="vcov-PlsModel-method.html">vcov(<i>&lt;PlsModel&gt;</i>)</a></code> </p>
+        </td>
+        <td><p>Extract the variance-covariance matrix from a <code>PlsModel</code> model</p></td>
       </tr></tbody></table></div>
 
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">

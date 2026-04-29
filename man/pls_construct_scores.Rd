@@ -7,7 +7,7 @@
 pls_construct_scores(object, ...)
 }
 \arguments{
-\item{object}{A fitted \code{plssem} model.}
+\item{object}{A fitted \code{Plssem} model.}
 
 \item{...}{Passed to [pls_predict()].}
 }

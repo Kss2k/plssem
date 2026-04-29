@@ -2,8 +2,8 @@ Package: plssem
 Type: Package
 Title: Complex Partial Least Squares Structural Equation Modeling
 Version: 0.1.2
-Authors@R: 
-    person(given = "Kjell", family = "Solem Slupphaug", 
+Authors@R:
+    person(given = "Kjell", family = "Solem Slupphaug",
            email = "slupphaugkjell@gmail.com", role = c("aut", "cre"),
            comment = c(ORCID = "0009-0005-8324-2834"))
 Maintainer: Kjell Solem Slupphaug <slupphaugkjell@gmail.com>
@@ -18,7 +18,7 @@ Description:
     for ordinal PLS-SEM and PLSc-SEM. Additional extensions are under development.
     The MC-OrdPLSc algorithm, used to handle ordinal interaction models is detailed
     in Slupphaug et al., (2026).
-    References: 
+    References:
     Lohmöller, J.-B. (1989, ISBN:9783790803002).
       "Latent Variable Path Modeling with Partial Least Squares."
     Dijkstra, T. K., & Henseler, J. (2015).
@@ -37,7 +37,8 @@ License: GPL-3
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.3.3
-Imports: 
+Imports:
+    methods,
     stats,
     modsem (>= 1.0.17),
     lme4,
@@ -51,9 +52,9 @@ Imports:
     reformulas,
     parallel,
     FNN
-Depends: 
+Depends:
     R (>= 4.1.0)
 URL: https://github.com/kss2k/plssem,
   https://kss2k.github.io/plssem/
-Suggests: knitr, rmarkdown, mice, mvtnorm
+Suggests: knitr, rmarkdown, mice, mvtnorm, pkgload
 VignetteBuilder: knitr

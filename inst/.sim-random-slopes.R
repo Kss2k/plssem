@@ -12,7 +12,7 @@ model <- '
   X =~ x1 + x2 + x3
   Z =~ z1 + z2 + z3
   Y =~ y1 + y2 + y3
-  
+
   Y ~ X + Z + (1 + X + Z | cluster)
 '
 
@@ -81,10 +81,10 @@ sim_cont_data <- function(N = n, K = k) {
   SXI <- diag(c(var_x, var_z))
   SXI[1, 2] <- SXI[2, 1] <- cov_x_z
   XI <- rmvnorm(N, sigma = SXI)
-  
+
   x <- XI[, 1]
   z <- XI[, 2]
-  
+
   cluster <- sample(K, N, replace = TRUE)
   Kc <- length(unique(cluster))
 
@@ -104,7 +104,7 @@ sim_cont_data <- function(N = n, K = k) {
   X <- matrix(c(rep(1, N), x, z), nrow = N, ncol = 3, byrow = FALSE)
   Z <- matrix(0L, nrow = N, ncol = Kc*3)
 
-  
+
   for (ki in seq_len(Kc)) {
     Z[cluster==ki, ki] <- 1L
     Z[cluster==ki, Kc + ki] <- x[cluster==ki]
@@ -132,7 +132,7 @@ sim_cont_data <- function(N = n, K = k) {
   z1 <- lambda_1 * z + residual(epsilon)
   z2 <- lambda_2 * z + residual(epsilon)
   z3 <- lambda_3 * z + residual(epsilon)
-  
+
   data.ov <- data.frame(
     x1, x2, x3,
     z1, z2, z3,
@@ -247,7 +247,7 @@ get_output <- function(expr,
                        save.fit = FALSE, # save memory...
                        ...) {
   start <- Sys.time()
-  fit <- tryCatch(eval(expr), 
+  fit <- tryCatch(eval(expr),
                   error = \(e) {
                     warning(sprintf("%s (%d) failed!, message:\n %s",
                                     method, id, e))
@@ -255,7 +255,7 @@ get_output <- function(expr,
                   })
   end <- Sys.time()
   elapsed <- end - start
- 
+
   out <- list(
     fit = if (save.fit) fit else NULL,
     elapsed = elapsed,
@@ -265,14 +265,14 @@ get_output <- function(expr,
     ncat = as.integer(ncat),
     pars = if (!is.null(fit)) parfun(fit, ...) else NULL
   )
-  
+
   class(out) <- "simoutput"
   out
 }
 
 
 print.simoutput <- function(x, ...) {
-  cat(sprintf("ID: %i, Method: %s, Elapsed: %s Cond: %s, NCAT: %d\n", 
+  cat(sprintf("ID: %i, Method: %s, Elapsed: %s Cond: %s, NCAT: %d\n",
               x$id, x$method, capture.output(x$elapsed), x$cond, x$ncat))
   if (!is.null(x$pars)) print(x$pars[x$pars$op == "~" | grepl("~", x$pars$lhs), ])
   else cat("<FAILED>: NULL")
@@ -332,9 +332,9 @@ for (cond in names(list_thresholds)) {
                               choose = ordered)
 
       print_sep()
-      cat(sprintf("Iteration %d/%d:\n", id, total)) 
+      cat(sprintf("Iteration %d/%d:\n", id, total))
       print_sep()
-      
+
       fitted_i <- list(
         plsc.ord = get_output(
           expr = suppressMessages(pls(model, data = data_cat_i, ordered = ordered,
@@ -346,12 +346,12 @@ for (cond in names(list_thresholds)) {
           expr = suppressMessages(pls(model, data = data_cat_i)),
           method = "PLSc", id = id, cond = cond, ncat = ncat
         ),
-        
+
         pls.ord = get_output(
           expr = suppressMessages(pls(model, data = data_cat_i, ordered = ordered, consistent = FALSE)),
           method = "OrdPLS", id = id, cond = cond, ncat = ncat
         ),
-        
+
         pls = get_output(
           expr = suppressMessages(pls(model, data = data_cat_i, consistent = FALSE)),
           method = "PLS", id = id, cond = cond, ncat = ncat
@@ -366,10 +366,10 @@ for (cond in names(list_thresholds)) {
           expr = suppressMessages(pls(model, data = data_cont_i, consistent = FALSE)),
           method = "PLS (cont)", id = id, cond = cond, ncat = ncat,
         )
-      ) 
-      
+      )
+
       print(fitted_i)
-      
+
       results_sub[[i]] <- fitted_i
     }
 
@@ -384,7 +384,7 @@ results <- c(results, results_sub)
 # Parameter Estimates
 # ──────────────────────────────────────────────────────────────────────────────
 resd <- NULL
-cols <- c("id", "method", "lhs", "op", "rhs", 
+cols <- c("id", "method", "lhs", "op", "rhs",
           "par", "est", "se", "pvalue", "elapsed",
           "ncat", "cond")
 
@@ -415,7 +415,7 @@ for (id in seq_along(results)) {
 
   resid <- NULL
   for (fitted in results_id) {
-    if (is.null(fitted$pars)) resi <- failed.pars  
+    if (is.null(fitted$pars)) resi <- failed.pars
     else                      resi <- fitted$pars
     resi$id <- fitted$id
 
@@ -423,19 +423,19 @@ for (id in seq_along(results)) {
       string = colnames(resi),
       pattern = c(std.error = "se", p.value = "pvalue")
     )
-    
+
     resi$method <- fitted$method
     resi$ncat   <- fitted$ncat
     resi$cond   <- fitted$cond
     resi$par <- paste0(resi$lhs,  resi$op, resi$rhs)
     resi$elapsed <- fitted$elapsed
-  
+
     resid <- rbind(resid, resi[cols])
   }
 
   results_dfs[[id]] <- resid
 }
-    
+
 resd <- do.call("rbind", results_dfs)
 cat("\n")
 
@@ -457,19 +457,19 @@ plot_results <- function(compare = methods, param = "Y~X") {
     facet_grid(rows = vars(cond), cols = vars(ncat), scales = "fixed") +
     ggtitle(sprintf("Bias for %s by method", param)) +
     ylab("Bias") +
-    xlab("Method") + 
+    xlab("Method") +
     theme_bw()
 }
 
 
 table_results <- function(compare = methods, alpha = 0.05) {
   resd |>
-    filter(op == "~" & method %in% compare) |> 
+    filter(op == "~" & method %in% compare) |>
     group_by(par, method) |>
     summarize(est.mean = mean(est, na.rm = TRUE),
               se.obs = sd(est, na.rm = TRUE),
               se.exp = mean(se, na.rm = TRUE),
-              percent.sig = sum(pvalue < alpha, na.rm = TRUE) / 
+              percent.sig = sum(pvalue < alpha, na.rm = TRUE) /
                             sum(!is.na(pvalue))) |>
     print(n=Inf)
 }
@@ -477,12 +477,12 @@ table_results <- function(compare = methods, alpha = 0.05) {
 
 table_results_par <- function(param, compare = methods, alpha = 0.05) {
   resd |>
-    dplyr::filter(par == param & method %in% compare) |> 
+    dplyr::filter(par == param & method %in% compare) |>
     group_by(par, method) |>
     dplyr::summarize(est.mean = mean(est, na.rm = TRUE),
               se.obs = sd(est, na.rm = TRUE),
               se.exp = mean(se, na.rm = TRUE),
-              percent.sig = sum(pvalue < alpha, na.rm = TRUE) / 
+              percent.sig = sum(pvalue < alpha, na.rm = TRUE) /
                             sum(!is.na(pvalue)))
 }
 

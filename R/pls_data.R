@@ -62,12 +62,19 @@ getPLS_Data <- function(data,
 
     data[indicators] <- meanImputeMissing(data[indicators], ordered = ordered)
   }
- 
+
   if (standardize) {
     data <- standardizeDataFrame(
       data    = data,
       cluster = cluster
     )
+
+  } else {
+    warning2(
+      "The `pls()` function usually assumes that the data is standardized!\n",
+      "Setting `standardized=FALSE` may have unexpected side effects!"
+    )
+
   }
 
   S <- getCorrMat(data[indicators], probit = is.probit, ordered = ordered)
@@ -86,7 +93,7 @@ getPLS_Data <- function(data,
 
 checkAndFixDTypesPLS_Data <- function(X, check = colnames(X)) {
   if (!is.data.frame(X)) X <- as.data.frame(X)
-  
+
   varIsMissing <- !check %in% colnames(X)
   stopif(any(varIsMissing),
     "Missing variables: ", paste0(check[varIsMissing], collapse = ", ")

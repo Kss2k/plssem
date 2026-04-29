@@ -1,4 +1,4 @@
-USE_NON_LINEAR_PROBIT_CORR_MAT <- FALSE # for now we stick with the linear assumption
+USE_NON_LINEAR_PROBIT_CORR_MAT <- FALSE
 
 
 #' Fit Partial Least Squares Structural Equation Models
@@ -70,7 +70,7 @@ USE_NON_LINEAR_PROBIT_CORR_MAT <- FALSE # for now we stick with the linear assum
 #'   \code{"L'Ecuyer-CMRG"}. When iseed is not \code{NULL}, \code{.Random.seed}
 #'   (if it exists) in the global environment is left untouched.
 #'
-#' @param sample DEPRECTATED. Integer giving the number of bootstrap resamples drawn when
+#' @param sample DEPRECATED. Integer giving the number of bootstrap resamples drawn when
 #'   \code{bootstrap = TRUE}.
 #'
 #' @param mc.min.iter Minimum number of iterations in MC-PLS algorithm.
@@ -86,7 +86,7 @@ USE_NON_LINEAR_PROBIT_CORR_MAT <- FALSE # for now we stick with the linear assum
 #' @param mc.polyak.juditsky Should the polyak.juditsky running average method
 #'   be applied in the MC-PLS algorithm?
 #'
-#' @param mc.fn.args Additional arguments to MC-PLS algorithm, mainly for controling
+#' @param mc.fn.args Additional arguments to MC-PLS algorithm, mainly for controlling
 #'   the step size.
 #'
 #' @param verbose Should verbose output be printed?
@@ -95,132 +95,37 @@ USE_NON_LINEAR_PROBIT_CORR_MAT <- FALSE # for now we stick with the linear assum
 #'   the settings in \code{mc.boot.control} inside each bootstrap replicate (MC-PLS only).
 #'
 #' @param mc.boot.control List of control parameters passed to the MC-PLS algorithm
-#'   inside each bootstrap replicate when \code{boot.optimize = TRUE}. This can be used
-#'   to speed up bootstrapping by, for example, increasing the tolerance or reducing
-#'   \code{mc.reps}. The element \code{reuse.p.start} controls whether to reuse the
-#'   original \code{p.start} for the bootstrap replicates.
+#'   inside each bootstrap replicate when \code{boot.optimize = TRUE}.
 #'
 #' @param reliabilities Optional named numeric vector of user-supplied reliabilities
-#'   used for the PLSc consistency correction. Values are interpreted as construct
-#'   reliabilities (i.e., squared construct quality, \eqn{Q^2}) for the named
-#'   constructs. These override the internally computed construct qualities.
+#'   used for the PLSc consistency correction.
 #'
 #' @param ... Internal arguments. For advanced users only.
 #'
-#' @return An object of class \code{plssem} containing the estimated parameters, fit
-#'   measures, factor scores, and any bootstrap results. Methods such as
-#'   \code{summary()}, \code{print()}, and \code{coef()} can be applied to inspect the fit.
+#' @return A \code{Plssem} object containing the estimated parameters, fit measures,
+#'   factor scores, and any bootstrap results. Methods such as \code{summary()},
+#'   \code{coef()}, and \code{parameter_estimates()} can be applied to inspect the fit.
 #'
-#' @seealso [summary.plssem()], [print.plssem()]
+#' @seealso \code{\link[=summary,PlsModel-method]{summary}},
+#'   \code{\link[=show,PlsModel-method]{show}}
 #'
 #' @examples
-#' # Linear Model with Continuous Data
 #' \donttest{
-#'
 #' library(plssem)
 #' library(modsem)
 #'
 #' tpb <- '
-#' # Outer Model (Based on Hagger et al., 2007)
 #'   ATT =~ att1 + att2 + att3 + att4 + att5
 #'   SN =~ sn1 + sn2
 #'   PBC =~ pbc1 + pbc2 + pbc3
 #'   INT =~ int1 + int2 + int3
 #'   BEH =~ b1 + b2
-#'
-#' # Inner Model (Based on Steinmetz et al., 2011)
 #'   INT ~ ATT + SN + PBC
 #'   BEH ~ INT + PBC
 #' '
 #'
 #' fit <- pls(tpb, TPB, bootstrap = TRUE)
 #' summary(fit)
-#'
-#' # Linear Model with Ordered Data
-#' tpb <- '
-#' # Outer Model (Based on Hagger et al., 2007)
-#'   ATT =~ att1 + att2 + att3 + att4 + att5
-#'   SN =~ sn1 + sn2
-#'   PBC =~ pbc1 + pbc2 + pbc3
-#'   INT =~ int1 + int2 + int3
-#'   BEH =~ b1 + b2
-#'
-#' # Inner Model (Based on Steinmetz et al., 2011)
-#'   INT ~ ATT + SN + PBC
-#'   BEH ~ INT + PBC
-#' '
-#'
-#' fit <- pls(tpb, TPB_Ordered, bootstrap = TRUE)
-#' summary(fit)
-#'
-#' # Multilevel Random Slopes Model with Continuous Data
-#' syntax <- "
-#'   X =~ x1 + x2 + x3
-#'   Z =~ z1 + z2 + z3
-#'   Y =~ y1 + y2 + y3
-#'   W =~ w1 + w2 + w3
-#'   Y ~ X + Z + (1 + X + Z | cluster)
-#'   W ~ X + Z + (1 + X + Z | cluster)
-#' "
-#'
-#' fit <- pls(syntax, data = randomSlopes, bootstrap = TRUE)
-#' summary(fit)
-#'
-#' # Multilevel Random Slopes Model with Ordered Data
-#' syntax <- "
-#'   X =~ x1 + x2 + x3
-#'   Z =~ z1 + z2 + z3
-#'   Y =~ y1 + y2 + y3
-#'   W =~ w1 + w2 + w3
-#'   Y ~ X + Z + (1 + X + Z | cluster)
-#'   W ~ X + Z + (1 + X + Z | cluster)
-#' "
-#'
-#' fit <- pls(syntax, data = randomSlopesOrdered, bootstrap = TRUE)
-#' summary(fit)
-#'
-#' # Multilevel Random Intercepts Model with Continuous Data
-#' syntax <- '
-#'   f =~ y1 + y2 + y3
-#'   f ~ x1 + x2 + x3 + w1 + w2 + (1 | cluster)
-#' '
-#'
-#' fit <- pls(syntax, data = randomIntercepts, bootstrap = TRUE)
-#' summary(fit)
-#'
-#' # Multilevel Random Intercepts Model with Ordered Data
-#' syntax <- '
-#'   f =~ y1 + y2 + y3
-#'   f ~ x1 + x2 + x3 + w1 + w2 + (1 | cluster)
-#' '
-#'
-#' fit <- pls(syntax, data = randomInterceptsOrdered, bootstrap = TRUE)
-#' summary(fit)
-#'
-#' # Interaction Model with Continuous Data
-#' m <- '
-#'   X =~ x1 + x2 + x3
-#'   Z =~ z1 + z2 + z3
-#'   Y =~ y1 + y2 + y3
-#'
-#'   Y ~ X + Z + X:Z
-#' '
-#'
-#' fit <- pls(m, modsem::oneInt, bootstrap = TRUE)
-#' summary(fit)
-#'
-#' # Interaction Model with Ordered Data
-#' m <- '
-#'   X =~ x1 + x2 + x3
-#'   Z =~ z1 + z2 + z3
-#'   Y =~ y1 + y2 + y3
-#'
-#'   Y ~ X + Z + X:Z
-#' '
-#'
-#' fit <- pls(m, oneIntOrdered, bootstrap = TRUE)
-#' summary(fit)
-#'
 #' }
 #' @export
 pls <- function(syntax,
@@ -262,7 +167,7 @@ pls <- function(syntax,
                 reliabilities = NULL,
                 ...) {
 
-  missing <- match.arg(tolower(missing), c("listwise", "mean", "knn"))
+  missing       <- match.arg(tolower(missing), c("listwise", "mean", "knn"))
   boot.parallel <- match.arg(boot.parallel)
 
   if (!is.null(sample)) {
@@ -270,11 +175,8 @@ pls <- function(syntax,
     boot.R <- sample
   }
 
-  # preprocess data
   data <- as.data.frame(data)
 
-  # Define model
-  # If there is no higher order model we only have the path
   model <- specifyModel(
     syntax             = syntax,
     data               = data,
@@ -306,99 +208,81 @@ pls <- function(syntax,
     ...
   )
 
-  # Fit model
   model <- estimatePLS(model = model)
 
-  # Bootstrap
-  if (model$info$boot$bootstrap) {
-    model$boot <- bootstrap(model)
-    model$params$se <- model$boot$se
-    model$params$vcov <- model$boot$vcov
+  if (isTRUE(modelInfo(model)$boot$bootstrap)) {
+    boot <- tryCatch(
+      bootstrap(model),
+      error = \(e) {
+        warning2("Bootstrapping FAILED!\nMessage: ", conditionMessage(e))
+        NULL
+      }
+    )
+
+    if (!is.null(boot))
+      modelBoot(model) <- boot
   }
 
-  model$parTable <- getParTableEstimates(model)
-  class(model) <- "plssem"
+  cm <- combinedModel(model)
+  cm@parTable <- getParTableEstimates(cm)
+
+  if (hasCombinedModel(model) || hasHigherOrderModel(model)) {
+    model@combinedModel <- cm
+  } else {
+    model@parTable <- cm@parTable
+  }
+
   model
 }
 
 
-resetPLS_SubModel <- function(model, hard.reset = FALSE) {
-  model$status$finished       <- FALSE
-  model$status$convergence    <- FALSE
-  model$status$iterations.0_5 <- 0L
-
-  if (hard.reset) {
-    model$status$iterations     <- 0L
-    model$status$iterations.0_9 <- 0L
-    model$params$values.old     <- NULL
-  }
-
-  model
+resetPLS_ModelLowerOrder <- function(model, hard.reset = FALSE) {
+  resetModelStatusLowerOrder(model, hard.reset = hard.reset)
 }
 
 
-estimatePLS_SubModelInner <- function(submodel) {
-  submodel <- resetPLS_SubModel(submodel, hard.reset = TRUE)
-
-  resetPLS_SubModel(submodel) |>
-    estimatePLS_Step0_5() |>
-    estimatePLS_Step6() |>
-    estimatePLS_Step7() |>
-    estimatePLS_Step8()
+estimatePLS_InnerLocal <- function(model) {
+  model |>
+    updateOuterWeights() |>
+    updateFactorScores() |>
+    updateFitObjects()   |>
+    updateParamVector()  |>
+    updateEstimationStatus()
 }
 
 
 estimatePLS_Inner <- function(model) {
-  submodels   <- model$submodels
-  firstOrder  <- submodels$firstOrder
-  secondOrder <- submodels$secondOrder
-
-  firstOrder <- estimatePLS_SubModelInner(firstOrder)
-
-  if (!is.null(secondOrder)) {
-    scores <- getFactorScores(firstOrder)
-    
-    want <- colnames(secondOrder$data)
-    have <- colnames(scores)
-
-    have[!have %in% want] <- paste0(TEMP_OV_PREFIX, have[!have %in% want])
-    colnames(scores) <- have
-
-    stopif(!all(have %in% want), "Missing construct scores for: ",
-           paste0(setdiff(want, have), collapse = ", "))
-
-    newdata <- scores[,want] # Copy possible cluster attribute
-    attr(newdata, "cluster") <- attr(firstOrder$data, "cluster")
-
-    secondOrder$data <- newdata
-    secondOrder$matrices$S <- Rfast::cova(newdata)
-    secondOrder$info$reliabilities <- firstOrder$fit$Q^2
-
-    secondOrder <- estimatePLS_SubModelInner(secondOrder)
-    secondOrder <- correctLoadingsAndWeightsSecondOrder(
-      firstOrder = firstOrder, secondOrder = secondOrder
-    )
-  }
-
-  model$submodels <- list(
-    firstOrder  = firstOrder,
-    secondOrder = secondOrder
-  )
-
-  combineModelResultsFirstSecondOrder(model)
+  estimateHigherOrderChain(model)
 }
 
 
 estimatePLS_Outer <- function(model, ...) {
-  if (model$info$is.mcpls)
+  force(model)
+
+  if (is_mcpls(model))
     return(mcpls(model, ...))
 
   model
 }
 
 
+estimatePLS_Status <- function(model, ...) {
+  prev    <- isTRUE(model@status$is.admissible)
+  current <- modelFitIsAdmissible(model@fit)
+
+  model@status$is.admissible <- prev && current
+  model
+}
+
+
 estimatePLS <- function(model, ...) {
-  model |>
-    estimatePLS_Inner() |>
-    estimatePLS_Outer(...)
+  tryCatch({
+    model |>
+      estimatePLS_Inner() |>
+      estimatePLS_Outer(...) |>
+      updateEstimationStatus()
+
+  }, error = function(e) {
+    stop2("Model estimation FAILED!\n", "Message: ", conditionMessage(e))
+  })
 }

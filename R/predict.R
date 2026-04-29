@@ -1,6 +1,6 @@
 #' Predict from a fitted PLS-SEM model
 #'
-#' @param object A fitted \code{plssem} model.
+#' @param object A fitted \code{PlsModel} object.
 #' @param approach Prediction approach. If \code{approach = "earliest"} (default), then
 #'   only indicators of exogenous benchmark.vars are used for prediction. If
 #'   \code{approach = "direct"}, then all indicators are used.
@@ -18,55 +18,50 @@
 #' @return A \code{PlsSemPredict} object with matrices and benchmark results.
 #'
 #' @export
-pls_predict <- function(object,
-                        approach = c("earliest", "direct"),
-                        newdata = NULL,
-                        std.ord.exp = FALSE,
-                        benchmark = "R2",
-                        benchmark.vars = c("endog", "exog", "all"),
-                        ...) {
+setGeneric("pls_predict", function(object, ...) standardGeneric("pls_predict"))
+
+#' @rdname pls_predict
+#' @export
+setMethod("pls_predict", "PlsModel", function(object,
+                                              approach = c("earliest", "direct"),
+                                              newdata = NULL,
+                                              std.ord.exp = FALSE,
+                                              benchmark = "R2",
+                                              benchmark.vars = c("endog", "exog", "all"),
+                                              ...) {
+  combined <- combinedModel(object)
+
   # TODO:
   #  1. Allow the user to pass only indicators of exogenous variables, if
   #     approach='earliest'.
   #  2. Allow the user to pass ordinal variables with a subset of categories
   #  3. Use standardization parameters from the training data, don't just
   #     standardize the test data directly.
-  info <- object$info
+  info <- combined@info
 
   approach <- match.arg(tolower(approach), c("earliest", "direct"))
   benchmark.vars <- match.arg(tolower(benchmark.vars), c("endog", "exog", "all"))
 
-  W <- object$fit$fitWeights
-  L <- object$fit$fitLambda
-
-  ordered <- object$info$ordered
-  outerX <- getOuterDataMatrices(object, newdata = newdata,
+  ordered <- combined@info$ordered
+  outerX <- getOuterDataMatrices(combined, newdata = newdata,
                                  std.ord.exp = std.ord.exp)
   X.cont <- outerX$X.cont
   X.ord  <- outerX$X.ord
   ordered <- intersect(ordered, colnames(X.cont))
 
-  if (info$is.high.ord) {
-    lvs.hi.ord <- info$lvs.hi.ord
-
-    W.lv <- W[rownames(W) %in% colnames(W), lvs.hi.ord, drop = FALSE]
-    W.ov <- W[rownames(W) %in% colnames(X.cont),
-              colnames(W) %in% rownames(W.lv), drop = FALSE]
-
-    # Redefine measurement model as repeated indicators
-    W <- W[rownames(W) %in% colnames(X.cont), , drop = FALSE]
-    W[,lvs.hi.ord] <- W.ov %*% W.lv
-  }
+  L <- combined@fit$fitLambda
+  W <- getRepeatedIndicatorWeights(object)
+  W <- W[colnames(X.cont), ,drop=FALSE]
 
   Y <- X.cont %*% W
 
   if (approach == "earliest") {
-    parTable <- getParTableEstimates(object, rm.tmp = FALSE)
+    parTable <- getParTableEstimates(combined, rm.tmp.ov = FALSE, clean.tmp.ind = FALSE)
 
-    if (info$is.high.ord)
+    if (isTRUE(info$is.high.ord))
       parTable <- highOrdMeasrAsStructParTable(parTable)
 
-    xis  <- getXis(parTable, isLV = !info$is.high.ord)
+    xis  <- getXis(parTable, isLV = !isTRUE(info$is.high.ord))
     etas <- getSortedEtas(parTable)
 
     undefIntTerms <- getIntTerms(parTable)
@@ -107,7 +102,7 @@ pls_predict <- function(object,
     Y <- as.matrix(Y.sub[colnames(Y)])
   }
 
-  L.ov <- L[rownames(L) %in% colnames(X.cont), , drop = FALSE]
+  L.ov <- L[rownames(L) %in% colnames(X.cont), colnames(Y), drop = FALSE]
   X.cont.pred <- Y %*% t(L.ov)
 
   if (length(ordered)) {
@@ -129,12 +124,12 @@ pls_predict <- function(object,
   X.cont.pred <- plssemMatrix(X.cont.pred, is.public = TRUE)
   X.ord       <- plssemMatrix(X.ord, is.public = TRUE)
   X.ord.pred  <- plssemMatrix(X.ord.pred, is.public = TRUE)
-  ordered     <- unique(c(ordered, stringr::str_remove_all(ordered, TEMP_OV_PREFIX)))
+  ordered     <- unique(c(ordered, removeTempOvPrefix(ordered)))
   all.vars    <- colnames(X.cont.pred)
   benchmarked <- NULL
 
-  inds.x <- stringr::str_remove_all(object$info$inds.x, TEMP_OV_PREFIX)
-  inds.y <- stringr::str_remove_all(object$info$inds.y, TEMP_OV_PREFIX)
+  inds.x <- removeTempOvPrefix(combined@info$inds.x)
+  inds.y <- removeTempOvPrefix(combined@info$inds.y)
 
   pred.vars <- switch(benchmark.vars,
     all = all.vars,
@@ -175,7 +170,7 @@ pls_predict <- function(object,
            "Invalid `benchmark` type(s): ", paste0(invalid, collapse = ", "),
            "\nAllowed: ", paste0(allowedBenchmarks, collapse = ", "))
 
-    trainOuterX <- getOuterDataMatrices(object, newdata = object$data,
+    trainOuterX <- getOuterDataMatrices(combined, newdata = combined@data,
                                         std.ord.exp = std.ord.exp)
     trainMean <- colMeans(
       plssemMatrix(trainOuterX$X.cont, is.public = TRUE), na.rm = TRUE
@@ -214,7 +209,20 @@ pls_predict <- function(object,
 
   class(out) <- "PlsSemPredict"
   out
-}
+})
+
+
+#' Predict from a fitted \code{PlsModel} (alias for \code{\link{pls_predict}})
+#'
+#' @param object A fitted \code{PlsModel} object.
+#' @param newdata Optional new data matrix/data frame.
+#' @param ... Further arguments passed to \code{\link{pls_predict}}.
+#' @return A \code{PlsSemPredict} object.
+#' @importFrom stats predict
+#' @export
+setMethod("predict", "PlsModel", function(object, newdata = NULL, ...) {
+  pls_predict(object, newdata = newdata, ...)
+})
 
 
 #' Print a \code{PlsSemPredict} object
@@ -425,11 +433,11 @@ assignScoresOrdinalMonteCarlo <- function(x, y, y.i, std.ord.exp = FALSE,
 
 
 getOuterDataMatrices <- function(model, newdata = NULL, std.ord.exp = FALSE) {
-  ordered  <- model$info$ordered
-  is.mcpls <- model$info$is.mcpls
-  olddata  <- model$data
+  ordered  <- model@info$ordered
+  is.mcpls <- model@info$is.mcpls
+  olddata  <- model@data
   ordered  <- intersect(colnames(olddata), ordered)
- 
+
   if (!is.null(newdata)) {
     nm.o <- colnames(olddata)
     nm.n <- colnames(newdata)
@@ -438,7 +446,7 @@ getOuterDataMatrices <- function(model, newdata = NULL, std.ord.exp = FALSE) {
 
     if (any(is.tmp)) {
       tmpReplacements <- stats::setNames(
-        nm.o[is.tmp], stringr::str_remove_all(nm.o[is.tmp], TEMP_OV_PREFIX)
+        nm.o[is.tmp], removeTempOvPrefix(nm.o[is.tmp])
       )
 
       keys <- intersect(nm.n, names(tmpReplacements))
@@ -456,7 +464,7 @@ getOuterDataMatrices <- function(model, newdata = NULL, std.ord.exp = FALSE) {
     is.ord <- vapply(newdata.df, FUN.VALUE = logical(1L), FUN = is.ordered)
     newdata.df[is.ord] <- lapply(newdata.df[is.ord], reindex)
 
-    if (model$info$standardized)
+    if (model@info$standardized)
       newdata <- Rfast::standardise(as.matrix(newdata.df))
     else
       newdata <- as.matrix(newdata.df)
@@ -473,13 +481,13 @@ getOuterDataMatrices <- function(model, newdata = NULL, std.ord.exp = FALSE) {
   for (ord in ordered) {
     ncatOld <- length(uniqueComplete(olddata[,ord]))
     ncatNew <- length(uniqueComplete(newdata[,ord]))
-    
+
     stopif(ncatNew < ncatOld,
-           "There are fewer categories for ", ord, " in the test data (", 
+           "There are fewer categories for ", ord, " in the test data (",
            ncatNew, "),\nthan in the training data (", ncatOld, ")!")
 
     stopif(ncatNew > ncatOld,
-           "There are more categories for ", ord, " in the test data (", 
+           "There are more categories for ", ord, " in the test data (",
            ncatNew, "),\nthan in the training data (", ncatOld, ")!")
   }
 
@@ -493,8 +501,8 @@ getOuterDataMatrices <- function(model, newdata = NULL, std.ord.exp = FALSE) {
   Tau   <- stats::setNames(vector("list", length(ordered)), nm = ordered)
 
   if (is.mcpls) {
-    sim.ov.cont <- model$matrices$sim.ov.cont
-    sim.ov.ord  <- model$matrices$sim.ov.ord
+    sim.ov.cont <- model@matrices$sim.ov.cont
+    sim.ov.ord  <- model@matrices$sim.ov.ord
 
     for (ord in ordered) {
       y <- assignScoresOrdinalMonteCarlo(
@@ -533,7 +541,7 @@ getOuterDataMatrices <- function(model, newdata = NULL, std.ord.exp = FALSE) {
 #' Convenience wrapper around [pls_predict()] returning only the predicted
 #' latent scores matrix.
 #'
-#' @param object A fitted \code{plssem} model.
+#' @param object A fitted \code{Plssem} model.
 #' @param ... Passed to [pls_predict()].
 #' @return A \code{PlsSemMatrix} of predicted latent scores.
 #'

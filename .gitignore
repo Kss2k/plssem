@@ -10,3 +10,5 @@ tests/testthat/mplusResults*
 sketches/
 inst/doc
 inst/*.rds
+AGENTS.md
+DEV_REFACTOR_PLAN.md

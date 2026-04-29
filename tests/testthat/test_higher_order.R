@@ -76,9 +76,17 @@ sem.syntax <- '
 testthat::expect_no_error({
   fit <- pls(sem.syntax, data = data)
   summary(fit)
-  pls_predict(fit)
+
+  fitm <- fit_measures(fit)
+  pred <- pls_predict(fit)
 })
 
+
+testthat::expect_equal(fitm$chisq, 70.00279, tol = 1e-5)
+testthat::expect_equal(fitm$chisq.df, 42)
+testthat::expect_equal(
+  pred$benchmark$variable, c("y1", "y2", "y3", "y4")
+)
 
 testthat::expect_no_error({
   fit <- pls(sem.syntax, data = data, mcpls = TRUE)

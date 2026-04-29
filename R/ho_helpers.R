@@ -223,7 +223,7 @@ computeCombinedModel <- function(model, lowerOrderAsEta = FALSE) {
   is.mcpls <- isTRUE(info1$is.mcpls) || isTRUE(info2$is.mcpls)
 
   is.probit <- (
-    (isTRUE(info1$is.probit) || isTRUE(info2$is.probit)) || !is.mcpls
+    (isTRUE(info1$is.probit) || isTRUE(info2$is.probit)) && !is.mcpls
   )
 
   combined@info <- list(

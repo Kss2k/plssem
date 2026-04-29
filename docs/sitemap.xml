@@ -1,99 +1,35 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>/404.html</loc>
-  </url>
-  <url>
-    <loc>/LICENSE-text.html</loc>
-  </url>
-  <url>
-    <loc>/articles/categorical-models.html</loc>
-  </url>
-  <url>
-    <loc>/articles/higher-order.html</loc>
-  </url>
-  <url>
-    <loc>/articles/index.html</loc>
-  </url>
-  <url>
-    <loc>/articles/interaction-models.html</loc>
-  </url>
-  <url>
-    <loc>/articles/linear-models.html</loc>
-  </url>
-  <url>
-    <loc>/articles/missing-imputation.html</loc>
-  </url>
-  <url>
-    <loc>/articles/multilevel-models.html</loc>
-  </url>
-  <url>
-    <loc>/articles/ordinal-regression.html</loc>
-  </url>
-  <url>
-    <loc>/articles/parallel-bootstrapping.html</loc>
-  </url>
-  <url>
-    <loc>/authors.html</loc>
-  </url>
-  <url>
-    <loc>/index.html</loc>
-  </url>
-  <url>
-    <loc>/reference/TPB_Ordered.html</loc>
-  </url>
-  <url>
-    <loc>/reference/boot.html</loc>
-  </url>
-  <url>
-    <loc>/reference/index.html</loc>
-  </url>
-  <url>
-    <loc>/reference/isMC_PLS.html</loc>
-  </url>
-  <url>
-    <loc>/reference/oneIntOrdered.html</loc>
-  </url>
-  <url>
-    <loc>/reference/parameter_estimates.html</loc>
-  </url>
-  <url>
-    <loc>/reference/parameter_estimates.plssem.html</loc>
-  </url>
-  <url>
-    <loc>/reference/pls.html</loc>
-  </url>
-  <url>
-    <loc>/reference/pls_construct_scores.html</loc>
-  </url>
-  <url>
-    <loc>/reference/pls_predict.html</loc>
-  </url>
-  <url>
-    <loc>/reference/print.PlsSemPredict.html</loc>
-  </url>
-  <url>
-    <loc>/reference/print.SummaryPlsSem.html</loc>
-  </url>
-  <url>
-    <loc>/reference/print.plssem.html</loc>
-  </url>
-  <url>
-    <loc>/reference/randomIntercepts.html</loc>
-  </url>
-  <url>
-    <loc>/reference/randomInterceptsOrdered.html</loc>
-  </url>
-  <url>
-    <loc>/reference/randomSlopes.html</loc>
-  </url>
-  <url>
-    <loc>/reference/randomSlopesOrdered.html</loc>
-  </url>
-  <url>
-    <loc>/reference/summary.plssem.html</loc>
-  </url>
-  <url>
-    <loc>/reference/titanic.html</loc>
-  </url>
+<urlset xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'>
+<url><loc>/404.html</loc></url>
+<url><loc>/LICENSE-text.html</loc></url>
+<url><loc>/articles/categorical-models.html</loc></url>
+<url><loc>/articles/higher-order.html</loc></url>
+<url><loc>/articles/index.html</loc></url>
+<url><loc>/articles/interaction-models.html</loc></url>
+<url><loc>/articles/linear-models.html</loc></url>
+<url><loc>/articles/missing-imputation.html</loc></url>
+<url><loc>/articles/multilevel-models.html</loc></url>
+<url><loc>/articles/ordinal-regression.html</loc></url>
+<url><loc>/articles/parallel-bootstrapping.html</loc></url>
+<url><loc>/authors.html</loc></url>
+<url><loc>/index.html</loc></url>
+<url><loc>/reference/TPB_Ordered.html</loc></url>
+<url><loc>/reference/boot.html</loc></url>
+<url><loc>/reference/index.html</loc></url>
+<url><loc>/reference/isMC_PLS.html</loc></url>
+<url><loc>/reference/oneIntOrdered.html</loc></url>
+<url><loc>/reference/parameter_estimates.html</loc></url>
+<url><loc>/reference/parameter_estimates.plssem.html</loc></url>
+<url><loc>/reference/pls.html</loc></url>
+<url><loc>/reference/pls_construct_scores.html</loc></url>
+<url><loc>/reference/pls_predict.html</loc></url>
+<url><loc>/reference/print.PlsSemPredict.html</loc></url>
+<url><loc>/reference/print.SummaryPlsSem.html</loc></url>
+<url><loc>/reference/print.plssem.html</loc></url>
+<url><loc>/reference/randomIntercepts.html</loc></url>
+<url><loc>/reference/randomInterceptsOrdered.html</loc></url>
+<url><loc>/reference/randomSlopes.html</loc></url>
+<url><loc>/reference/randomSlopesOrdered.html</loc></url>
+<url><loc>/reference/summary.plssem.html</loc></url>
+<url><loc>/reference/titanic.html</loc></url>
 </urlset>
+

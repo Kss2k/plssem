@@ -183,7 +183,7 @@ computeFactorScores <- function(model) {
   X <- model@data
   F <- X %*% W
 
-  if (!model@info$standardize)
+  if (!model@info$standardized)
     F <- Rfast::standardise(F)
 
   F

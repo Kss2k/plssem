@@ -68,6 +68,13 @@ getPLS_Data <- function(data,
       data    = data,
       cluster = cluster
     )
+
+  } else {
+    warning2(
+      "The `pls()` function usually assumes that the data is standardized!\n",
+      "Setting `standardized=FALSE` may have unexpected side effects!"
+    )
+
   }
 
   S <- getCorrMat(data[indicators], probit = is.probit, ordered = ordered)

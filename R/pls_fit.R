@@ -181,7 +181,12 @@ extractCoefs <- function(model) {
 computeFactorScores <- function(model) {
   W <- model@matrices$lambda
   X <- model@data
-  Rfast::standardise(X %*% W)
+  F <- X %*% W
+
+  if (!model@info$standardize)
+    F <- Rfast::standardise(F)
+
+  F
 }
 
 

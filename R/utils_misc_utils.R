@@ -42,7 +42,7 @@ lapplyNamed <- function(...) {
 
 
 uniqueComplete <- function(x) {
-  unique(x[complete.cases(x)])
+  unique(x[stats::complete.cases(x)])
 }
 
 

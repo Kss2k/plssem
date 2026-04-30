@@ -107,7 +107,13 @@ plslmer <- function(plsModel) {
 
   for (line in lme4.syntax) {
     line.safe <- makeSafeFormula(line)
-    lmerFit <- lme4::lmer(line.safe, data = X.safe)
+
+    lmerFit <- lme4::lmer(
+      formula = line.safe,
+      data    = X.safe,
+      control = lme4::lmerControl(calc.derivs = FALSE)
+    )
+
     fterms  <- stats::terms(stats::formula(line.safe))
     vars    <- attr(fterms, "variables")
     dep     <- restoreIntr(as.character(vars[[2L]]))

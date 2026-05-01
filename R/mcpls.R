@@ -253,6 +253,11 @@ updateModelFromFreeParTableMC <- function(parTable, model, mc.reps,
     fitCov[i, j] <- fitCov[j, i] <- par
   }
 
+  if (isMLM(model)) {
+    params <- parTableToParams(parTable)
+    modelFitLmer(model)$values <- params$values
+  }
+
   model@fit$fitMeasurement    <- fitMeasurement
   model@fit$fitStructural     <- fitStructural
   model@fit$fitCov            <- fitCov

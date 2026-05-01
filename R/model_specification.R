@@ -76,7 +76,7 @@ specifySubModel <- function(parTable,
                             higherOrderLVs     = NULL) {
   if (is.null(parTable))
     return(NULL)
-
+      
   parsed <- parseModelArguments(
     parTable       = parTable,
     data           = data,

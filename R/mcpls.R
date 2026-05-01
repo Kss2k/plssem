@@ -30,15 +30,46 @@ mcpls <- function(
     if (verbose) printf("Using fixed seed %i...\n", rng.seed)
   }
 
+  if (isMLM(fit0)) {
+    clusterSizes <- as.numeric(table(attr(data, "cluster")))
+    clusterName  <- colnames(attr(data, "cluster"))
+
+    simContData <- function(par, N = mc.reps, seed = rng.seed) {
+      simulateDataMixedEffectsParTable(
+        parTable     = par,
+        N            = N,
+        seed         = seed,
+        check.hi.ord = is.hi.ord,
+        clusterSizes = clusterSizes,
+        clusterName  = clusterName
+      )
+    }
+
+  } else {
+
+    simContData <- function(par, N = mc.reps, seed = rng.seed) {
+      simulateDataParTable(
+        parTable     = par,
+        N            = mc.reps,
+        seed         = seed,
+        check.hi.ord = is.hi.ord
+      )
+    }
+
+  }
+
   .f <- function(p) {
     par1[par1$is.free, "est"] <- p
 
-    sim     <- simulateDataParTable(par1, N = mc.reps, seed = rng.seed, check.hi.ord = is.hi.ord)
+    sim     <- simContData(par1)
     sim.ov  <- ordinalizeDataFrame(sim$ov, PROBS = PROBS, ordered = ordered)
 
     fit.sim <- fit0.base
     X       <- Rfast::standardise(as.matrix(sim.ov[vars]))
     S       <- Rfast::cova(X)
+    
+    if (!is.null(sim$cluster))
+      attr(X, "cluster") <- sim$cluster
 
     # Update observed-data (lowest-order) model input
     fit.sim@data       <- X
@@ -89,12 +120,13 @@ mcpls <- function(
 
   par1[par1$is.free, "est"] <- as.vector(mcfit$root)
   fit1.combined <- updateModelFromFreeParTableMC(
-    parTable = par1,
-    model    = fit0.combined,
-    mc.reps  = mc.reps,
-    PROBS    = PROBS,
-    ordered  = ordered,
-    seed     = rng.seed
+    parTable    = par1,
+    model       = fit0.combined,
+    mc.reps     = mc.reps,
+    PROBS       = PROBS,
+    ordered     = ordered,
+    seed        = rng.seed,
+    simContData = simContData
   )
 
   fit1.combined@status$iterations    <- mcfit$iter
@@ -134,9 +166,9 @@ getFreeParamsTable <- function(model) {
   op  <- parTable$op
   rhs <- parTable$rhs
 
-  cond1 <- !(lhs == rhs & op == "~~")
+  cond1 <- !(lhs == rhs & op == "~~" & !grepl("~", rhs))
   cond2 <- !((grepl(":", lhs) | grepl(":", rhs)) & op == "~~")
-  cond3 <- op != "~1" & !grepl("~", lhs) & !grepl("~", rhs)
+  cond3 <- op != "~1"
 
   out <- parTable[cond1 & cond2 & cond3, , drop = FALSE]
   attr(out, "cond") <- cond1 & cond2 & cond3
@@ -147,9 +179,9 @@ getFreeParamsTable <- function(model) {
 
 
 updateModelFromFreeParTableMC <- function(parTable, model, mc.reps,
-                                          PROBS, ordered, seed = NULL) {
-  sim     <- simulateDataParTable(parTable, N = mc.reps, seed = seed,
-                                  check.hi.ord = model@info$is.high.ord)
+                                          PROBS, ordered, seed = NULL,
+                                          simContData) {
+  sim     <- simContData(parTable, N = mc.reps, seed = seed)
   sim.ord <- ordinalizeDataFrame(sim$ov, PROBS = PROBS, ordered = ordered)
 
   lvs    <- getLVs(parTable)

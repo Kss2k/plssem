@@ -69,7 +69,7 @@ bootstrap <- function(model,
       boot.verbose    <- mc.boot.control$verbose
       low.tol.penalty <- mc.boot.control$low.tol.penalty
 
-      utils::capture.output(type = "message", { # capture real time output
+      # utils::capture.output(type = "message", { # capture real time output
 
         model.b <- suppressWarnings(estimatePLS(
           model = model.b,
@@ -82,7 +82,7 @@ bootstrap <- function(model,
           p.start         = boot.p.start
         ))
 
-      })
+      # })
 
       par <- combinedModel(model.b)@params$values
 

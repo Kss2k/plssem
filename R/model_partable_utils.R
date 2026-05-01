@@ -148,6 +148,18 @@ getXis <- function(parTable, etas = NULL, isLV = TRUE, checkAny = TRUE) {
 }
 
 
+getRandomEffectLabels <- function(parTable) {
+  lhs <- parTable$lhs
+  op  <- parTable$op
+  rhs <- parTable$rhs
+
+  rlhs <- lhs[grepl("~", lhs) & op == "~~"]
+  rrhs <- rhs[grepl("~", rhs) & op == "~~"]
+
+  union(rlhs, rrhs)
+}
+
+
 getIndsLVs <- function(parTable, lVs, isOV = FALSE, ovs = NULL) {
   if (!length(lVs)) return(NULL)
 

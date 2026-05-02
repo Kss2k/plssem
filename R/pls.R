@@ -82,6 +82,9 @@ USE_NON_LINEAR_PROBIT_CORR_MAT <- FALSE
 #' @param mc.tol Tolerance in MC-PLS algorithm.
 #'
 #' @param mc.fixed.seed Should a fixed seed be used in the MC-PLS algorithm?
+#'   Setting a fixed seed will likely yield less accurate estimates, but can
+#'   substantially improve the stability and computational efficiency of the
+#'   algorithm.
 #'
 #' @param mc.polyak.juditsky Should the polyak.juditsky running average method
 #'   be applied in the MC-PLS algorithm?

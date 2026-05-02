@@ -65,6 +65,9 @@ mcpls <- function(
     if (!is.null(sim$cluster))
       attr(X, "cluster") <- sim$cluster
 
+    if (!is.null(sim$cluster))
+      attr(X, "cluster") <- sim$cluster
+
     # Update observed-data (lowest-order) model input
     modelData(fit.sim)  <- X
     indCorrMatrix(fit.sim) <- S
@@ -94,7 +97,7 @@ mcpls <- function(
   iter <- mcfit$iter
   if (iter >= max.iter && !fixed.seed) {
     rng.seed <- floor(stats::runif(1L, min = 0, max = 9999999))
-    warning2("Maximum number of iterations reached!\n",
+    warning2("Maximum number of (initial) iterations reached!\n",
              sprintf("Attempting to use fixed seed %i...", rng.seed))
 
     mcfit <- robbinsMonro1951(
@@ -110,6 +113,16 @@ mcpls <- function(
     )
 
     iter <- iter + mcfit$iter
+  }
+
+  # Check status of (last) mcfit
+  if (mcfit$iter >= max.iter) {
+    warning2(
+      "Maximum number of iterations reached!\n",
+      "Parameter estimates might be unreliable!"
+    )
+
+    modelStatus(fit0.combined)$is.admissible <- FALSE
   }
 
   par1[par1$is.free, "est"] <- as.vector(mcfit$root)
@@ -282,7 +295,9 @@ updateModelFromFreeParTableMC <- function(parTable,
   model@fit$fitStructural     <- fitStructural
   model@fit$fitCov            <- fitCov
   model@fit$fitTheta          <- fitTheta
-  model@status$is.admissible  <- sim$is.admissible
+  model@status$is.admissible  <- (
+    model@status$is.admissible && sim$is.admissible
+  )
 
   model@status$mcpls.update.args <- list(
     parTable     = parTable,

@@ -12,15 +12,10 @@
 #' @return \code{object}, invisibly.
 #' @export
 setMethod("show", "PlsModel", function(object) {
+  printModelStatusHeader(object)
+
   combined <- combinedModel(object)
-  admissible <- isAdmissible(combined)
-
-  statusString <- if (admissible) "ended normally" else "did NOT END NORMALLY"
-
-  printf("plssem (%s) %s after %i iterations\n",
-         PKG_INFO$version, statusString, combined@status$iterations)
-
-  parTable <- parameter_estimates(combined)
+  parTable <- tryCatch(parameter_estimates(combined), error = \(e) NULL)
 
   if (NROW(parTable)) print(parTable)
   else                print(object@parTableInput)
@@ -101,8 +96,7 @@ print.SummaryPlsSem <- function(x, ...) {
     formatNumeric(val, digits = digits, scientific = FALSE)
   }
 
-  printf("plssem (%s) ended normally after %i iterations\n\n",
-         PKG_INFO$version, x$info$iterations)
+  printModelStatusHeader(x$fit)
 
   width.out <- x$print$width
 
@@ -368,3 +362,16 @@ setGeneric(
 setMethod("fit_measures", "PlsModel", function(object, saturated = FALSE, mc.reps = 1e6, ...) {
   fitMeasures(object, saturated = saturated, mc.reps = mc.reps)
 })
+
+
+printModelStatusHeader <- function(model) {
+  combined   <- combinedModel(model)
+  admissible <- isAdmissible(combined)
+
+  printf(
+    "plssem (%s) %s after %i iterations\n",
+    PKG_INFO$version,
+    if (admissible) "ended normally" else "did NOT END NORMALLY",
+    combined@status$iterations
+  )
+}

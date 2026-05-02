@@ -14,6 +14,7 @@ pls(
   missing = c("listwise", "mean", "kNN"),
   knn.k = 5,
   mcpls = NULL,
+  mc.fast.lmer = mcpls,
   probit = NULL,
   tolerance = 1e-05,
   max.iter.0_5 = 100L,
@@ -73,7 +74,11 @@ all indicators missing are removed prior to imputation, and rows with missing
 \item{knn.k}{Integer specifying the number of neighbors (\code{k}) used when
 \code{missing = "kNN"}.}
 
-\item{mcpls}{Should a Monte-Carlo consistency correction be applied?}
+\item{mcpls}{Should the model be estimated using the Monte-Carlo Consistent
+Partial Least Squares (MC-PLSc) algorithm?}
+
+\item{mc.fast.lmer}{Should a faster (biased) GLS based estimator of the
+Mixed-Effects model be used in conjunction with the MC-PLS algorithm?}
 
 \item{probit}{Logical; overrides the automatic choice of probit factor scores
 that is based on whether ordered indicators are present.}
@@ -111,7 +116,10 @@ if \code{parallel = "multicore"}. If \code{parallel = "snow"} (under windows),
 
 \item{mc.tol}{Tolerance in MC-PLS algorithm.}
 
-\item{mc.fixed.seed}{Should a fixed seed be used in the MC-PLS algorithm?}
+\item{mc.fixed.seed}{Should a fixed seed be used in the MC-PLS algorithm?
+Setting a fixed seed will likely yield less accurate estimates, but can
+substantially improve the stability and computational efficiency of the
+algorithm.}
 
 \item{mc.polyak.juditsky}{Should the polyak.juditsky running average method
 be applied in the MC-PLS algorithm?}

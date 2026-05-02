@@ -43,7 +43,11 @@ USE_NON_LINEAR_PROBIT_CORR_MAT <- FALSE
 #' @param knn.k Integer specifying the number of neighbors (\code{k}) used when
 #'   \code{missing = "kNN"}.
 #'
-#' @param mcpls Should a Monte-Carlo consistency correction be applied?
+#' @param mcpls Should the model be estimated using the Monte-Carlo Consistent
+#'   Partial Least Squares (MC-PLSc) algorithm?
+#'
+#' @param mc.fast.lmer Should a faster (biased) GLS based estimator of the
+#'   Mixed-Effects model be used in conjunction with the MC-PLS algorithm?
 #'
 #' @param probit Logical; overrides the automatic choice of probit factor scores
 #'   that is based on whether ordered indicators are present.
@@ -140,6 +144,7 @@ pls <- function(syntax,
                 missing = c("listwise", "mean", "kNN"),
                 knn.k = 5,
                 mcpls = NULL,
+                mc.fast.lmer = mcpls,
                 probit = NULL,
                 tolerance = 1e-5,
                 max.iter.0_5 = 100L,
@@ -189,6 +194,7 @@ pls <- function(syntax,
     ordered            = ordered,
     probit             = probit,
     mcpls              = mcpls,
+    mc.fast.lmer       = mc.fast.lmer,
     tolerance          = tolerance,
     max.iter.0_5       = max.iter.0_5,
     mc.min.iter        = mc.min.iter,

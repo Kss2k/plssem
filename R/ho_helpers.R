@@ -220,7 +220,8 @@ computeCombinedModel <- function(model, lowerOrderAsEta = FALSE) {
   # MC-PLSc is an estimator choice, not merely the presence of ordered
   # indicators. A combined model should only be flagged MC-PLSc if any level
   # was actually fitted with MC-PLSc.
-  is.mcpls <- isTRUE(info1$is.mcpls) || isTRUE(info2$is.mcpls)
+  is.mcpls        <- isTRUE(info1$is.mcpls)        || isTRUE(info2$is.mcpls)
+  is.mc.fast.lmer <- isTRUE(info1$is.mc.fast.lmer) || isTRUE(info2$is.mc.fast.lmer)
 
   is.probit <- (
     (isTRUE(info1$is.probit) || isTRUE(info2$is.probit)) && !is.mcpls
@@ -242,8 +243,9 @@ computeCombinedModel <- function(model, lowerOrderAsEta = FALSE) {
     cluster      = info1$cluster,
     ordered      = ordered.base,
     is.mlm       = isTRUE(info1$is.mlm) || isTRUE(info2$is.mlm),
-    is.mcpls     = is.mcpls,
-    is.probit    = is.probit,
+    is.mcpls        = is.mcpls,
+    is.mc.fast.lmer = is.mc.fast.lmer,
+    is.probit       = is.probit,
     is.cfa       = isTRUE(info1$is.cfa) && (is.null(info2$is.cfa) || info2$is.cfa),
     is.high.ord  = TRUE,
     n            = info1$n,

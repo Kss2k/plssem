@@ -1,15 +1,37 @@
-plslmer <- function(plsModel) {
-  INTR_OP <- "__INTR__"
+# Module-level helpers shared across plslmer, fastMixedModel, meanDiagZGZt.
+# The INTR_OP substitution avoids lme4 forming its own interaction terms from ':'.
 
-  safeIntr <- function(x) {
-    stringr::str_replace_all(x, stringr::fixed(":"), INTR_OP)
-  }
+lmerSafeIntr <- function(x) {
+  stringr::str_replace_all(x, stringr::fixed(":"), "__INTR__")
+}
 
-  restoreIntr <- function(x) {
-    x <- stringr::str_replace_all(x, stringr::fixed(INTR_OP), ":")
-    stringr::str_replace_all(x, stringr::fixed("`"), "")
-  }
+lmerRestoreIntr <- function(x) {
+  x <- stringr::str_replace_all(x, stringr::fixed("__INTR__"), ":")
+  stringr::str_replace_all(x, stringr::fixed("`"), "")
+}
 
+lmerGetNames <- function(lhs, nm) {
+  rhs <- stringr::str_replace_all(nm, "\\(Intercept\\)", "1")
+  rhs <- lmerRestoreIntr(rhs)
+  paste0(lhs, "~", rhs)
+}
+
+lmerFixVecNames <- function(vec, dep) {
+  if (!is.null(names(vec)))
+    names(vec) <- lmerGetNames(dep, names(vec))
+  vec
+}
+
+lmerFixMatNames <- function(mat, dep, cols = TRUE, rows = TRUE) {
+  if (!is.null(rownames(mat)) && rows)
+    rownames(mat) <- lmerGetNames(dep, rownames(mat))
+  if (!is.null(colnames(mat)) && cols)
+    colnames(mat) <- lmerGetNames(dep, colnames(mat))
+  mat
+}
+
+
+plslmer <- function(plsModel, fast = FALSE) {
   lme4.syntax <- plsModel@info$lme4.syntax
   cluster     <- plsModel@info$cluster
   consistent  <- plsModel@info$consistent
@@ -22,13 +44,13 @@ plslmer <- function(plsModel) {
   fit.c <- plsModel@fitConsistent
   fit.u <- plsModel@fitUncorrected
 
-  selectGamma <- plsModel@matrices$select$gamma
+  selectGamma   <- plsModel@matrices$select$gamma
   # Full (corrected) covariance/correlation matrix for the structural model.
   # Unlike `fitCov`, this retains the total covariances between endogenous and
   # exogenous variables.
-  Cov.lv <- fit.c$fitC
-  Q <- fit.c$Q
-  Correction <- fit.c$fitStructural / fit.u$fitStructural
+  Cov.lv        <- fit.c$fitC
+  Q             <- fit.c$Q
+  Correction    <- fit.c$fitStructural / fit.u$fitStructural
   CorrectionCov <- fit.c$fitCov / fit.u$fitCov
 
   Xf <- as.data.frame(plsModel@factorScores)
@@ -47,13 +69,12 @@ plslmer <- function(plsModel) {
     }
   }
 
-  # We don't want lmer to form the interaction terms on its' own, since we want
+  # We don't want lmer to form the interaction terms on its own, since we want
   # them to be mean centered, matching the assumptions of our correction procedure.
-  # We threefore replace the ':' operator, and use explicitly formed interaction
-  # terms, also enaming any columns containing ':' before fitting, and map the
-  # lme4 syntax accordingly.
-  colsWithColon <- colnames(X)[grepl(":", colnames(X), fixed = TRUE)]
-  colsWithColonSafe <- safeIntr(colsWithColon)
+  # We therefore replace the ':' operator and use explicitly formed interaction
+  # terms, renaming any columns containing ':' before fitting.
+  colsWithColon     <- colnames(X)[grepl(":", colnames(X), fixed = TRUE)]
+  colsWithColonSafe <- lmerSafeIntr(colsWithColon)
 
   X.safe <- X
   if (length(colsWithColon)) {
@@ -78,26 +99,6 @@ plslmer <- function(plsModel) {
     out
   }
 
-  getNames <- function(lhs, nm) {
-    rhs <- stringr::str_replace_all(nm, pattern = "\\(Intercept\\)", replacement = "1")
-    rhs <- restoreIntr(rhs)
-    paste0(lhs, "~", rhs)
-  }
-
-  fixVecNames <- function(vec, dep) {
-    if (!is.null(names(vec)))
-      names(vec) <- getNames(dep, names(vec))
-    vec
-  }
-
-  fixMatNames <- function(mat, dep, cols = TRUE, rows = TRUE) {
-    if (!is.null(rownames(mat)) && rows)
-      rownames(mat) <- getNames(dep, rownames(mat))
-    if (!is.null(colnames(mat)) && cols)
-      colnames(mat) <- getNames(dep, colnames(mat))
-    mat
-  }
-
   FITS    <- list()
   FIXEF   <- list()
   COEF    <- list()
@@ -106,28 +107,90 @@ plslmer <- function(plsModel) {
   SIGMA   <- list()
 
   for (line in lme4.syntax) {
-    line.safe <- makeSafeFormula(line)
+    line.safe     <- makeSafeFormula(line)
+    formula.full  <- stats::formula(line.safe)
+    formula.fixed <- reformulas::nobars(formula.full)
+    bars          <- reformulas::findbars(formula.full)
 
-    lmerFit <- lme4::lmer(
-      formula = line.safe,
-      data    = X.safe,
-      control = lme4::lmerControl(calc.derivs = FALSE)
-    )
+    fterms <- stats::terms(formula.fixed)
+    vars   <- attr(fterms, "variables")
+    dep    <- lmerRestoreIntr(as.character(vars[[2L]]))
+    indep  <- colnames(selectGamma)[selectGamma[, dep]]
+    c.safe <- lmerSafeIntr(cluster)
 
-    fterms  <- stats::terms(stats::formula(line.safe))
-    vars    <- attr(fterms, "variables")
-    dep     <- restoreIntr(as.character(vars[[2L]]))
-    indep   <- colnames(selectGamma)[selectGamma[,dep]]
+    # --- Estimation (branches on fast) -----------------------------------
 
-    fixefFit   <- fixVecNames(lme4::fixef(lmerFit), dep = dep)
-    vcovFit    <- fixMatNames(stats::vcov(lmerFit), dep = dep)
-    coefFit    <- stats::coef(lmerFit)
-    varCorrFit <- lme4::VarCorr(lmerFit)
+    if (!fast) {
+      lmerFit <- lme4::lmer(
+        formula = line.safe,
+        data    = X.safe,
+        control = lme4::lmerControl(calc.derivs = FALSE)
+      )
+
+      fixefRaw   <- lme4::fixef(lmerFit)
+      vcovRaw    <- as.matrix(stats::vcov(lmerFit))
+      coefFit    <- stats::coef(lmerFit)
+      varCorrFit <- as.list(lme4::VarCorr(lmerFit))
+
+    } else {
+      lmerFit <- NULL
+
+      y          <- as.numeric(X.safe[[dep]])
+      Xmat       <- stats::model.matrix(formula.fixed, data = X.safe)
+      grp_factor <- factor(X.safe[[c.safe]])
+      grp        <- as.integer(grp_factor)
+      J          <- nlevels(grp_factor)
+      grp_levels <- levels(grp_factor)
+
+      # Collect all bars whose grouping factor matches cluster and combine
+      # their Z matrices. This correctly handles || (which expands to
+      # multiple bars) and explicit multi-term random effects.
+      bar_idx <- which(vapply(bars, function(b) {
+        lmerRestoreIntr(deparse(b[[3L]])) == cluster
+      }, logical(1L)))
+      if (!length(bar_idx)) bar_idx <- seq_along(bars)
+      Zsmall <- do.call(cbind, lapply(bar_idx, function(i) {
+        f_re <- stats::as.formula(paste0("~", deparse(bars[[i]][[2L]])))
+        stats::model.matrix(f_re, data = X.safe)
+      }))
+      k      <- ncol(Zsmall)
+      p      <- ncol(Xmat)
+
+      result <- fastMixedModel(y = y, X = Xmat, Zsmall = Zsmall,
+                               grp = grp, J = J, grp_levels = grp_levels)
+
+      names(result$beta)         <- colnames(Xmat)
+      rownames(result$Sigma_u)   <- colnames(Zsmall)
+      colnames(result$Sigma_u)   <- colnames(Zsmall)
+      rownames(result$vcov_beta) <- colnames(Xmat)
+      colnames(result$vcov_beta) <- colnames(Xmat)
+
+      # Build cluster-level coef matrix (rows = clusters, cols = fixed effects)
+      coef_mat <- matrix(rep(result$beta, J), nrow = J, ncol = p, byrow = TRUE,
+                         dimnames = list(grp_levels, colnames(Xmat)))
+      for (ri in seq_len(k)) {
+        cn <- colnames(Zsmall)[[ri]]
+        if (cn %in% colnames(coef_mat))
+          coef_mat[, cn] <- coef_mat[, cn] + result$u[, ri]
+      }
+
+      fixefRaw              <- result$beta
+      vcovRaw               <- result$vcov_beta
+      coefFit               <- list()
+      coefFit[[c.safe]]     <- coef_mat
+      varCorrFit            <- list()
+      varCorrFit[[c.safe]]  <- result$Sigma_u
+    }
+
+    # --- Shared: apply naming, compute corrections, rename coef/vcorr ----
+
+    fixefFit <- lmerFixVecNames(fixefRaw, dep)
+    vcovFit  <- lmerFixMatNames(vcovRaw, dep)
 
     params <- names(fixefFit)
     split  <- stringr::str_split_fixed(params, pattern = "~", n = 2L)
-    lhs    <- split[,1L]
-    rhs    <- split[,2L]
+    lhs    <- split[, 1L]
+    rhs    <- split[, 2L]
 
     correctionTerms <- stats::setNames(rep(1, length(fixefFit)), nm = params)
     for (i in seq_along(lhs)) {
@@ -168,26 +231,26 @@ plslmer <- function(plsModel) {
     }
 
     for (c in cluster) {
-      c.safe <- safeIntr(c)
+      c.safe.c <- lmerSafeIntr(c)
 
-      coefFit[[c]] <- fixMatNames(as.matrix(coefFit[[c.safe]]), dep = dep, rows = FALSE)
-      varCorrFit[[c]] <- fixMatNames(varCorrFit[[c.safe]], dep = dep)
+      coefFit[[c]]    <- lmerFixMatNames(as.matrix(coefFit[[c.safe.c]]), dep = dep, rows = FALSE)
+      varCorrFit[[c]] <- lmerFixMatNames(varCorrFit[[c.safe.c]], dep = dep)
 
-      if (c.safe != c) {
-        coefFit[[c.safe]] <- NULL
-        varCorrFit[[c.safe]] <- NULL
+      if (c.safe.c != c) {
+        coefFit[[c.safe.c]]    <- NULL
+        varCorrFit[[c.safe.c]] <- NULL
       }
 
       if (consistent) {
-        vcPars <- rownames(varCorrFit[[c]])
+        vcPars       <- rownames(varCorrFit[[c]])
         vcCorrection <- DCorrectionTerms[vcPars, vcPars, drop = FALSE]
 
-        coefFit[[c]] <- coefFit[[c]] %*% diag(correctionTerms[colnames(coefFit[[c]])])
+        coefFit[[c]]    <- coefFit[[c]] %*% diag(correctionTerms[colnames(coefFit[[c]])])
         varCorrFit[[c]] <- vcCorrection %*% varCorrFit[[c]] %*% vcCorrection
       }
 
-      attr(varCorrFit[[c]], "stddev") <- sqrt(diag(varCorrFit[[c]]))
-      attr(varCorrFit[[c]], "correlation") <- cov2cor(varCorrFit[[c]])
+      attr(varCorrFit[[c]], "stddev")      <- sqrt(pmax(0, diag(varCorrFit[[c]])))
+      attr(varCorrFit[[c]], "correlation") <- tryCatchNA(cov2cor(varCorrFit[[c]]))
     }
 
     FITS[[dep]]    <- lmerFit
@@ -195,9 +258,15 @@ plslmer <- function(plsModel) {
     VCOV[[dep]]    <- vcovFit
     FIXEF[[dep]]   <- fixefFit
     VARCORR[[dep]] <- varCorrFit
-    SIGMA[[dep]]   <- getSigmaFromVarCorr(fit = lmerFit, varCorr = varCorrFit,
-                                          beta = fixefFit, CorrectionCov = CorrectionCov,
-                                          Cov.lv = Cov.lv, dep = dep, indep = indep)
+    SIGMA[[dep]]   <- getSigmaFromVarCorr(
+      fit           = lmerFit,
+      beta          = fixefFit,
+      varCorr       = varCorrFit,
+      dep           = dep,
+      indep         = indep,
+      CorrectionCov = CorrectionCov,
+      Cov.lv        = Cov.lv
+    )
   }
 
   valuesFixef <- unlist(unname(FIXEF))
@@ -216,32 +285,119 @@ plslmer <- function(plsModel) {
 }
 
 
-meanDiagZGZt <- function(fit, varCorr.c, dep = NULL) {
-  INTR_OP <- "__INTR__"
+# Iterative GLS estimator for the linear mixed model y = Xb + Zu + e.
+# Uses per-group Woodbury updates (O(J*k^3) per iteration) rather than
+# a full n x n matrix factorization. Variance components are updated via
+# a moment estimator (biased but fast); n_iter = 2 is sufficient for
+# MC-PLS since the outer SA loop corrects the resulting bias.
+fastMixedModel <- function(y, X, Zsmall, grp, J, grp_levels = NULL, n_iter = 2L) {
+  n <- length(y)
+  p <- ncol(X)
+  k <- ncol(Zsmall)
 
-  restoreIntr <- function(x) {
-    x <- stringr::str_replace_all(x, stringr::fixed(INTR_OP), ":")
-    stringr::str_replace_all(x, stringr::fixed("`"), "")
+  # OLS initialisation
+  XtX      <- crossprod(X)
+  Xty      <- drop(crossprod(X, y))
+  beta_hat <- tryCatch(
+    solve(XtX, Xty),
+    error = function(e) solve(XtX + diag(1e-8, p), Xty)
+  )
+
+  resid     <- y - drop(X %*% beta_hat)
+  var_resid <- max(mean(resid^2), 1e-8)
+
+  # Split initial variance between within- and between-group components
+  sigma2_e <- var_resid * 0.5
+  Sigma_u  <- diag(var_resid * 0.5 / k, k)
+
+  u_hat   <- matrix(0, J, k)
+  XtVinvX <- XtX
+  XtVinvy <- Xty
+
+  for (iter in seq_len(n_iter)) {
+    Sigma_u_inv <- tryCatch(
+      solve(Sigma_u),
+      error = function(e) diag(1 / pmax(diag(Sigma_u), 1e-10), k)
+    )
+
+    XtVinvX <- matrix(0, p, p)
+    XtVinvy <- numeric(p)
+
+    # Accumulate X'V^{-1}X and X'V^{-1}y over groups using Woodbury:
+    # V_j^{-1} v = (v - Zj M^{-1} Zj'v / sigma2_e) / sigma2_e
+    # where M = Sigma_u^{-1} + Zj'Zj / sigma2_e
+    for (j in seq_len(J)) {
+      idx <- which(grp == j)
+      Xj  <- X[idx, , drop = FALSE]
+      Zj  <- Zsmall[idx, , drop = FALSE]
+      yj  <- y[idx]
+
+      M    <- Sigma_u_inv + crossprod(Zj) / sigma2_e
+      Minv <- tryCatch(solve(M), error = function(e) diag(1 / pmax(diag(M), 1e-10), k))
+
+      VinvFun <- function(v) {
+        (v - Zj %*% (Minv %*% drop(crossprod(Zj, v))) / sigma2_e) / sigma2_e
+      }
+
+      XtVinvX <- XtVinvX + crossprod(Xj, VinvFun(Xj))
+      XtVinvy <- XtVinvy + drop(crossprod(Xj, VinvFun(yj)))
+    }
+
+    beta_hat <- tryCatch(
+      solve(XtVinvX, XtVinvy),
+      error = function(e) tryCatch(
+        solve(XtVinvX + diag(1e-8, p), XtVinvy),
+        error = function(e2) beta_hat
+      )
+    )
+
+    # BLUPs: u_j = M^{-1} Zj' resj / sigma2_e  (derivation: Sigma_u Zj' Vj^{-1} resj)
+    ss_resid <- 0
+    for (j in seq_len(J)) {
+      idx  <- which(grp == j)
+      Xj   <- X[idx, , drop = FALSE]
+      Zj   <- Zsmall[idx, , drop = FALSE]
+      resj <- y[idx] - drop(Xj %*% beta_hat)
+      M    <- Sigma_u_inv + crossprod(Zj) / sigma2_e
+      Minv <- tryCatch(solve(M), error = function(e) diag(1 / pmax(diag(M), 1e-10), k))
+      u_hat[j, ] <- drop(Minv %*% drop(crossprod(Zj, resj))) / sigma2_e
+      ss_resid   <- ss_resid + sum((resj - drop(Zj %*% u_hat[j, ]))^2)
+    }
+
+    # Moment update for Sigma_u: (1/J) sum_j u_j u_j'
+    Sigma_u_new <- crossprod(u_hat) / J
+    ev          <- eigen(Sigma_u_new, symmetric = TRUE)
+    ev$values   <- pmax(ev$values, 1e-8)
+    Sigma_u     <- ev$vectors %*% diag(ev$values, k) %*% t(ev$vectors)
+
+    sigma2_e <- max(ss_resid / n, 1e-8)
   }
 
+  vcov_beta <- tryCatch(solve(XtVinvX), error = function(e) diag(1e-6, p))
+
+  if (!is.null(grp_levels))
+    rownames(u_hat) <- grp_levels
+
+  list(
+    beta      = as.vector(beta_hat),
+    u         = u_hat,
+    Sigma_u   = Sigma_u,
+    sigma2_e  = sigma2_e,
+    vcov_beta = vcov_beta
+  )
+}
+
+
+meanDiagZGZt <- function(fit, varCorr.c, dep = NULL) {
   mf   <- stats::model.frame(fit)
   bars <- reformulas::findbars(stats::formula(fit))
 
-  # helper to match your naming convention dep~(Intercept)->dep~1 etc.
-  getNames <- function(lhs, nm) {
-    rhs <- stringr::str_replace_all(nm, pattern="\\(Intercept\\)", replacement="1")
-    rhs <- restoreIntr(rhs)
-    paste0(lhs, "~", rhs)
-  }
-
-  # Build the "small" random-effects model matrix (n x k) for each grouping factor,
-  # then compute rowwise z_i' Sigma z_i and sum across factors.
   n <- nrow(mf)
   v <- numeric(n)
 
   for (b in bars) {
-    expr  <- b[[2]]                 # random part, e.g. 1 + x
-    gname <- restoreIntr(deparse(b[[3]]))        # grouping factor name
+    expr  <- b[[2]]
+    gname <- lmerRestoreIntr(deparse(b[[3]]))
 
     Sigma <- varCorr.c[[gname]]
     if (is.null(Sigma)) {
@@ -249,23 +405,19 @@ meanDiagZGZt <- function(fit, varCorr.c, dep = NULL) {
     }
     Sigma <- as.matrix(Sigma)
 
-    # "Small" Z for this term (no expansion by levels), just n x k:
-    f_rhs <- stats::as.formula(paste0("~", deparse(expr)))
+    f_rhs  <- stats::as.formula(paste0("~", deparse(expr)))
     Zsmall <- stats::model.matrix(f_rhs, mf)
 
-    # Name alignment: columns of Zsmall must match row/colnames of Sigma
     if (!is.null(dep)) {
-      colnames(Zsmall) <- getNames(dep, colnames(Zsmall))
+      colnames(Zsmall) <- lmerGetNames(dep, colnames(Zsmall))
     }
 
-    # Reorder Zsmall to match Sigma ordering
     rn <- rownames(Sigma)
     if (is.null(rn)) rn <- colnames(Sigma)
     if (is.null(rn)) {
       stop("Sigma for grouping factor '", gname, "' must have row/col names.")
     }
 
-    # Check that all Sigma terms exist in Zsmall
     missing_cols <- setdiff(rn, colnames(Zsmall))
     if (length(missing_cols) > 0) {
       stop("For grouping factor '", gname, "', Z columns missing: ",
@@ -349,7 +501,6 @@ getSigmaFromVarCorr <- function(fit, beta, varCorr, dep, indep, CorrectionCov, C
                                dep = dep, indep = indep)
   sigma  <- stats::setNames(sigma2, nm = rvdep)
 
-  # Keep returning the (corrected) random-effect covariances as you already do
   for (VC in varCorr) {
     namesVC <- matrix("", nrow = NROW(VC), ncol = NCOL(VC))
     for (i in seq_len(NROW(VC))) for (j in seq_len(i))

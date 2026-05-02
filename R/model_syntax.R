@@ -9,6 +9,7 @@ parseModelArguments <- function(parTable,
                                 ordered = NULL,
                                 probit = NULL,
                                 mcpls = FALSE,
+                                mc.fast.lmer = NULL,
                                 consistent = TRUE,
                                 is.lower.order = FALSE) {
   data <- as.data.frame(data)
@@ -124,8 +125,9 @@ parseModelArguments <- function(parTable,
   }
 
   has.ord <- length(ordered) > 0L
-  is.mcpls  <- if (is.null(mcpls)) has.ord && (is.nlin || is.lower.order) else mcpls
-  is.probit <- if (is.null(probit)) has.ord && !is.mcpls else probit
+  is.mcpls      <- if (is.null(mcpls)) has.ord && (is.nlin || is.lower.order) else mcpls
+  is.probit     <- if (is.null(probit)) has.ord && !is.mcpls else probit
+  is.mc.fast.lmer <- if (is.null(mc.fast.lmer)) is.mcpls else isTRUE(mc.fast.lmer)
   is.mlm    <- length(lme4.syntax) > 0L
 
   list(
@@ -140,8 +142,9 @@ parseModelArguments <- function(parTable,
     is.nlin      = is.nlin,
     ordered      = ordered,
     is.probit    = is.probit,
-    is.mcpls     = is.mcpls,
-    is.mlm       = is.mlm,
+    is.mcpls        = is.mcpls,
+    is.mc.fast.lmer = is.mc.fast.lmer,
+    is.mlm          = is.mlm,
     consistent   = consistent && (!is.mcpls || is.mlm) # Don't use consistency correction
                                                        # for single-level MC-PLS models
   )

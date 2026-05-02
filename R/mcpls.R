@@ -163,7 +163,7 @@ getFreeParamsTable <- function(model) {
   rhs <- parTable$rhs
 
   cond1 <- !(lhs == rhs & op == "~~" & !grepl("~", rhs))
-  cond2 <- !((grepl(":", lhs) | grepl(":", rhs)) & op == "~~")
+  cond2 <- !((isIntTermVariable(lhs) | isIntTermVariable(rhs)) & op == "~~")
   cond3 <- op != "~1"
 
   out <- parTable[cond1 & cond2 & cond3, , drop = FALSE]
@@ -171,6 +171,13 @@ getFreeParamsTable <- function(model) {
 
   out$is.free <- out$op != "<~"
   out
+}
+
+
+isIntTermVariable <- function(x) {
+  # Check if x is a intTerm variable name. However, it can be a parameter label
+  # with an interaction term (e.g., "Y~X:Z")
+  grepl(":", x) & !grepl("~", x)
 }
 
 

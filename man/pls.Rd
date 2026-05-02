@@ -28,13 +28,13 @@ pls(
   mc.reps = 20000L,
   mc.tol = 0.001,
   mc.fixed.seed = FALSE,
-  mc.polyak.juditsky = FALSE,
+  mc.polyak.juditsky = NULL,
   mc.fn.args = list(),
   verbose = interactive(),
   boot.optimize = TRUE,
   mc.boot.control = list(min.iter = mc.min.iter, max.iter = mc.max.iter, mc.reps =
-    floor(0.5 * mc.reps), tol = 2 * mc.tol, polyak.juditsky = FALSE, verbose = FALSE,
-    fixed.seed = TRUE, reuse.p.start = TRUE),
+    floor(0.5 * mc.reps), tol = 2 * mc.tol, polyak.juditsky = mc.polyak.juditsky, verbose
+    = FALSE, fixed.seed = TRUE, reuse.p.start = TRUE),
   reliabilities = NULL,
   ...
 )

@@ -14,6 +14,7 @@ pls(
   missing = c("listwise", "mean", "kNN"),
   knn.k = 5,
   mcpls = NULL,
+  mc.fast.lmer = mcpls,
   probit = NULL,
   tolerance = 1e-05,
   max.iter.0_5 = 100L,
@@ -111,7 +112,10 @@ if \code{parallel = "multicore"}. If \code{parallel = "snow"} (under windows),
 
 \item{mc.tol}{Tolerance in MC-PLS algorithm.}
 
-\item{mc.fixed.seed}{Should a fixed seed be used in the MC-PLS algorithm?}
+\item{mc.fixed.seed}{Should a fixed seed be used in the MC-PLS algorithm?
+Setting a fixed seed will likely yield less accurate estimates, but can
+substantially improve the stability and computational efficiency of the
+algorithm.}
 
 \item{mc.polyak.juditsky}{Should the polyak.juditsky running average method
 be applied in the MC-PLS algorithm?}

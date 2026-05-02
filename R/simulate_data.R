@@ -274,10 +274,24 @@ buildCovMat <- function(vars, parTable, .cortol, penalty.cfg, unitVariances = FA
   dimnames(mat) <- list(vars, vars)
 
   if (!unitVariances) for (v in vars) {
-    # Prefill diagonal 
-    mat[v,v] <- parTable[parTable$rhs == v &
-                         parTable$lhs == v &
-                         parTable$op  == "~~", "est"]
+    cond.v <- parTable$rhs == v & parTable$lhs == v & parTable$op == "~~"
+    v.i    <- parTable[cond.v, "est"]
+
+    if (v.i <= 0) {
+      penalty <- smoothBoundaryPenalty(
+        -v.i,
+        limit       = 0,
+        guard       = 0,
+        beta        = penalty.cfg$corr$beta,
+        scale       = penalty.cfg$corr$scale,
+        penalty.max = penalty.cfg$corr$max_penalty
+      )
+      if (penalty != 0)
+        parTable[cond.v, "penalty"] <- parTable[cond.v, "penalty"] + penalty
+      v.i <- .Machine$double.eps
+    }
+
+    mat[v, v] <- v.i
   }
 
   for (i in seq_along(vars)) {

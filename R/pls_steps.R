@@ -264,4 +264,3 @@ estimatePLS_Step8 <- function(model) {
 
   refreshLmerParams(model) # Update params with Mixed-Effects coefficients
 }
-

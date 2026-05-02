@@ -234,12 +234,12 @@ inputReliabilities <- function(object) {
 }
 
 
-corrMatrix <- function(object) {
+indCorrMatrix <- function(object) {
   object@matrices$S
 }
 
 
-`corrMatrix<-` <- function(object, value) {
+`indCorrMatrix<-` <- function(object, value) {
   object@matrices$S <- value
   object
 }

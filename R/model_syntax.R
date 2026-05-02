@@ -142,7 +142,8 @@ parseModelArguments <- function(parTable,
     is.probit    = is.probit,
     is.mcpls     = is.mcpls,
     is.mlm       = is.mlm,
-    consistent   = consistent && !is.mcpls
+    consistent   = consistent && (!is.mcpls || is.mlm) # Don't use consistency correction
+                                                       # for single-level MC-PLS models
   )
 }
 

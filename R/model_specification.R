@@ -76,7 +76,7 @@ specifySubModel <- function(parTable,
                             higherOrderLVs     = NULL) {
   if (is.null(parTable))
     return(NULL)
-
+      
   parsed <- parseModelArguments(
     parTable       = parTable,
     data           = data,
@@ -143,6 +143,13 @@ specifySubModel <- function(parTable,
     mc.args        = mc.args,
     boot           = boot.info
   )
+
+  if (info$is.mlm && !info$is.mcpls) {
+    message(
+      "Multilevel/Mixed-Effects PLSc models are currently under development!\n",
+      "Consider passing `mcpls=TRUE` to yield more consistent results."
+    )
+  }
 
   matrices$S  <- preppedData$S
   matrices$SC <- diagPartitioned(matrices$S, matrices$C)

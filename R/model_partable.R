@@ -37,6 +37,27 @@ getParTableEstimates <- function(model, rm.tmp.ov = TRUE, clean.tmp.ind = TRUE) 
 }
 
 
+parTableToParams <- function(parTable) {
+  lhs <- parTable$lhs
+  op  <- parTable$op
+  rhs <- parTable$rhs
+  est <- parTable$est
+  se  <- parTable$se
+
+  k          <- NROW(parTable)
+  names      <- paste0(lhs, op, rhs)
+  values     <- stats::setNames(est, nm = names)
+
+  list(
+    names      = names,
+    values     = values,
+    values.old = NULL,
+    se         = se,
+    vcov       = NULL
+  )
+}
+
+
 splitParameterNames <- function(names) {
   hasBeenSplit <- logical(length(names))
 

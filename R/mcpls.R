@@ -27,42 +27,36 @@ mcpls <- function(
 
   if (fixed.seed && is.null(rng.seed)) {
     rng.seed <- floor(stats::runif(1L, min = 0, max = 9999999))
-    if (verbose) printf("Using fixed seed %i...\n", rng.seed)
+    if (verbose) message(sprintf("Using fixed seed %i...", rng.seed))
   }
 
   if (isMLM(fit0)) {
     clusterSizes <- as.numeric(table(attr(data, "cluster")))
     clusterName  <- colnames(attr(data, "cluster"))
 
-    simContData <- function(par, N = mc.reps, seed = rng.seed) {
-      simulateDataMixedEffectsParTable(
-        parTable     = par,
-        N            = N,
-        seed         = seed,
-        check.hi.ord = is.hi.ord,
-        clusterSizes = clusterSizes,
-        clusterName  = clusterName
-      )
-    }
-
   } else {
-
-    simContData <- function(par, N = mc.reps, seed = rng.seed) {
-      simulateDataParTable(
-        parTable     = par,
-        N            = mc.reps,
-        seed         = seed,
-        check.hi.ord = is.hi.ord
-      )
-    }
+    clusterSizes <- NULL
+    clusterName  <- NULL
 
   }
 
   .f <- function(p) {
     par1[par1$is.free, "est"] <- p
 
-    sim     <- simContData(par1)
-    sim.ov  <- ordinalizeDataFrame(sim$ov, PROBS = PROBS, ordered = ordered)
+    sim <- simulateDataParTable(
+      parTable     = par1,
+      N            = mc.reps,
+      seed         = rng.seed,
+      check.hi.ord = is.hi.ord,
+      clusterSizes = clusterSizes,
+      clusterName  = clusterName
+    )
+
+    sim.ov  <- ordinalizeDataFrame(
+      df      = sim$ov,
+      PROBS   = PROBS,
+      ordered = ordered
+    )
 
     fit.sim <- fit0.base
     X       <- Rfast::standardise(as.matrix(sim.ov[vars]))
@@ -72,8 +66,8 @@ mcpls <- function(
       attr(X, "cluster") <- sim$cluster
 
     # Update observed-data (lowest-order) model input
-    fit.sim@data       <- X
-    fit.sim@matrices$S <- S
+    modelData(fit.sim)  <- X
+    indCorrMatrix(fit.sim) <- S
 
     fit2 <- estimatePLS_Inner(fit.sim)
     par2 <- getFreeParamsTable(combinedModel(fit2))
@@ -119,20 +113,22 @@ mcpls <- function(
   }
 
   par1[par1$is.free, "est"] <- as.vector(mcfit$root)
+
   fit1.combined <- updateModelFromFreeParTableMC(
-    parTable    = par1,
-    model       = fit0.combined,
-    mc.reps     = mc.reps,
-    PROBS       = PROBS,
-    ordered     = ordered,
-    seed        = rng.seed,
-    simContData = simContData
+    parTable     = par1,
+    model        = fit0.combined,
+    mc.reps      = mc.reps,
+    PROBS        = PROBS,
+    ordered      = ordered,
+    seed         = rng.seed,
+    clusterSizes = clusterSizes,
+    clusterName  = clusterName
   )
 
   fit1.combined@status$iterations    <- mcfit$iter
   fit1.combined@info$mc.args$p.start <- as.vector(mcfit$root)
 
-  fit0.base@combinedModel <- fit1.combined
+  fit0.base@combinedModel        <- fit1.combined
   fit0.base@status$iterations    <- mcfit$iter
   fit0.base@info$mc.args$p.start <- as.vector(mcfit$root)
   fit0.base
@@ -178,11 +174,28 @@ getFreeParamsTable <- function(model) {
 }
 
 
-updateModelFromFreeParTableMC <- function(parTable, model, mc.reps,
-                                          PROBS, ordered, seed = NULL,
-                                          simContData) {
-  sim     <- simContData(parTable, N = mc.reps, seed = seed)
-  sim.ord <- ordinalizeDataFrame(sim$ov, PROBS = PROBS, ordered = ordered)
+updateModelFromFreeParTableMC <- function(parTable,
+                                          model,
+                                          mc.reps,
+                                          PROBS,
+                                          ordered,
+                                          seed = NULL,
+                                          clusterSizes = NULL,
+                                          clusterName = NULL) {
+  sim <- simulateDataParTable(
+    parTable     = parTable,
+    N            = mc.reps,
+    seed         = seed,
+    check.hi.ord = model@info$is.high.ord,
+    clusterSizes = clusterSizes,
+    clusterName  = clusterName
+  )
+
+  sim.ord <- ordinalizeDataFrame(
+    df      = sim$ov,
+    PROBS   = PROBS,
+    ordered = ordered
+  )
 
   lvs    <- getLVs(parTable)
   indsLVs <- getIndsLVs(parTable, lVs = lvs)
@@ -265,12 +278,14 @@ updateModelFromFreeParTableMC <- function(parTable, model, mc.reps,
   model@status$is.admissible  <- sim$is.admissible
 
   model@status$mcpls.update.args <- list(
-    parTable = parTable,
-    model    = model,
-    mc.reps  = mc.reps,
-    PROBS    = PROBS,
-    ordered  = ordered,
-    seed     = seed
+    parTable     = parTable,
+    model        = model,
+    mc.reps      = mc.reps,
+    PROBS        = PROBS,
+    ordered      = ordered,
+    seed         = seed,
+    clusterSizes = clusterSizes,
+    clusterName  = clusterName
   )
 
   refreshModelParams(model, update.names = TRUE)

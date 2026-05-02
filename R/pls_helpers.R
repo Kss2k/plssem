@@ -38,7 +38,7 @@ estimateHigherOrderChain <- function(model) {
 
   newdata <- getSecondOrderDataMatrix(firstOrder = model, secondOrder = higherOrder)
   modelData(higherOrder)  <- newdata
-  corrMatrix(higherOrder) <- Rfast::cova(newdata)
+  indCorrMatrix(higherOrder) <- Rfast::cova(newdata)
   inputReliabilities(higherOrder) <- constructReliabilities(model)
 
   higherOrder <- estimateHigherOrderChain(higherOrder)

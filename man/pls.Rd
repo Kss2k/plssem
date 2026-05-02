@@ -74,7 +74,11 @@ all indicators missing are removed prior to imputation, and rows with missing
 \item{knn.k}{Integer specifying the number of neighbors (\code{k}) used when
 \code{missing = "kNN"}.}
 
-\item{mcpls}{Should a Monte-Carlo consistency correction be applied?}
+\item{mcpls}{Should the model be estimated using the Monte-Carlo Consistent
+Partial Least Squares (MC-PLSc) algorithm?}
+
+\item{mc.fast.lmer}{Should a faster (biased) GLS based estimator of the
+Mixed-Effects model be used in conjunction with the MC-PLS algorithm?}
 
 \item{probit}{Logical; overrides the automatic choice of probit factor scores
 that is based on whether ordered indicators are present.}

@@ -1,7 +1,7 @@
 simulateDataParTable <- function(parTable,
                                  N            = 1e5,
                                  seed         = NULL,
-                                 .covtol      = .95,
+                                 .cortol      = .95,
                                  check.hi.ord = FALSE,
                                  clusterSizes = NULL,
                                  clusterName  = NULL) {
@@ -39,7 +39,7 @@ simulateDataParTable <- function(parTable,
 
   penalty.cfg <- list(
     corr = list(
-      limit = abs(.covtol),
+      limit = abs(.cortol),
       guard = 0,
       beta  = 10,
       scale = 1,
@@ -101,7 +101,14 @@ simulateDataParTable <- function(parTable,
 
   }
 
-  res      <- buildCorrMat(xis, parTable, .covtol, penalty.cfg)
+  res <- buildCovMat(
+    vars          = xis,
+    parTable      = parTable,
+    .cortol       = .cortol,
+    penalty.cfg   = penalty.cfg,
+    unitVariances = TRUE
+  )
+
   parTable <- res$parTable
   Xi       <- as.data.frame(Rfast::standardise(rmvnSafe(N, res$mat)))
   colnames(Xi) <- xis
@@ -120,8 +127,15 @@ simulateDataParTable <- function(parTable,
       randeff.eta <- randeff[startsWith(randeff, paste0(eta, "~"))]
 
       if (length(randeff.eta)) {
-        res        <- buildCorrMat(randeff.eta, parTable, .covtol, penalty.cfg,
-                                   fillDiag = TRUE)
+
+        res <- buildCovMat(
+          vars          = randeff.eta,
+          parTable      = parTable,
+          .cortol       = .cortol,
+          penalty.cfg   = penalty.cfg,
+          unitVariances = FALSE
+        )
+
         parTable   <- res$parTable
         U          <- rmvnSafe(ncluster, res$mat)
         colnames(U) <- randeff.eta
@@ -255,15 +269,21 @@ simulateDataParTable <- function(parTable,
 }
 
 
-buildCorrMat <- function(vars, parTable, .covtol, penalty.cfg,
-                         fillDiag = FALSE) {
-  mat <- diag(if (fillDiag) 0 else 1, length(vars))
+buildCovMat <- function(vars, parTable, .cortol, penalty.cfg, unitVariances = FALSE) {
+  mat <- diag(if (unitVariances) 1 else 0, length(vars))
   dimnames(mat) <- list(vars, vars)
+
+  if (!unitVariances) for (v in vars) {
+    # Prefill diagonal 
+    mat[v,v] <- parTable[parTable$rhs == v &
+                         parTable$lhs == v &
+                         parTable$op  == "~~", "est"]
+  }
 
   for (i in seq_along(vars)) {
     var.i <- vars[[i]]
 
-    for (j in seq_len(if (fillDiag) i else i - 1)) {
+    for (j in seq_len(i - 1)) {
       var.j <- vars[[j]]
 
       cond <- (
@@ -271,11 +291,15 @@ buildCorrMat <- function(vars, parTable, .covtol, penalty.cfg,
         (parTable$rhs == var.j & parTable$op == "~~" & parTable$lhs == var.i)
       )
 
-      p.ij <- parTable[cond, "est"][1]
+      denom <- sqrt(mat[i,i] * mat[j,j])
+      p.ij  <- parTable[cond, "est"][1] # cov
+      r.ij  <- p.ij / denom             # cor
 
-      if (p.ij <= -.covtol || p.ij >= .covtol) {
-        penalty <- smoothBoundaryPenalty(
-          p.ij,
+      if (r.ij <= -.cortol || r.ij >= .cortol) {
+
+        # Get standardized penalty
+        penalty.r <- smoothBoundaryPenalty(
+          r.ij,
           limit       = penalty.cfg$corr$limit,
           guard       = penalty.cfg$corr$guard,
           beta        = penalty.cfg$corr$beta,
@@ -283,10 +307,11 @@ buildCorrMat <- function(vars, parTable, .covtol, penalty.cfg,
           penalty.max = penalty.cfg$corr$max_penalty
         )
 
+        penalty <- denom * penalty.r
+        p.ij    <- denom * sign(p.ij) * abs(.cortol)
+
         if (penalty != 0)
           parTable[cond, "penalty"] <- parTable[cond, "penalty"] + penalty
-
-        p.ij <- sign(p.ij) * abs(.covtol)
       }
 
       mat[i, j] <- mat[j, i] <- p.ij

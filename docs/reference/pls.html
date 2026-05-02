@@ -99,6 +99,7 @@ factor scores, and supports multilevel specifications expressed with
 <span>  missing <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"listwise"</span>, <span class="st">"mean"</span>, <span class="st">"kNN"</span><span class="op">)</span>,</span>
 <span>  knn.k <span class="op">=</span> <span class="fl">5</span>,</span>
 <span>  mcpls <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  mc.fast.lmer <span class="op">=</span> <span class="va">mcpls</span>,</span>
 <span>  probit <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  tolerance <span class="op">=</span> <span class="fl">1e-05</span>,</span>
 <span>  max.iter.0_5 <span class="op">=</span> <span class="fl">100L</span>,</span>
@@ -179,7 +180,13 @@ all indicators missing are removed prior to imputation, and rows with missing
 
 
 <dt id="arg-mcpls">mcpls<a class="anchor" aria-label="anchor" href="#arg-mcpls"></a></dt>
-<dd><p>Should a Monte-Carlo consistency correction be applied?</p></dd>
+<dd><p>Should the model be estimated using the Monte-Carlo Consistent
+Partial Least Squares (MC-PLSc) algorithm?</p></dd>
+
+
+<dt id="arg-mc-fast-lmer">mc.fast.lmer<a class="anchor" aria-label="anchor" href="#arg-mc-fast-lmer"></a></dt>
+<dd><p>Should a faster (biased) GLS based estimator of the
+Mixed-Effects model be used in conjunction with the MC-PLS algorithm?</p></dd>
 
 
 <dt id="arg-probit">probit<a class="anchor" aria-label="anchor" href="#arg-probit"></a></dt>
@@ -243,7 +250,10 @@ if <code>parallel = "multicore"</code>. If <code>parallel = "snow"</code> (under
 
 
 <dt id="arg-mc-fixed-seed">mc.fixed.seed<a class="anchor" aria-label="anchor" href="#arg-mc-fixed-seed"></a></dt>
-<dd><p>Should a fixed seed be used in the MC-PLS algorithm?</p></dd>
+<dd><p>Should a fixed seed be used in the MC-PLS algorithm?
+Setting a fixed seed will likely yield less accurate estimates, but can
+substantially improve the stability and computational efficiency of the
+algorithm.</p></dd>
 
 
 <dt id="arg-mc-polyak-juditsky">mc.polyak.juditsky<a class="anchor" aria-label="anchor" href="#arg-mc-polyak-juditsky"></a></dt>

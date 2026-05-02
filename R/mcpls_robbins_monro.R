@@ -76,7 +76,6 @@ SimDesign.RobbinsMonro <- function(f, p, ...,
 
 
 PK_average <- function(history) {
-  t <- sum(rowSums(!is.na(history)) > 0L)
-  ret <- colSums(history[1:(t - 1L), , drop=FALSE], na.rm=TRUE) / t
+  ret <- colMeans(history, na.rm=TRUE)
   matrix(ret, ncol=ncol(history))
 }

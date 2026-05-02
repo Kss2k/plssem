@@ -79,6 +79,24 @@ mcpls <- function(
   ok.start <- !is.null(p.start) && length(p.start) == sum(par1$is.free)
   p        <- if (ok.start) p.start else par1[par1$is.free, "est"]
 
+  if (polyak.juditsky) {
+    if (verbose) message("Warming up...")
+
+    mcfit <- robbinsMonro1951(
+      p               = p,
+      f               = .f,
+      tol             = 10 * tol,
+      min.iter        = min.iter,
+      max.iter        = floor(max.iter / 4L),
+      verbose         = verbose,
+      polyak.juditsky = FALSE,
+      fn.args         = fn.args,
+      ...
+    )
+
+    p <- as.vector(mcfit$root)
+  }
+
   mcfit <- robbinsMonro1951(
     p               = p,
     f               = .f,

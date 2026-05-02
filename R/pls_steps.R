@@ -260,7 +260,7 @@ estimatePLS_Step8 <- function(model) {
   if (!isMLM(model))
     return(model)
 
-  modelFitLmer(model) <- plslmer(model)
+  modelFitLmer(model) <- plslmer(model, fast = isTRUE(model@info$is.mc.fast.lmer))
 
   refreshLmerParams(model) # Update params with Mixed-Effects coefficients
 }

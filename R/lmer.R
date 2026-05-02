@@ -142,13 +142,17 @@ plslmer <- function(plsModel, fast = FALSE) {
       J          <- nlevels(grp_factor)
       grp_levels <- levels(grp_factor)
 
+      # Collect all bars whose grouping factor matches cluster and combine
+      # their Z matrices. This correctly handles || (which expands to
+      # multiple bars) and explicit multi-term random effects.
       bar_idx <- which(vapply(bars, function(b) {
         lmerRestoreIntr(deparse(b[[3L]])) == cluster
       }, logical(1L)))
-      if (!length(bar_idx)) bar_idx <- 1L
-      bar    <- bars[[bar_idx[[1L]]]]
-      f_re   <- stats::as.formula(paste0("~", deparse(bar[[2L]])))
-      Zsmall <- stats::model.matrix(f_re, data = X.safe)
+      if (!length(bar_idx)) bar_idx <- seq_along(bars)
+      Zsmall <- do.call(cbind, lapply(bar_idx, function(i) {
+        f_re <- stats::as.formula(paste0("~", deparse(bars[[i]][[2L]])))
+        stats::model.matrix(f_re, data = X.safe)
+      }))
       k      <- ncol(Zsmall)
       p      <- ncol(Xmat)
 

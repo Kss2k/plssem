@@ -90,11 +90,14 @@ simulateDataParTable <- function(parTable,
 
     ncluster <- length(clusterSizes)
     cluster <- rep(seq_along(clusterSizes), clusterSizes)
+    clusterMat <- matrix(cluster, nrow = N, dimnames = list(NULL, clusterName))
+
 
   } else {
-    randeff  <- NULL
-    ncluster <- 0
-    cluster  <- NULL
+    randeff    <- NULL
+    ncluster   <- 0
+    cluster    <- NULL
+    clusterMat <- NULL
 
   }
 
@@ -103,27 +106,28 @@ simulateDataParTable <- function(parTable,
   Xi       <- as.data.frame(Rfast::standardise(rmvnSafe(N, res$mat)))
   colnames(Xi) <- xis
 
-
   undefIntTerms <- getIntTerms(parTable)
   elemsIntTerms <- stringr::str_split(undefIntTerms, pattern = ":")
   names(elemsIntTerms) <- undefIntTerms
 
   for (eta in etas) {
 
+    # forward declare
+    U          <- NULL
+    U.expanded <- NULL
+
     if (mixed) {
       randeff.eta <- randeff[startsWith(randeff, paste0(eta, "~"))]
 
       if (length(randeff.eta)) {
         res        <- buildCorrMat(randeff.eta, parTable, .covtol, penalty.cfg,
-                                   fill_diagonal = TRUE)
+                                   fillDiag = TRUE)
         parTable   <- res$parTable
         U          <- rmvnSafe(ncluster, res$mat)
         colnames(U) <- randeff.eta
         U.expanded  <- U[cluster, , drop = FALSE]
-      } else {
-        U          <- NULL
-        U.expanded <- NULL
       }
+
     }
 
     for (intTerm in undefIntTerms) {
@@ -240,26 +244,26 @@ simulateDataParTable <- function(parTable,
   Ov   <- All[ovs]
 
   list(
-    all = All,
-    ov  = Ov,
-    lv  = Lv,
+    all           = All,
+    ov            = Ov,
+    lv            = Lv,
     is.admissible = is.admissible,
-    penalty = parTable$penalty,
-    parTable = parTable,
-    cluster = matrix(cluster, nrow = N, dimnames = list(NULL, clusterName))
+    penalty       = parTable$penalty,
+    parTable      = parTable,
+    cluster       = clusterMat
   )
 }
 
 
 buildCorrMat <- function(vars, parTable, .covtol, penalty.cfg,
-                         fill_diagonal = FALSE) {
-  mat <- diag(if (fill_diagonal) 0 else 1, length(vars))
+                         fillDiag = FALSE) {
+  mat <- diag(if (fillDiag) 0 else 1, length(vars))
   dimnames(mat) <- list(vars, vars)
 
   for (i in seq_along(vars)) {
     var.i <- vars[[i]]
 
-    for (j in seq_len(if (fill_diagonal) i else i - 1)) {
+    for (j in seq_len(if (fillDiag) i else i - 1)) {
       var.j <- vars[[j]]
 
       cond <- (

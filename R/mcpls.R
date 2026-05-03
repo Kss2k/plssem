@@ -86,8 +86,8 @@ mcpls <- function(
       p               = p,
       f               = .f,
       tol             = 10 * tol,
-      min.iter        = min.iter,
-      max.iter        = floor(max.iter / 4L),
+      min.iter        = 5L,
+      max.iter        = 20L,
       verbose         = verbose,
       polyak.juditsky = FALSE,
       fn.args         = fn.args,
@@ -110,10 +110,11 @@ mcpls <- function(
   )
 
   iter <- mcfit$iter
-  if (iter >= max.iter && !fixed.seed) {
-    rng.seed <- floor(stats::runif(1L, min = 0, max = 9999999))
-    warning2("Maximum number of (initial) iterations reached!\n",
-             sprintf("Attempting to use fixed seed %i...", rng.seed))
+  if (iter >= max.iter && !polyak.juditsky) {
+    warning2(
+      "Maximum number of (initial) iterations reached!\n",
+      sprintf("Attempting to use Polyak Juditsky averaging...")
+    )
 
     mcfit <- robbinsMonro1951(
       p               = as.vector(mcfit$root),
@@ -122,7 +123,7 @@ mcpls <- function(
       min.iter        = min.iter,
       max.iter        = max.iter,
       verbose         = verbose,
-      polyak.juditsky = polyak.juditsky,
+      polyak.juditsky = TRUE,
       fn.args         = fn.args,
       ...
     )

@@ -88,11 +88,11 @@ getConvergencePoint <- function(y, t = seq_along(y)) {
   c.aitken <- aitkenAccelerate(y)
 
   tryCatch({
-    fit <- nls(
+    fit <- stats::nls(
       y ~ c + a * exp(-k * t),
       start = list(
-        c = mean(tail(y, 3)),
-        a = y[1] - mean(tail(y, 3)),
+        c = mean(stats::tail(y, 3)),
+        a = y[1] - mean(stats::tail(y, 3)),
         k = 0.1
       ),
       algorithm = "port",
@@ -142,7 +142,7 @@ aitkenAccelerate <- function(y) {
   if (length(valid) == 0L)
     return(mean(y, na.rm = TRUE))
 
-  median(valid)
+  stats::median(valid)
 }
 
 

@@ -113,13 +113,13 @@ factor scores, and supports multilevel specifications expressed with
 <span>  mc.reps <span class="op">=</span> <span class="fl">20000L</span>,</span>
 <span>  mc.tol <span class="op">=</span> <span class="fl">0.001</span>,</span>
 <span>  mc.fixed.seed <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  mc.polyak.juditsky <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  mc.polyak.juditsky <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  mc.fn.args <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/interactive.html" class="external-link">interactive</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  boot.optimize <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  mc.boot.control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>min.iter <span class="op">=</span> <span class="va">mc.min.iter</span>, max.iter <span class="op">=</span> <span class="va">mc.max.iter</span>, mc.reps <span class="op">=</span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">floor</a></span><span class="op">(</span><span class="fl">0.5</span> <span class="op">*</span> <span class="va">mc.reps</span><span class="op">)</span>, tol <span class="op">=</span> <span class="fl">2</span> <span class="op">*</span> <span class="va">mc.tol</span>, polyak.juditsky <span class="op">=</span> <span class="cn">FALSE</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>    fixed.seed <span class="op">=</span> <span class="cn">TRUE</span>, reuse.p.start <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">floor</a></span><span class="op">(</span><span class="fl">0.5</span> <span class="op">*</span> <span class="va">mc.reps</span><span class="op">)</span>, tol <span class="op">=</span> <span class="fl">2</span> <span class="op">*</span> <span class="va">mc.tol</span>, polyak.juditsky <span class="op">=</span> <span class="va">mc.polyak.juditsky</span>, verbose</span>
+<span>    <span class="op">=</span> <span class="cn">FALSE</span>, fixed.seed <span class="op">=</span> <span class="cn">TRUE</span>, reuse.p.start <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
 <span>  reliabilities <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>

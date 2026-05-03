@@ -3,10 +3,11 @@
 The goal of the [`plssem`](https://kss2k.github.io/plssem/) package is to allow the
 estimation of complex Structural Equation Models (SEMs) using the
 PLS-SEM framework. This package expands the PLS-SEM (and PLSc-SEM) framework
-to handle categorical data, non-linear models, and multilevel structures.
+to handle categorical data, non-linear models, and multilevel structures, using
+[Monte-Carlo Consistent Partial Least Squares Structural Equation Modelling (MC-PLSc-SEM)](https://osf.io/preprints/psyarxiv/fwzj6_v1)
 
 [`plssem`](https://kss2k.github.io/plssem/) is currently under development. The end goal is to allow the consistent estimation
-of non-linear multilevel PLS-SEM (and PLSc-SEM) models with ordinal/categorical data.
+of non-linear multilevel SEMs with ordinal and categorical data, using the MC-PLSc-SEM framework.
 
 ## Installation
 
@@ -16,11 +17,10 @@ The package can be downloaded from `CRAN`.
 install.packages("plssem")
 ```
 
-The development version of the package can be installed from `GitHub`. It
-should be paired with the latest development version of `modsem`.
+The development version of the package can be installed from `GitHub`.
 
 ```r
-devtools::install_github(c("kss2k/modsem", "kss2k/plssem"))
+devtools::install_github("kss2k/plssem")
 ```
 
 ## Examples

@@ -119,9 +119,9 @@ initModelInfo <- function(baseInfo,
 
   info$lme4.syntax    <- parsed$lme4.syntax
   info$is.mlm         <- parsed$is.mlm
-  info$is.mcpls         <- parsed$is.mcpls
-  info$is.mc.fast.lmer  <- parsed$is.mc.fast.lmer
-  info$is.probit        <- parsed$is.probit
+  info$is.mcpls       <- parsed$is.mcpls
+  info$mc.fast.lmer   <- parsed$mc.fast.lmer
+  info$is.probit      <- parsed$is.probit
   info$cluster        <- parsed$cluster
   info$consistent     <- consistent
   info$ordered        <- ordered

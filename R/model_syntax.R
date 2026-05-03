@@ -11,7 +11,9 @@ parseModelArguments <- function(parTable,
                                 mcpls = FALSE,
                                 mc.fast.lmer = NULL,
                                 consistent = TRUE,
-                                is.lower.order = FALSE) {
+                                is.lower.order = FALSE,
+                                mc.polyak.juditsky = NULL,
+                                mc.boot.control = list()) {
   data <- as.data.frame(data)
 
   # Check for interation terms
@@ -124,29 +126,39 @@ parseModelArguments <- function(parTable,
     lme4.syntax <- NULL
   }
 
-  has.ord <- length(ordered) > 0L
-  is.mcpls      <- if (is.null(mcpls)) has.ord && (is.nlin || is.lower.order) else mcpls
-  is.probit     <- if (is.null(probit)) has.ord && !is.mcpls else probit
-  is.mc.fast.lmer <- if (is.null(mc.fast.lmer)) is.mcpls else isTRUE(mc.fast.lmer)
-  is.mlm    <- length(lme4.syntax) > 0L
+  COALLESCE <- \(x, y) if (is.null(x)) isTRUE(y) else isTRUE(x)
+
+  has.ord            <- length(ordered) > 0L
+  is.mlm             <- length(lme4.syntax) > 0L
+  is.mcpls           <- COALLESCE(mcpls, has.ord && (is.nlin || is.lower.order))
+  is.probit          <- COALLESCE(probit, has.ord && !is.mcpls)
+  mc.fast.lmer       <- COALLESCE(mc.fast.lmer, is.mcpls)
+  mc.polyak.juditsky <- COALLESCE(mc.polyak.juditsky, is.mlm && is.mcpls)
+
+  # Does the mc.polyak.juditsky argument in mc.boot.control need to be updated?
+  mc.boot.control$polyak.juditsky <- COALLESCE(
+    mc.boot.control$polyak.juditsky, mc.polyak.juditsky
+  )
 
   list(
-    syntax       = syntax,
-    data         = data,
-    parTable.pls = parTable.pls,
-    parTable.all = parTable,
-    cluster      = cluster,
-    lme4.syntax  = lme4.syntax,
-    intTermElems = intTermElems,
-    intTermNames = intTermNames,
-    is.nlin      = is.nlin,
-    ordered      = ordered,
-    is.probit    = is.probit,
-    is.mcpls        = is.mcpls,
-    is.mc.fast.lmer = is.mc.fast.lmer,
-    is.mlm          = is.mlm,
-    consistent   = consistent && (!is.mcpls || is.mlm) # Don't use consistency correction
-                                                       # for single-level MC-PLS models
+    syntax             = syntax,
+    data               = data,
+    parTable.pls       = parTable.pls,
+    parTable.all       = parTable,
+    cluster            = cluster,
+    lme4.syntax        = lme4.syntax,
+    intTermElems       = intTermElems,
+    intTermNames       = intTermNames,
+    is.nlin            = is.nlin,
+    ordered            = ordered,
+    is.probit          = is.probit,
+    is.mcpls           = is.mcpls,
+    is.mlm             = is.mlm,
+    mc.fast.lmer       = mc.fast.lmer,
+    mc.polyak.juditsky = mc.polyak.juditsky,
+    mc.boot.control    = mc.boot.control,
+    consistent         = consistent && (!is.mcpls || is.mlm) # Don't use consistency correction
+                                                             # for single-level MC-PLS models
   )
 }
 

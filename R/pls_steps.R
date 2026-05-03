@@ -238,7 +238,7 @@ estimatePLS_Step7 <- function(model) {
 
   if (is.probit || is.mcpls) {
     model.u <- updateModelInfo(model.u, is.probit = FALSE, is.mcpls = FALSE)
-    model.u@matrices$S      <- getCorrMat(model.u@data, probit = FALSE)
+    model.u@matrices$S <- getCorrMat(model.u@data, probit = FALSE)
     model.u <- updateOuterWeights(model.u) |> updateFactorScores()
   }
 
@@ -260,7 +260,9 @@ estimatePLS_Step8 <- function(model) {
   if (!isMLM(model))
     return(model)
 
-  modelFitLmer(model) <- plslmer(model, fast = isTRUE(model@info$is.mc.fast.lmer))
+  modelFitLmer(model) <- plslmer(
+    plsModel = model, fast = isTRUE(model@info$mc.fast.lmer)
+  )
 
   refreshLmerParams(model) # Update params with Mixed-Effects coefficients
 }

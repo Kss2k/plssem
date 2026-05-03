@@ -79,20 +79,24 @@ specifySubModel <- function(parTable,
     return(NULL)
       
   parsed <- parseModelArguments(
-    parTable       = parTable,
-    data           = data,
-    ordered        = ordered,
-    probit         = probit,
-    mcpls          = mcpls,
-    mc.fast.lmer   = mc.fast.lmer,
-    consistent     = consistent,
-    is.lower.order = is.lower.order
+    parTable           = parTable,
+    data               = data,
+    ordered            = ordered,
+    probit             = probit,
+    mcpls              = mcpls,
+    mc.fast.lmer       = mc.fast.lmer,
+    consistent         = consistent,
+    is.lower.order     = is.lower.order,
+    mc.polyak.juditsky = mc.polyak.juditsky,
+    mc.boot.control    = mc.boot.control
   )
 
-  pt           <- parsed$parTable.pls
-  cluster      <- parsed$cluster
-  consistent   <- parsed$consistent
-  ordered      <- parsed$ordered
+  pt                 <- parsed$parTable.pls
+  cluster            <- parsed$cluster
+  consistent         <- parsed$consistent
+  ordered            <- parsed$ordered
+  mc.polyak.juditsky <- parsed$mc.polyak.juditsky
+  mc.boot.control    <- parsed$mc.boot.control
 
   matricesAndInfo <- initMatrices(pt, higherOrderLVs = higherOrderLVs)
   matrices        <- matricesAndInfo$matrices

@@ -82,6 +82,24 @@ mcpls <- function(
   ok.start <- !is.null(p.start) && length(p.start) == sum(par1$is.free)
   p        <- if (ok.start) p.start else par1[par1$is.free, "est"]
 
+  if (polyak.juditsky) {
+    if (verbose) message("Warming up...")
+
+    mcfit <- robbinsMonro1951(
+      p               = p,
+      f               = .f,
+      tol             = 10 * tol,
+      min.iter        = 5L,
+      max.iter        = 20L,
+      verbose         = verbose,
+      polyak.juditsky = FALSE,
+      fn.args         = fn.args,
+      ...
+    )
+
+    p <- as.vector(mcfit$root)
+  }
+
   mcfit <- robbinsMonro1951(
     p               = p,
     f               = .f,
@@ -95,10 +113,11 @@ mcpls <- function(
   )
 
   iter <- mcfit$iter
-  if (iter >= max.iter && !fixed.seed) {
-    rng.seed <- floor(stats::runif(1L, min = 0, max = 9999999))
-    warning2("Maximum number of (initial) iterations reached!\n",
-             sprintf("Attempting to use fixed seed %i...", rng.seed))
+  if (iter >= max.iter && !polyak.juditsky) {
+    warning2(
+      "Maximum number of (initial) iterations reached!\n",
+      sprintf("Attempting to use Polyak Juditsky averaging...")
+    )
 
     mcfit <- robbinsMonro1951(
       p               = as.vector(mcfit$root),
@@ -107,7 +126,7 @@ mcpls <- function(
       min.iter        = min.iter,
       max.iter        = max.iter,
       verbose         = verbose,
-      polyak.juditsky = polyak.juditsky,
+      polyak.juditsky = TRUE,
       fn.args         = fn.args,
       ...
     )

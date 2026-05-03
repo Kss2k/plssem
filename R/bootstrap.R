@@ -63,6 +63,7 @@ bootstrap <- function(model,
       mc.args         <- model.b@info$mc.args
       boot.fixed.seed <- mc.boot.control$fixed.seed
       boot.polyak     <- mc.boot.control$polyak.juditsky
+      boot.pj.extrapolate     <- mc.boot.control$pj.extrapolate
       boot.tol        <- mc.boot.control$tol
       boot.reps       <- mc.boot.control$mc.reps
       boot.p.start    <- if (mc.boot.control$reuse.p.start) P_START else NULL
@@ -77,6 +78,7 @@ bootstrap <- function(model,
           fixed.seed      = boot.fixed.seed,
           verbose         = boot.verbose,
           polyak.juditsky = boot.polyak,
+          pj.extrapolate          = boot.pj.extrapolate,
           tol             = boot.tol,
           mc.reps         = boot.reps,
           p.start         = boot.p.start
@@ -263,6 +265,7 @@ CONFIG_BOOT_CONTROL <- list(
   reuse.p.start   = TRUE,
   fixed.seed      = TRUE,
   polyak.juditsky = TRUE,
+  pj.extrapolate          = TRUE,
   tol.mult        = 2,
   mc.reps.mult    = 0.5,
   verbose         = FALSE,
@@ -281,6 +284,7 @@ prepMCBootControl <- function(boot.control, boot.optimize, model) {
     boot.control$min.iter        <- mc.args$min.iter
     boot.control$max.iter        <- mc.args$max.iter
     boot.control$polyak.juditsky <- mc.args$polyak.juditsky
+    boot.control$pj.extrapolate          <- mc.args$pj.extrapolate
     boot.control$reuse.p.start   <- FALSE
     boot.control$fixed.seed      <- mc.args$fixed.seed
     boot.control$tol             <- mc.args$tol
@@ -299,6 +303,9 @@ prepMCBootControl <- function(boot.control, boot.optimize, model) {
 
   if (is.null(boot.control$polyak.juditsky))
     boot.control$polyak.juditsky <- CONFIG_BOOT_CONTROL$polyak.juditsky
+
+  if (is.null(boot.control$pj.extrapolate))
+    boot.control$pj.extrapolate <- CONFIG_BOOT_CONTROL$pj.extrapolate
 
   if (is.null(boot.control$reuse.p.start))
     boot.control$reuse.p.start <- CONFIG_BOOT_CONTROL$reuse.p.start

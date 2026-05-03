@@ -62,6 +62,7 @@ initModelMcArgs <- function(min.iter,
                             tol,
                             fixed.seed,
                             polyak.juditsky,
+                            pj.extrapolate,
                             fn.args) {
   list(
     min.iter        = min.iter,
@@ -70,6 +71,7 @@ initModelMcArgs <- function(min.iter,
     tol             = tol,
     fixed.seed      = fixed.seed,
     polyak.juditsky = polyak.juditsky,
+    pj.extrapolate          = pj.extrapolate,
     fn.args         = fn.args,
     rng.seed        = NULL,
     p.start         = NULL

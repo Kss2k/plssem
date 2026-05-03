@@ -83,8 +83,6 @@ USE_NON_LINEAR_PROBIT_CORR_MAT <- FALSE
 #'
 #' @param mc.reps Monte-Carlo sample size in MC-PLS algorithm.
 #'
-#' @param mc.tol Tolerance in MC-PLS algorithm.
-#'
 #' @param mc.fixed.seed Should a fixed seed be used in the MC-PLS algorithm?
 #'   Setting a fixed seed will likely yield less accurate estimates, but can
 #'   substantially improve the stability and computational efficiency of the
@@ -92,6 +90,14 @@ USE_NON_LINEAR_PROBIT_CORR_MAT <- FALSE
 #'
 #' @param mc.polyak.juditsky Should the polyak.juditsky running average method
 #'   be applied in the MC-PLS algorithm?
+#'
+#' @param mc.pj.extrapolate Logical; if \code{TRUE} (the default), the Polyak-Juditsky
+#'   convergence point is estimated via NLS exponential extrapolation (with
+#'   Aitken \eqn{\delta^2} as a fallback). If \code{FALSE} a warm start is performed
+#'   instead, and the plain Polyak-Juditsky average is used.
+#'   Only relevant when \code{mc.polyak.juditsky = TRUE}.
+#'
+#' @param mc.tol Tolerance in MC-PLS algorithm.
 #'
 #' @param mc.fn.args Additional arguments to MC-PLS algorithm, mainly for controlling
 #'   the step size.
@@ -156,9 +162,10 @@ pls <- function(syntax,
                 mc.min.iter = 5L,
                 mc.max.iter = 250L,
                 mc.reps = 20000L,
-                mc.tol = 1e-3,
                 mc.fixed.seed = FALSE,
-                mc.polyak.juditsky = NULL,
+                mc.polyak.juditsky = TRUE,
+                mc.pj.extrapolate = TRUE,
+                mc.tol = if (mc.polyak.juditsky) 0.0005 else 0.001,
                 mc.fn.args = list(),
                 verbose = interactive(),
                 boot.optimize = TRUE,
@@ -166,8 +173,9 @@ pls <- function(syntax,
                   min.iter        = mc.min.iter,
                   max.iter        = mc.max.iter,
                   mc.reps         = floor(0.5 * mc.reps),
-                  tol             = 2 * mc.tol,
+                  tol             = mc.tol,
                   polyak.juditsky = mc.polyak.juditsky,
+                  pj.extrapolate  = mc.pj.extrapolate,
                   verbose         = FALSE,
                   fixed.seed      = TRUE,
                   reuse.p.start   = TRUE
@@ -203,6 +211,7 @@ pls <- function(syntax,
     mc.tol             = mc.tol,
     mc.fixed.seed      = mc.fixed.seed,
     mc.polyak.juditsky = mc.polyak.juditsky,
+    mc.pj.extrapolate          = mc.pj.extrapolate,
     mc.fn.args         = mc.fn.args,
     verbose            = verbose,
     bootstrap          = bootstrap,

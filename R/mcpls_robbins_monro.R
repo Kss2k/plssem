@@ -1,5 +1,5 @@
 robbinsMonro1951 <- function(p, f, tol, min.iter, max.iter, verbose,
-                             polyak.juditsky, fn.args, ...) {
+                             polyak.juditsky = FALSE, pj.extrapolate = TRUE, fn.args, ...) {
   # Wrapper for SimDesign::RobbinsMonro/SimDesign.RobbinsMonro
 
   args.required <- list(
@@ -17,6 +17,9 @@ robbinsMonro1951 <- function(p, f, tol, min.iter, max.iter, verbose,
   # mcfit <- do.call(SimDesign::RobbinsMonro, args)
   mcfit <- do.call(SimDesign.RobbinsMonro, args)
   if (verbose) cat("\n")
+
+  if (polyak.juditsky && pj.extrapolate)
+    mcfit$root <- getConvergencePoints(mcfit$history)
 
   mcfit
 }
@@ -78,4 +81,75 @@ SimDesign.RobbinsMonro <- function(f, p, ...,
 PK_average <- function(history) {
   ret <- colMeans(history, na.rm=TRUE)
   matrix(ret, ncol=ncol(history))
+}
+
+
+getConvergencePoint <- function(y, t = seq_along(y)) {
+  c.aitken <- aitkenAccelerate(y)
+
+  tryCatch({
+    fit <- nls(
+      y ~ c + a * exp(-k * t),
+      start = list(
+        c = mean(tail(y, 3)),
+        a = y[1] - mean(tail(y, 3)),
+        k = 0.1
+      ),
+      algorithm = "port",
+      lower = c(c = -Inf, a = -Inf, k = 0)
+    )
+
+    c.nls <- coef(fit)[["c"]]
+    span  <- diff(range(y))
+    k.fit <- coef(fit)[["k"]]
+
+    # Fall back to Aitken if nls converged to an implausible solution:
+    # wild extrapolation beyond the observed range, near-zero decay rate
+    # (c poorly identified), or large disagreement with Aitken
+    bad.range <- c.nls < min(y) - span || c.nls > max(y) + span
+    bad.k     <- k.fit < sqrt(.Machine$double.eps)
+    bad.agree <- abs(c.nls - c.aitken) > 0.5 * span
+
+    if (bad.range || bad.k || bad.agree) c.aitken else c.nls
+  }, error = \(e) c.aitken)
+}
+
+
+# Aitken's delta^2 sequence acceleration applied to all triplets in the history,
+# returning the median over valid estimates. More robust than a single nls()
+# call when trajectories are noisy: no tuning needed, no optimisation.
+# The median naturally discards wild estimates from transient-phase triplets,
+# so no tail-window selection is needed.
+aitkenAccelerate <- function(y) {
+  n <- length(y)
+  if (n < 3L) return(mean(y, na.rm = TRUE))
+
+  ests <- vapply(X = seq_len(n - 2L), FUN = function(i) {
+
+    p0 <- y[i]
+    p1 <- y[i + 1L]
+    p2 <- y[i + 2L]
+
+    denom <- p2 - 2 * p1 + p0
+    if (abs(denom) < .Machine$double.eps^0.5)
+      return(NA_real_)
+
+    p0 - (p1 - p0)^2 / denom
+
+  }, FUN.VALUE = numeric(1L))
+
+  valid <- ests[is.finite(ests)]
+  if (length(valid) == 0L)
+    return(mean(y, na.rm = TRUE))
+
+  median(valid)
+}
+
+
+getConvergencePoints <- function(history) {
+  history <- history[
+    stats::complete.cases(history), , drop = FALSE
+  ]
+
+  apply(X = history, MARGIN = 2, FUN = getConvergencePoint)
 }

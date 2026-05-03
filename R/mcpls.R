@@ -10,6 +10,7 @@ mcpls <- function(
   verbose         = fit0@info$verbose,
   polyak.juditsky = fit0@info$mc.args$polyak.juditsky,
   fn.args         = fit0@info$mc.args$fn.args,
+  pj.extrapolate  = fit0@info$mc.args$pj.extrapolate,
   ...
 ) {
   fit0.base <- fit0
@@ -82,7 +83,10 @@ mcpls <- function(
   ok.start <- !is.null(p.start) && length(p.start) == sum(par1$is.free)
   p        <- if (ok.start) p.start else par1[par1$is.free, "est"]
 
-  if (polyak.juditsky) {
+  if (polyak.juditsky && !pj.extrapolate) {
+    # If we're not using a Nonlinear Regression to solve for the convergence
+    # point, we will get a biased root with Polyak-Juditsky averaging, if
+    # we have no warmup
     if (verbose) message("Warming up...")
 
     mcfit <- robbinsMonro1951(
@@ -109,6 +113,7 @@ mcpls <- function(
     verbose         = verbose,
     polyak.juditsky = polyak.juditsky,
     fn.args         = fn.args,
+    pj.extrapolate  = pj.extrapolate,
     ...
   )
 
@@ -128,6 +133,7 @@ mcpls <- function(
       verbose         = verbose,
       polyak.juditsky = TRUE,
       fn.args         = fn.args,
+      pj.extrapolate  = pj.extrapolate,
       ...
     )
 

@@ -10,7 +10,7 @@ mcpls <- function(
   verbose         = fit0@info$verbose,
   polyak.juditsky = fit0@info$mc.args$polyak.juditsky,
   fn.args         = fit0@info$mc.args$fn.args,
-  pj.extrapolate          = fit0@info$mc.args$pj.extrapolate,
+  pj.extrapolate  = fit0@info$mc.args$pj.extrapolate,
   ...
 ) {
   fit0.base <- fit0
@@ -113,7 +113,7 @@ mcpls <- function(
     verbose         = verbose,
     polyak.juditsky = polyak.juditsky,
     fn.args         = fn.args,
-    pj.extrapolate          = pj.extrapolate,
+    pj.extrapolate  = pj.extrapolate,
     ...
   )
 
@@ -133,7 +133,7 @@ mcpls <- function(
       verbose         = verbose,
       polyak.juditsky = TRUE,
       fn.args         = fn.args,
-      pj.extrapolate          = pj.extrapolate,
+      pj.extrapolate  = pj.extrapolate,
       ...
     )
 

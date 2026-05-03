@@ -17,8 +17,7 @@ testthat::expect_no_error({
 
 testthat::expect_no_error({
   fit.mc <- pls(syntax, data = randomSlopes,
-                consistent = FALSE, mcpls = TRUE,
-                mc.fixed.seed = TRUE)
+                consistent = FALSE, mcpls = TRUE)
   summary(fit.mc)
 })
 

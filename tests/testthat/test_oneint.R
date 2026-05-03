@@ -17,8 +17,7 @@ testthat::expect_no_error({
 
 testthat::expect_no_error({
   fit <- pls(m, oneIntOrdered, bootstrap = TRUE, boot.R = 50,
-             boot.parallel = "multicore", boot.ncpus = 4,
-             boot.optimize = TRUE)
+             boot.parallel = "multicore", boot.ncpus = 4)
   summary(fit)
 })
 

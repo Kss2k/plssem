@@ -91,8 +91,8 @@ getConvergencePoint <- function(y, t = seq_along(y)) {
     fit <- stats::nls(
       y ~ c + a * exp(-k * t),
       start = list(
-        c = mean(stats::tail(y, 3)),
-        a = y[1] - mean(stats::tail(y, 3)),
+        c = mean(utils::tail(y, 3)),
+        a = y[1] - mean(utils::tail(y, 3)),
         k = 0.1
       ),
       algorithm = "port",

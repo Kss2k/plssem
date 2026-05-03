@@ -106,6 +106,7 @@ USE_NON_LINEAR_PROBIT_CORR_MAT <- FALSE
 #'
 #' @param boot.optimize Logical; if \code{TRUE} and \code{bootstrap = TRUE}, applies
 #'   the settings in \code{mc.boot.control} inside each bootstrap replicate (MC-PLS only).
+#'   In general it will lead to slightly less accurate standard errors.
 #'
 #' @param mc.boot.control List of control parameters passed to the MC-PLS algorithm
 #'   inside each bootstrap replicate when \code{boot.optimize = TRUE}.
@@ -172,11 +173,11 @@ pls <- function(syntax,
                 mc.boot.control = list(
                   min.iter        = mc.min.iter,
                   max.iter        = mc.max.iter,
-                  mc.reps         = floor(0.5 * mc.reps),
+                  mc.reps         = floor(0.5 * mc.reps), # increase variance
                   tol             = mc.tol,
                   polyak.juditsky = mc.polyak.juditsky,
-                  pj.extrapolate  = mc.pj.extrapolate,
-                  verbose         = FALSE,
+                  pj.extrapolate  = FALSE,                # decrease variance
+                  verbose         = FALSE,                # increase variance
                   fixed.seed      = TRUE,
                   reuse.p.start   = TRUE
                 ),

@@ -35,8 +35,7 @@ pls(
   boot.optimize = TRUE,
   mc.boot.control = list(min.iter = mc.min.iter, max.iter = mc.max.iter, mc.reps =
     floor(0.5 * mc.reps), tol = mc.tol, polyak.juditsky = mc.polyak.juditsky,
-    pj.extrapolate = mc.pj.extrapolate, verbose = FALSE, fixed.seed = TRUE, reuse.p.start
-    = TRUE),
+    pj.extrapolate = FALSE, verbose = FALSE, fixed.seed = TRUE, reuse.p.start = TRUE),
   reliabilities = NULL,
   ...
 )
@@ -138,7 +137,8 @@ the step size.}
 \item{verbose}{Should verbose output be printed?}
 
 \item{boot.optimize}{Logical; if \code{TRUE} and \code{bootstrap = TRUE}, applies
-the settings in \code{mc.boot.control} inside each bootstrap replicate (MC-PLS only).}
+the settings in \code{mc.boot.control} inside each bootstrap replicate (MC-PLS only).
+In general it will lead to slightly less accurate standard errors.}
 
 \item{mc.boot.control}{List of control parameters passed to the MC-PLS algorithm
 inside each bootstrap replicate when \code{boot.optimize = TRUE}.}

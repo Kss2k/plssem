@@ -138,7 +138,7 @@ the step size.}
 
 \item{boot.optimize}{Logical; if \code{TRUE} and \code{bootstrap = TRUE}, applies
 the settings in \code{mc.boot.control} inside each bootstrap replicate (MC-PLS only).
-In general it will lead to slightly less accurate standard errors.}
+In general it will lead to slightly larger and less accurate standard errors.}
 
 \item{mc.boot.control}{List of control parameters passed to the MC-PLS algorithm
 inside each bootstrap replicate when \code{boot.optimize = TRUE}.}

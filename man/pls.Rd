@@ -26,15 +26,17 @@ pls(
   mc.min.iter = 5L,
   mc.max.iter = 250L,
   mc.reps = 20000L,
-  mc.tol = 0.001,
+  mc.tol = 5e-04,
   mc.fixed.seed = FALSE,
-  mc.polyak.juditsky = NULL,
+  mc.polyak.juditsky = TRUE,
+  mc.pj.extrapolate = TRUE,
   mc.fn.args = list(),
   verbose = interactive(),
   boot.optimize = TRUE,
   mc.boot.control = list(min.iter = mc.min.iter, max.iter = mc.max.iter, mc.reps =
-    floor(0.5 * mc.reps), tol = 2 * mc.tol, polyak.juditsky = mc.polyak.juditsky, verbose
-    = FALSE, fixed.seed = TRUE, reuse.p.start = TRUE),
+    floor(0.5 * mc.reps), tol = mc.tol, polyak.juditsky = mc.polyak.juditsky,
+    pj.extrapolate = mc.pj.extrapolate, verbose = FALSE, fixed.seed = TRUE, reuse.p.start
+    = TRUE),
   reliabilities = NULL,
   ...
 )
@@ -123,6 +125,11 @@ algorithm.}
 
 \item{mc.polyak.juditsky}{Should the polyak.juditsky running average method
 be applied in the MC-PLS algorithm?}
+
+\item{mc.pj.extrapolate}{Logical; if \code{TRUE} (the default), the Polyak-Juditsky
+convergence point is estimated via NLS exponential extrapolation (with
+Aitken Δ² as a fallback), rather than relying on a plain warm start before
+averaging. Only relevant when \code{mc.polyak.juditsky = TRUE}.}
 
 \item{mc.fn.args}{Additional arguments to MC-PLS algorithm, mainly for controlling
 the step size.}

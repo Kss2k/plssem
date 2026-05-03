@@ -60,9 +60,10 @@ specifySubModel <- function(parTable,
                             mc.max.iter        = 250,
                             mc.min.iter        = 5,
                             mc.reps            = 20000,
-                            mc.tol             = 1e-3,
+                            mc.tol             = 0.0005,
                             mc.fixed.seed      = FALSE,
                             mc.polyak.juditsky = FALSE,
+                            mc.pj.extrapolate          = TRUE,
                             mc.fn.args         = list(),
                             verbose            = interactive(),
                             bootstrap          = FALSE,
@@ -79,24 +80,20 @@ specifySubModel <- function(parTable,
     return(NULL)
       
   parsed <- parseModelArguments(
-    parTable           = parTable,
-    data               = data,
-    ordered            = ordered,
-    probit             = probit,
-    mcpls              = mcpls,
-    mc.fast.lmer       = mc.fast.lmer,
-    consistent         = consistent,
-    is.lower.order     = is.lower.order,
-    mc.polyak.juditsky = mc.polyak.juditsky,
-    mc.boot.control    = mc.boot.control
+    parTable       = parTable,
+    data           = data,
+    ordered        = ordered,
+    probit         = probit,
+    mcpls          = mcpls,
+    mc.fast.lmer   = mc.fast.lmer,
+    consistent     = consistent,
+    is.lower.order = is.lower.order
   )
 
-  pt                 <- parsed$parTable.pls
-  cluster            <- parsed$cluster
-  consistent         <- parsed$consistent
-  ordered            <- parsed$ordered
-  mc.polyak.juditsky <- parsed$mc.polyak.juditsky
-  mc.boot.control    <- parsed$mc.boot.control
+  pt         <- parsed$parTable.pls
+  cluster    <- parsed$cluster
+  consistent <- parsed$consistent
+  ordered    <- parsed$ordered
 
   matricesAndInfo <- initMatrices(pt, higherOrderLVs = higherOrderLVs)
   matrices        <- matricesAndInfo$matrices
@@ -123,6 +120,7 @@ specifySubModel <- function(parTable,
     tol             = mc.tol,
     fixed.seed      = mc.fixed.seed,
     polyak.juditsky = mc.polyak.juditsky,
+    pj.extrapolate          = mc.pj.extrapolate,
     fn.args         = mc.fn.args
   )
 

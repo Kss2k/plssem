@@ -1,4 +1,11 @@
 # `plssem` <img src="man/figures/plssem.png" alt="Logo" align = "right" height="139" class="logo">
+<!-- badges: start -->
+[![Tests](https://github.com/kss2k/plssem/actions/workflows/tests.yml/badge.svg)](https://github.com/kss2k/plssem/actions/workflows/tests.yml)
+[![R-CMD-check](https://github.com/kss2k/plssem/actions/workflows/checks.yml/badge.svg)](https://github.com/kss2k/plssem/actions/workflows/checks.yml)
+[![PKGDOWN-Build](https://github.com/kss2k/plssem/actions/workflows/pkgdown-build.yml/badge.svg)](https://github.com/kss2k/plssem/actions/workflows/pkgdown-build.yml)
+[![CRAN](https://www.r-pkg.org/badges/version/plssem)](https://cran.r-project.org/package=plssem)
+<!-- [![](https://cranlogs.r-pkg.org/badges/grand-total/plssem)](https://cran.r-project.org/package=plssem) -->
+<!-- badges: end -->
 
 The goal of the [`plssem`](https://kss2k.github.io/plssem/) package is to allow the
 estimation of complex Structural Equation Models (SEMs) using the

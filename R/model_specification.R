@@ -67,7 +67,7 @@ specifySubModel <- function(parTable,
                             mc.fn.args         = list(),
                             verbose            = interactive(),
                             bootstrap          = FALSE,
-                            boot.ncpus         = 1L,
+                            boot.ncores        = 1L,
                             boot.parallel      = "no",
                             boot.R             = 50L,
                             boot.iseed         = NULL,
@@ -126,7 +126,7 @@ specifySubModel <- function(parTable,
 
   boot.info <- initModelBootInfo(
     bootstrap       = bootstrap,
-    ncpus           = boot.ncpus,
+    ncores          = boot.ncores,
     parallel        = boot.parallel,
     R               = boot.R,
     iseed           = boot.iseed,
@@ -322,4 +322,3 @@ initMatrices <- function(pt, higherOrderLVs = NULL) {
 
   list(matrices = matrices, info = info)
 }
-

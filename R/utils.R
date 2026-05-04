@@ -24,6 +24,12 @@ warnif <- function(cond, ...) {
 }
 
 
+messagef <- function(..., appendLF = FALSE) {
+  message(sprintf(...), appendLF = appendLF)
+  utils::flush.console()
+}
+
+
 quickdf <- function(l) {
   class(l) <- "data.frame"
   attr(l, "row.names") <- .set_row_names(length(l[[1]]))

@@ -61,7 +61,12 @@ USE_NON_LINEAR_PROBIT_CORR_MAT <- FALSE
 #'   By default this is the number of cores (as detected by \code{parallel::detectCores()}) minus one.
 #'
 #' @param boot.parallel The type of parallel operation to be used (if any). If missing,
-#'   the default is \code{"no"}.
+#'   the default is \code{"no"}. \code{"snow"} parallels using multiple \code{R} sessions,
+#'   \code{"multicore"} parallels the bootstrapping within the same \code{R} session.
+#'   \code{"multicore"} is not available on `Windows`, and get's automatically switched
+#'   to \code{"snow"}. Importantly `boot.ncpus` has to be larger than 1, for parallel
+#'   bootstrapping to be enabled. Please note that when used with code{verbose=TRUE}
+#'   the bootstrap progress bar will likely not progress smoothly.
 #'
 #' @param boot.R Integer giving the number of bootstrap resamples drawn when
 #'   \code{bootstrap = TRUE}.
@@ -185,7 +190,7 @@ pls <- function(syntax,
                 ...) {
 
   missing       <- match.arg(tolower(missing), c("listwise", "mean", "knn"))
-  boot.parallel <- match.arg(boot.parallel)
+  boot.parallel <- match.arg(tolower(boot.parallel), c("no", "multicore", "snow"))
 
   if (!is.null(sample)) {
     warning("The sample argument is deprecated, please use the boot.R argument instead!")

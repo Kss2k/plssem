@@ -17,7 +17,40 @@ bootstrap <- function(model,
   is.mcpls  <- model@info$is.mcpls
   ordered   <- model@info$ordered
   results   <- vector("list", R)
-  verbose   <- verbose && !is.snow
+
+  if (parallel != "no" && ncpus > 1L) {
+    switch(
+      parallel,
+      multicore = { is.mc   <- .Platform$OS.type != "windows" },
+      snow      = { is.snow <- TRUE                           },
+                  { ncpus   <- 1L                             }
+    )
+
+    loadNamespace("parallel") # before recording seed!
+
+  } else {
+    # Check misspecified user arguments
+    warnif(
+      parallel != "no" && ncpus <= 1L,
+      "The `boot.ncpus` argument has to be larger than 1 for parallel\n",
+      "bootstrapping to be enabled! Try `boot.ncpus = 2`"
+    )
+
+    warnif(
+      parallel == "no" && ncpus > 1L,
+      'The `boot.parallel` must be "multicore" or "snow" for parallel\n',
+      'bootstrapping to be enabled! Try `boot.parallel="multicore"`'
+    )
+  }
+
+  if (verbose) {
+    pb <- utils::txtProgressBar(min = 0, max = R, initial = 0, style = 3)
+    on.exit(close(pb))
+
+  } else {
+    pb <- NULL
+
+  }
 
   model.base <- model
 
@@ -28,19 +61,6 @@ bootstrap <- function(model,
     model         = model
   )
 
-  progress <- function(i) {
-    available <- getOption("width")
-    available <- if (is.null(available)) 80L else available
-    len.out   <- max(40L, min(available - 20L, 60L))
-
-    finished <- floor((i / R) * len.out)
-    left     <- len.out - finished
-
-    printf(
-      paste0("\rBootstrap [%i] |", strrep("=", finished), strrep(" ", left), "|"), R
-    )
-  }
-
   combinedCoefs <- combinedModel(model)@params$values
   na.par <- stats::setNames(
     rep(NA_real_, length(combinedCoefs)),
@@ -50,7 +70,15 @@ bootstrap <- function(model,
   P_START <- model@info$mc.args$p.start
 
   .bootf <- function(i) {
-    if (verbose) progress(i)
+    if (verbose && !is.null(pb)) {
+      tryCatch(
+        utils::setTxtProgressBar(pb, i),
+        error = \(e) warning2(
+          "Unable to update progress bar!\n",
+          "Message: ", conditionMessage(e)
+        )
+      )
+    }
 
     tryCatch({
       sampleData <- resample(data, cluster = cluster)
@@ -70,7 +98,7 @@ bootstrap <- function(model,
       boot.verbose        <- mc.boot.control$verbose
       low.tol.penalty     <- mc.boot.control$low.tol.penalty
 
-      # utils::capture.output(type = "message", { # capture real time output
+      utils::capture.output(type = "message", { # capture real time output
 
         model.b <- suppressWarnings(estimatePLS(
           model = model.b,
@@ -84,7 +112,7 @@ bootstrap <- function(model,
           p.start         = boot.p.start
         ))
 
-      # })
+      })
 
       par <- combinedModel(model.b)@params$values
 
@@ -103,18 +131,6 @@ bootstrap <- function(model,
       attr(par, "id") <- i
       par
     })
-  }
-
-
-  if (parallel != "no" && ncpus > 1L) {
-    switch(
-      parallel,
-      multicore = { is.mc   <- .Platform$OS.type != "windows" },
-      snow      = { is.snow <- TRUE                           },
-                  { ncpus   <- 1L                             }
-    )
-
-    loadNamespace("parallel") # before recording seed!
   }
 
   # iseed:
@@ -162,7 +178,7 @@ bootstrap <- function(model,
 
     } else if (is.snow) {
       cl <- tryCatch(
-        parallel::makePSOCKcluster(rep("localhost", ncpus)),
+        parallel::makePSOCKcluster(rep("localhost", ncpus), outfile = ""),
         error = function(e) {
           warning2(
             "Failed to start PSOCK cluster; falling back to serial bootstrap.\n",
@@ -186,17 +202,27 @@ bootstrap <- function(model,
       } else {
         NULL
       }
+
       if (!is.null(pkg_path)) {
-        parallel::clusterCall(cl, function(p) pkgload::load_all(p, quiet = TRUE), pkg_path)
+        parallel::clusterCall(
+          cl  = cl,
+          fun = \(p) suppressMessages(pkgload::load_all(p, quiet = TRUE)),
+          p   = pkg_path
+        )
+
       } else {
-        parallel::clusterEvalQ(cl, loadNamespace("plssem"))
+        parallel::clusterEvalQ(
+          cl   = cl,
+          expr = suppressMessages(loadNamespace("plssem"))
+        )
+
       }
 
       # No need for
-      # if(RNGkind()[1L] == "L'Ecuyer-CMRG")
-      # clusterSetRNGStream() always calls `RNGkind("L'Ecuyer-CMRG")`
+      #   if(RNGkind()[1L] == "L'Ecuyer-CMRG")
+      #   clusterSetRNGStream() always calls `RNGkind("L'Ecuyer-CMRG")`
       parallel::clusterSetRNGStream(cl, iseed = iseed)
-        results <- parallel::parLapply(cl, seq_len(R), .bootf)
+      results <- parallel::parLapplyLB(cl, seq_len(R), .bootf)
 
       }
 
@@ -208,8 +234,13 @@ bootstrap <- function(model,
   }
 
   if (verbose) {
-    progress(R)
-    cat("\n")
+    tryCatch(
+      utils::setTxtProgressBar(pb, R),
+      error = \(e) warning2(
+        "Unable to update progress bar!\n",
+        "Message: ", conditionMessage(e)
+      )
+    )
   }
 
   ids <- vapply(results, FUN.VALUE = integer(1L), FUN = \(x) attr(x, "id"))

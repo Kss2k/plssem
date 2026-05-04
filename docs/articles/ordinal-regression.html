@@ -139,7 +139,7 @@ the <code>ordered</code> argument, or by making sure they are
 <span>  boot.R        <span class="op">=</span> <span class="fl">50</span>,</span>
 <span>  bootstrap     <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  boot.parallel <span class="op">=</span> <span class="st">"multicore"</span>,</span>
-<span>  boot.ncpus    <span class="op">=</span> <span class="fl">2</span></span>
+<span>  boot.ncores   <span class="op">=</span> <span class="fl">2</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit_linear</span><span class="op">)</span></span>
@@ -164,17 +164,17 @@ the <code>ordered</code> argument, or by making sure they are
 <span><span class="co">#&gt; Regressions:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   Survived ~    </span></span>
-<span><span class="co">#&gt;     Age            -0.043      0.041   -1.054    0.292</span></span>
-<span><span class="co">#&gt;     Female          0.584      0.029   19.948    0.000</span></span>
+<span><span class="co">#&gt;     Age            -0.043      0.041   -1.070    0.284</span></span>
+<span><span class="co">#&gt;     Female          0.584      0.028   20.673    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Covariances:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   Age ~~        </span></span>
-<span><span class="co">#&gt;     Female         -0.093      0.035   -2.671    0.008</span></span>
+<span><span class="co">#&gt;     Female         -0.093      0.040   -2.303    0.021</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Variances:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;    .Survived        0.653      0.035   18.687    0.000</span></span>
+<span><span class="co">#&gt;    .Survived        0.653      0.033   19.570    0.000</span></span>
 <span><span class="co">#&gt;     Age             1.000                             </span></span>
 <span><span class="co">#&gt;     Female          1.000</span></span></code></pre></div>
 <p>Optional: evaluate predictive performance.</p>
@@ -249,46 +249,46 @@ automatically switches to the Monte-Carlo ordinal PLSc estimator.</p>
 <span>  boot.R        <span class="op">=</span> <span class="fl">50</span>,</span>
 <span>  bootstrap     <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  boot.parallel <span class="op">=</span> <span class="st">"multicore"</span>,</span>
-<span>  boot.ncpus    <span class="op">=</span> <span class="fl">2</span></span>
+<span>  boot.ncores   <span class="op">=</span> <span class="fl">2</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit_int</span><span class="op">)</span></span>
-<span><span class="co">#&gt; plssem (0.1.2) ended normally after 37 iterations</span></span>
+<span><span class="co">#&gt; plssem (0.1.2) ended normally after 40 iterations</span></span>
 <span><span class="co">#&gt;   Estimator                                  MCOrdPLSc</span></span>
 <span><span class="co">#&gt;   Link                                          PROBIT</span></span>
 <span><span class="co">#&gt;                                                       </span></span>
 <span><span class="co">#&gt;   Number of observations                           714</span></span>
-<span><span class="co">#&gt;   Number of iterations                              37</span></span>
+<span><span class="co">#&gt;   Number of iterations                              40</span></span>
 <span><span class="co">#&gt;   Number of latent variables                         0</span></span>
 <span><span class="co">#&gt;   Number of observed variables                       3</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fit Measures:</span></span>
-<span><span class="co">#&gt;   Chi-Square                                     0.038</span></span>
+<span><span class="co">#&gt;   Chi-Square                                     0.036</span></span>
 <span><span class="co">#&gt;   Degrees of Freedom                                -3</span></span>
 <span><span class="co">#&gt;   SRMR                                           0.002</span></span>
 <span><span class="co">#&gt;   RMSEA                                            NaN</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; R-squared (latents):</span></span>
-<span><span class="co">#&gt;   Survived                                       0.561</span></span>
+<span><span class="co">#&gt;   Survived                                       0.560</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Regressions:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   Survived ~    </span></span>
-<span><span class="co">#&gt;     Age            -0.073      0.050   -1.449    0.147</span></span>
-<span><span class="co">#&gt;     Female          0.696      0.040   17.440    0.000</span></span>
-<span><span class="co">#&gt;     Age:Female      0.245      0.055    4.461    0.000</span></span>
+<span><span class="co">#&gt;     Age            -0.073      0.039   -1.896    0.058</span></span>
+<span><span class="co">#&gt;     Female          0.696      0.041   17.019    0.000</span></span>
+<span><span class="co">#&gt;     Age:Female      0.245      0.069    3.543    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Covariances:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   Age ~~        </span></span>
-<span><span class="co">#&gt;     Female         -0.093      0.040   -2.332    0.020</span></span>
-<span><span class="co">#&gt;     Age:Female     -0.001      0.016   -0.062    0.951</span></span>
+<span><span class="co">#&gt;     Female         -0.091      0.038   -2.423    0.015</span></span>
+<span><span class="co">#&gt;     Age:Female     -0.017      0.014   -1.212    0.225</span></span>
 <span><span class="co">#&gt;   Female ~~     </span></span>
-<span><span class="co">#&gt;     Age:Female      0.005      0.013    0.365    0.715</span></span>
+<span><span class="co">#&gt;     Age:Female      0.001      0.015    0.063    0.949</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Variances:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;    .Survived        0.439      0.068    6.482    0.000</span></span>
+<span><span class="co">#&gt;    .Survived        0.440      0.078    5.619    0.000</span></span>
 <span><span class="co">#&gt;     Age             1.000                             </span></span>
 <span><span class="co">#&gt;     Female          1.000                             </span></span>
 <span><span class="co">#&gt;     Age:Female      1.000</span></span></code></pre></div>
@@ -300,7 +300,7 @@ automatically switches to the Monte-Carlo ordinal PLSc estimator.</p>
 <span><span class="co">#&gt; Y [714 x 4] (head)</span></span>
 <span><span class="co">#&gt;   Survvd    Age Female Ag:Fml</span></span>
 <span><span class="co">#&gt; 1 -0.368 -0.530 -0.759  0.495</span></span>
-<span><span class="co">#&gt; 2  1.083  0.571  1.317  0.845</span></span>
+<span><span class="co">#&gt; 2  1.082  0.571  1.317  0.845</span></span>
 <span><span class="co">#&gt; 3  0.876 -0.255  1.317 -0.242</span></span>
 <span><span class="co">#&gt; 4  1.031  0.365  1.317  0.574</span></span>
 <span><span class="co">#&gt; 5 -0.600  0.365 -0.759 -0.184</span></span>
@@ -308,17 +308,17 @@ automatically switches to the Monte-Carlo ordinal PLSc estimator.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; X.cont [714 x 3] (head)</span></span>
 <span><span class="co">#&gt;   Survvd    Age Female</span></span>
-<span><span class="co">#&gt; 1 -0.643 -0.530 -0.759</span></span>
-<span><span class="co">#&gt; 2  0.920  0.571  1.317</span></span>
-<span><span class="co">#&gt; 3  0.920 -0.255  1.317</span></span>
-<span><span class="co">#&gt; 4  0.920  0.365  1.317</span></span>
-<span><span class="co">#&gt; 5 -0.643  0.365 -0.759</span></span>
-<span><span class="co">#&gt; 7 -0.643  1.673 -0.759</span></span>
+<span><span class="co">#&gt; 1 -0.636 -0.530 -0.759</span></span>
+<span><span class="co">#&gt; 2  0.947  0.571  1.317</span></span>
+<span><span class="co">#&gt; 3  0.947 -0.255  1.317</span></span>
+<span><span class="co">#&gt; 4  0.947  0.365  1.317</span></span>
+<span><span class="co">#&gt; 5 -0.636  0.365 -0.759</span></span>
+<span><span class="co">#&gt; 7 -0.636  1.673 -0.759</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; X.cont.pred [714 x 3] (head)</span></span>
 <span><span class="co">#&gt;   Survvd    Age Female</span></span>
 <span><span class="co">#&gt; 1 -0.368 -0.530 -0.759</span></span>
-<span><span class="co">#&gt; 2  1.083  0.571  1.317</span></span>
+<span><span class="co">#&gt; 2  1.082  0.571  1.317</span></span>
 <span><span class="co">#&gt; 3  0.876 -0.255  1.317</span></span>
 <span><span class="co">#&gt; 4  1.031  0.365  1.317</span></span>
 <span><span class="co">#&gt; 5 -0.600  0.365 -0.759</span></span>

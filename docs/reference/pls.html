@@ -103,8 +103,9 @@ factor scores, and supports multilevel specifications expressed with
 <span>  probit <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  tolerance <span class="op">=</span> <span class="fl">1e-05</span>,</span>
 <span>  max.iter.0_5 <span class="op">=</span> <span class="fl">100L</span>,</span>
-<span>  boot.ncpus <span class="op">=</span> <span class="fl">1L</span>,</span>
-<span>  boot.parallel <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"no"</span>, <span class="st">"multicore"</span>, <span class="st">"snow"</span><span class="op">)</span>,</span>
+<span>  boot.ncores <span class="op">=</span> <span class="fl">1L</span>,</span>
+<span>  boot.ncpus <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  boot.parallel <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"no"</span>, <span class="st">"multicore"</span>, <span class="st">"multisession"</span>, <span class="st">"snow"</span><span class="op">)</span>,</span>
 <span>  boot.R <span class="op">=</span> <span class="fl">50L</span>,</span>
 <span>  boot.iseed <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  sample <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -204,14 +205,22 @@ that is based on whether ordered indicators are present.</p></dd>
 the measurement and structural models.</p></dd>
 
 
+<dt id="arg-boot-ncores">boot.ncores<a class="anchor" aria-label="anchor" href="#arg-boot-ncores"></a></dt>
+<dd><p>Integer: number of workers to be used for parallel bootstrapping.
+Parallel bootstrapping is enabled when <code>boot.ncores &gt; 1</code>.</p></dd>
+
+
 <dt id="arg-boot-ncpus">boot.ncpus<a class="anchor" aria-label="anchor" href="#arg-boot-ncpus"></a></dt>
-<dd><p>Integer: number of processes to be used in parallel operation.
-By default this is the number of cores (as detected by <code><a href="https://rdrr.io/r/parallel/detectCores.html" class="external-link">parallel::detectCores()</a></code>) minus one.</p></dd>
+<dd><p>Deprecated alias for <code>boot.ncores</code>.</p></dd>
 
 
 <dt id="arg-boot-parallel">boot.parallel<a class="anchor" aria-label="anchor" href="#arg-boot-parallel"></a></dt>
-<dd><p>The type of parallel operation to be used (if any). If missing,
-the default is <code>"no"</code>.</p></dd>
+<dd><p>The type of parallel operation to be used (if any). The
+default is <code>"no"</code>. <code>"multisession"</code> runs the bootstrap using multiple
+background <code>R</code> sessions (works on all platforms), while <code>"multicore"</code>
+uses forked processes (not available on Windows). <code>"snow"</code> is kept for
+backwards compatibility and is treated as an alias for <code>"multisession"</code>.
+Internally this is implemented using the <code>future</code> package</p></dd>
 
 
 <dt id="arg-boot-r">boot.R<a class="anchor" aria-label="anchor" href="#arg-boot-r"></a></dt>
@@ -221,12 +230,9 @@ the default is <code>"no"</code>.</p></dd>
 
 <dt id="arg-boot-iseed">boot.iseed<a class="anchor" aria-label="anchor" href="#arg-boot-iseed"></a></dt>
 <dd><p>An integer to set the bootstrap seed. Or <code>NULL</code> if no
-reproducible results are needed. This works for both serial (non-parallel) and
-parallel settings. Internally, <code><a href="https://rdrr.io/r/base/Random.html" class="external-link">RNGkind()</a></code> is set to <code>"L'Ecuyer-CMRG"</code>
-if <code>parallel = "multicore"</code>. If <code>parallel = "snow"</code> (under windows),
-<code><a href="https://rdrr.io/r/parallel/RngStream.html" class="external-link">parallel::clusterSetRNGStream()</a></code> is called which automatically switches to
-<code>"L'Ecuyer-CMRG"</code>. When iseed is not <code>NULL</code>, <code>.Random.seed</code>
-(if it exists) in the global environment is left untouched.</p></dd>
+reproducible results are needed. This works for both serial and parallel
+settings. When <code>boot.iseed</code> is not <code>NULL</code>, <code>.Random.seed</code> (if it
+exists) in the global environment is left untouched.</p></dd>
 
 
 <dt id="arg-sample">sample<a class="anchor" aria-label="anchor" href="#arg-sample"></a></dt>

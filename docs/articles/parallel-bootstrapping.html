@@ -106,7 +106,7 @@
     
     
 <p>This vignette shows how to run bootstrap standard errors in parallel
-using <code>boot.ncpus</code> and <code>boot.parallel</code>.</p>
+using <code>boot.ncores</code> and <code>boot.parallel</code>.</p>
 <div class="section level2">
 <h2 id="example-model-ordered-indicators">Example model (ordered indicators)<a class="anchor" aria-label="anchor" href="#example-model-ordered-indicators"></a>
 </h2>
@@ -120,22 +120,24 @@ using <code>boot.ncpus</code> and <code>boot.parallel</code>.</p>
 <span><span class="st">'</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="windows-psock-cluster-boot-parallel-snow">Windows: PSOCK cluster (<code>boot.parallel = "snow"</code>)<a class="anchor" aria-label="anchor" href="#windows-psock-cluster-boot-parallel-snow"></a>
+<h2 id="all-platforms-multisession-boot-parallel-multisession">All platforms: multisession
+(<code>boot.parallel = "multisession"</code>)<a class="anchor" aria-label="anchor" href="#all-platforms-multisession-boot-parallel-multisession"></a>
 </h2>
-<p>Use <code>"snow"</code> on Windows (PSOCK clusters; similar to a
-“multisession” approach).</p>
+<p>Use <code>"multisession"</code> to run the bootstrap across multiple
+background R sessions (works on Windows/macOS/Linux).
+<code>"snow"</code> is an alias for <code>"multisession"</code>.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">fit_win</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pls.html">pls</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="va">fit_ms</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pls.html">pls</a></span><span class="op">(</span></span>
 <span>  <span class="va">m</span>,</span>
 <span>  data          <span class="op">=</span> <span class="va">oneIntOrdered</span>,</span>
 <span>  ordered       <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">oneIntOrdered</span><span class="op">)</span>,</span>
 <span>  bootstrap     <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  boot.R        <span class="op">=</span> <span class="fl">500</span>,</span>
-<span>  boot.ncpus    <span class="op">=</span> <span class="fl">2</span>,</span>
-<span>  boot.parallel <span class="op">=</span> <span class="st">"snow"</span>,</span>
+<span>  boot.ncores   <span class="op">=</span> <span class="fl">2</span>,</span>
+<span>  boot.parallel <span class="op">=</span> <span class="st">"multisession"</span>,</span>
 <span>  boot.iseed    <span class="op">=</span> <span class="fl">123</span></span>
 <span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit_win</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit_ms</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="linux-forked-processes-boot-parallel-multicore">Linux: forked processes
@@ -150,7 +152,7 @@ Windows).</p>
 <span>  ordered       <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">oneIntOrdered</span><span class="op">)</span>,</span>
 <span>  bootstrap     <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  boot.R        <span class="op">=</span> <span class="fl">500</span>,</span>
-<span>  boot.ncpus    <span class="op">=</span> <span class="fl">2</span>,</span>
+<span>  boot.ncores   <span class="op">=</span> <span class="fl">2</span>,</span>
 <span>  boot.parallel <span class="op">=</span> <span class="st">"multicore"</span>,</span>
 <span>  boot.iseed    <span class="op">=</span> <span class="fl">123</span></span>
 <span><span class="op">)</span></span>

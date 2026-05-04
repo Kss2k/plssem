@@ -186,7 +186,7 @@ the <code>mice</code> package, but other packages can be used as well
 <span>               bootstrap <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>               boot.R <span class="op">=</span> <span class="fl">100</span>,</span>
 <span>               boot.parallel <span class="op">=</span> <span class="st">"multicore"</span>, <span class="co"># Use parallel bootstrap</span></span>
-<span>               boot.ncpus <span class="op">=</span> <span class="fl">2L</span><span class="op">)</span></span>
+<span>               boot.ncores <span class="op">=</span> <span class="fl">2L</span><span class="op">)</span></span>
 <span></span>
 <span>  <span class="va">COEF</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://amices.org/mice/reference/cbind.html" class="external-link">rbind</a></span><span class="op">(</span><span class="va">COEF</span>, <span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">fit.i</span><span class="op">)</span><span class="op">)</span></span>
 <span>  <span class="va">BOOT</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://amices.org/mice/reference/cbind.html" class="external-link">rbind</a></span><span class="op">(</span><span class="va">BOOT</span>, <span class="fu"><a href="../reference/boot.html">boot</a></span><span class="op">(</span><span class="va">fit.i</span><span class="op">)</span><span class="op">)</span></span>

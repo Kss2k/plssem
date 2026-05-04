@@ -100,7 +100,7 @@ default is \code{"no"}. \code{"multisession"} runs the bootstrap using multiple
 background \code{R} sessions (works on all platforms), while \code{"multicore"}
 uses forked processes (not available on Windows). \code{"snow"} is kept for
 backwards compatibility and is treated as an alias for \code{"multisession"}.
-Internally this is implemented using the \code{future} ecosystem.}
+Internally this is implemented using the \code{future} package}
 
 \item{boot.R}{Integer giving the number of bootstrap resamples drawn when
 \code{bootstrap = TRUE}.}

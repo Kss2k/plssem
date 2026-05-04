@@ -67,7 +67,7 @@ USE_NON_LINEAR_PROBIT_CORR_MAT <- FALSE
 #'   background \code{R} sessions (works on all platforms), while \code{"multicore"}
 #'   uses forked processes (not available on Windows). \code{"snow"} is kept for
 #'   backwards compatibility and is treated as an alias for \code{"multisession"}.
-#'   Internally this is implemented using the \code{future} ecosystem.
+#'   Internally this is implemented using the \code{future} package 
 #'
 #' @param boot.R Integer giving the number of bootstrap resamples drawn when
 #'   \code{bootstrap = TRUE}.

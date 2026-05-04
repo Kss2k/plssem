@@ -57,22 +57,25 @@ USE_NON_LINEAR_PROBIT_CORR_MAT <- FALSE
 #' @param max.iter.0_5 Maximum number of PLS iterations performed when estimating
 #'   the measurement and structural models.
 #'
-#' @param boot.ncpus Integer: number of processes to be used in parallel operation.
-#'   By default this is the number of cores (as detected by \code{parallel::detectCores()}) minus one.
+#' @param boot.ncores Integer: number of workers to be used for parallel bootstrapping.
+#'   Parallel bootstrapping is enabled when \code{boot.ncores > 1}.
 #'
-#' @param boot.parallel The type of parallel operation to be used (if any). If missing,
-#'   the default is \code{"no"}.
+#' @param boot.ncpus Deprecated alias for \code{boot.ncores}.
+#'
+#' @param boot.parallel The type of parallel operation to be used (if any). The
+#'   default is \code{"no"}. \code{"multisession"} runs the bootstrap using multiple
+#'   background \code{R} sessions (works on all platforms), while \code{"multicore"}
+#'   uses forked processes (not available on Windows). \code{"snow"} is kept for
+#'   backwards compatibility and is treated as an alias for \code{"multisession"}.
+#'   Internally this is implemented using the \code{future} package 
 #'
 #' @param boot.R Integer giving the number of bootstrap resamples drawn when
 #'   \code{bootstrap = TRUE}.
 #'
 #' @param boot.iseed An integer to set the bootstrap seed. Or \code{NULL} if no
-#'   reproducible results are needed. This works for both serial (non-parallel) and
-#'   parallel settings. Internally, \code{RNGkind()} is set to \code{"L'Ecuyer-CMRG"}
-#'   if \code{parallel = "multicore"}. If \code{parallel = "snow"} (under windows),
-#'   \code{parallel::clusterSetRNGStream()} is called which automatically switches to
-#'   \code{"L'Ecuyer-CMRG"}. When iseed is not \code{NULL}, \code{.Random.seed}
-#'   (if it exists) in the global environment is left untouched.
+#'   reproducible results are needed. This works for both serial and parallel
+#'   settings. When \code{boot.iseed} is not \code{NULL}, \code{.Random.seed} (if it
+#'   exists) in the global environment is left untouched.
 #'
 #' @param sample DEPRECATED. Integer giving the number of bootstrap resamples drawn when
 #'   \code{bootstrap = TRUE}.
@@ -155,8 +158,9 @@ pls <- function(syntax,
                 probit = NULL,
                 tolerance = 1e-5,
                 max.iter.0_5 = 100L,
-                boot.ncpus = 1L,
-                boot.parallel = c("no", "multicore", "snow"),
+                boot.ncores = 1L,
+                boot.ncpus = NULL,
+                boot.parallel = c("no", "multicore", "multisession", "snow"),
                 boot.R = 50L,
                 boot.iseed = NULL,
                 sample = NULL,
@@ -185,7 +189,15 @@ pls <- function(syntax,
                 ...) {
 
   missing       <- match.arg(tolower(missing), c("listwise", "mean", "knn"))
-  boot.parallel <- match.arg(boot.parallel)
+  boot.parallel <- match.arg(tolower(boot.parallel), c("no", "multicore", "multisession", "snow"))
+
+  if (!is.null(boot.ncpus)) {
+    warning(
+      "The `boot.ncpus` argument is deprecated; please use `boot.ncores` instead.",
+      call. = FALSE
+    )
+    boot.ncores <- boot.ncpus
+  }
 
   if (!is.null(sample)) {
     warning("The sample argument is deprecated, please use the boot.R argument instead!")
@@ -216,7 +228,7 @@ pls <- function(syntax,
     mc.fn.args         = mc.fn.args,
     verbose            = verbose,
     bootstrap          = bootstrap,
-    boot.ncpus         = boot.ncpus,
+    boot.ncores        = boot.ncores,
     boot.parallel      = boot.parallel,
     boot.R             = boot.R,
     boot.iseed         = boot.iseed,

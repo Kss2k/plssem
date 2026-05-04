@@ -2,14 +2,13 @@ bootstrap <- function(model,
                       zero.tol = 1e-10,
                       verbose  = model@info$verbose,
                       parallel = model@info$boot$parallel,
-                      ncpus    = model@info$boot$ncpus,
+                      ncores   = model@info$boot$ncores,
                       R        = model@info$boot$R,
                       iseed    = model@info$boot$iseed) {
 
-  # The logic here follows the lavaan package
-  is.mc <- is.snow <- FALSE
   if (is.null(parallel)) parallel <- "no"
-  parallel <- match.arg(parallel, c("no", "multicore", "snow"))
+  parallel <- match.arg(parallel, c("no", "multicore", "multisession", "snow"))
+  if (parallel == "snow") parallel <- "multisession"
 
   data      <- model@data
   cluster   <- model@info$cluster
@@ -17,7 +16,19 @@ bootstrap <- function(model,
   is.mcpls  <- model@info$is.mcpls
   ordered   <- model@info$ordered
   results   <- vector("list", R)
-  verbose   <- verbose && !is.snow
+
+  # Check misspecified user arguments
+  warnif(
+    parallel != "no" && ncores <= 1L,
+    "The `boot.ncores` argument has to be larger than 1 for parallel\n",
+    "bootstrapping to be enabled! Try `boot.ncores = 2`"
+  )
+
+  warnif(
+    parallel == "no" && ncores > 1L,
+    'The `boot.parallel` must be "multicore" or "multisession" for parallel\n',
+    'bootstrapping to be enabled! Try `boot.parallel="multisession"`'
+  )
 
   model.base <- model
 
@@ -28,19 +39,6 @@ bootstrap <- function(model,
     model         = model
   )
 
-  progress <- function(i) {
-    available <- getOption("width")
-    available <- if (is.null(available)) 80L else available
-    len.out   <- max(40L, min(available - 20L, 60L))
-
-    finished <- floor((i / R) * len.out)
-    left     <- len.out - finished
-
-    printf(
-      paste0("\rBootstrap [%i] |", strrep("=", finished), strrep(" ", left), "|"), R
-    )
-  }
-
   combinedCoefs <- combinedModel(model)@params$values
   na.par <- stats::setNames(
     rep(NA_real_, length(combinedCoefs)),
@@ -50,8 +48,6 @@ bootstrap <- function(model,
   P_START <- model@info$mc.args$p.start
 
   .bootf <- function(i) {
-    if (verbose) progress(i)
-
     tryCatch({
       sampleData <- resample(data, cluster = cluster)
       sampleS    <- getCorrMat(sampleData, ordered = ordered, probit = is.probit)
@@ -70,7 +66,7 @@ bootstrap <- function(model,
       boot.verbose        <- mc.boot.control$verbose
       low.tol.penalty     <- mc.boot.control$low.tol.penalty
 
-      # utils::capture.output(type = "message", { # capture real time output
+      utils::capture.output(type = "message", { # capture real time output
 
         model.b <- suppressWarnings(estimatePLS(
           model = model.b,
@@ -84,7 +80,7 @@ bootstrap <- function(model,
           p.start         = boot.p.start
         ))
 
-      # })
+      })
 
       par <- combinedModel(model.b)@params$values
 
@@ -103,18 +99,6 @@ bootstrap <- function(model,
       attr(par, "id") <- i
       par
     })
-  }
-
-
-  if (parallel != "no" && ncpus > 1L) {
-    switch(
-      parallel,
-      multicore = { is.mc   <- .Platform$OS.type != "windows" },
-      snow      = { is.snow <- TRUE                           },
-                  { ncpus   <- 1L                             }
-    )
-
-    loadNamespace("parallel") # before recording seed!
   }
 
   # iseed:
@@ -148,68 +132,84 @@ bootstrap <- function(model,
     }
   }
 
-  if (!(ncpus > 1L && (is.mc || is.snow))) { # Only for serial
+  workers <- if (parallel == "no") 1L else ncores
+  if (workers <= 1L) {
     set.seed(iseed)
-  }
 
-  # this is adapted from the boot function in package boot
-  if (ncpus > 1L && (is.mc || is.snow)) {
-
-    if (is.mc) {
-      RNGkind("L'Ecuyer-CMRG") # to allow for reproducible results
-      set.seed(iseed)
-      results <- parallel::mclapply(seq_len(R), .bootf, mc.cores = ncpus)
-
-    } else if (is.snow) {
-      cl <- tryCatch(
-        parallel::makePSOCKcluster(rep("localhost", ncpus)),
-        error = function(e) {
-          warning2(
-            "Failed to start PSOCK cluster; falling back to serial bootstrap.\n",
-            "Message: ", conditionMessage(e)
-          )
-          NULL
-        }
+    if (verbose) {
+      pb <- utils::txtProgressBar(
+        min     = 0,
+        max     = R,
+        initial = 0,
+        style   = 3,
+        file    = stderr()
       )
 
-      if (is.null(cl)) {
-        results <- lapply(seq_len(R), .bootf)
-      } else {
-        on.exit(parallel::stopCluster(cl), add = TRUE)
+      on.exit(close(pb), add = TRUE)
 
-      # Ensure workers have the package namespace loaded so internal helper
-      # functions referenced by `.bootf` resolve correctly.
-      # When running via devtools::test() the package is loaded from source
-      # but not installed — workers must load from the same source tree.
-      pkg_path <- if (requireNamespace("pkgload", quietly = TRUE)) {
-        tryCatch(pkgload::package_file(), error = function(e) NULL)
-      } else {
-        NULL
-      }
-      if (!is.null(pkg_path)) {
-        parallel::clusterCall(cl, function(p) pkgload::load_all(p, quiet = TRUE), pkg_path)
-      } else {
-        parallel::clusterEvalQ(cl, loadNamespace("plssem"))
-      }
+      results <- lapply(seq_len(R), function(i) {
+        tryCatch(
+          utils::setTxtProgressBar(pb, i),
+          error = \(e) warning2(
+            "Unable to update progress bar!\n",
+            "Message: ", conditionMessage(e)
+          )
+        )
 
-      # No need for
-      # if(RNGkind()[1L] == "L'Ecuyer-CMRG")
-      # clusterSetRNGStream() always calls `RNGkind("L'Ecuyer-CMRG")`
-      parallel::clusterSetRNGStream(cl, iseed = iseed)
-        results <- parallel::parLapply(cl, seq_len(R), .bootf)
+        .bootf(i)
+      })
 
-      }
+    } else {
+      results <- lapply(seq_len(R), .bootf)
 
     }
 
   } else {
-    results <- lapply(seq_len(R), .bootf)
+    oldPlan <- future::plan()
+    on.exit(future::plan(oldPlan), add = TRUE)
 
-  }
+    if (parallel == "multicore" && .Platform$OS.type == "windows") {
+      warning2(
+        "The `boot.parallel = 'multicore'` option is not supported on Windows.\n",
+        "Falling back to `boot.parallel = 'multisession'`."
+      )
+      parallel <- "multisession"
+    }
 
-  if (verbose) {
-    progress(R)
-    cat("\n")
+    if (parallel == "multicore") {
+      future::plan(future::multicore, workers = workers)
+    } else {
+      future::plan(future::multisession, workers = workers)
+    }
+
+    if (verbose) {
+      results <- progressr::with_progress({
+        oldHandlers <- progressr::handlers()
+        on.exit(progressr::handlers(oldHandlers), add = TRUE)
+        progressr::handlers(progressr::handler_txtprogressbar(
+          file = stderr(),
+          style = 3L
+        ))
+        p <- progressr::progressor(along = seq_len(R))
+        future.apply::future_lapply(
+          X = seq_len(R),
+          FUN = function(i) {
+            p(sprintf("Bootstrap %d/%d", i, R))
+            .bootf(i)
+          },
+          future.seed = iseed,
+          future.packages = "plssem"
+        )
+      })
+
+    } else {
+      results <- future.apply::future_lapply(
+        X = seq_len(R),
+        FUN = .bootf,
+        future.seed = iseed,
+        future.packages = "plssem"
+      )
+    }
   }
 
   ids <- vapply(results, FUN.VALUE = integer(1L), FUN = \(x) attr(x, "id"))

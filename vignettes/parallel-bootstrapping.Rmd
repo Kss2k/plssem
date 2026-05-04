@@ -17,7 +17,7 @@ library(plssem)
 ```
 
 This vignette shows how to run bootstrap standard errors in parallel using
-`boot.ncpus` and `boot.parallel`.
+`boot.ncores` and `boot.parallel`.
 
 ## Example model (ordered indicators)
 
@@ -31,22 +31,23 @@ m <- '
 '
 ```
 
-## Windows: PSOCK cluster (`boot.parallel = "snow"`)
+## All platforms: multisession (`boot.parallel = "multisession"`)
 
-Use `"snow"` on Windows (PSOCK clusters; similar to a “multisession” approach).
+Use `"multisession"` to run the bootstrap across multiple background R sessions
+(works on Windows/macOS/Linux). `"snow"` is an alias for `"multisession"`.
 
 ```{r boot-windows, eval = FALSE}
-fit_win <- pls(
+fit_ms <- pls(
   m,
   data          = oneIntOrdered,
   ordered       = colnames(oneIntOrdered),
   bootstrap     = TRUE,
   boot.R        = 500,
-  boot.ncpus    = 2,
-  boot.parallel = "snow",
+  boot.ncores   = 2,
+  boot.parallel = "multisession",
   boot.iseed    = 123
 )
-summary(fit_win)
+summary(fit_ms)
 ```
 
 ## Linux: forked processes (`boot.parallel = "multicore"`)
@@ -60,10 +61,9 @@ fit_linux <- pls(
   ordered       = colnames(oneIntOrdered),
   bootstrap     = TRUE,
   boot.R        = 500,
-  boot.ncpus    = 2,
+  boot.ncores   = 2,
   boot.parallel = "multicore",
   boot.iseed    = 123
 )
 summary(fit_linux)
 ```
-

@@ -50,7 +50,9 @@ Imports:
     collapse,
     mvnfast,
     reformulas,
-    parallel,
+    future,
+    future.apply,
+    progressr,
     FNN
 Depends:
     R (>= 4.1.0)

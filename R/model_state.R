@@ -80,7 +80,7 @@ initModelMcArgs <- function(min.iter,
 
 
 initModelBootInfo <- function(bootstrap,
-                              ncpus,
+                              ncores,
                               parallel,
                               R,
                               iseed,
@@ -88,7 +88,7 @@ initModelBootInfo <- function(bootstrap,
                               mc.boot.control) {
   list(
     bootstrap       = bootstrap,
-    ncpus           = ncpus,
+    ncores          = ncores,
     parallel        = parallel,
     R               = R,
     iseed           = iseed,

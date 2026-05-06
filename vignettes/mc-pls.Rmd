@@ -109,18 +109,22 @@ Using the biased estimate as our estimate we can run a stochastic root approxima
 using the `SimDesign` package.
 
 ```{r}
-library(SimDesign)
-library(ggplot2)
+r_hat <- r_biased_observed # good starting estimate
+iter <- 10
+history <- r_hat
 
-fit <- RobbinsMonro(
-  f = h,
-  p = r_biased_observed
-)
+for (i in seq_len(iter)) {
+  temperature <- 1 / sqrt(i)
+  epsilon <- h(r_hat)
+  r_hat <- r_hat - temperature * epsilon
+  history <- c(history, r_hat)
+}
 
-print(fit$root)
+plot(history)
 ```
-The root of `h()` is then an unbiased estimate of $r$.
 
 ```{r}
-data.frame(y = fit$history[,1], x = seq_len(NROW(fit$history))) |>
-ggplot(aes(x = x, y = y)) + geom_line() + geom_point() + geom_smooth()
+library(ggplot2)
+data.frame(y = history, x = seq_along(history)) |>
+ggplot(aes(x = x, y = y)) + geom_line() + geom_point() + geom_smooth(se = FALSE)
+```

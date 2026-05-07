@@ -10,34 +10,36 @@ vignette: >
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
-  comment = "#>"
+  comment = "#>",
+  message = FALSE,
+  warning = FALSE
 )
 
 library(plssem)
 ```
 
-In the `plssem()` package we've implemented a version of the
-*Monte-Carlo Consistent Partial Least Squares* algorithm (MC-PLSc).
-Here we present a general explanation of the algorithm. A more detailed
-explanation can be found [here](https://osf.io/preprints/psyarxiv/fwzj6_v1).
+The `plssem` package implements *Monte-Carlo Consistent Partial Least Squares*
+(MC-PLSc). This vignette gives an intuitive explanation of the core idea
+using a small toy example (a single correlation).
 
-The general idea of the MC-PLSc algorithm is to treat the PLS algorithm as a
-biased estimator under a given set of circumstances. The PLS algorithm is
-in general a biased estimator of common factor models (i.e., reflective constructs),
-where additional biased is introduced when the PLS algorithm is applied to
-ordinal data, as if the data is continuous.
+For a more detailed methodological treatment, see
+<https://osf.io/preprints/psyarxiv/fwzj6_v1>.
 
-The MC-PLSc algorithm then uses a Monte-Carlo procedure to model the bias of
-the PLS algorithm under the given circumstance, solving for a consistent set
-of model parameters.
+MC-PLSc starts from the observation that PLS can be a biased estimator for
+common factor models (e.g., models with reflective measurement), and that
+additional bias is introduced when ordinal indicators are treated as continuous.
 
-# Example
+The key move is to *explicitly model the bias* of the estimator under the
+assumed data-generating process, and then adjust parameters until simulated
+data reproduces what we observed.
 
-Consider the correlation $r$ between continous variables $x$ and $y$. 
+# A Toy Example: Bias From Dichotomization
+
+Consider the correlation $r$ between continuous variables $x$ and $y$.
 
 ```{r}
 set.seed(2348929)
-n <- 10000
+n <- 1000000
 r <- 0.6
 x <- rnorm(n)
 y <- r * x + rnorm(n, sd = sqrt(1 - r^2))
@@ -48,32 +50,38 @@ Let's then say that we only have access to a set of binary representations of
 $x$ and $y$, $z$ and $w$. Here we just split $x$ and $y$ in the middle.
 
 ```{r}
-z <- as.integer(x > 0)
-w <- as.integer(y > 0)
+z <- as.integer(x - mean(x) > 0)
+w <- as.integer(y - mean(y) > 0)
 ```
 
-If we then calculate the correlation between $z$ and $w$ we will get a biased
-estimate of $r$.
+If we calculate the correlation between $z$ and $w$, we get a biased estimate
+of the underlying correlation $r$.
 
 ```{r}
 cor(z, w)
 ```
 
-While the estimate is biased, it does say something about the true correlation.
-The goal of the MC-PLSc algorithm is to model how this bias behaves. Let's
-write a function `g()` which simulates data from our model, given an estimate
-of $r$, and a function `f()` for our estimator, which in this case is the correlation
-coefficient.
+Even though `cor(z, w)` is biased for $r$, it is still informative about $r$.
+MC-PLSc formalizes this by:
+
+1. proposing a data-generating model,
+2. simulating data under candidate parameters, and
+3. searching for parameters that make the simulated estimator match the observed one.
+
+In this toy example:
+
+- `g()` simulates *binary* data given a candidate value of $r$.
+- `f()` is the estimator applied to that simulated data (here: `cor()`).
 
 ```{r}
-g <- function(r_hat, R = 100000) {
+g <- function(r_hat, R = 5000) {
   # Generate continuous data
   x <- rnorm(R)
   y <- r_hat * x + rnorm(R, sd = sqrt(1 - r_hat^2))
 
   # Generate binary data
-  z <- as.integer(x > 0)
-  w <- as.integer(y > 0)
+  z <- as.integer(x - mean(x) > 0)
+  w <- as.integer(y - mean(y) > 0)
 
   # Return a data.frame
   data.frame(z, w)
@@ -84,8 +92,8 @@ f <- function(df) {
 }
 ```
 
-Putting `f()` and `g()` together we can mess around with different values of 
-`r_hat` to find an estimate which matches the observed correlation of $z$ and $w$
+Putting `f()` and `g()` together, we can try different values of `r_hat` and see
+which one reproduces the observed `cor(z, w)`.
 
 ```{r}
 print(f(g(0.0)))
@@ -94,9 +102,9 @@ print(f(g(0.5)))
 print(f(g(0.6)))
 ```
 
-Here we can see that our original value for $r$ (`0.6`) get's us quite close. However
-we can do better than manual trial an error. Therefore we rephrase the problem as a
-root finding problem.
+The true value (here, $r = 0.6$) gets us close, but in practice we do not know $r$.
+So we rephrase this as a *root-finding problem*: find $\hat{r}$ such that the
+simulated correlation matches the observed biased one.
 
 ```{r}
 r_biased_observed <- cor(z, w)
@@ -105,13 +113,13 @@ h <- function(r_hat) {
 }
 ```
 
-The MC-PLSc algoritihm uses the Robbins-Monro (1951) stochastic approximation
-algorithm for finding the root, but here we can see a simplified
-approach for finding the root.
+The full MC-PLSc algorithm uses Robbins-Monro (1951) stochastic approximation.
+Below is a minimal illustration: we iteratively nudge `r_hat` in the direction
+that reduces the mismatch $h(\hat{r})$.
 
 ```{r}
-r_hat <- r_biased_observed # good starting estimate
-iter <- 10
+r_hat <- r_biased_observed # reasonable starting value
+iter <- 25
 history <- r_hat
 
 for (i in seq_len(iter)) {
@@ -126,28 +134,69 @@ for (i in seq_len(iter)) {
 
 ```
 
-Here we can see a plot of the history of the estimates.
-```{r}
-library(ggplot2)
+The sequence typically stabilizes near the underlying continuous correlation.
+To visualize the stabilization more clearly, we can fit a simple exponential
+curve to the iteration history and plot the fitted trajectory. Here we can
+see that we seem to approach a very good approximation of $r$.
 
+```{r echo=FALSE}
 t <- seq_along(history)
+
 fit <- stats::nls(
   history ~ c + a * exp(-k * t),
   start = list(
     c = mean(utils::tail(history, 3)),
-    a = y[1] - mean(utils::tail(history, 3)),
+    a = history[1] - mean(utils::tail(history, 3)),
     k = 0.1
   ),
   algorithm = "port",
   lower = c(c = -Inf, a = -Inf, k = 0)
 )
 
-c.nls <- coef(fit)[["c"]]
-
 fpredict <- function(t) {
-  predict(fit, newdata = data.frame(t=t))
+  stats::predict(fit, newdata = data.frame(t = t))
 }
 
-data.frame(y = history, x = seq_along(history)) |>
-ggplot(aes(x = x, y = y)) + geom_point() + geom_function(fun = fpredict)
+df <- data.frame(t = t, r_hat = history)
+
+ggplot2::ggplot(df, ggplot2::aes(x = t, y = r_hat)) +
+  ggplot2::geom_hline(
+    yintercept = r,
+    linetype = 2,
+    linewidth = 0.8,
+    color = "grey40"
+  ) +
+  ggplot2::geom_function(
+    fun = fpredict,
+    linewidth = 1.2,
+    color = "black"
+  ) +
+  ggplot2::geom_point(size = 2, color = "black") +
+  ggplot2::labs(
+    x = "Iteration",
+    y = "r_hat",
+    title = "Convergence (with exponential fit)"
+  ) +
+  ggplot2::theme_minimal()
+```
+
+# Connection to MC-PLSc
+
+While not as simple, the MC-PLSc algorithm builds on the same principle,
+where
+
+- `g()` simulates indicators from a model with given measurement and structural
+  parameters (including the indicator scales, e.g., ordinal thresholds).
+- `f()` runs the PLS algorithm (under the same estimation choices used on the
+  real data) and returns the resulting parameter estimates.
+
+The Monte-Carlo loop then searches for parameters that are *consistent* with
+the observed PLS estimates under the assumed data model.
+
+Here we can see the estimate of $r$ from using the MC-PLSc estimator in the
+`pls()` function
+
+```{r}
+pls('y ~ x', data = data.frame(x = z, y = w),
+    ordered = c("y", "x"), mcpls = TRUE)
 ```

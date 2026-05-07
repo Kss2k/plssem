@@ -113,14 +113,15 @@ Squares</h1>
 Partial Least Squares</em> (MC-PLSc). This vignette gives an intuitive
 explanation of the core idea using a small toy example (a single
 correlation).</p>
-<p>For a more detailed methodological treatment, see <a href="https://osf.io/preprints/psyarxiv/fwzj6_v1" class="external-link uri">https://osf.io/preprints/psyarxiv/fwzj6_v1</a>.</p>
+<p>For a more formal definition see <a href="https://osf.io/preprints/psyarxiv/fwzj6_v1" class="external-link uri">https://osf.io/preprints/psyarxiv/fwzj6_v1</a>.</p>
 <p>MC-PLSc starts from the observation that PLS can be a biased
 estimator for common factor models (e.g., models with reflective
 measurement), and that additional bias is introduced when ordinal
 indicators are treated as continuous.</p>
 <p>The key move is to <em>explicitly model the bias</em> of the
 estimator under the assumed data-generating process, and then adjust
-parameters until simulated data reproduces what we observed.</p>
+parameters until simulated data reproduces the observed (biased)
+estimates.</p>
 <div class="section level2">
 <h2 id="a-toy-example-bias-from-dichotomization">A Toy Example: Bias From Dichotomization<a class="anchor" aria-label="anchor" href="#a-toy-example-bias-from-dichotomization"></a>
 </h2>
@@ -199,11 +200,13 @@ value of
 <span><span class="op">}</span></span>
 <span></span>
 <span><span class="va">f</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">df</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="co"># Biased correlation between binary data</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/stats/cor.html" class="external-link">cor</a></span><span class="op">(</span><span class="va">df</span><span class="op">$</span><span class="va">z</span>, <span class="va">df</span><span class="op">$</span><span class="va">w</span><span class="op">)</span></span>
 <span><span class="op">}</span></span></code></pre></div>
 <p>Putting <code>f()</code> and <code>g()</code> together, we can try
-different values of <code>r_hat</code> and see which one reproduces the
-observed <code>cor(z, w)</code>.</p>
+different values of
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mover><mi>r</mi><mo accent="true">̂</mo></mover><annotation encoding="application/x-tex">\hat{r}</annotation></semantics></math>
+and see which one reproduces the observed <code>cor(z, w)</code>.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu">f</span><span class="op">(</span><span class="fu">g</span><span class="op">(</span><span class="fl">0.0</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 0.01282723</span></span>

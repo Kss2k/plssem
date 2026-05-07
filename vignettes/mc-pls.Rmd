@@ -22,7 +22,7 @@ The `plssem` package implements *Monte-Carlo Consistent Partial Least Squares*
 (MC-PLSc). This vignette gives an intuitive explanation of the core idea
 using a small toy example (a single correlation).
 
-For a more detailed methodological treatment, see
+For a more formal definition see
 <https://osf.io/preprints/psyarxiv/fwzj6_v1>.
 
 MC-PLSc starts from the observation that PLS can be a biased estimator for
@@ -31,7 +31,7 @@ additional bias is introduced when ordinal indicators are treated as continuous.
 
 The key move is to *explicitly model the bias* of the estimator under the
 assumed data-generating process, and then adjust parameters until simulated
-data reproduces what we observed.
+data reproduces the observed (biased) estimates.
 
 # A Toy Example: Bias From Dichotomization
 
@@ -88,11 +88,12 @@ g <- function(r_hat, R = 5000) {
 }
 
 f <- function(df) {
+  # Biased correlation between binary data
   cor(df$z, df$w)
 }
 ```
 
-Putting `f()` and `g()` together, we can try different values of `r_hat` and see
+Putting `f()` and `g()` together, we can try different values of $\hat{r}$ and see
 which one reproduces the observed `cor(z, w)`.
 
 ```{r}

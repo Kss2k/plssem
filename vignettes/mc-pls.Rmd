@@ -105,8 +105,9 @@ h <- function(r_hat) {
 }
 ```
 
-Using the biased estimate as our estimate we can run a stochastic root approximation
-using the `SimDesign` package.
+The MC-PLSc algoritihm uses the Robbins-Monro (1951) stochastic approximation
+algorithm for finding the root, but here we can see a simplified
+approach for finding the root.
 
 ```{r}
 r_hat <- r_biased_observed # good starting estimate
@@ -116,15 +117,37 @@ history <- r_hat
 for (i in seq_len(iter)) {
   temperature <- 1 / sqrt(i)
   epsilon <- h(r_hat)
+
+  cat(sprintf("Iteration: %2d, r_hat: %.3f, epsilon: %6.3f\n", i, r_hat, epsilon))
+
   r_hat <- r_hat - temperature * epsilon
   history <- c(history, r_hat)
 }
 
-plot(history)
 ```
 
+Here we can see a plot of the history of the estimates.
 ```{r}
 library(ggplot2)
+
+t <- seq_along(history)
+fit <- stats::nls(
+  history ~ c + a * exp(-k * t),
+  start = list(
+    c = mean(utils::tail(history, 3)),
+    a = y[1] - mean(utils::tail(history, 3)),
+    k = 0.1
+  ),
+  algorithm = "port",
+  lower = c(c = -Inf, a = -Inf, k = 0)
+)
+
+c.nls <- coef(fit)[["c"]]
+
+fpredict <- function(t) {
+  predict(fit, newdata = data.frame(t=t))
+}
+
 data.frame(y = history, x = seq_along(history)) |>
-ggplot(aes(x = x, y = y)) + geom_line() + geom_point() + geom_smooth(se = FALSE)
+ggplot(aes(x = x, y = y)) + geom_point() + geom_function(fun = fpredict)
 ```

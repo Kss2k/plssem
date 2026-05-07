@@ -38,8 +38,8 @@ data reproduces what we observed.
 Consider the correlation $r$ between continuous variables $x$ and $y$.
 
 ```{r}
-set.seed(2348929)
-n <- 1000000
+set.seed(7208094)
+n <- 10000
 r <- 0.6
 x <- rnorm(n)
 y <- r * x + rnorm(n, sd = sqrt(1 - r^2))
@@ -195,7 +195,7 @@ Here we can see the corresponding estimates using the MC-PLSc algorithm, via the
 `pls()` function.
 
 ```{r}
-set.seed(23481312)
+set.seed(2346259)
 pls('y ~ x', data = data.frame(x = z, y = w),
     ordered = c("y", "x"), mcpls = TRUE)
 ```

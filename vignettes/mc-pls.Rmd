@@ -61,8 +61,8 @@ of the underlying correlation $r$.
 cor(z, w)
 ```
 
-Even though `cor(z, w)` is biased for $r$, it is still informative about $r$.
-MC-PLSc formalizes this by:
+Even though `cor(z, w)` is a biased estimate of $r$, it is still an informative
+measure of $r$. The MC-PLSc algorithm formalizes this by:
 
 1. proposing a data-generating model,
 2. simulating data under candidate parameters, and
@@ -113,13 +113,13 @@ h <- function(r_hat) {
 }
 ```
 
-The full MC-PLSc algorithm uses Robbins-Monro (1951) stochastic approximation.
-Below is a minimal illustration: we iteratively nudge `r_hat` in the direction
-that reduces the mismatch $h(\hat{r})$.
+The full MC-PLSc algorithm uses Robbins-Monro (1951) stochastic approximation,
+to estimate the root of $h(\hat{r})$. Below we use a simplified approach,
+where we iteratively nudge $\hat{r}$ in the direction that reduces the mismatch $h(\hat{r})$.
 
 ```{r}
 r_hat <- r_biased_observed # reasonable starting value
-iter <- 25
+iter <- 20
 history <- r_hat
 
 for (i in seq_len(iter)) {
@@ -131,7 +131,6 @@ for (i in seq_len(iter)) {
   r_hat <- r_hat - temperature * epsilon
   history <- c(history, r_hat)
 }
-
 ```
 
 The sequence typically stabilizes near the underlying continuous correlation.
@@ -169,9 +168,9 @@ ggplot2::ggplot(df, ggplot2::aes(x = t, y = r_hat)) +
   ggplot2::geom_function(
     fun = fpredict,
     linewidth = 1.2,
-    color = "black"
+    color = "#0072B2"
   ) +
-  ggplot2::geom_point(size = 2, color = "black") +
+  ggplot2::geom_point(size = 2, color = "#D55E00") +
   ggplot2::labs(
     x = "Iteration",
     y = "r_hat",
@@ -180,23 +179,23 @@ ggplot2::ggplot(df, ggplot2::aes(x = t, y = r_hat)) +
   ggplot2::theme_minimal()
 ```
 
-# Connection to MC-PLSc
+# From The Toy Example to MC-PLSc
 
-While not as simple, the MC-PLSc algorithm builds on the same principle,
-where
+This toy example has the same basic structure as MC-PLSc:
 
-- `g()` simulates indicators from a model with given measurement and structural
-  parameters (including the indicator scales, e.g., ordinal thresholds).
-- `f()` runs the PLS algorithm (under the same estimation choices used on the
-  real data) and returns the resulting parameter estimates.
+- `g()` becomes a simulator for your SEM (measurement + structural model,
+  including the indicator scales, e.g., ordinal thresholds).
+- `f()` becomes "run PLS under the same estimation settings as for the real
+  data, then extract the parameters of interest".
 
 The Monte-Carlo loop then searches for parameters that are *consistent* with
 the observed PLS estimates under the assumed data model.
 
-Here we can see the estimate of $r$ from using the MC-PLSc estimator in the
-`pls()` function
+Here we can see the corresponding estimates using the MC-PLSc algorithm, via the
+`pls()` function.
 
 ```{r}
+set.seed(23481312)
 pls('y ~ x', data = data.frame(x = z, y = w),
     ordered = c("y", "x"), mcpls = TRUE)
 ```

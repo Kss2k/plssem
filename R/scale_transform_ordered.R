@@ -91,7 +91,7 @@ rescaleOrderedVariableAnalytic <- function(name,
   tab <- as.numeric(table(x))
   K   <- length(tab)
   n   <- sum(tab)
-  if (K < 2) stop("Need at least 2 ordered categories for '", name, "'.")
+  if (K < 2) pls_msg_stop("Need at least 2 ordered categories for '", name, "'.")
 
   if (smooth_eps > 0) {
     p_hat <- (tab + smooth_eps) / (n + K * smooth_eps)

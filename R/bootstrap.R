@@ -18,13 +18,13 @@ bootstrap <- function(model,
   results   <- vector("list", R)
 
   # Check misspecified user arguments
-  warnif(
+  pls_warnif(
     parallel != "no" && ncores <= 1L,
     "The `boot.ncores` argument has to be larger than 1 for parallel\n",
     "bootstrapping to be enabled! Try `boot.ncores = 2`"
   )
 
-  warnif(
+  pls_warnif(
     parallel == "no" && ncores > 1L,
     'The `boot.parallel` must be "multicore" or "multisession" for parallel\n',
     'bootstrapping to be enabled! Try `boot.parallel="multisession"`'
@@ -93,7 +93,7 @@ bootstrap <- function(model,
       par
 
     }, error = \(e) {
-      warning("Bootstrap replicate ", i, " failed: ", conditionMessage(e))
+      pls_msg_warn("Bootstrap replicate ", i, " failed: ", conditionMessage(e))
 
       par <- na.par
       attr(par, "id") <- i
@@ -150,7 +150,7 @@ bootstrap <- function(model,
       results <- lapply(seq_len(R), function(i) {
         tryCatch(
           utils::setTxtProgressBar(pb, i),
-          error = \(e) warning2(
+          error = \(e) pls_msg_warn(
             "Unable to update progress bar!\n",
             "Message: ", conditionMessage(e)
           )
@@ -169,7 +169,7 @@ bootstrap <- function(model,
     on.exit(future::plan(oldPlan), add = TRUE)
 
     if (parallel == "multicore" && .Platform$OS.type == "windows") {
-      warning2(
+      pls_msg_warn(
         "The `boot.parallel = 'multicore'` option is not supported on Windows.\n",
         "Falling back to `boot.parallel = 'multisession'`."
       )
@@ -232,10 +232,10 @@ resample <- function(X, n.out = NROW(X), cluster = NULL, replace = TRUE) {
     return(X[idx, , drop = FALSE])
   }
 
-  stopif(length(cluster) > 1L, "bootstrapping of multiple cluster variables is not implemented (yet)!")
+  pls_stopif(length(cluster) > 1L, "bootstrapping of multiple cluster variables is not implemented (yet)!")
 
   cluster.vals <- attr(X, "cluster")[, cluster, drop = TRUE]
-  stopif(NROW(cluster.vals) != NROW(X), "Cluster must be of same length as data!")
+  pls_stopif(NROW(cluster.vals) != NROW(X), "Cluster must be of same length as data!")
 
   clusters <- unique(cluster.vals)
   G <- length(clusters)

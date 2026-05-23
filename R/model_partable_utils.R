@@ -83,7 +83,7 @@ getEtas <- function(parTable, isLV = FALSE, checkAny = TRUE) {
   etas.rhs <- parTable[cond.rhs, "rhs"]
 
   etas <- unique(c(etas.rhs, etas.lhs))
-  stopif(checkAny && !length(etas), "No etas found")
+  pls_stopif(checkAny && !length(etas), "No etas found")
 
   etas
 }
@@ -110,7 +110,7 @@ getSortedEtas <- function(parTable, isLV = FALSE, checkAny = TRUE) {
   sortedEtas  <- character(0L)
 
   while (length(sortedEtas) < length(unsortedEtas) && nrow(structExprs) > 0) {
-    stopif(all(unique(structExprs$lhs) %in% structExprs$rhs), "Model is non-recursive")
+    pls_stopif(all(unique(structExprs$lhs) %in% structExprs$rhs), "Model is non-recursive")
 
     for (i in seq_len(nrow(structExprs))) {
       if ((eta <- structExprs[i, "lhs"]) %in% structExprs$rhs) next
@@ -123,7 +123,7 @@ getSortedEtas <- function(parTable, isLV = FALSE, checkAny = TRUE) {
 
   if (!all(unsortedEtas %in% sortedEtas) ||
       length(sortedEtas) != length(unsortedEtas)) {
-      warning("unable to sort etas")
+      pls_msg_warn("unable to sort etas")
       return(unsortedEtas)
   }
 
@@ -143,7 +143,7 @@ getXis <- function(parTable, etas = NULL, isLV = TRUE, checkAny = TRUE) {
 
   xis <- xis[!grepl(":", xis)] # remove interaction terms
 
-  stopif(checkAny && !length(xis), "No xis found")
+  pls_stopif(checkAny && !length(xis), "No xis found")
   xis
 }
 
@@ -164,7 +164,7 @@ getIndsLVs <- function(parTable, lVs, isOV = FALSE, ovs = NULL) {
   if (!length(lVs)) return(NULL)
 
   measr <- parTable[parTable$op %in% c("=~", "<~") & parTable$lhs %in% lVs, ]
-  stopif(!NROW(measr), "No measurement expressions found, for", lVs)
+  pls_stopif(!NROW(measr), "No measurement expressions found, for", lVs)
 
   if (isOV) {
     if (is.null(ovs)) ovs <- getOVs(parTable)

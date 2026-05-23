@@ -4,32 +4,6 @@ printf <- function(...) {
 }
 
 
-warning2 <- function(...) {
-  warning(..., call. = FALSE)
-}
-
-
-stop2 <- function(...) {
-  stop(..., call. = FALSE)
-}
-
-
-stopif <- function(cond, ...) {
-  if (isTRUE(cond)) stop2(...)
-}
-
-
-warnif <- function(cond, ...) {
-  if (isTRUE(cond)) warning2(...)
-}
-
-
-messagef <- function(..., appendLF = FALSE) {
-  message(sprintf(...), appendLF = appendLF)
-  utils::flush.console()
-}
-
-
 quickdf <- function(l) {
   class(l) <- "data.frame"
   attr(l, "row.names") <- .set_row_names(length(l[[1]]))

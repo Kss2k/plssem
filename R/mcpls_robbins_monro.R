@@ -16,7 +16,7 @@ robbinsMonro1951 <- function(p, f, tol, min.iter, max.iter, verbose,
 
   # mcfit <- do.call(SimDesign::RobbinsMonro, args)
   mcfit <- do.call(SimDesign.RobbinsMonro, args)
-  if (verbose) messagef("\n")
+  if (verbose) pls_msg_note(sprintf("\n"))
 
   if (polyak.juditsky && pj.extrapolate)
     mcfit$root <- getConvergencePoints(mcfit$history)
@@ -55,9 +55,9 @@ SimDesign.RobbinsMonro <- function(f, p, ...,
     }
     if(verbose){
       if(Polyak_Juditsky)
-        messagef("\rItertion: %i; Max change in E(\u03b8) = %.3f", i, change)
+        pls_msg_note(sprintf("\rItertion: %i; Max change in E(\u03b8) = %.3f", i, change))
       else
-        messagef("\rIteration: %i; Max change in \u03b8 = %.3f", i, change)
+        pls_msg_note(sprintf("\rIteration: %i; Max change in \u03b8 = %.3f", i, change))
     }
     if(i > miniter && all(change < tol)){
       k.succ <- k.succ + 1L

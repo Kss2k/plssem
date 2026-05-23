@@ -248,7 +248,7 @@ simulateDataParTable <- function(parTable,
     inds.lv <- indsLVs[[lv]]
     nind <- length(inds.lv)
 
-    stopif(nind != 1, "Mode B is not available in MC-OrdPLSc (yet)!")
+    pls_stopif(nind != 1, "Mode B is not available in MC-OrdPLSc (yet)!")
     Inds[[inds.lv]] <- Xi[[lv]]
   }
 

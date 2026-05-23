@@ -122,11 +122,11 @@ getConstructQualities <- function(model, zero.tol = 1e-5) {
 
 limitQ <- function(Q, lv, zero.tol = 1e-5) {
   if (is.na(Q)) {
-    warning2(sprintf("Reliability for %s is NA!", lv))
+    pls_msg_warn(sprintf("Reliability for %s is NA!", lv))
     return(1)
 
   } else if (Q > 1) {
-    warning2(sprintf(
+    pls_msg_warn(sprintf(
       "Reliability for %s is larger than 1! Q\u00B2(%s) = %.2f",
       lv, lv, Q^2
     ))
@@ -135,7 +135,7 @@ limitQ <- function(Q, lv, zero.tol = 1e-5) {
 
   } else if (Q <= zero.tol) {
 
-    warning2(sprintf(
+    pls_msg_warn(sprintf(
       "Reliability is close too or smaller than zero! Q\u00B2(%s) = %.2g",
       lv, lv, Q^2
     ))

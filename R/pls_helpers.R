@@ -34,7 +34,7 @@ estimateHigherOrderChain <- function(model) {
     return(model)
 
   higherOrder <- higherOrderModel(model)
-  stopif(is.null(higherOrder), "Expected a higher-order model")
+  pls_stopif(is.null(higherOrder), "Expected a higher-order model")
 
   newdata <- getSecondOrderDataMatrix(firstOrder = model, secondOrder = higherOrder)
   modelData(higherOrder)  <- newdata

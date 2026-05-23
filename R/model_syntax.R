@@ -74,8 +74,8 @@ parseModelArguments <- function(parTable,
     data[[ord]] <- as.integer(as.ordered(data[[ord]]))
 
   missing <- setdiff(ovs, colnames(data))
-  stopif(length(missing), "Missing observed variables in data:\n  ",
-         paste(missing, collapse = ", "))
+  pls_stopif(length(missing), "Missing observed variables in data:\n  ",
+             paste(missing, collapse = ", "))
 
   for (ov in structovs) {
     tmp.ov <- paste0(TEMP_OV_PREFIX, ov)

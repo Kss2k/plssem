@@ -36,8 +36,8 @@ splitHigherOrderParTable <- function(parTable) {
 
 
 splitHigherOrderModel <- function(syntax) {
-  stopif(length(syntax) > 1L || !is.character(syntax),
-         "`syntax` must be a string of length 1!")
+  pls_stopif(length(syntax) > 1L || !is.character(syntax),
+             "`syntax` must be a string of length 1!")
 
   parTable <- modsem::modsemify(syntax, parentheses.as.string = TRUE)
   splitHigherOrderParTable(parTable)
@@ -160,7 +160,7 @@ combineModelResultsFirstSecondOrder <- function(model) {
 
 
 computeCombinedModel <- function(model, lowerOrderAsEta = FALSE) {
-  stopif(!is(model, "PlsModel"), "Expected a PlsModel")
+  pls_stopif(!is(model, "PlsModel"), "Expected a PlsModel")
 
   if (is.null(higherOrderModel(model)))
     return(model)
@@ -423,8 +423,8 @@ getSecondOrderDataMatrix <- function(firstOrder, secondOrder) {
 
 checkMissingConstructScores <- function(have, want) {
   if (!all(want %in% have)) {
-    stop2("Missing construct scores for: ",
-          paste0(setdiff(want, have), collapse = ", "))
+    pls_msg_stop("Missing construct scores for: ",
+                 paste0(setdiff(want, have), collapse = ", "))
   }
 }
 

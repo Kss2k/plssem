@@ -19,10 +19,9 @@ classifyConstructs <- function(.terms) {
     ## Do the actual classification --------------------------------------------
 
     if(a > 3) {
-      stop("The nonlinear term(s): ", paste0("`", .terms, "`", collapse = ", "),
-           ifelse(length(.terms == 1), " is", " are"), " currently not supported.\n",
-           "Please see ?classifyConstructs for a list of supported terms.",
-           call. = FALSE)
+      pls_msg_stop("The nonlinear term(s): ", paste0("`", .terms, "`", collapse = ", "),
+                   ifelse(length(.terms == 1), " is", " are"), " currently not supported.\n",
+                   "Please see ?classifyConstructs for a list of supported terms.")
     } else {
       switch(a,
              "1" = {

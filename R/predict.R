@@ -135,7 +135,7 @@ setMethod("pls_predict", "PlsModel", function(object,
     all = all.vars,
     exog = intersect(all.vars, inds.x),
     endog = intersect(all.vars, inds.y),
-    pls_msg_stop("Unrecognize value for benchmark.vars argument: ", benchmark.vars)
+    pls_msg_stop(paste0("Unrecognize value for benchmark.vars argument: ", benchmark.vars))
   )
 
   if (!is.null(benchmark)) {
@@ -155,11 +155,11 @@ setMethod("pls_predict", "PlsModel", function(object,
       extra <- setdiff(names(benchmark), pred.vars)
 
       pls_stopif(length(missing),
-                 "Missing benchmark type(s) for variable(s): ",
-                 paste0(missing, collapse = ", "))
+                 paste0("Missing benchmark type(s) for variable(s): ",
+                 paste0(missing, collapse = ", ")))
       pls_warnif(length(extra),
-                 "Ignoring benchmark type(s) for unknown variable(s): ",
-                 paste0(extra, collapse = ", "))
+                 paste0("Ignoring benchmark type(s) for unknown variable(s): ",
+                 paste0(extra, collapse = ", ")))
 
       benchmarkByVar <- benchmark[pred.vars]
       benchmarkByVar <- stats::setNames(as.character(benchmarkByVar), pred.vars)
@@ -167,8 +167,8 @@ setMethod("pls_predict", "PlsModel", function(object,
 
     invalid <- setdiff(unique(benchmarkByVar), allowedBenchmarks)
     pls_stopif(length(invalid),
-               "Invalid `benchmark` type(s): ", paste0(invalid, collapse = ", "),
-               "\nAllowed: ", paste0(allowedBenchmarks, collapse = ", "))
+               paste0("Invalid `benchmark` type(s): ", paste0(invalid, collapse = ", "),
+               "\nAllowed: ", paste0(allowedBenchmarks, collapse = ", ")))
 
     trainOuterX <- getOuterDataMatrices(combined, newdata = combined@data,
                                         std.ord.exp = std.ord.exp)
@@ -341,7 +341,7 @@ print.PlsSemPredict <- function(x, ...) {
       .bm_check_ord_mats(type = type, X.ord = X.ord, X.ord.pred = X.ord.pred)
       .bm_ord_mae(yObs = X.ord[,variable], yPred = X.ord.pred[,variable])
     },
-    pls_msg_stop("Unhandled benchmark type: ", type)
+    pls_msg_stop(paste0("Unhandled benchmark type: ", type))
   )
 }
 
@@ -457,8 +457,8 @@ getOuterDataMatrices <- function(model, newdata = NULL, std.ord.exp = FALSE) {
     }
 
     missing <- setdiff(colnames(olddata), colnames(newdata))
-    pls_stopif(length(missing), "Missing variables in `newdata`!\n",
-               "Missing: ", paste0(missing, collapse = ", "))
+    pls_stopif(length(missing), paste0("Missing variables in `newdata`!\n",
+               "Missing: ", paste0(missing, collapse = ", ")))
 
     newdata.df <- as.data.frame(newdata)[colnames(olddata)]
     is.ord <- vapply(newdata.df, FUN.VALUE = logical(1L), FUN = is.ordered)
@@ -483,12 +483,12 @@ getOuterDataMatrices <- function(model, newdata = NULL, std.ord.exp = FALSE) {
     ncatNew <- length(uniqueComplete(newdata[,ord]))
 
     pls_stopif(ncatNew < ncatOld,
-               "There are fewer categories for ", ord, " in the test data (",
-               ncatNew, "),\nthan in the training data (", ncatOld, ")!")
+               paste0("There are fewer categories for ", ord, " in the test data (",
+               ncatNew, "),\nthan in the training data (", ncatOld, ")!"))
 
     pls_stopif(ncatNew > ncatOld,
-               "There are more categories for ", ord, " in the test data (",
-               ncatNew, "),\nthan in the training data (", ncatOld, ")!")
+               paste0("There are more categories for ", ord, " in the test data (",
+               ncatNew, "),\nthan in the training data (", ncatOld, ")!"))
   }
 
   newdata.cont <- newdata
@@ -575,7 +575,7 @@ pls_construct_scores <- function(object, ...) {
 
 .bm_r2 <- function(variable, xObs, xPred, ordered, yOrd = NULL) {
   if (variable %in% ordered) {
-    pls_stopif(is.null(yOrd), "Missing observed ordinal values for: ", variable)
+    pls_stopif(is.null(yOrd), paste0("Missing observed ordinal values for: ", variable))
     r <- tryCatchNA(tetracor(x = xPred, y = yOrd))
   } else {
     r <- tryCatchNA(stats::cor(x = xPred, y = xObs, use = "complete.obs"))

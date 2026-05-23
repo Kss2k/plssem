@@ -208,14 +208,14 @@ plslmer <- function(plsModel, fast = FALSE) {
         next
 
       } else if (!lhs.i %in% colnames(Correction) || !rhs.i %in% rownames(Correction)) {
-        pls_msg_warn("Unable to identify correction term for ", params[[i]], "!")
+        pls_msg_warn(paste0("Unable to identify correction term for ", params[[i]], "!"))
         next
       }
 
       term <- Correction[rhs.i, lhs.i]
 
       if (is.na(term) || is.nan(term)) {
-        pls_msg_warn("Correction term for ", params[[i]], " is NaN!")
+        pls_msg_warn(paste0("Correction term for ", params[[i]], " is NaN!"))
         next
       }
 
@@ -401,7 +401,7 @@ meanDiagZGZt <- function(fit, varCorr.c, dep = NULL) {
 
     Sigma <- varCorr.c[[gname]]
     if (is.null(Sigma)) {
-      pls_msg_stop("varCorr.c is missing grouping factor '", gname, "'.")
+      pls_msg_stop(paste0("varCorr.c is missing grouping factor '", gname, "'."))
     }
     Sigma <- as.matrix(Sigma)
 
@@ -415,13 +415,13 @@ meanDiagZGZt <- function(fit, varCorr.c, dep = NULL) {
     rn <- rownames(Sigma)
     if (is.null(rn)) rn <- colnames(Sigma)
     if (is.null(rn)) {
-      pls_msg_stop("Sigma for grouping factor '", gname, "' must have row/col names.")
+      pls_msg_stop(paste0("Sigma for grouping factor '", gname, "' must have row/col names."))
     }
 
     missing_cols <- setdiff(rn, colnames(Zsmall))
     if (length(missing_cols) > 0) {
-      pls_msg_stop("For grouping factor '", gname, "', Z columns missing: ",
-                   paste(missing_cols, collapse = ", "))
+      pls_msg_stop(paste0("For grouping factor '", gname, "', Z columns missing: ",
+                   paste(missing_cols, collapse = ", ")))
     }
 
     Zsmall <- Zsmall[, rn, drop = FALSE]
@@ -476,8 +476,8 @@ sigma2FromUnitVarY <- function(fit, beta.c, varCorr.c, targetVarY = 1,
     if (length(slope_rhs)) {
       missing <- setdiff(slope_rhs, colnames(Cov.lv))
       pls_stopif(length(missing),
-                 "Missing variables in covariance matrix: ",
-                 paste0(missing, collapse = ", "))
+                 paste0("Missing variables in covariance matrix: ",
+                 paste0(missing, collapse = ", ")))
 
       slope_pars <- re_pars[!is_int]
       Ezz[slope_pars, slope_pars] <- Cov.lv[slope_rhs, slope_rhs, drop = FALSE]

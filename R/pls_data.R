@@ -33,8 +33,8 @@ getPLS_Data <- function(data,
 
   if (anyMissing) {
     isMissingAll <- apply(data, MARGIN = 2L, FUN = \(x) all(is.na(x)))
-    pls_stopif(any(isMissingAll), "Some variables have all missing values!\n",
-               "Variables: ", paste0(colnames(data)[isMissingAll], collapse = ", "))
+    pls_stopif(any(isMissingAll), paste0("Some variables have all missing values!\n",
+               "Variables: ", paste0(colnames(data)[isMissingAll], collapse = ", ")))
   }
 
   if (anyMissing && missing == "listwise") {
@@ -42,7 +42,7 @@ getPLS_Data <- function(data,
     data <- data[!missingCases, , drop = FALSE]
 
   } else if (anyMissing && missing == "knn") {
-    pls_msg_note("Imputing missing data using k-Nearest Neighbors (kNN), k = ", knn.k, "...")
+    pls_msg_note(paste0("Imputing missing data using k-Nearest Neighbors (kNN), k = ", knn.k, "..."))
 
     # Remove rows where all indicators are missing
     allMissing <- as.logical(matrixStats::rowProds(
@@ -70,10 +70,10 @@ getPLS_Data <- function(data,
     )
 
   } else {
-    pls_msg_warn(
+    pls_msg_warn(paste0(
       "The `pls()` function usually assumes that the data is standardized!\n",
       "Setting `standardized=FALSE` may have unexpected side effects!"
-    )
+    ))
 
   }
 
@@ -96,7 +96,7 @@ checkAndFixDTypesPLS_Data <- function(X, check = colnames(X)) {
 
   varIsMissing <- !check %in% colnames(X)
   pls_stopif(any(varIsMissing),
-             "Missing variables: ", paste0(check[varIsMissing], collapse = ", ")
+    "Missing variables: ", paste0(check[varIsMissing], collapse = ", ")
   )
 
   isNominal <- vapply(X[check], FUN.VALUE = logical(1L), FUN = is.nominal)
@@ -113,9 +113,9 @@ checkAndFixDTypesPLS_Data <- function(X, check = colnames(X)) {
   }
 
   pls_stopif(any(isNominal),
-             "Please recode nominal categorical (e.g., 'factor' and 'character')\n",
-             "into dummy variables, and specify the dummy variables as ordered,\n",
-             "using the `ordered` argument!"
+    "Please recode nominal categorical (e.g., 'factor' and 'character')\n",
+    "into dummy variables, and specify the dummy variables as ordered,\n",
+    "using the `ordered` argument!"
   )
 
   X

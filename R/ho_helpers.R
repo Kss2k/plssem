@@ -423,8 +423,8 @@ getSecondOrderDataMatrix <- function(firstOrder, secondOrder) {
 
 checkMissingConstructScores <- function(have, want) {
   if (!all(want %in% have)) {
-    pls_msg_stop("Missing construct scores for: ",
-                 paste0(setdiff(want, have), collapse = ", "))
+    pls_msg_stop(paste0("Missing construct scores for: ",
+                 paste0(setdiff(want, have), collapse = ", ")))
   }
 }
 

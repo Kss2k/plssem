@@ -1,4 +1,5 @@
 # Copied (almost) directly from lavaan/R/lav_msg.R
+plssem_cache_env <- new.env(parent = emptyenv())
 
 # Displays a message (... concatenated with spaces in between) with header
 # 'plssem(function):', except when showheader == FALSE, and formatted to have

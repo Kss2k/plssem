@@ -183,7 +183,8 @@ https://github.com/paulhendricks/titanic</p>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="pls.html">pls</a></span><span class="op">(</span><span class="st">"Survived ~ Age + Female + Age:Female"</span>,</span></span>
 <span class="r-in"><span>           data <span class="op">=</span> <span class="va">titanic</span>, ordered <span class="op">=</span> <span class="st">"Survived"</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Removing missing data using listwise deletion...</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> plssem NOTE:  </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>    Removing missing data using listwise deletion...</span>
 <span class="r-in"><span><span class="fu"><a href="pls_predict.html">pls_predict</a></span><span class="op">(</span><span class="va">fit</span>, benchmark <span class="op">=</span> <span class="st">"acc"</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PlsSemPredict object</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Available fields: $Y, $X.cont, $X.cont.pred, $X.ord, $X.ord.pred, $benchmark</span>

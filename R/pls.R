@@ -242,7 +242,7 @@ pls <- function(syntax,
     boot <- tryCatch(
       bootstrap(model),
       error = \(e) {
-        pls_msg_warn("Bootstrapping FAILED!\nMessage: ", conditionMessage(e))
+        pls_msg_warn(paste0("Bootstrapping FAILED!\nMessage: ", conditionMessage(e)))
         NULL
       }
     )
@@ -311,6 +311,6 @@ estimatePLS <- function(model, ...) {
       updateEstimationStatus()
 
   }, error = function(e) {
-    pls_msg_stop("Model estimation FAILED!\n", "Message: ", conditionMessage(e))
+    pls_msg_stop(paste0("Model estimation FAILED!\nMessage: ", conditionMessage(e)))
   })
 }

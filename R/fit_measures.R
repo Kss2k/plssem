@@ -98,8 +98,8 @@ fitMeasures <- function(model, saturated = FALSE, mc.reps = 1e6) {
   tryCatch({
 
     if (is_mcpls(model)) {
-      pls_msg_warn("Fit measures for MC-PLSc models are under development!\n",
-                   "Traditional fit criteria will likely be too strict.")
+      pls_msg_warn(paste0("Fit measures for MC-PLSc models are under development!\n",
+                   "Traditional fit criteria will likely be too strict."))
       pls_msg_note(sprintf("Resampling MC-PLSc Model (R = %d)...", mc.reps))
 
       combined  <- combinedModel(model) # combined chained models
@@ -128,8 +128,8 @@ fitMeasures <- function(model, saturated = FALSE, mc.reps = 1e6) {
     )
 
   }, error = function(e) {
-    pls_msg_warn("Calculation of fit measures failed, message:\n",
-                 conditionMessage(e))
+    pls_msg_warn(paste0("Calculation of fit measures failed, message:\n",
+                 conditionMessage(e)))
     list(chisq = NA_real_, chisq.df = NA_real_,
          rmsea = NA_real_, srmr    = NA_real_)
   })
@@ -141,7 +141,7 @@ calcSRMR <- function(Expected, Observed, saturated = FALSE, diagonal  = TRUE) {
     Diff <- cov2cor(Expected) - cov2cor(Observed)
     sqrt(mean(Diff[lower.tri(Diff, diag = diagonal)]^2))
   }, error = function(e) {
-    pls_msg_warn("Calculation of SRMR failed! Message:\n", conditionMessage(e))
+    pls_msg_warn(paste0("Calculation of SRMR failed! Message:\n", conditionMessage(e)))
     NA_real_
   })
 }
@@ -152,7 +152,7 @@ calcChisq <- function(Observed, Expected, N, p = NCOL(Observed)) {
     Einv <- solve(Expected)
     as.vector((N - 1) * (tr(Observed %*% Einv) - log(det(Observed %*% Einv)) - p))
   }, error = function(e) {
-    pls_msg_warn("Calculation of chi-square failed! Message:\n", conditionMessage(e))
+    pls_msg_warn(paste0("Calculation of chi-square failed! Message:\n", conditionMessage(e)))
     NA_real_
   })
 }
@@ -200,8 +200,8 @@ calcChisqDf <- function(model, saturated = FALSE) {
     df
 
   }, error = function(e) {
-    pls_msg_warn("Calculation of chisq degrees of freedom failed! Message:\n",
-                 conditionMessage(e))
+    pls_msg_warn(paste0("Calculation of chisq degrees of freedom failed! Message:\n",
+                 conditionMessage(e)))
     NA_real_
   })
 }
@@ -237,7 +237,7 @@ calcRMSEA <- function(chi.sq, df, N, ci.level = 0.90, close.h0 = 0.05) {
     )
 
   }, error = function(e) {
-    pls_msg_warn("Calculation of RMSEA failed! Message:\n", conditionMessage(e))
+    pls_msg_warn(paste0("Calculation of RMSEA failed! Message:\n", conditionMessage(e)))
     list(rmsea = NA_real_, lower = NA_real_, upper = NA_real_,
          ci.level = NA_real_, pvalue = NA_real_, close.h0 = NA_real_)
   })

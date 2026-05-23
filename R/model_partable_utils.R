@@ -164,7 +164,7 @@ getIndsLVs <- function(parTable, lVs, isOV = FALSE, ovs = NULL) {
   if (!length(lVs)) return(NULL)
 
   measr <- parTable[parTable$op %in% c("=~", "<~") & parTable$lhs %in% lVs, ]
-  pls_stopif(!NROW(measr), "No measurement expressions found, for", lVs)
+  pls_stopif(!NROW(measr), paste0("No measurement expressions found, for", lVs))
 
   if (isOV) {
     if (is.null(ovs)) ovs <- getOVs(parTable)

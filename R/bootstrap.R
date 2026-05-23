@@ -93,7 +93,7 @@ bootstrap <- function(model,
       par
 
     }, error = \(e) {
-      pls_msg_warn("Bootstrap replicate ", i, " failed: ", conditionMessage(e))
+      pls_msg_warn(paste0("Bootstrap replicate ", i, " failed: ", conditionMessage(e)))
 
       par <- na.par
       attr(par, "id") <- i
@@ -151,8 +151,7 @@ bootstrap <- function(model,
         tryCatch(
           utils::setTxtProgressBar(pb, i),
           error = \(e) pls_msg_warn(
-            "Unable to update progress bar!\n",
-            "Message: ", conditionMessage(e)
+            paste0("Unable to update progress bar!\nMessage: ", conditionMessage(e))
           )
         )
 
@@ -169,10 +168,10 @@ bootstrap <- function(model,
     on.exit(future::plan(oldPlan), add = TRUE)
 
     if (parallel == "multicore" && .Platform$OS.type == "windows") {
-      pls_msg_warn(
+      pls_msg_warn(paste0(
         "The `boot.parallel = 'multicore'` option is not supported on Windows.\n",
         "Falling back to `boot.parallel = 'multisession'`."
-      )
+      ))
       parallel <- "multisession"
     }
 

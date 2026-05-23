@@ -149,7 +149,7 @@ specifySubModel <- function(parTable,
   )
 
   if (info$is.mlm && !info$is.mcpls) {
-    message(
+    pls_msg_note(
       "Multilevel/Mixed-Effects PLSc models are currently under development!\n",
       "Consider passing `mcpls=TRUE` to yield more consistent results."
     )

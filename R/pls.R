@@ -192,15 +192,12 @@ pls <- function(syntax,
   boot.parallel <- match.arg(tolower(boot.parallel), c("no", "multicore", "multisession", "snow"))
 
   if (!is.null(boot.ncpus)) {
-    warning(
-      "The `boot.ncpus` argument is deprecated; please use `boot.ncores` instead.",
-      call. = FALSE
-    )
+    pls_msg_warn("The `boot.ncpus` argument is deprecated; please use `boot.ncores` instead.")
     boot.ncores <- boot.ncpus
   }
 
   if (!is.null(sample)) {
-    warning("The sample argument is deprecated, please use the boot.R argument instead!")
+    pls_msg_warn("The sample argument is deprecated, please use the boot.R argument instead!")
     boot.R <- sample
   }
 
@@ -245,7 +242,7 @@ pls <- function(syntax,
     boot <- tryCatch(
       bootstrap(model),
       error = \(e) {
-        warning2("Bootstrapping FAILED!\nMessage: ", conditionMessage(e))
+        pls_msg_warn("Bootstrapping FAILED!\nMessage: ", conditionMessage(e))
         NULL
       }
     )
@@ -314,6 +311,6 @@ estimatePLS <- function(model, ...) {
       updateEstimationStatus()
 
   }, error = function(e) {
-    stop2("Model estimation FAILED!\n", "Message: ", conditionMessage(e))
+    pls_msg_stop("Model estimation FAILED!\n", "Message: ", conditionMessage(e))
   })
 }

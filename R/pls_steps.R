@@ -18,7 +18,7 @@ estimatePLS_Step0_5 <- function(model) {
     if (model@status$convergence) {
       break
     } else if (i >= max.iter.0_5) {
-      warning("Convergence not reached. Stopping.")
+      pls_msg_warn("Convergence not reached. Stopping.")
       model@status$is.admissible <- FALSE
       break
     }

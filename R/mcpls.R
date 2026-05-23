@@ -28,7 +28,7 @@ mcpls <- function(
 
   if (fixed.seed && is.null(rng.seed)) {
     rng.seed <- floor(stats::runif(1L, min = 0, max = 9999999))
-    if (verbose) message(sprintf("Using fixed seed %i...", rng.seed))
+    if (verbose) pls_msg_note(sprintf("Using fixed seed %i...", rng.seed))
   }
 
   if (isMLM(fit0)) {
@@ -87,7 +87,7 @@ mcpls <- function(
     # If we're not using a Nonlinear Regression to solve for the convergence
     # point, we will get a biased root with Polyak-Juditsky averaging, if
     # we have no warmup
-    if (verbose) message("Warming up...")
+    if (verbose) pls_msg_note("Warming up...")
 
     mcfit <- robbinsMonro1951(
       p               = p,
@@ -119,7 +119,7 @@ mcpls <- function(
 
   iter <- mcfit$iter
   if (iter >= max.iter && !polyak.juditsky) {
-    warning2(
+    pls_msg_warn(
       "Maximum number of (initial) iterations reached!\n",
       sprintf("Attempting to use Polyak Juditsky averaging...")
     )
@@ -142,7 +142,7 @@ mcpls <- function(
 
   # Check status of (last) mcfit
   if (mcfit$iter >= max.iter) {
-    warning2(
+    pls_msg_warn(
       "Maximum number of iterations reached!\n",
       "Parameter estimates might be unreliable!"
     )

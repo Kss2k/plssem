@@ -36,10 +36,10 @@ plslmer <- function(plsModel, fast = FALSE) {
   cluster     <- plsModel@info$cluster
   consistent  <- plsModel@info$consistent
 
-  stopif(!is.character(lme4.syntax), "`lme4.syntax` must be a character vector!")
+  pls_stopif(!is.character(lme4.syntax), "`lme4.syntax` must be a character vector!")
 
-  stopif(length(cluster) != 1L || !is.character(cluster),
-         "`cluster` must be a character string of length 1. If lme4.syntax is provided!")
+  pls_stopif(length(cluster) != 1L || !is.character(cluster),
+             "`cluster` must be a character string of length 1. If lme4.syntax is provided!")
 
   fit.c <- plsModel@fitConsistent
   fit.u <- plsModel@fitUncorrected
@@ -208,14 +208,14 @@ plslmer <- function(plsModel, fast = FALSE) {
         next
 
       } else if (!lhs.i %in% colnames(Correction) || !rhs.i %in% rownames(Correction)) {
-        warning("Unable to identify correction term for ", params[[i]], "!")
+        pls_msg_warn("Unable to identify correction term for ", params[[i]], "!")
         next
       }
 
       term <- Correction[rhs.i, lhs.i]
 
       if (is.na(term) || is.nan(term)) {
-        warning("Correction term for ", params[[i]], " is NaN!")
+        pls_msg_warn("Correction term for ", params[[i]], " is NaN!")
         next
       }
 
@@ -401,7 +401,7 @@ meanDiagZGZt <- function(fit, varCorr.c, dep = NULL) {
 
     Sigma <- varCorr.c[[gname]]
     if (is.null(Sigma)) {
-      stop("varCorr.c is missing grouping factor '", gname, "'.")
+      pls_msg_stop("varCorr.c is missing grouping factor '", gname, "'.")
     }
     Sigma <- as.matrix(Sigma)
 
@@ -415,13 +415,13 @@ meanDiagZGZt <- function(fit, varCorr.c, dep = NULL) {
     rn <- rownames(Sigma)
     if (is.null(rn)) rn <- colnames(Sigma)
     if (is.null(rn)) {
-      stop("Sigma for grouping factor '", gname, "' must have row/col names.")
+      pls_msg_stop("Sigma for grouping factor '", gname, "' must have row/col names.")
     }
 
     missing_cols <- setdiff(rn, colnames(Zsmall))
     if (length(missing_cols) > 0) {
-      stop("For grouping factor '", gname, "', Z columns missing: ",
-           paste(missing_cols, collapse = ", "))
+      pls_msg_stop("For grouping factor '", gname, "', Z columns missing: ",
+                   paste(missing_cols, collapse = ", "))
     }
 
     Zsmall <- Zsmall[, rn, drop = FALSE]
@@ -458,7 +458,7 @@ sigma2FromUnitVarY <- function(fit, beta.c, varCorr.c, targetVarY = 1,
   for (VC in varCorr.c) {
     Sigma_u <- as.matrix(VC)
     re_pars <- rownames(Sigma_u)
-    stopif(is.null(re_pars), "Random effect covariance matrix must have rownames.")
+    pls_stopif(is.null(re_pars), "Random effect covariance matrix must have rownames.")
 
     dep_regex <- stringr::str_replace_all(
       dep,
@@ -475,9 +475,9 @@ sigma2FromUnitVarY <- function(fit, beta.c, varCorr.c, targetVarY = 1,
     slope_rhs <- rhs[!is_int]
     if (length(slope_rhs)) {
       missing <- setdiff(slope_rhs, colnames(Cov.lv))
-      stopif(length(missing),
-             "Missing variables in covariance matrix: ",
-             paste0(missing, collapse = ", "))
+      pls_stopif(length(missing),
+                 "Missing variables in covariance matrix: ",
+                 paste0(missing, collapse = ", "))
 
       slope_pars <- re_pars[!is_int]
       Ezz[slope_pars, slope_pars] <- Cov.lv[slope_rhs, slope_rhs, drop = FALSE]

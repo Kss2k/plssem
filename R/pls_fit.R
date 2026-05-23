@@ -72,9 +72,9 @@ getFitPLSModel <- function(model, consistent = TRUE) {
   mask         <- outer(is.formative, is.formative, FUN = "&")
   fitTheta[mask] <- fitThetaFull[mask]
 
-  warnif(any(crossLoaded),
-         "Did not expect any cross loaded indicators,\n",
-         "when calculating indicator residuals!")
+  pls_warnif(any(crossLoaded),
+             "Did not expect any cross loaded indicators,\n",
+             "when calculating indicator residuals!")
 
   for (ind in inds.a) {                                  # Guard for NaN in fitMeasurement
     j   <- max(which.max(abs(fitMeasurement[ind, ])), 1) # max(numeric(0), 1) = 1

@@ -135,7 +135,7 @@ setMethod("pls_predict", "PlsModel", function(object,
     all = all.vars,
     exog = intersect(all.vars, inds.x),
     endog = intersect(all.vars, inds.y),
-    stop2("Unrecognize value for benchmark.vars argument: ", benchmark.vars)
+    pls_msg_stop("Unrecognize value for benchmark.vars argument: ", benchmark.vars)
   )
 
   if (!is.null(benchmark)) {
@@ -146,29 +146,29 @@ setMethod("pls_predict", "PlsModel", function(object,
       benchmarkByVar <- stats::setNames(rep(benchmark, length(pred.vars)), pred.vars)
 
     } else if (is.null(names(benchmark)) || all(names(benchmark) == "")) {
-      stopif(length(benchmark) != length(pred.vars),
-             "`benchmark` must have length 1 or one entry per variable.")
+      pls_stopif(length(benchmark) != length(pred.vars),
+                 "`benchmark` must have length 1 or one entry per variable.")
       benchmarkByVar <- stats::setNames(benchmark, pred.vars)
 
     } else {
       missing <- setdiff(pred.vars, names(benchmark))
       extra <- setdiff(names(benchmark), pred.vars)
 
-      stopif(length(missing),
-             "Missing benchmark type(s) for variable(s): ",
-             paste0(missing, collapse = ", "))
-      warnif(length(extra),
-             "Ignoring benchmark type(s) for unknown variable(s): ",
-             paste0(extra, collapse = ", "))
+      pls_stopif(length(missing),
+                 "Missing benchmark type(s) for variable(s): ",
+                 paste0(missing, collapse = ", "))
+      pls_warnif(length(extra),
+                 "Ignoring benchmark type(s) for unknown variable(s): ",
+                 paste0(extra, collapse = ", "))
 
       benchmarkByVar <- benchmark[pred.vars]
       benchmarkByVar <- stats::setNames(as.character(benchmarkByVar), pred.vars)
     }
 
     invalid <- setdiff(unique(benchmarkByVar), allowedBenchmarks)
-    stopif(length(invalid),
-           "Invalid `benchmark` type(s): ", paste0(invalid, collapse = ", "),
-           "\nAllowed: ", paste0(allowedBenchmarks, collapse = ", "))
+    pls_stopif(length(invalid),
+               "Invalid `benchmark` type(s): ", paste0(invalid, collapse = ", "),
+               "\nAllowed: ", paste0(allowedBenchmarks, collapse = ", "))
 
     trainOuterX <- getOuterDataMatrices(combined, newdata = combined@data,
                                         std.ord.exp = std.ord.exp)
@@ -341,7 +341,7 @@ print.PlsSemPredict <- function(x, ...) {
       .bm_check_ord_mats(type = type, X.ord = X.ord, X.ord.pred = X.ord.pred)
       .bm_ord_mae(yObs = X.ord[,variable], yPred = X.ord.pred[,variable])
     },
-    stop("Unhandled benchmark type: ", type, call. = FALSE)
+    pls_msg_stop("Unhandled benchmark type: ", type)
   )
 }
 
@@ -353,7 +353,7 @@ assignScoresOrdinalNormal <- function(x, std.ord.exp = FALSE, probs = NULL, eps 
   K    <- length(freq)
   n    <- sum(freq)
 
-  stopif(K < 2, "Need at least 2 ordered categories for variable!")
+  pls_stopif(K < 2, "Need at least 2 ordered categories for variable!")
 
   # cumulative probs for interior thresholds (K-1 of them)
   if (is.null(probs)) probs <- cumsum(freq)[-K] / n  # drop last; sums to 1
@@ -402,7 +402,7 @@ assignScoresOrdinalMonteCarlo <- function(x, y, y.i, std.ord.exp = FALSE,
   K    <- length(freq)
   n    <- sum(freq)
 
-  stopif(K < 2, "Need at least 2 ordered categories for variable!")
+  pls_stopif(K < 2, "Need at least 2 ordered categories for variable!")
 
   # map each observed category to its conditional mean
   x.out <- rep(NA_real_, length(x.i))
@@ -457,8 +457,8 @@ getOuterDataMatrices <- function(model, newdata = NULL, std.ord.exp = FALSE) {
     }
 
     missing <- setdiff(colnames(olddata), colnames(newdata))
-    stopif(length(missing), "Missing variables in `newdata`!\n",
-           "Missing: ", paste0(missing, collapse = ", "))
+    pls_stopif(length(missing), "Missing variables in `newdata`!\n",
+               "Missing: ", paste0(missing, collapse = ", "))
 
     newdata.df <- as.data.frame(newdata)[colnames(olddata)]
     is.ord <- vapply(newdata.df, FUN.VALUE = logical(1L), FUN = is.ordered)
@@ -482,13 +482,13 @@ getOuterDataMatrices <- function(model, newdata = NULL, std.ord.exp = FALSE) {
     ncatOld <- length(uniqueComplete(olddata[,ord]))
     ncatNew <- length(uniqueComplete(newdata[,ord]))
 
-    stopif(ncatNew < ncatOld,
-           "There are fewer categories for ", ord, " in the test data (",
-           ncatNew, "),\nthan in the training data (", ncatOld, ")!")
+    pls_stopif(ncatNew < ncatOld,
+               "There are fewer categories for ", ord, " in the test data (",
+               ncatNew, "),\nthan in the training data (", ncatOld, ")!")
 
-    stopif(ncatNew > ncatOld,
-           "There are more categories for ", ord, " in the test data (",
-           ncatNew, "),\nthan in the training data (", ncatOld, ")!")
+    pls_stopif(ncatNew > ncatOld,
+               "There are more categories for ", ord, " in the test data (",
+               ncatNew, "),\nthan in the training data (", ncatOld, ")!")
   }
 
   newdata.cont <- newdata
@@ -561,21 +561,21 @@ pls_construct_scores <- function(object, ...) {
 
 
 .bm_check_ord_only <- function(type, variable, ordered) {
-  stopif(!(variable %in% ordered),
-         "Benchmark `", type, "` is only available for ordered variables: ",
-         variable)
+  pls_stopif(!(variable %in% ordered),
+             "Benchmark `", type, "` is only available for ordered variables: ",
+             variable)
 }
 
 
 .bm_check_ord_mats <- function(type, X.ord, X.ord.pred) {
-  stopif(is.null(X.ord) || is.null(X.ord.pred),
-         "Ordinal matrices are NULL; cannot compute `", type, "`.")
+  pls_stopif(is.null(X.ord) || is.null(X.ord.pred),
+             "Ordinal matrices are NULL; cannot compute `", type, "`.")
 }
 
 
 .bm_r2 <- function(variable, xObs, xPred, ordered, yOrd = NULL) {
   if (variable %in% ordered) {
-    stopif(is.null(yOrd), "Missing observed ordinal values for: ", variable)
+    pls_stopif(is.null(yOrd), "Missing observed ordinal values for: ", variable)
     r <- tryCatchNA(tetracor(x = xPred, y = yOrd))
   } else {
     r <- tryCatchNA(stats::cor(x = xPred, y = xObs, use = "complete.obs"))
@@ -595,7 +595,7 @@ pls_construct_scores <- function(object, ...) {
 
 
 .bm_q2_predict <- function(variable, xObs, xPred, trainMean) {
-  stopif(is.null(trainMean), "Missing training mean; cannot compute Q2_predict.")
+  pls_stopif(is.null(trainMean), "Missing training mean; cannot compute Q2_predict.")
   sse <- sum((xPred - xObs)^2, na.rm = TRUE)
   sst <- sum((xObs - trainMean[variable])^2, na.rm = TRUE)
   if (!is.finite(sst) || sst <= 0) return(NA_real_)

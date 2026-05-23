@@ -4,6 +4,12 @@ printf <- function(...) {
 }
 
 
+messagef <- function(...) {
+  message(sprintf(...), appendLF = FALSE)
+  utils::flush.console()
+}
+
+
 quickdf <- function(l) {
   class(l) <- "data.frame"
   attr(l, "row.names") <- .set_row_names(length(l[[1]]))

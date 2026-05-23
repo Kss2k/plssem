@@ -96,7 +96,7 @@ checkAndFixDTypesPLS_Data <- function(X, check = colnames(X)) {
 
   varIsMissing <- !check %in% colnames(X)
   pls_stopif(any(varIsMissing),
-             "Missing variables: ", paste0(check[varIsMissing], collapse = ", ")
+    "Missing variables: ", paste0(check[varIsMissing], collapse = ", ")
   )
 
   isNominal <- vapply(X[check], FUN.VALUE = logical(1L), FUN = is.nominal)
@@ -113,9 +113,9 @@ checkAndFixDTypesPLS_Data <- function(X, check = colnames(X)) {
   }
 
   pls_stopif(any(isNominal),
-             "Please recode nominal categorical (e.g., 'factor' and 'character')\n",
-             "into dummy variables, and specify the dummy variables as ordered,\n",
-             "using the `ordered` argument!"
+    "Please recode nominal categorical (e.g., 'factor' and 'character')\n",
+    "into dummy variables, and specify the dummy variables as ordered,\n",
+    "using the `ordered` argument!"
   )
 
   X

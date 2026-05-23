@@ -136,13 +136,13 @@ pls_msg <- function(wat, txt_width = getOption("width", 80L),
 
 
 pls_stopif <- function(cond, ...) {
-  if (length(cond) > 0 && cond[[1L]])
+  if (length(cond) > 0 && !is.na(cond[[1L]]) && cond[[1L]])
     pls_msg_stop(...)
 }
 
 
 pls_warnif <- function(cond, ..., .newline = FALSE) {
-  if (length(cond) > 0 && cond[[1L]]) {
+  if (length(cond) > 0 && !is.na(cond[[1L]]) && cond[[1L]]) {
     if (.newline) cat("\n")
     pls_msg_warn(...)
   }
@@ -150,7 +150,7 @@ pls_warnif <- function(cond, ..., .newline = FALSE) {
 
 
 pls_warnif_immediate <- function(cond, ..., .newline = FALSE) {
-  if (length(cond) > 0 && cond[[1L]]) {
+  if (length(cond) > 0 && !is.na(cond[[1L]]) && cond[[1L]]) {
     if (.newline) cat("\n")
     pls_msg_warn_immediate(...)
   }

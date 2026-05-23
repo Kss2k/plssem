@@ -1,13 +1,13 @@
 # Copied (almost) directly from lavaan/R/lav_msg.R
 
 # Displays a message (... concatenated with spaces in between) with header
-# 'modsem(function):', except when showheader == FALSE, and formatted to have
+# 'plssem(function):', except when showheader == FALSE, and formatted to have
 # a maximum line length of 'txt_width' while all but the first line start with
 # 'indent' spaces. If a footer is specified it is appended to the formatted text
 # 'as is'. The message is shown via R function 'message()'.
 pls_msg_note <- function(..., showheader = FALSE, footer = "") {
   wat <- unlist(list(...), use.names = FALSE)
-  if (!showheader) wat <- c("modsem NOTE: ___", wat)
+  if (!showheader) wat <- c("plssem NOTE: ___", wat)
   msg <- pls_msg(wat, showheader = showheader)
   if (footer != "") msg <- paste(msg, footer, sep = "\n")
   message(msg, domain = NA)
@@ -67,7 +67,7 @@ pls_msg <- function(wat, txt_width = getOption("width", 80L),
       )
       if (length(x) == 3L) {
         # needed if a function specified in namespace, e.g.
-        # as.character(str2lang("modsem::sem(m, d)")[[1L]])
+        # as.character(str2lang("plssem::sem(m, d)")[[1L]])
         x <- x[[3L]]
       }
       skip <- FALSE
@@ -84,9 +84,9 @@ pls_msg <- function(wat, txt_width = getOption("width", 80L),
       sc_i <- sc_i - 1L
     }
     if (sc_naam == "") {
-      header <- "modsem: ___"
+      header <- "plssem: ___"
     } else {
-      header <- paste0("modsem->", sc_naam, "(): ___")
+      header <- paste0("plssem->", sc_naam, "(): ___")
     }
   } else {
     header <- ""
@@ -200,16 +200,16 @@ pls_msg_view <- function(x,
   rv
 }
 # Warning for deprecated functions
-# Like base::.Deprecated but specialised for modsem
+# Like base::.Deprecated but specialised for plssem
 # parameter times specifies how many times the warning should be generated
-# during one "modsem-package-session"
+# during one "plssem-package-session"
 pls_deprecated <- function(new,
                            old = as.character(sys.call(sys.parent()))[1L],
                            times = 1L) {
-  dprmsg <-  get0(paste0("dpr_", old), modsem_cache_env,
+  dprmsg <-  get0(paste0("dpr_", old), plssem_cache_env,
                   ifnotfound = as.integer(times))
   if (dprmsg <= 0L) return(invisible(NULL))
-  assign(paste0("dpr_", old), dprmsg - 1L, modsem_cache_env)
+  assign(paste0("dpr_", old), dprmsg - 1L, plssem_cache_env)
   msg <- c(gettextf("'%s' is deprecated.\n", old),
          gettextf("Use '%s' instead.\n", new),
          gettext("See help(\"Deprecated\")"))
@@ -222,12 +222,12 @@ pls_deprecated <- function(new,
 # method_par specifies the name of the parameter used for a 'method'
 # arg_par specifies the name of the deprecated parameter
 # parameter times specifies how many times the warning should be generated
-# during one "modsem-package-session"
+# during one "plssem-package-session"
 pls_deprecated_args <- function(method_par, arg_par, times = 1L) {
-  dprmsg <-  get0(paste0("dpr_", method_par, arg_par), modsem_cache_env,
+  dprmsg <-  get0(paste0("dpr_", method_par, arg_par), plssem_cache_env,
                   ifnotfound = as.integer(times))
   if (dprmsg <= 0L) return(invisible(NULL))
-  assign(paste0("dpr_", method_par, arg_par), dprmsg - 1L, modsem_cache_env)
+  assign(paste0("dpr_", method_par, arg_par), dprmsg - 1L, plssem_cache_env)
   msg <- c(gettextf("Argument '%s' is deprecated.\n", arg_par),
       gettextf("The arguments for '%s' can now be provided in '%s' itself.\n",
       method_par, method_par))

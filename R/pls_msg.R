@@ -56,7 +56,8 @@ pls_msg <- function(wat, txt_width = getOption("width", 80L),
       "^eval$", "^try", "^doTryCatch", "^pls_msg", "^stop$", "^warning$",
       "^which$", "^unique$", "^as\\.", "^unlist$", "^message$",
       "^source$", "^withVisible$", "^tryCatch.W.E$", "^withCallingHandlers$",
-      "^do.call$", "^paste", "^pls_stopif", "^pls_warnif"
+      "^do.call$", "^paste", "^pls_stopif", "^pls_warnif", "^warn", "^stop",
+      "^message"
     )
     sc <- sys.calls()
     sc_i <- length(sc)

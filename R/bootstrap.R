@@ -31,7 +31,7 @@ bootstrap <- function(model,
     'bootstrapping to be enabled! Try `boot.parallel="multisession"`'
   )
 
-  model.base <- model
+  baseModel <- model
 
   boot.optimize <- isTRUE(model@info$boot$optimize)
   mc.boot.control <- prepMCBootControl(
@@ -40,12 +40,24 @@ bootstrap <- function(model,
     model         = model
   )
 
-  combinedCoefs <- combinedModel(model)@params$values
-  # na.par might be stale with mc.delta=TRUE...
+  if (mc.delta.se && is.mcpls) {
+    # We're bootstrapping only the inner model coefficients
+    # not those of the outer (mcpls) model
+
+    innerBaseModel <- baseModel
+    isMCPLS(innerBaseModel) <- FALSE
+
+    innerBaseModel <- estimatePLS(innerBaseModel)
+    prototypeCoefs <- modelParams(innerBaseModel)$values
+
+  } else {
+    # Else we just get the current parameters
+    prototypeCoefs <- modelParams(combinedModel(model))$values
+  }
   
   na.par <- stats::setNames(
-    rep(NA_real_, length(combinedCoefs)),
-    names(combinedCoefs)
+    rep(NA_real_, length(prototypeCoefs)),
+    names(prototypeCoefs)
   )
 
   P_START <- model@info$mc.args$p.start
@@ -54,7 +66,7 @@ bootstrap <- function(model,
     tryCatch({
       sampleData <- resample(data, cluster = cluster)
       sampleS    <- getCorrMat(sampleData, ordered = ordered, probit = is.probit)
-      model.b    <- model.base
+      model.b    <- baseModel
 
       model.b@data       <- sampleData
       model.b@matrices$S <- sampleS
@@ -221,7 +233,7 @@ bootstrap <- function(model,
 
   resultsMat <- do.call(rbind, results)
   rownames(resultsMat) <- ids
-  colnames(resultsMat) <- names(combinedModel(model)@params$values)
+  colnames(resultsMat) <- names(prototypeCoefs)
 
   vcov <- stats::cov(resultsMat, use = "complete.obs")
 

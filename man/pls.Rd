@@ -31,6 +31,7 @@ pls(
   mc.polyak.juditsky = TRUE,
   mc.pj.extrapolate = TRUE,
   mc.tol = if (mc.polyak.juditsky) 5e-04 else 0.001,
+  mc.delta.se = TRUE,
   mc.fn.args = list(),
   verbose = interactive(),
   boot.optimize = TRUE,
@@ -134,6 +135,9 @@ instead, and the plain Polyak-Juditsky average is used.
 Only relevant when \code{mc.polyak.juditsky = TRUE}.}
 
 \item{mc.tol}{Tolerance in MC-PLS algorithm.}
+
+\item{mc.delta.se}{Should delta-method standard errors be computed for
+MC-PLS estimates?}
 
 \item{mc.fn.args}{Additional arguments to MC-PLS algorithm, mainly for controlling
 the step size.}

@@ -49,7 +49,8 @@ initModelParams <- function(model) {
     values     = rep(NA_real_, k),
     values.old = NULL,
     se         = rep(NA_real_, k),
-    vcov       = NULL
+    vcov       = NULL,
+    Jacobian   = NULL
   )
 
   model
@@ -63,6 +64,7 @@ initModelMcArgs <- function(min.iter,
                             fixed.seed,
                             polyak.juditsky,
                             pj.extrapolate,
+                            delta.se,
                             fn.args) {
   list(
     min.iter        = min.iter,
@@ -71,7 +73,8 @@ initModelMcArgs <- function(min.iter,
     tol             = tol,
     fixed.seed      = fixed.seed,
     polyak.juditsky = polyak.juditsky,
-    pj.extrapolate          = pj.extrapolate,
+    pj.extrapolate  = pj.extrapolate,
+    delta.se        = delta.se,
     fn.args         = fn.args,
     rng.seed        = NULL,
     p.start         = NULL

@@ -10,12 +10,13 @@ bootstrap <- function(model,
   parallel <- match.arg(parallel, c("no", "multicore", "multisession", "snow"))
   if (parallel == "snow") parallel <- "multisession"
 
-  data      <- model@data
-  cluster   <- model@info$cluster
-  is.probit <- model@info$is.probit
-  is.mcpls  <- model@info$is.mcpls
-  ordered   <- model@info$ordered
-  results   <- vector("list", R)
+  data        <- model@data
+  cluster     <- model@info$cluster
+  is.probit   <- model@info$is.probit
+  is.mcpls    <- model@info$is.mcpls
+  ordered     <- model@info$ordered
+  results     <- vector("list", R)
+  mc.delta.se <- model@info$mc.args$delta.se
 
   # Check misspecified user arguments
   pls_warnif(
@@ -40,6 +41,8 @@ bootstrap <- function(model,
   )
 
   combinedCoefs <- combinedModel(model)@params$values
+  # na.par might be stale with mc.delta=TRUE...
+  
   na.par <- stats::setNames(
     rep(NA_real_, length(combinedCoefs)),
     names(combinedCoefs)
@@ -55,6 +58,9 @@ bootstrap <- function(model,
 
       model.b@data       <- sampleData
       model.b@matrices$S <- sampleS
+
+      if (mc.delta.se && is.mcpls)
+        isMCPLS(model.b) <- FALSE
 
       mc.args             <- model.b@info$mc.args
       boot.fixed.seed     <- mc.boot.control$fixed.seed
@@ -218,6 +224,36 @@ bootstrap <- function(model,
   colnames(resultsMat) <- names(combinedModel(model)@params$values)
 
   vcov <- stats::cov(resultsMat, use = "complete.obs")
+
+  if (mc.delta.se) {
+    combined <- combinedModel(model)
+    params <- modelParams(combined)
+
+    if (!is.null(params$Jacobian)) {
+      Jacobian <- params$Jacobian
+      pars <- intersect(colnames(Jacobian), colnames(vcov))
+
+      vcov.sub <- vcov[pars, pars, drop = FALSE]
+      J <- Jacobian[pars, pars, drop = FALSE]
+
+      tryCatch({
+        J.inv <- solve(J)
+        vcov.mc <- J.inv %*% vcov.sub %*% t(J.inv)
+        
+        vcov[] <- 0
+        vcov[pars, pars] <- vcov.mc[pars, pars]
+
+      }, error = function(e) {
+        pls_msg_warn(
+          "Calculation of delta standard errors failed! Message:",
+          conditionMessage(Jacobian)
+        )
+
+        vcov[] <<- NA_real_
+      })
+    }
+  }
+
   se <- sqrt(diag(vcov))
   se[se <= zero.tol] <- NA_real_
 

@@ -1,16 +1,18 @@
 mcpls <- function(
   fit0,
-  p.start         = fit0@info$mc.args$p.start,
-  min.iter        = fit0@info$mc.args$min.iter,
-  max.iter        = fit0@info$mc.args$max.iter,
-  mc.reps         = fit0@info$mc.args$mc.reps,
-  rng.seed        = fit0@info$mc.args$rng.seed,
-  tol             = fit0@info$mc.args$tol,
-  fixed.seed      = fit0@info$mc.args$fixed.seed,
-  verbose         = fit0@info$verbose,
-  polyak.juditsky = fit0@info$mc.args$polyak.juditsky,
-  fn.args         = fit0@info$mc.args$fn.args,
-  pj.extrapolate  = fit0@info$mc.args$pj.extrapolate,
+  p.start          = fit0@info$mc.args$p.start,
+  min.iter         = fit0@info$mc.args$min.iter,
+  max.iter         = fit0@info$mc.args$max.iter,
+  mc.reps          = fit0@info$mc.args$mc.reps,
+  rng.seed         = fit0@info$mc.args$rng.seed,
+  tol              = fit0@info$mc.args$tol,
+  fixed.seed       = fit0@info$mc.args$fixed.seed,
+  verbose          = fit0@info$verbose,
+  polyak.juditsky  = fit0@info$mc.args$polyak.juditsky,
+  fn.args          = fit0@info$mc.args$fn.args,
+  pj.extrapolate   = fit0@info$mc.args$pj.extrapolate,
+  delta.jacobian   = fit0@info$mc.args$delta.se,
+  delta.fixed.seed = TRUE,
   ...
 ) {
   fit0.base <- fit0
@@ -162,6 +164,23 @@ mcpls <- function(
     clusterSizes = clusterSizes,
     clusterName  = clusterName
   )
+
+  if (delta.jacobian) {
+
+    if (delta.fixed.seed && is.null(rng.seed)) {
+      rng.seed <- floor(stats::runif(1L, min = 0, max = 9999999))
+
+      if (verbose) pls_msg_note(
+        sprintf("Calculating Jacobian using fixed seed %i...", rng.seed)
+      )
+    }
+
+    p <- stats::setNames(mcfit$root, paste0(par1$lhs, par1$op, par1$rhs))
+    J <- calcMcJacobian(.f = .f, p = p)
+
+    fit1.combined@params$Jacobian <- J
+  }
+
 
   fit1.combined@status$iterations    <- mcfit$iter
   fit1.combined@info$mc.args$p.start <- as.vector(mcfit$root)
@@ -355,4 +374,24 @@ getPROBS <- function(data, ordered) {
     PROBS[[ord]] <- pct[-length(pct)]
   }
   PROBS
+}
+
+
+calcMcJacobian <- function(.f, p0, eps = 5e-3) {
+
+  J <- matrix(
+    NA_real_,
+    nrow = length(p0), ncol = length(p0),
+    dimnames = list(names(p0), names(p0))
+  )
+
+  for (i in seq_along(p0)) {
+    pp <- pm <- p0
+    pp[i] <- pp[i] + eps
+    pm[i] <- pm[i] - eps
+
+    J[,i] <- (.f(pp) - .f(pm)) / (2 * eps)
+  }
+
+  J
 }

@@ -218,6 +218,17 @@ isMLM <- function(object) {
 }
 
 
+isMCPLS <- function(object) {
+  isTRUE(object@info$is.mcpls)
+}
+
+
+`isMCPLS<-` <- function(object, value) {
+  object@info$is.mcpls <- value
+  object
+}
+
+
 constructReliabilities <- function(object) {
   modelFit(object)$Q^2
 }

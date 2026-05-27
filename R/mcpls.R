@@ -175,7 +175,8 @@ mcpls <- function(
       )
     }
 
-    p <- stats::setNames(mcfit$root, paste0(par1$lhs, par1$op, par1$rhs))
+    nm <- paste0(par1$lhs, par1$op, par1$rhs)
+    p <- stats::setNames(mcfit$root, nm[par1$is.free])
     J <- calcMcJacobian(.f = .f, p = p)
 
     fit1.combined@params$Jacobian <- J

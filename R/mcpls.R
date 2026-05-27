@@ -64,7 +64,7 @@ mcpls <- function(
     fit.sim <- fit0.base
     X       <- Rfast::standardise(as.matrix(sim.ov[vars]))
     S       <- Rfast::cova(X)
-    
+
     if (!is.null(sim$cluster))
       attr(X, "cluster") <- sim$cluster
 
@@ -220,12 +220,16 @@ getFreeParamsTable <- function(model) {
   op  <- parTable$op
   rhs <- parTable$rhs
 
+  inds.b <- rhs[parTable$op == "<~"]
+
   cond1 <- !(lhs == rhs & op == "~~" & !grepl("~", rhs))
   cond2 <- !((isIntTermVariable(lhs) | isIntTermVariable(rhs)) & op == "~~")
   cond3 <- op != "~1"
+  cond4 <- !(lhs %in% inds.b & op == "~~") & !(rhs %in% inds.b & op == "~~")
+  cond  <- cond1 & cond2 & cond3 & cond4
 
-  out <- parTable[cond1 & cond2 & cond3, , drop = FALSE]
-  attr(out, "cond") <- cond1 & cond2 & cond3
+  out <- parTable[cond, , drop = FALSE]
+  attr(out, "cond") <- cond
 
   out$is.free <- out$op != "<~"
   out

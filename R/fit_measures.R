@@ -158,7 +158,7 @@ calcChisq <- function(Observed, Expected, N, p = NCOL(Observed)) {
 }
 
 
-calcChisqDf <- function(model, saturated = FALSE) {
+calcChisqDf <- function(model, saturated = FALSE, count.interactions = FALSE) {
   tryCatch({
 
     info   <- model@info
@@ -172,9 +172,17 @@ calcChisqDf <- function(model, saturated = FALSE) {
     inds   <- info$indsLvs
 
     p         <- NCOL(M$S)
-    Gamma     <- fit$fitStructural
+    freeGamma <- M$select$gamma
     total.df  <- p * (p - 1) / 2
     df        <- total.df
+
+    if (!count.interactions) {
+      xis <- intersect(info$xis, lvs)
+      freeGamma <- freeGamma[
+        !grepl(":", rownames(freeGamma)),
+        !grepl(":", colnames(freeGamma)), drop = FALSE
+      ]
+    }
 
     for (lv in mode.a) {
       df <- df - length(inds[[lv]])
@@ -192,7 +200,7 @@ calcChisqDf <- function(model, saturated = FALSE) {
     }
 
     if (!info$is.cfa && !saturated)
-      df <- df - sum(M$select$gamma)
+      df <- df - sum(freeGamma)
 
     if (hasHigherOrderModel(model))
       df <- df + calcChisqDf(higherOrderModel(model))

@@ -11,7 +11,7 @@ mcpls <- function(
   polyak.juditsky  = fit0@info$mc.args$polyak.juditsky,
   fn.args          = fit0@info$mc.args$fn.args,
   pj.extrapolate   = fit0@info$mc.args$pj.extrapolate,
-  delta.jacobian   = fit0@info$mc.args$delta.se,
+  delta.jacobian   = fit0@info$mc.args$delta.se && fit0@info$boot$bootstrap,
   delta.fixed.seed = TRUE,
   ...
 ) {

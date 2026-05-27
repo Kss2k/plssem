@@ -31,7 +31,7 @@ bootstrap <- function(model,
     'bootstrapping to be enabled! Try `boot.parallel="multisession"`'
   )
 
-  baseModel <- model
+  model.base <- model
 
   boot.optimize <- isTRUE(model@info$boot$optimize)
   mc.boot.control <- prepMCBootControl(
@@ -40,25 +40,26 @@ bootstrap <- function(model,
     model         = model
   )
 
-  if (mc.delta.se && is.mcpls) {
-    # We're bootstrapping only the inner model coefficients
-    # not those of the outer (mcpls) model
-
-    innerBaseModel <- baseModel
-    isMCPLS(innerBaseModel) <- FALSE
-
-    innerBaseModel <- estimatePLS(innerBaseModel)
-    prototypeCoefs <- modelParams(innerBaseModel)$values
-
-  } else {
-    # Else we just get the current parameters
-    prototypeCoefs <- modelParams(combinedModel(model))$values
-  }
+  combinedCoefs <- combinedModel(model)@params$values
+  # parTemplate might be stale with mc.delta=TRUE...
   
-  na.par <- stats::setNames(
-    rep(NA_real_, length(prototypeCoefs)),
-    names(prototypeCoefs)
+  parTemplate <- stats::setNames(
+    rep(NA_real_, length(combinedCoefs)),
+    names(combinedCoefs)
   )
+
+  formatBootPars <- function(par) {
+    out <- parTemplate
+
+    want <- names(combinedCoefs)
+    have <- names(par)
+    common <- intersect(have, want)
+
+    if (length(common))
+      out[common] <- par[common]
+
+    out
+  }
 
   P_START <- model@info$mc.args$p.start
 
@@ -66,7 +67,7 @@ bootstrap <- function(model,
     tryCatch({
       sampleData <- resample(data, cluster = cluster)
       sampleS    <- getCorrMat(sampleData, ordered = ordered, probit = is.probit)
-      model.b    <- baseModel
+      model.b    <- model.base
 
       model.b@data       <- sampleData
       model.b@matrices$S <- sampleS
@@ -100,9 +101,11 @@ bootstrap <- function(model,
 
       })
 
-      par <- combinedModel(model.b)@params$values
+      par <- formatBootPars(
+        modelParams(combinedModel(model.b))$values
+      )
 
-      if (low.tol.penalty > 0 && is.mcpls) {
+      if (low.tol.penalty > 0 && is.mcpls && !mc.delta.se) {
         k <- length(par)
         par <- par + stats::rnorm(k, mean = 0, sd = low.tol.penalty)
       }
@@ -111,9 +114,11 @@ bootstrap <- function(model,
       par
 
     }, error = \(e) {
-      pls_msg_warn(paste0("Bootstrap replicate ", i, " failed: ", conditionMessage(e)))
+      pls_msg_warn(
+        paste0("Bootstrap replicate ", i, " failed: ", conditionMessage(e))
+      )
 
-      par <- na.par
+      par <- parTemplate
       attr(par, "id") <- i
       par
     })
@@ -149,6 +154,8 @@ bootstrap <- function(model,
       temp.seed <- NULL
     }
   }
+
+  if (verbose) pls_msg_note("Bootstrapping...")
 
   workers <- if (parallel == "no") 1L else ncores
   if (workers <= 1L) {
@@ -233,7 +240,7 @@ bootstrap <- function(model,
 
   resultsMat <- do.call(rbind, results)
   rownames(resultsMat) <- ids
-  colnames(resultsMat) <- names(prototypeCoefs)
+  colnames(resultsMat) <- names(combinedModel(model)@params$values)
 
   vcov <- stats::cov(resultsMat, use = "complete.obs")
 
@@ -257,8 +264,9 @@ bootstrap <- function(model,
 
       }, error = function(e) {
         pls_msg_warn(
-          "Calculation of delta standard errors failed! Message:",
-          conditionMessage(Jacobian)
+          "Calculation of delta standard errors failed!",
+          "Consider trying `mc.delta.se=FALSE` instead.",
+          "Message:", conditionMessage(e)
         )
 
         vcov[] <<- NA_real_

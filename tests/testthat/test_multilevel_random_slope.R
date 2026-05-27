@@ -32,7 +32,7 @@ syntax <- "
 
 testthat::expect_no_error({
   fit.o <- pls(syntax, data = randomSlopesOrdered,
-             consistent = TRUE, bootstrap = TRUE)
+             consistent = TRUE, bootstrap = TRUE, mcpls = TRUE)
   summary(fit.o)
 })
 

@@ -35,7 +35,7 @@ bootstrap <- function(model,
 
   if (mc.delta.se && is.mcpls) {
     combinedModel(baseModel) <- NULL
-    isMCPLS(baseModel) <- FALSE
+    isMCPLS(baseModel, recursive = TRUE) <- FALSE
   }
 
   boot.optimize <- isTRUE(model@info$boot$optimize)

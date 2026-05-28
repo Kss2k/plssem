@@ -31,7 +31,12 @@ bootstrap <- function(model,
     'bootstrapping to be enabled! Try `boot.parallel="multisession"`'
   )
 
-  model.base <- model
+  baseModel <- model
+
+  if (mc.delta.se && is.mcpls) {
+    combinedModel(baseModel) <- NULL
+    isMCPLS(baseModel) <- FALSE
+  }
 
   boot.optimize <- isTRUE(model@info$boot$optimize)
   mc.boot.control <- prepMCBootControl(
@@ -67,13 +72,10 @@ bootstrap <- function(model,
     tryCatch({
       sampleData <- resample(data, cluster = cluster)
       sampleS    <- getCorrMat(sampleData, ordered = ordered, probit = is.probit)
-      model.b    <- model.base
+      model.b    <- baseModel
 
       model.b@data       <- sampleData
       model.b@matrices$S <- sampleS
-
-      if (mc.delta.se && is.mcpls)
-        isMCPLS(model.b) <- FALSE
 
       mc.args             <- model.b@info$mc.args
       boot.fixed.seed     <- mc.boot.control$fixed.seed

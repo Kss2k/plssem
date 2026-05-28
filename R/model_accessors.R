@@ -151,6 +151,12 @@ combinedModel <- function(object, refresh = FALSE) {
 }
 
 
+`combinedModel<-` <- function(object, value) {
+  object@combinedModel <- value
+  object
+}
+
+
 rootModel <- function(object) {
   object@combinedModel <- NULL
   object@higherOrderModel <- NULL

@@ -86,8 +86,8 @@ mcpls <- function(
   ok.start <- !is.null(p.start) && length(p.start) == sum(par1$is.free)
   p        <- if (ok.start) p.start else par1[par1$is.free, "est"]
 
-  lower <- ifelse(par1$op == "=~", yes = -0.999, no = -Inf)
-  upper <- ifelse(par1$op == "=~", yes =  0.999, no =  Inf)
+  lower <- ifelse(par1[par1$is.free, "op"] == "=~", yes = -0.999, no = -Inf)
+  upper <- ifelse(par1[par1$is.free, "op"] == "=~", yes =  0.999, no =  Inf)
 
   if (polyak.juditsky && !pj.extrapolate) {
     # If we're not using a Nonlinear Regression to solve for the convergence

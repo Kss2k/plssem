@@ -119,6 +119,8 @@ factor scores, and supports multilevel specifications expressed with
 <span>  mc.polyak.juditsky <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  mc.pj.extrapolate <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  mc.tol <span class="op">=</span> <span class="kw">if</span> <span class="op">(</span><span class="va">mc.polyak.juditsky</span><span class="op">)</span> <span class="fl">5e-04</span> <span class="kw">else</span> <span class="fl">0.001</span>,</span>
+<span>  mc.delta.se <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  mc.delta.jacobian.k <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">floor</a></span><span class="op">(</span><span class="va">boot.R</span><span class="op">/</span><span class="fl">100L</span><span class="op">)</span>, <span class="fl">1</span><span class="op">)</span>,</span>
 <span>  mc.fn.args <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/interactive.html" class="external-link">interactive</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  boot.optimize <span class="op">=</span> <span class="cn">TRUE</span>,</span>
@@ -277,6 +279,17 @@ Only relevant when <code>mc.polyak.juditsky = TRUE</code>.</p></dd>
 
 <dt id="arg-mc-tol">mc.tol<a class="anchor" aria-label="anchor" href="#arg-mc-tol"></a></dt>
 <dd><p>Tolerance in MC-PLS algorithm.</p></dd>
+
+
+<dt id="arg-mc-delta-se">mc.delta.se<a class="anchor" aria-label="anchor" href="#arg-mc-delta-se"></a></dt>
+<dd><p>Should delta-method standard errors be computed for
+MC-PLS estimates?</p></dd>
+
+
+<dt id="arg-mc-delta-jacobian-k">mc.delta.jacobian.k<a class="anchor" aria-label="anchor" href="#arg-mc-delta-jacobian-k"></a></dt>
+<dd><p>Integer number of Monte-Carlo Jacobians to average
+when computing delta-method standard errors. Defaults to
+one per 100 bootstrap resamples, with a minimum of 1.</p></dd>
 
 
 <dt id="arg-mc-fn-args">mc.fn.args<a class="anchor" aria-label="anchor" href="#arg-mc-fn-args"></a></dt>

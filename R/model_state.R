@@ -65,19 +65,21 @@ initModelMcArgs <- function(min.iter,
                             polyak.juditsky,
                             pj.extrapolate,
                             delta.se,
+                            delta.jacobian.k,
                             fn.args) {
   list(
-    min.iter        = min.iter,
-    max.iter        = max.iter,
-    mc.reps         = mc.reps,
-    tol             = tol,
-    fixed.seed      = fixed.seed,
-    polyak.juditsky = polyak.juditsky,
-    pj.extrapolate  = pj.extrapolate,
-    delta.se        = delta.se,
-    fn.args         = fn.args,
-    rng.seed        = NULL,
-    p.start         = NULL
+    min.iter         = min.iter,
+    max.iter         = max.iter,
+    mc.reps          = mc.reps,
+    tol              = tol,
+    fixed.seed       = fixed.seed,
+    polyak.juditsky  = polyak.juditsky,
+    pj.extrapolate   = pj.extrapolate,
+    delta.se         = delta.se,
+    delta.jacobian.k = delta.jacobian.k,
+    fn.args          = fn.args,
+    rng.seed         = NULL,
+    p.start          = NULL
   )
 }
 

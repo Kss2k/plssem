@@ -13,7 +13,7 @@ mcpls <- function(
   pj.extrapolate   = fit0@info$mc.args$pj.extrapolate,
   delta.jacobian   = fit0@info$mc.args$delta.se && fit0@info$boot$bootstrap,
   delta.fixed.seed = TRUE,
-  delta.jacobian.k = 1L, # keep at 1 for now
+  delta.jacobian.k = fit0@info$mc.args$delta.jacobian.k,
   ...
 ) {
   fit0.base <- fit0
@@ -177,6 +177,15 @@ mcpls <- function(
 
   if (delta.jacobian) {
 
+    if (is.null(delta.jacobian.k))
+      delta.jacobian.k <- floor(fit0@info$boot$R / 50)
+
+    pls_stopif(
+      !length(delta.jacobian.k) || !is.finite(delta.jacobian.k[1L]),
+      "`mc.delta.jacobian.k` must be a positive integer or `NULL`."
+    )
+
+    print(delta.jacobian.k)
     if (verbose) pls_msg_note("Calculating Jacobian...")
 
     nm <- paste0(par1$lhs, par1$op, par1$rhs)

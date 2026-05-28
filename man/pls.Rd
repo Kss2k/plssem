@@ -32,6 +32,7 @@ pls(
   mc.pj.extrapolate = TRUE,
   mc.tol = if (mc.polyak.juditsky) 5e-04 else 0.001,
   mc.delta.se = TRUE,
+  mc.delta.jacobian.k = max(floor(boot.R/100L), 1),
   mc.fn.args = list(),
   verbose = interactive(),
   boot.optimize = TRUE,
@@ -138,6 +139,10 @@ Only relevant when \code{mc.polyak.juditsky = TRUE}.}
 
 \item{mc.delta.se}{Should delta-method standard errors be computed for
 MC-PLS estimates?}
+
+\item{mc.delta.jacobian.k}{Integer number of Monte-Carlo Jacobians to average
+when computing delta-method standard errors. Defaults to
+one per 100 bootstrap resamples, with a minimum of 1.}
 
 \item{mc.fn.args}{Additional arguments to MC-PLS algorithm, mainly for controlling
 the step size.}

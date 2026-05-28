@@ -181,11 +181,11 @@ mcpls <- function(
       delta.jacobian.k <- floor(fit0@info$boot$R / 50)
 
     pls_stopif(
-      !length(delta.jacobian.k) || !is.finite(delta.jacobian.k[1L]),
+      !length(delta.jacobian.k) || !is.finite(delta.jacobian.k[1L]) ||
+      delta.jacobian.k[[1L]] <= 0,
       "`mc.delta.jacobian.k` must be a positive integer or `NULL`."
     )
 
-    print(delta.jacobian.k)
     if (verbose) pls_msg_note("Calculating Jacobian...")
 
     nm <- paste0(par1$lhs, par1$op, par1$rhs)
@@ -207,6 +207,7 @@ mcpls <- function(
 
     }
 
+    delta.jacobian.k <- delta.jacobian.k[[1L]]
     J <- 0
 
     for (i in seq_len(delta.jacobian.k)) {

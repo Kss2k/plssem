@@ -98,8 +98,11 @@ fitMeasures <- function(model, saturated = FALSE, mc.reps = 1e6) {
   tryCatch({
 
     if (is_mcpls(model)) {
-      pls_msg_warn(paste0("Fit measures for MC-PLSc models are under development!\n",
-                   "Traditional fit criteria will likely be too strict."))
+      pls_msg_note(
+        paste0("Fit measures for MC-PLSc models are under development!\n",
+               "Traditional fit criteria will likely be too strict.")
+      )
+
       pls_msg_note(sprintf("Resampling MC-PLSc Model (R = %d)...", mc.reps))
 
       combined  <- combinedModel(model) # combined chained models

@@ -229,7 +229,7 @@ isMCPLS <- function(object) {
 }
 
 
-`isMCPLS<-` <- function(object, value, recursive = FALSE) {
+`isMCPLS<-` <- function(object, recursive = FALSE, value) {
   object@info$is.mcpls <- value
 
   if (recursive && hasHigherOrderModel(object))

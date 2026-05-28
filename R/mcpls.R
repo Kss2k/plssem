@@ -214,7 +214,7 @@ mcpls <- function(
       if (delta.fixed.seed)
         rng.seed <- floor(stats::runif(1L, min = 0, max = 9999999))
 
-      J.i <- calcMcJacobian(.f = .f, p = p, progressBar = pb, k = i)
+      J.i <- calcMcJacobian(.f = .f, p0 = p, progressBar = pb, k = i)
       J <- J + J.i / delta.jacobian.k
 
     }

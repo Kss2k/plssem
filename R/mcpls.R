@@ -13,6 +13,7 @@ mcpls <- function(
   pj.extrapolate   = fit0@info$mc.args$pj.extrapolate,
   delta.jacobian   = fit0@info$mc.args$delta.se && fit0@info$boot$bootstrap,
   delta.fixed.seed = TRUE,
+  delta.jacobian.k = 1L, # keep at 1 for now
   ...
 ) {
   fit0.base <- fit0
@@ -85,6 +86,9 @@ mcpls <- function(
   ok.start <- !is.null(p.start) && length(p.start) == sum(par1$is.free)
   p        <- if (ok.start) p.start else par1[par1$is.free, "est"]
 
+  lower <- ifelse(par1$op == "=~", yes = -0.999, no = -Inf)
+  upper <- ifelse(par1$op == "=~", yes =  0.999, no =  Inf)
+
   if (polyak.juditsky && !pj.extrapolate) {
     # If we're not using a Nonlinear Regression to solve for the convergence
     # point, we will get a biased root with Polyak-Juditsky averaging, if
@@ -100,6 +104,8 @@ mcpls <- function(
       verbose         = verbose,
       polyak.juditsky = FALSE,
       fn.args         = fn.args,
+      lower           = lower,
+      upper           = upper,
       ...
     )
 
@@ -116,6 +122,8 @@ mcpls <- function(
     polyak.juditsky = polyak.juditsky,
     fn.args         = fn.args,
     pj.extrapolate  = pj.extrapolate,
+    lower           = lower,
+    upper           = upper,
     ...
   )
 
@@ -136,6 +144,8 @@ mcpls <- function(
       polyak.juditsky = TRUE,
       fn.args         = fn.args,
       pj.extrapolate  = pj.extrapolate,
+      lower           = lower,
+      upper           = upper,
       ...
     )
 
@@ -167,17 +177,38 @@ mcpls <- function(
 
   if (delta.jacobian) {
 
-    if (delta.fixed.seed && is.null(rng.seed)) {
-      rng.seed <- floor(stats::runif(1L, min = 0, max = 9999999))
-
-      if (verbose) pls_msg_note(
-        sprintf("Calculating Jacobian using fixed seed %i...", rng.seed)
-      )
-    }
+    if (verbose) pls_msg_note("Calculating Jacobian...")
 
     nm <- paste0(par1$lhs, par1$op, par1$rhs)
     p <- stats::setNames(mcfit$root, nm[par1$is.free])
-    J <- calcMcJacobian(.f = .f, p = p)
+
+    if (verbose) {
+      pb <- utils::txtProgressBar(
+        min     = 0,
+        max     = delta.jacobian.k * length(p),
+        initial = 0,
+        style   = 3,
+        file    = stderr()
+      )
+
+      on.exit(close(pb), add = TRUE)
+
+    } else {
+      pb <- NULL
+
+    }
+
+    J <- 0
+
+    for (i in seq_len(delta.jacobian.k)) {
+
+      if (delta.fixed.seed)
+        rng.seed <- floor(stats::runif(1L, min = 0, max = 9999999))
+
+      J.i <- calcMcJacobian(.f = .f, p = p, progressBar = pb, k = i)
+      J <- J + J.i / delta.jacobian.k
+
+    }
 
     fit1.combined@params$Jacobian <- J
   }
@@ -382,7 +413,7 @@ getPROBS <- function(data, ordered) {
 }
 
 
-calcMcJacobian <- function(.f, p0, eps = 5e-3) {
+calcMcJacobian <- function(.f, p0, eps = 5e-3, progressBar = NULL, k = 1) {
 
   J <- matrix(
     NA_real_,
@@ -396,6 +427,9 @@ calcMcJacobian <- function(.f, p0, eps = 5e-3) {
     pm[i] <- pm[i] - eps
 
     J[,i] <- (.f(pp) - .f(pm)) / (2 * eps)
+
+    if (!is.null(progressBar))
+      utils::setTxtProgressBar(progressBar, (k - 1) * length(p0) + i)
   }
 
   J

@@ -1,5 +1,6 @@
 robbinsMonro1951 <- function(p, f, tol, min.iter, max.iter, verbose,
-                             polyak.juditsky = FALSE, pj.extrapolate = TRUE, fn.args, ...) {
+                             polyak.juditsky = FALSE, pj.extrapolate = TRUE,
+                             fn.args, lower = NULL, upper = NULL, ...) {
   # Wrapper for SimDesign::RobbinsMonro/SimDesign.RobbinsMonro
 
   args.required <- list(
@@ -9,7 +10,9 @@ robbinsMonro1951 <- function(p, f, tol, min.iter, max.iter, verbose,
       miniter         = min.iter,
       maxiter         = max.iter,
       verbose         = verbose,
-      Polyak_Juditsky = polyak.juditsky
+      Polyak_Juditsky = polyak.juditsky,
+      lower           = lower,
+      upper           = upper
   )
 
   args <- c(args.required, fn.args, list(...))
@@ -18,8 +21,11 @@ robbinsMonro1951 <- function(p, f, tol, min.iter, max.iter, verbose,
   mcfit <- do.call(SimDesign.RobbinsMonro, args)
   if (verbose) messagef("\n")
 
-  if (polyak.juditsky && pj.extrapolate)
-    mcfit$root <- getConvergencePoints(mcfit$history)
+  if (polyak.juditsky && pj.extrapolate) {
+    mcfit$root <- getConvergencePoints(
+      history = mcfit$history, lower = lower, upper = upper
+    )
+  }
 
   mcfit
 }
@@ -35,33 +41,45 @@ SimDesign.RobbinsMonro <- function(f, p, ...,
                                    Polyak_Juditsky = FALSE,
                                    maxiter = 500L, miniter = 100L, k = 3L,
                                    tol = .00001, verbose = interactive(),
-                                   fn.a = function(iter, a = 1, b = 1/2, c = 0, ...)
-                                     a / (iter + c)^b) {
-  if(maxiter < miniter) maxiter <- miniter
+                                   fn.a = \(iter, a = 1, b = 1/2, c = 0, ...) a / (iter + c)^b,
+                                   lower = NULL,
+                                   upper = NULL) {
+  if (maxiter < miniter) maxiter <- miniter
   history <- rbind(p, matrix(NA, nrow=maxiter, ncol=length(p)))
   k.succ <- 0
   pbar_last <- pbar <- p
 
-  for(i in 1L:maxiter){
+  if (is.null(lower)) lower <- rep(-Inf, length(p))
+  if (is.null(upper)) upper <- rep( Inf, length(p))
+
+  for (i in seq_len(maxiter)) {
     a <- fn.a(iter=i, ...)
     fp <- f(p)
     p <- p - a * fp
+
+    # clamp
+    p[p < lower] <- lower[p < lower]
+    p[p > upper] <- upper[p > upper]
+
     history[i + 1L, ] <- p
     change <- max(abs(history[i,]-p))
-    if(Polyak_Juditsky){
+
+    if (Polyak_Juditsky) {
       pbar_last <- pbar
       pbar <- PK_average(history)
       change <- max(abs(pbar_last - pbar))
     }
-    if(verbose){
-      if(Polyak_Juditsky)
+
+    if (verbose) {
+      if (Polyak_Juditsky)
         messagef("\rItertion: %i; Max change in E(\u03b8) = %.3f", i, change)
       else
         messagef("\rIteration: %i; Max change in \u03b8 = %.3f", i, change)
     }
-    if(i > miniter && all(change < tol)){
+
+    if (i > miniter && all(change < tol)) {
       k.succ <- k.succ + 1L
-      if(k.succ == k) break
+      if (k.succ == k) break
     } else k.succ <- 0L
   }
 
@@ -143,10 +161,18 @@ aitkenAccelerate <- function(y) {
 }
 
 
-getConvergencePoints <- function(history) {
+getConvergencePoints <- function(history, lower = NULL, upper = NULL) {
   history <- history[
     stats::complete.cases(history), , drop = FALSE
   ]
 
-  apply(X = history, MARGIN = 2, FUN = getConvergencePoint)
+  pbar <- apply(X = history, MARGIN = 2, FUN = getConvergencePoint)
+
+  if (!is.null(lower))
+    pbar[pbar < lower] <- lower[pbar < lower]
+
+  if (!is.null(upper))
+    pbar[pbar > upper] <- upper[pbar > upper]
+
+  pbar
 }

@@ -256,7 +256,15 @@ bootstrap <- function(model,
       J <- Jacobian[pars, pars, drop = FALSE]
 
       tryCatch({
-        J.inv <- solve(J)
+        # Try to invert J
+        J.inv <- tryCatch(
+          solve(J),
+          error = function(e) {
+            pls_msg_warn("Jacobian is not positive definite!")
+            MASS::ginv(J)
+          }
+        )
+
         vcov.mc <- J.inv %*% vcov.sub %*% t(J.inv)
         
         vcov[] <- 0

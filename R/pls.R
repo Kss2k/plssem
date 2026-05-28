@@ -102,6 +102,13 @@ USE_NON_LINEAR_PROBIT_CORR_MAT <- FALSE
 #'
 #' @param mc.tol Tolerance in MC-PLS algorithm.
 #'
+#' @param mc.delta.se Should delta-method standard errors be computed for
+#'   MC-PLS estimates?
+#'
+#' @param mc.delta.jacobian.k Integer number of Monte-Carlo Jacobians to average
+#'   when computing delta-method standard errors. Defaults to
+#'   one per 100 bootstrap resamples, with a minimum of 1.
+#'
 #' @param mc.fn.args Additional arguments to MC-PLS algorithm, mainly for controlling
 #'   the step size.
 #'
@@ -171,6 +178,8 @@ pls <- function(syntax,
                 mc.polyak.juditsky = TRUE,
                 mc.pj.extrapolate = TRUE,
                 mc.tol = if (mc.polyak.juditsky) 0.0005 else 0.001,
+                mc.delta.se = TRUE,
+                mc.delta.jacobian.k = max(floor(boot.R / 100L), 1),
                 mc.fn.args = list(),
                 verbose = interactive(),
                 boot.optimize = TRUE,
@@ -204,35 +213,37 @@ pls <- function(syntax,
   data <- as.data.frame(data)
 
   model <- specifyModel(
-    syntax             = syntax,
-    data               = data,
-    consistent         = consistent,
-    missing            = missing,
-    standardize        = standardize,
-    ordered            = ordered,
-    probit             = probit,
-    mcpls              = mcpls,
-    mc.fast.lmer       = mc.fast.lmer,
-    tolerance          = tolerance,
-    max.iter.0_5       = max.iter.0_5,
-    mc.min.iter        = mc.min.iter,
-    mc.max.iter        = mc.max.iter,
-    mc.reps            = mc.reps,
-    mc.tol             = mc.tol,
-    mc.fixed.seed      = mc.fixed.seed,
-    mc.polyak.juditsky = mc.polyak.juditsky,
-    mc.pj.extrapolate          = mc.pj.extrapolate,
-    mc.fn.args         = mc.fn.args,
-    verbose            = verbose,
-    bootstrap          = bootstrap,
-    boot.ncores        = boot.ncores,
-    boot.parallel      = boot.parallel,
-    boot.R             = boot.R,
-    boot.iseed         = boot.iseed,
-    boot.optimize      = boot.optimize,
-    mc.boot.control    = mc.boot.control,
-    knn.k              = knn.k,
-    reliabilities      = reliabilities,
+    syntax              = syntax,
+    data                = data,
+    consistent          = consistent,
+    missing             = missing,
+    standardize         = standardize,
+    ordered             = ordered,
+    probit              = probit,
+    mcpls               = mcpls,
+    mc.fast.lmer        = mc.fast.lmer,
+    tolerance           = tolerance,
+    max.iter.0_5        = max.iter.0_5,
+    mc.min.iter         = mc.min.iter,
+    mc.max.iter         = mc.max.iter,
+    mc.reps             = mc.reps,
+    mc.tol              = mc.tol,
+    mc.fixed.seed       = mc.fixed.seed,
+    mc.polyak.juditsky  = mc.polyak.juditsky,
+    mc.pj.extrapolate   = mc.pj.extrapolate,
+    mc.delta.se         = mc.delta.se,
+    mc.delta.jacobian.k = mc.delta.jacobian.k,
+    mc.fn.args          = mc.fn.args,
+    verbose             = verbose,
+    bootstrap           = bootstrap,
+    boot.ncores         = boot.ncores,
+    boot.parallel       = boot.parallel,
+    boot.R              = boot.R,
+    boot.iseed          = boot.iseed,
+    boot.optimize       = boot.optimize,
+    mc.boot.control     = mc.boot.control,
+    knn.k               = knn.k,
+    reliabilities       = reliabilities,
     ...
   )
 

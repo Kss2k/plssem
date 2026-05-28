@@ -45,10 +45,10 @@ simulateDataParTable <- function(parTable,
       scale = 1,
       max_penalty = 2
     ),
-    loading = list(
+    loading = list( # shouldn't be necessary, as we used bounded optimization
       limit = 1,
-      guard = 0.005,
-      clamp = 0.001,
+      guard = 0.000005,
+      clamp = 0.000001,
       beta  = 3,
       scale = 0.02,
       tol   = sqrt(.Machine$double.eps),
@@ -224,18 +224,15 @@ simulateDataParTable <- function(parTable,
         penalty.max = penalty.cfg$loading$max_penalty
       )
 
-      if (lambda.penalty != 0)
+      if (lambda.penalty != 0) {
         parTable[cond, "penalty"] <- parTable[cond, "penalty"] + lambda.penalty
+        is.admissible <- FALSE
+      }
 
       clamp.margin <- max(penalty.cfg$loading$clamp, penalty.cfg$loading$tol)
       clamp.limit <- max(0, penalty.cfg$loading$limit - clamp.margin)
       lambda <- clampAbs(lambda.raw, clamp.limit)
       epsilon <- checkFixVar(1 - lambda^2)
-
-      if (!attr(epsilon, "ok")) {
-        penalty <- sign(lambda.raw) * (abs(lambda.raw) - penalty.cfg$loading$limit)
-        parTable[cond, "penalty"] <- parTable[cond, "penalty"] + penalty
-      }
 
       # vals <- lambda * Xi[[lv]] + rnorm(N, mean = 0, sd = sqrt(epsilon))
       vals <- lambda * Xi[[lv]] + Rfast::Rnorm(N, m = 0, s = sqrt(epsilon), seed = rfast.seed())

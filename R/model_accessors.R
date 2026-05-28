@@ -151,6 +151,12 @@ combinedModel <- function(object, refresh = FALSE) {
 }
 
 
+`combinedModel<-` <- function(object, value) {
+  object@combinedModel <- value
+  object
+}
+
+
 rootModel <- function(object) {
   object@combinedModel <- NULL
   object@higherOrderModel <- NULL
@@ -215,6 +221,21 @@ isAdmissible <- function(object) {
 
 isMLM <- function(object) {
   isTRUE(object@info$is.mlm)
+}
+
+
+isMCPLS <- function(object) {
+  isTRUE(object@info$is.mcpls)
+}
+
+
+`isMCPLS<-` <- function(object, recursive = FALSE, value) {
+  object@info$is.mcpls <- value
+
+  if (recursive && hasHigherOrderModel(object))
+    isMCPLS(higherOrderModel(object)) <- value
+
+  object
 }
 
 

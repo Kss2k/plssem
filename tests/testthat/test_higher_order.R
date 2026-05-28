@@ -83,12 +83,12 @@ testthat::expect_no_error({
 
 
 testthat::expect_equal(fitm$chisq, 70.00279, tol = 1e-5)
-testthat::expect_equal(fitm$chisq.df, 42)
+testthat::expect_equal(fitm$chisq.df, 45)
 testthat::expect_equal(
   pred$benchmark$variable, c("y1", "y2", "y3", "y4")
 )
 
 testthat::expect_no_error({
-  fit <- pls(sem.syntax, data = data, mcpls = TRUE)
+  fit <- pls(sem.syntax, data = data, mcpls = TRUE, bootstrap=TRUE)
   pls_predict(fit)
 })

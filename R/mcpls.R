@@ -1,16 +1,19 @@
 mcpls <- function(
   fit0,
-  p.start         = fit0@info$mc.args$p.start,
-  min.iter        = fit0@info$mc.args$min.iter,
-  max.iter        = fit0@info$mc.args$max.iter,
-  mc.reps         = fit0@info$mc.args$mc.reps,
-  rng.seed        = fit0@info$mc.args$rng.seed,
-  tol             = fit0@info$mc.args$tol,
-  fixed.seed      = fit0@info$mc.args$fixed.seed,
-  verbose         = fit0@info$verbose,
-  polyak.juditsky = fit0@info$mc.args$polyak.juditsky,
-  fn.args         = fit0@info$mc.args$fn.args,
-  pj.extrapolate  = fit0@info$mc.args$pj.extrapolate,
+  p.start          = fit0@info$mc.args$p.start,
+  min.iter         = fit0@info$mc.args$min.iter,
+  max.iter         = fit0@info$mc.args$max.iter,
+  mc.reps          = fit0@info$mc.args$mc.reps,
+  rng.seed         = fit0@info$mc.args$rng.seed,
+  tol              = fit0@info$mc.args$tol,
+  fixed.seed       = fit0@info$mc.args$fixed.seed,
+  verbose          = fit0@info$verbose,
+  polyak.juditsky  = fit0@info$mc.args$polyak.juditsky,
+  fn.args          = fit0@info$mc.args$fn.args,
+  pj.extrapolate   = fit0@info$mc.args$pj.extrapolate,
+  delta.jacobian   = fit0@info$mc.args$delta.se && fit0@info$boot$bootstrap,
+  delta.fixed.seed = TRUE,
+  delta.jacobian.k = fit0@info$mc.args$delta.jacobian.k,
   ...
 ) {
   fit0.base <- fit0
@@ -62,7 +65,7 @@ mcpls <- function(
     fit.sim <- fit0.base
     X       <- Rfast::standardise(as.matrix(sim.ov[vars]))
     S       <- Rfast::cova(X)
-    
+
     if (!is.null(sim$cluster))
       attr(X, "cluster") <- sim$cluster
 
@@ -83,6 +86,9 @@ mcpls <- function(
   ok.start <- !is.null(p.start) && length(p.start) == sum(par1$is.free)
   p        <- if (ok.start) p.start else par1[par1$is.free, "est"]
 
+  lower <- ifelse(par1[par1$is.free, "op"] == "=~", yes = -0.999, no = -Inf)
+  upper <- ifelse(par1[par1$is.free, "op"] == "=~", yes =  0.999, no =  Inf)
+
   if (polyak.juditsky && !pj.extrapolate) {
     # If we're not using a Nonlinear Regression to solve for the convergence
     # point, we will get a biased root with Polyak-Juditsky averaging, if
@@ -98,6 +104,8 @@ mcpls <- function(
       verbose         = verbose,
       polyak.juditsky = FALSE,
       fn.args         = fn.args,
+      lower           = lower,
+      upper           = upper,
       ...
     )
 
@@ -114,6 +122,8 @@ mcpls <- function(
     polyak.juditsky = polyak.juditsky,
     fn.args         = fn.args,
     pj.extrapolate  = pj.extrapolate,
+    lower           = lower,
+    upper           = upper,
     ...
   )
 
@@ -134,6 +144,8 @@ mcpls <- function(
       polyak.juditsky = TRUE,
       fn.args         = fn.args,
       pj.extrapolate  = pj.extrapolate,
+      lower           = lower,
+      upper           = upper,
       ...
     )
 
@@ -162,6 +174,55 @@ mcpls <- function(
     clusterSizes = clusterSizes,
     clusterName  = clusterName
   )
+
+  if (delta.jacobian) {
+
+    if (is.null(delta.jacobian.k))
+      delta.jacobian.k <- floor(fit0@info$boot$R / 50)
+
+    pls_stopif(
+      !length(delta.jacobian.k) || !is.finite(delta.jacobian.k[1L]) ||
+      delta.jacobian.k[[1L]] <= 0,
+      "`mc.delta.jacobian.k` must be a positive integer or `NULL`."
+    )
+
+    if (verbose) pls_msg_note("Calculating Jacobian...")
+
+    nm <- paste0(par1$lhs, par1$op, par1$rhs)
+    p <- stats::setNames(mcfit$root, nm[par1$is.free])
+
+    if (verbose) {
+      pb <- utils::txtProgressBar(
+        min     = 0,
+        max     = delta.jacobian.k * length(p),
+        initial = 0,
+        style   = 3,
+        file    = stderr()
+      )
+
+      on.exit(close(pb), add = TRUE)
+
+    } else {
+      pb <- NULL
+
+    }
+
+    delta.jacobian.k <- delta.jacobian.k[[1L]]
+    J <- 0
+
+    for (i in seq_len(delta.jacobian.k)) {
+
+      if (delta.fixed.seed)
+        rng.seed <- floor(stats::runif(1L, min = 0, max = 9999999))
+
+      J.i <- calcMcJacobian(.f = .f, p0 = p, progressBar = pb, k = i)
+      J <- J + J.i / delta.jacobian.k
+
+    }
+
+    fit1.combined@params$Jacobian <- J
+  }
+
 
   fit1.combined@status$iterations    <- mcfit$iter
   fit1.combined@info$mc.args$p.start <- as.vector(mcfit$root)
@@ -200,12 +261,16 @@ getFreeParamsTable <- function(model) {
   op  <- parTable$op
   rhs <- parTable$rhs
 
+  inds.b <- rhs[parTable$op == "<~"]
+
   cond1 <- !(lhs == rhs & op == "~~" & !grepl("~", rhs))
   cond2 <- !((isIntTermVariable(lhs) | isIntTermVariable(rhs)) & op == "~~")
   cond3 <- op != "~1"
+  cond4 <- !(lhs %in% inds.b & op == "~~") & !(rhs %in% inds.b & op == "~~")
+  cond  <- cond1 & cond2 & cond3 & cond4
 
-  out <- parTable[cond1 & cond2 & cond3, , drop = FALSE]
-  attr(out, "cond") <- cond1 & cond2 & cond3
+  out <- parTable[cond, , drop = FALSE]
+  attr(out, "cond") <- cond
 
   out$is.free <- out$op != "<~"
   out
@@ -355,4 +420,27 @@ getPROBS <- function(data, ordered) {
     PROBS[[ord]] <- pct[-length(pct)]
   }
   PROBS
+}
+
+
+calcMcJacobian <- function(.f, p0, eps = 5e-3, progressBar = NULL, k = 1) {
+
+  J <- matrix(
+    NA_real_,
+    nrow = length(p0), ncol = length(p0),
+    dimnames = list(names(p0), names(p0))
+  )
+
+  for (i in seq_along(p0)) {
+    pp <- pm <- p0
+    pp[i] <- pp[i] + eps
+    pm[i] <- pm[i] - eps
+
+    J[,i] <- (.f(pp) - .f(pm)) / (2 * eps)
+
+    if (!is.null(progressBar))
+      utils::setTxtProgressBar(progressBar, (k - 1) * length(p0) + i)
+  }
+
+  J
 }

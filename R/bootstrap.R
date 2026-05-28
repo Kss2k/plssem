@@ -10,12 +10,13 @@ bootstrap <- function(model,
   parallel <- match.arg(parallel, c("no", "multicore", "multisession", "snow"))
   if (parallel == "snow") parallel <- "multisession"
 
-  data      <- model@data
-  cluster   <- model@info$cluster
-  is.probit <- model@info$is.probit
-  is.mcpls  <- model@info$is.mcpls
-  ordered   <- model@info$ordered
-  results   <- vector("list", R)
+  data        <- model@data
+  cluster     <- model@info$cluster
+  is.probit   <- model@info$is.probit
+  is.mcpls    <- model@info$is.mcpls
+  ordered     <- model@info$ordered
+  results     <- vector("list", R)
+  mc.delta.se <- model@info$mc.args$delta.se
 
   # Check misspecified user arguments
   pls_warnif(
@@ -30,7 +31,12 @@ bootstrap <- function(model,
     'bootstrapping to be enabled! Try `boot.parallel="multisession"`'
   )
 
-  model.base <- model
+  baseModel <- model
+
+  if (mc.delta.se && is.mcpls) {
+    combinedModel(baseModel) <- NULL
+    isMCPLS(baseModel, recursive = TRUE) <- FALSE
+  }
 
   boot.optimize <- isTRUE(model@info$boot$optimize)
   mc.boot.control <- prepMCBootControl(
@@ -40,10 +46,25 @@ bootstrap <- function(model,
   )
 
   combinedCoefs <- combinedModel(model)@params$values
-  na.par <- stats::setNames(
+  # parTemplate might be stale with mc.delta=TRUE...
+  
+  parTemplate <- stats::setNames(
     rep(NA_real_, length(combinedCoefs)),
     names(combinedCoefs)
   )
+
+  formatBootPars <- function(par) {
+    out <- parTemplate
+
+    want <- names(combinedCoefs)
+    have <- names(par)
+    common <- intersect(have, want)
+
+    if (length(common))
+      out[common] <- par[common]
+
+    out
+  }
 
   P_START <- model@info$mc.args$p.start
 
@@ -51,7 +72,7 @@ bootstrap <- function(model,
     tryCatch({
       sampleData <- resample(data, cluster = cluster)
       sampleS    <- getCorrMat(sampleData, ordered = ordered, probit = is.probit)
-      model.b    <- model.base
+      model.b    <- baseModel
 
       model.b@data       <- sampleData
       model.b@matrices$S <- sampleS
@@ -82,9 +103,11 @@ bootstrap <- function(model,
 
       })
 
-      par <- combinedModel(model.b)@params$values
+      par <- formatBootPars(
+        modelParams(combinedModel(model.b))$values
+      )
 
-      if (low.tol.penalty > 0 && is.mcpls) {
+      if (low.tol.penalty > 0 && is.mcpls && !mc.delta.se) {
         k <- length(par)
         par <- par + stats::rnorm(k, mean = 0, sd = low.tol.penalty)
       }
@@ -93,9 +116,11 @@ bootstrap <- function(model,
       par
 
     }, error = \(e) {
-      pls_msg_warn(paste0("Bootstrap replicate ", i, " failed: ", conditionMessage(e)))
+      pls_msg_warn(
+        paste0("Bootstrap replicate ", i, " failed: ", conditionMessage(e))
+      )
 
-      par <- na.par
+      par <- parTemplate
       attr(par, "id") <- i
       par
     })
@@ -131,6 +156,8 @@ bootstrap <- function(model,
       temp.seed <- NULL
     }
   }
+
+  if (verbose) pls_msg_note("Bootstrapping...")
 
   workers <- if (parallel == "no") 1L else ncores
   if (workers <= 1L) {
@@ -218,6 +245,45 @@ bootstrap <- function(model,
   colnames(resultsMat) <- names(combinedModel(model)@params$values)
 
   vcov <- stats::cov(resultsMat, use = "complete.obs")
+
+  if (mc.delta.se) {
+    combined <- combinedModel(model)
+    params <- modelParams(combined)
+
+    if (!is.null(params$Jacobian)) {
+      Jacobian <- params$Jacobian
+      pars <- intersect(colnames(Jacobian), colnames(vcov))
+
+      vcov.sub <- vcov[pars, pars, drop = FALSE]
+      J <- Jacobian[pars, pars, drop = FALSE]
+
+      tryCatch({
+        # Try to invert J
+        J.inv <- tryCatch(
+          solve(J),
+          error = function(e) {
+            pls_msg_warn("Jacobian is not positive definite!")
+            MASS::ginv(J)
+          }
+        )
+
+        vcov.mc <- J.inv %*% vcov.sub %*% t(J.inv)
+        
+        vcov[] <- 0
+        vcov[pars, pars] <- vcov.mc[pars, pars]
+
+      }, error = function(e) {
+        pls_msg_warn(
+          "Calculation of delta standard errors failed!",
+          "Consider trying `mc.delta.se=FALSE` instead.",
+          "Message:", conditionMessage(e)
+        )
+
+        vcov[] <<- NA_real_
+      })
+    }
+  }
+
   se <- sqrt(diag(vcov))
   se[se <= zero.tol] <- NA_real_
 

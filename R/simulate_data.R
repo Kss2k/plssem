@@ -199,7 +199,7 @@ simulateDataParTable <- function(parTable,
     # vals <- vals + rnorm(N, mean = 0, sd = sqrt(resvar))
 
     if (standardize)
-      vals <- (vals - mean(vals)) / sd(vals)
+      vals <- (vals - mean(vals)) / stats::sd(vals)
 
     Xi[[eta]] <- vals
   }
@@ -239,7 +239,7 @@ simulateDataParTable <- function(parTable,
       vals <- lambda * Xi[[lv]] + Rfast::Rnorm(N, m = 0, s = sqrt(epsilon), seed = rfast.seed())
 
       if (standardize)
-        vals <- (vals - mean(vals)) / sd(vals)
+        vals <- (vals - mean(vals)) / stats::sd(vals)
 
       Inds[[ind]] <- vals
     }

@@ -125,7 +125,7 @@ which is a second order latent variable of <code>PC</code> (perceived
 control) and <code>PB</code> (perceived behaviour).</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://modsem.org" class="external-link">modsem</a></span><span class="op">)</span></span>
-<span><span class="co">#&gt; This is modsem (1.0.19). Please report any bugs!</span></span>
+<span><span class="co">#&gt; This is modsem (1.0.20). Please report any bugs!</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Attaching package: 'modsem'</span></span>
 <span><span class="co">#&gt; The following object is masked from 'package:plssem':</span></span>
@@ -204,15 +204,18 @@ control) and <code>PB</code> (perceived behaviour).</p>
 <span><span class="co">#&gt;     pc1             0.969      0.008  121.554    0.000</span></span>
 <span><span class="co">#&gt;     pc2             0.921      0.009  107.449    0.000</span></span>
 <span><span class="co">#&gt;     pc3             0.945      0.010   95.566    0.000</span></span>
-<span><span class="co">#&gt;   BEH &lt;~        </span></span>
-<span><span class="co">#&gt;     b1              0.913      0.024   37.357    0.000</span></span>
-<span><span class="co">#&gt;     b2              0.847      0.023   36.924    0.000</span></span>
 <span><span class="co">#&gt;   INT =~        </span></span>
 <span><span class="co">#&gt;     ATT             0.877      0.033   26.511    0.000</span></span>
 <span><span class="co">#&gt;     SN              0.814      0.038   21.380    0.000</span></span>
 <span><span class="co">#&gt;   PBC =~        </span></span>
 <span><span class="co">#&gt;     PC              0.831      0.059   14.133    0.000</span></span>
 <span><span class="co">#&gt;     PB              0.668      0.054   12.441    0.000</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Composites:</span></span>
+<span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
+<span><span class="co">#&gt;   BEH &lt;~        </span></span>
+<span><span class="co">#&gt;     b1              0.913      0.024   37.357    0.000</span></span>
+<span><span class="co">#&gt;     b2              0.847      0.023   36.924    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Regressions:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
@@ -247,8 +250,8 @@ control) and <code>PB</code> (perceived behaviour).</p>
 <span><span class="co">#&gt;    .pc1             0.062      0.015    4.013    0.000</span></span>
 <span><span class="co">#&gt;    .pc2             0.152      0.016    9.580    0.000</span></span>
 <span><span class="co">#&gt;    .pc3             0.106      0.019    5.709    0.000</span></span>
-<span><span class="co">#&gt;    .b1              0.167      0.045    3.698    0.000</span></span>
-<span><span class="co">#&gt;    .b2              0.283      0.039    7.323    0.000</span></span>
+<span><span class="co">#&gt;     b1              0.167      0.045    3.698    0.000</span></span>
+<span><span class="co">#&gt;     b2              0.283      0.039    7.323    0.000</span></span>
 <span><span class="co">#&gt;    .ATT             0.265      0.056    4.748    0.000</span></span>
 <span><span class="co">#&gt;    .SN              0.395      0.053    7.426    0.000</span></span>
 <span><span class="co">#&gt;    .PC              0.335      0.091    3.690    0.000</span></span>

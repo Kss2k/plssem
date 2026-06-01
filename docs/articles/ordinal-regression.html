@@ -272,7 +272,7 @@ automatically switches to the Monte-Carlo ordinal PLSc estimator.</p>
 <span><span class="co">#&gt;   RMSEA                                            Inf</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; R-squared (latents):</span></span>
-<span><span class="co">#&gt;   Survived                                       0.562</span></span>
+<span><span class="co">#&gt;   Survived                                       0.563</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Regressions:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
@@ -291,10 +291,10 @@ automatically switches to the Monte-Carlo ordinal PLSc estimator.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Variances:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;    .Survived        0.438                             </span></span>
+<span><span class="co">#&gt;    .Survived        0.437                             </span></span>
 <span><span class="co">#&gt;     Age             1.000                             </span></span>
 <span><span class="co">#&gt;     Female          1.000                             </span></span>
-<span><span class="co">#&gt;     Age:Female      1.000</span></span></code></pre></div>
+<span><span class="co">#&gt;     Age:Female      1.004</span></span></code></pre></div>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/pls_predict.html">pls_predict</a></span><span class="op">(</span><span class="va">fit_int</span>, benchmark <span class="op">=</span> <span class="st">"acc"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; PlsSemPredict object</span></span>
@@ -311,12 +311,12 @@ automatically switches to the Monte-Carlo ordinal PLSc estimator.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; X.cont [714 x 3] (head)</span></span>
 <span><span class="co">#&gt;   Survvd    Age Female</span></span>
-<span><span class="co">#&gt; 1 -0.649 -0.530 -0.759</span></span>
-<span><span class="co">#&gt; 2  0.931  0.571  1.317</span></span>
-<span><span class="co">#&gt; 3  0.931 -0.255  1.317</span></span>
-<span><span class="co">#&gt; 4  0.931  0.365  1.317</span></span>
-<span><span class="co">#&gt; 5 -0.649  0.365 -0.759</span></span>
-<span><span class="co">#&gt; 7 -0.649  1.673 -0.759</span></span>
+<span><span class="co">#&gt; 1 -0.640 -0.530 -0.759</span></span>
+<span><span class="co">#&gt; 2  0.936  0.571  1.317</span></span>
+<span><span class="co">#&gt; 3  0.936 -0.255  1.317</span></span>
+<span><span class="co">#&gt; 4  0.936  0.365  1.317</span></span>
+<span><span class="co">#&gt; 5 -0.640  0.365 -0.759</span></span>
+<span><span class="co">#&gt; 7 -0.640  1.673 -0.759</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; X.cont.pred [714 x 3] (head)</span></span>
 <span><span class="co">#&gt;   Survvd    Age Female</span></span>

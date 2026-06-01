@@ -298,7 +298,8 @@ updateModelFromFreeParTableMC <- function(parTable,
     seed         = seed,
     check.hi.ord = model@info$is.high.ord,
     clusterSizes = clusterSizes,
-    clusterName  = clusterName
+    clusterName  = clusterName,
+    standardize  = TRUE
   )
 
   sim.ord <- ordinalizeDataFrame(
@@ -310,7 +311,7 @@ updateModelFromFreeParTableMC <- function(parTable,
   lvs    <- getLVs(parTable)
   indsLVs <- getIndsLVs(parTable, lVs = lvs)
 
-  SC   <- cov2cor(Rfast::cova(as.matrix(sim$all)))
+  SC   <- Rfast::cova(as.matrix(sim$all))
   ovs  <- colnames(model@matrices$S)
   lvsc <- colnames(model@matrices$C)
 
@@ -370,7 +371,9 @@ updateModelFromFreeParTableMC <- function(parTable,
   for (i in seq_len(k)) for (j in seq_len(i)) {
     lhs <- colnames(fitCov)[[i]]
     rhs <- rownames(fitCov)[[j]]
+
     if (!selectCov[lhs, rhs]) next
+
     par <- getpar(lhs = lhs, op = "~~", rhs = rhs)
     if (is.na(par)) par <- tryCatchNA(C[lhs, rhs])
     fitCov[i, j] <- fitCov[j, i] <- par

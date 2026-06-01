@@ -4,7 +4,8 @@ simulateDataParTable <- function(parTable,
                                  .cortol      = .95,
                                  check.hi.ord = FALSE,
                                  clusterSizes = NULL,
-                                 clusterName  = NULL) {
+                                 clusterName  = NULL,
+                                 standardize  = FALSE) {
   if (!is.null(seed) && exists(".Random.seed")) .Random.seed.orig <- .Random.seed
   else                                          .Random.seed.orig <- NULL
 
@@ -66,9 +67,7 @@ simulateDataParTable <- function(parTable,
   lvs     <- unique(c(mode.a, mode.b))
   indsLVs <- getIndsLVs(parTable, lVs = lvs)
   ovs     <- getOVs(parTable)
-
   mixed   <- !is.null(clusterSizes) && !is.null(clusterName)
-
 
   if (mixed) {
     randeff <- getRandomEffectLabels(parTable)
@@ -92,7 +91,6 @@ simulateDataParTable <- function(parTable,
     cluster <- rep(seq_along(clusterSizes), clusterSizes)
     clusterMat <- matrix(cluster, nrow = N, dimnames = list(NULL, clusterName))
 
-
   } else {
     randeff    <- NULL
     ncluster   <- 0
@@ -110,7 +108,7 @@ simulateDataParTable <- function(parTable,
   )
 
   parTable <- res$parTable
-  Xi       <- as.data.frame(Rfast::standardise(rmvnSafe(N, res$mat)))
+  Xi <- as.data.frame(Rfast::standardise(rmvnSafe(N, res$mat)))
   colnames(Xi) <- xis
 
   undefIntTerms <- getIntTerms(parTable)
@@ -200,6 +198,9 @@ simulateDataParTable <- function(parTable,
     vals <- vals + Rfast::Rnorm(N, m = 0, s = sqrt(resvar), seed = rfast.seed())
     # vals <- vals + rnorm(N, mean = 0, sd = sqrt(resvar))
 
+    if (standardize)
+      vals <- (vals - mean(vals)) / sd(vals)
+
     Xi[[eta]] <- vals
   }
 
@@ -236,6 +237,9 @@ simulateDataParTable <- function(parTable,
 
       # vals <- lambda * Xi[[lv]] + rnorm(N, mean = 0, sd = sqrt(epsilon))
       vals <- lambda * Xi[[lv]] + Rfast::Rnorm(N, m = 0, s = sqrt(epsilon), seed = rfast.seed())
+
+      if (standardize)
+        vals <- (vals - mean(vals)) / sd(vals)
 
       Inds[[ind]] <- vals
     }

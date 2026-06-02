@@ -32,7 +32,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">plssem</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.1.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.1.3</span>
       </span>
     </div>
 
@@ -146,7 +146,7 @@ the <code>ordered</code> argument, or by making sure they are
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit_linear</span><span class="op">)</span></span>
-<span><span class="co">#&gt; plssem (0.1.2) ended normally after 1 iterations</span></span>
+<span><span class="co">#&gt; plssem (0.1.3) ended normally after 1 iterations</span></span>
 <span><span class="co">#&gt;   Estimator                                    OrdPLSc</span></span>
 <span><span class="co">#&gt;   Link                                          PROBIT</span></span>
 <span><span class="co">#&gt;                                                       </span></span>
@@ -256,7 +256,7 @@ automatically switches to the Monte-Carlo ordinal PLSc estimator.</p>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit_int</span><span class="op">)</span></span>
-<span><span class="co">#&gt; plssem (0.1.2) ended normally after 101 iterations</span></span>
+<span><span class="co">#&gt; plssem (0.1.3) ended normally after 101 iterations</span></span>
 <span><span class="co">#&gt;   Estimator                                  MCOrdPLSc</span></span>
 <span><span class="co">#&gt;   Link                                          PROBIT</span></span>
 <span><span class="co">#&gt;                                                       </span></span>
@@ -285,16 +285,16 @@ automatically switches to the Monte-Carlo ordinal PLSc estimator.</p>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   Age ~~        </span></span>
 <span><span class="co">#&gt;     Female         -0.092      0.041   -2.267    0.023</span></span>
-<span><span class="co">#&gt;     Age:Female     -0.006                             </span></span>
+<span><span class="co">#&gt;     Age:Female     -0.006      0.001   -7.559    0.000</span></span>
 <span><span class="co">#&gt;   Female ~~     </span></span>
-<span><span class="co">#&gt;     Age:Female     -0.002                             </span></span>
+<span><span class="co">#&gt;     Age:Female     -0.002      0.000  -31.463    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Variances:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;    .Survived        0.437                             </span></span>
+<span><span class="co">#&gt;    .Survived        0.437      0.083    5.264    0.000</span></span>
 <span><span class="co">#&gt;     Age             1.000                             </span></span>
 <span><span class="co">#&gt;     Female          1.000                             </span></span>
-<span><span class="co">#&gt;     Age:Female      1.004</span></span></code></pre></div>
+<span><span class="co">#&gt;     Age:Female      1.004      0.008  127.898    0.000</span></span></code></pre></div>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/pls_predict.html">pls_predict</a></span><span class="op">(</span><span class="va">fit_int</span>, benchmark <span class="op">=</span> <span class="st">"acc"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; PlsSemPredict object</span></span>

@@ -31,6 +31,10 @@ setMethod("pls_predict", "PlsModel", function(object,
                                               ...) {
   combined <- combinedModel(object)
 
+  pls_stopif(isMLM(combined),
+    "`pls_predict()` is not implemented for multilevel/mixed-effects models (yet)!"
+  )
+
   # TODO:
   #  1. Allow the user to pass only indicators of exogenous variables, if
   #     approach='earliest'.

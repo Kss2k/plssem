@@ -47,7 +47,7 @@ bootstrap <- function(model,
 
   combinedCoefs <- combinedModel(model)@params$values
   # parTemplate might be stale with mc.delta=TRUE...
-  
+
   parTemplate <- stats::setNames(
     rep(NA_real_, length(combinedCoefs)),
     names(combinedCoefs)
@@ -250,27 +250,54 @@ bootstrap <- function(model,
     combined <- combinedModel(model)
     params <- modelParams(combined)
 
-    if (!is.null(params$Jacobian)) {
-      Jacobian <- params$Jacobian
-      pars <- intersect(colnames(Jacobian), colnames(vcov))
+    if (!is.null(params$Jacobian0)) {
+      Jacobian0 <- params$Jacobian0
+      pars.free <- intersect(colnames(Jacobian0), colnames(vcov))
 
-      vcov.sub <- vcov[pars, pars, drop = FALSE]
-      J <- Jacobian[pars, pars, drop = FALSE]
+      vcov.sub <- vcov[pars.free, pars.free, drop = FALSE]
+      J0 <- Jacobian0[pars.free, pars.free, drop = FALSE]
 
       tryCatch({
         # Try to invert J
-        J.inv <- tryCatch(
-          solve(J),
+        J0.inv <- tryCatch(
+          solve(J0),
           error = function(e) {
             pls_msg_warn("Jacobian is not positive definite!")
-            MASS::ginv(J)
+            MASS::ginv(J0)
           }
         )
 
-        vcov.mc <- J.inv %*% vcov.sub %*% t(J.inv)
-        
-        vcov[] <- 0
-        vcov[pars, pars] <- vcov.mc[pars, pars]
+        vcov.mc.free <- J0.inv %*% vcov.sub %*% t(J0.inv)
+
+        if (!is.null(params$Jacobian1)) {
+          Jacobian1 <- params$Jacobian1
+
+          pars.all <- intersect(rownames(Jacobian1), colnames(vcov))
+          missing0 <- setdiff(colnames(vcov), rownames(Jacobian1))
+          missing1 <- setdiff(pars.free, colnames(Jacobian1))
+
+          pls_warnif(length(missing0),
+            "Missing entries in Jacobian for some parameters:",
+            paste0(missing0, collapse = ", ")
+          )
+
+          pls_stopif(length(missing1), # this really shouldn't happen!
+            "Missing entries in Jacobian for some free parameters:",
+            paste0(missing1, collapse = ", ")
+          )
+
+          J1 <- Jacobian1[pars.all, pars.free, drop = FALSE]
+          vcov.mc.full <- J1 %*% vcov.mc.free %*% t(J1)
+
+          vcov[] <- 0
+          vcov[pars.all, pars.all] <- vcov.mc.full[pars.all, pars.all]
+
+        } else {
+          # Just use standard errors for free parameters
+          vcov[] <- 0
+          vcov[pars.free, pars.free] <- vcov.mc.free[pars.free, pars.free]
+
+        }
 
       }, error = function(e) {
         pls_msg_warn(

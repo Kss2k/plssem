@@ -50,7 +50,8 @@ initModelParams <- function(model) {
     values.old = NULL,
     se         = rep(NA_real_, k),
     vcov       = NULL,
-    Jacobian   = NULL
+    Jacobian0  = NULL, # free naive params to free mc params
+    Jacobian1  = NULL  # free mc params to all mc params
   )
 
   model

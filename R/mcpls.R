@@ -189,7 +189,27 @@ mcpls <- function(
     if (verbose) pls_msg_note("Calculating Jacobian...")
 
     nm <- paste0(par1$lhs, par1$op, par1$rhs)
-    p <- stats::setNames(mcfit$root, nm[par1$is.free])
+    p0 <- stats::setNames(mcfit$root, nm[par1$is.free])
+    p1 <- fit1.combined@params$values
+
+    # .g(free.params) -> all.params
+    .g <- function(p) {
+      parx <- par1
+      parx[parx$is.free, "est"] <- p
+
+      fit <- updateModelFromFreeParTableMC(
+        parTable     = parx,
+        model        = fit0.combined,
+        mc.reps      = mc.reps,
+        PROBS        = PROBS,
+        ordered      = ordered,
+        seed         = rng.seed,
+        clusterSizes = clusterSizes,
+        clusterName  = clusterName
+      )
+
+      fit@params$values
+    }
 
     if (verbose) {
       pb <- utils::txtProgressBar(
@@ -208,19 +228,31 @@ mcpls <- function(
     }
 
     delta.jacobian.k <- delta.jacobian.k[[1L]]
-    J <- 0
+    J0 <- J1 <- 0
 
     for (i in seq_len(delta.jacobian.k)) {
 
       if (delta.fixed.seed)
         rng.seed <- floor(stats::runif(1L, min = 0, max = 9999999))
 
-      J.i <- calcMcJacobian(.f = .f, p0 = p, progressBar = pb, k = i)
-      J <- J + J.i / delta.jacobian.k
+      JAC  <- calcMcJacobians(
+        .f          = .f,
+        .g          = .g,
+        p0          = p0,
+        p1          = p1,
+        progressBar = pb,
+        k           = i
+      )
 
+      J0.i <- JAC$J0
+      J1.i <- JAC$J1
+
+      J1 <- J1 + J1.i / delta.jacobian.k
+      J0 <- J0 + J0.i / delta.jacobian.k
     }
 
-    fit1.combined@params$Jacobian <- J
+    fit1.combined@params$Jacobian0 <- J0
+    fit1.combined@params$Jacobian1 <- J1
   }
 
 
@@ -354,7 +386,7 @@ updateModelFromFreeParTableMC <- function(parTable,
     fitMeasurement[ov, lv] <- par
 
     if (selectTheta[ov, ov])
-      fitTheta[ov, ov] <- max(0, 1 - par)
+      fitTheta[ov, ov] <- max(0, 1 - par^2)
   }
 
   for (dep in colnames(fitStructural)) for (indep in rownames(fitStructural)) {
@@ -426,12 +458,17 @@ getPROBS <- function(data, ordered) {
 }
 
 
-calcMcJacobian <- function(.f, p0, eps = 5e-3, progressBar = NULL, k = 1) {
-
-  J <- matrix(
+calcMcJacobians <- function(.f, .g, p0, p1, eps = 5e-3, progressBar = NULL, k = 1) {
+  J0 <- matrix(
     NA_real_,
     nrow = length(p0), ncol = length(p0),
     dimnames = list(names(p0), names(p0))
+  )
+
+  J1 <- matrix(
+    NA_real_,
+    nrow = length(p1), ncol = length(p0),
+    dimnames = list(names(p1), names(p0))
   )
 
   for (i in seq_along(p0)) {
@@ -439,11 +476,12 @@ calcMcJacobian <- function(.f, p0, eps = 5e-3, progressBar = NULL, k = 1) {
     pp[i] <- pp[i] + eps
     pm[i] <- pm[i] - eps
 
-    J[,i] <- (.f(pp) - .f(pm)) / (2 * eps)
+    J0[,i] <- (.f(pp) - .f(pm)) / (2 * eps)
+    J1[,i] <- (.g(pp) - .g(pm)) / (2 * eps)
 
     if (!is.null(progressBar))
       utils::setTxtProgressBar(progressBar, (k - 1) * length(p0) + i)
   }
 
-  J
+  list(J0 = J0, J1 = J1)
 }

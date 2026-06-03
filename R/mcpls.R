@@ -325,7 +325,6 @@ mcpls <- function(
     fit1.combined@params$Jacobian1 <- J1
     fit1.combined@params$JacobianProbs0 <- Jp
     fit1.combined@params$JacobianProbs1 <- Gp
-    fit1.combined@thresholdStruct <- thresholdStruct 
   }
 
 
@@ -497,6 +496,7 @@ updateModelFromFreeParTableMC <- function(parTable,
     modelFitLmer(model)$values <- params$values
   }
 
+  pls_msg_warn("FIXME: THE THRESHOLDS IN thresholdStruct NEED TO BE UPDATED!")
   model@thresholdStruct       <- thresholdStruct
   model@fit$fitMeasurement    <- fitMeasurement
   model@fit$fitStructural     <- fitStructural

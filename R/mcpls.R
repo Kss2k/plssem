@@ -92,7 +92,46 @@ mcpls <- function(
     modelData(fit.sim)  <- X
     indCorrMatrix(fit.sim) <- S
 
-    fit2 <- estimatePLS_Inner(fit.sim)
+    # Thresholds are not part of the root equation. Avoid recomputing them on
+    # every Robbins-Monro iteration.
+    fit2 <- estimatePLS_Inner(fit.sim, include.thresholds = FALSE)
+    par2 <- getFreeParamsTable(combinedModel(fit2))
+
+    eps <- par2$est - par0$est + sim$penalty
+    eps[par0$is.free]
+  }
+
+  # Keep the Robbins-Monro hot path direct. The more flexible `.f()` below is
+  # used by the Jacobian workflow, where sharing a pre-simulated dataset matters.
+  .f.root <- function(p) {
+    par1[par1$is.free, "est"] <- p
+
+    sim <- simulateDataParTable(
+      parTable     = par1,
+      N            = mc.reps,
+      seed         = rng.seed,
+      check.hi.ord = is.hi.ord,
+      clusterSizes = clusterSizes,
+      clusterName  = clusterName
+    )
+
+    sim.ov <- ordinalizeDataFrame(
+      df      = sim$ov,
+      PROBS   = PROBS,
+      ordered = ordered
+    )
+
+    fit.sim <- fit0.base
+    X       <- Rfast::standardise(as.matrix(sim.ov[vars]))
+    S       <- Rfast::cova(X)
+
+    if (!is.null(sim$cluster))
+      attr(X, "cluster") <- sim$cluster
+
+    modelData(fit.sim)     <- X
+    indCorrMatrix(fit.sim) <- S
+
+    fit2 <- estimatePLS_Inner(fit.sim, include.thresholds = FALSE)
     par2 <- getFreeParamsTable(combinedModel(fit2))
 
     eps <- par2$est - par0$est + sim$penalty
@@ -153,7 +192,7 @@ mcpls <- function(
 
     mcfit <- robbinsMonro1951(
       p               = p,
-      f               = .f,
+      f               = .f.root,
       tol             = 10 * tol,
       min.iter        = 5L,
       max.iter        = 20L,
@@ -170,7 +209,7 @@ mcpls <- function(
 
   mcfit <- robbinsMonro1951(
     p               = p,
-    f               = .f,
+    f               = .f.root,
     tol             = tol,
     min.iter        = min.iter,
     max.iter        = max.iter,
@@ -192,7 +231,7 @@ mcpls <- function(
 
     mcfit <- robbinsMonro1951(
       p               = as.vector(mcfit$root),
-      f               = .f,
+      f               = .f.root,
       tol             = tol,
       min.iter        = min.iter,
       max.iter        = max.iter,

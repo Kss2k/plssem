@@ -251,10 +251,12 @@ estimatePLS_Step7 <- function(model) {
 }
 
 
-estimatePLS_Step8 <- function(model) {
+estimatePLS_Step8 <- function(model, include.thresholds = TRUE) {
   force(model)
 
-  model@params$values <- extractCoefs(model)
+  model@params$values <- extractCoefs(
+    model, include.thresholds = include.thresholds
+  )
   model@params$se     <- rep(NA_real_, length(model@params$values))
 
   if (!isMLM(model))

@@ -154,7 +154,7 @@ getParamVecNames <- function(model, sim.cont = NULL) {
 }
 
 
-extractCoefs <- function(model, sim.cont = NULL) {
+extractCoefs <- function(model, sim.cont = NULL, include.thresholds = TRUE) {
   fit <- model@fit
 
   lambda       <- fit$fitMeasurement
@@ -173,11 +173,13 @@ extractCoefs <- function(model, sim.cont = NULL) {
     lambda[selectLambda],
     gamma[selectGamma],
     fitCov[selectCov],
-    fitTheta[selectTheta],
-    getModelThresholds(model, sim.cont = sim.cont)
+    fitTheta[selectTheta]
   )
 
-  names(out) <- model@params$names
+  if (include.thresholds)
+    out <- c(out, getModelThresholds(model, sim.cont = sim.cont))
+
+  names(out) <- model@params$names[seq_along(out)]
   plssemVector(out)
 }
 

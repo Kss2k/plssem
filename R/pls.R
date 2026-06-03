@@ -280,18 +280,18 @@ resetPLS_ModelLowerOrder <- function(model, hard.reset = FALSE) {
 }
 
 
-estimatePLS_InnerLocal <- function(model) {
+estimatePLS_InnerLocal <- function(model, include.thresholds = TRUE) {
   model |>
     updateOuterWeights() |>
     updateFactorScores() |>
     updateFitObjects()   |>
-    updateParamVector()  |>
+    updateParamVector(include.thresholds = include.thresholds) |>
     updateEstimationStatus()
 }
 
 
-estimatePLS_Inner <- function(model) {
-  estimateHigherOrderChain(model)
+estimatePLS_Inner <- function(model, include.thresholds = TRUE) {
+  estimateHigherOrderChain(model, include.thresholds = include.thresholds)
 }
 
 

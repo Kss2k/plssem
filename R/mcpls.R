@@ -583,6 +583,10 @@ probsToThresholds <- function(PROBS, sim.cont = NULL, zero.tol = .Machine$double
   }
 
   lhs <- sub("^PROBS::(.*)::[0-9]+$", "\\1", names(probs))
+  available <- lhs %in% colnames(sim.cont)
+  probs <- probs[available]
+  lhs <- lhs[available]
+  threshold.names <- threshold.names[available]
 
   thresholds <- NULL
   for (var in unique(lhs)) {
@@ -649,17 +653,38 @@ thresholdJacobian <- function(PROBS, sim.cont = NULL, eps = 1e-3,
 }
 
 
-getModelThresholds <- function(model, sim.cont = NULL) {
+getThresholdVariables <- function(model, sim.cont = NULL) {
   ordered <- intersect(model@info$ordered, colnames(model@data))
-  if (!length(ordered))
+  if (!is.null(sim.cont))
+    ordered <- intersect(ordered, colnames(sim.cont))
+
+  original <- unique(removeTempIndSuffix(ordered))
+  vapply(original, FUN.VALUE = character(1L), FUN = \(var) {
+    candidates <- ordered[removeTempIndSuffix(ordered) == var]
+    non.temp <- candidates[!hasTempIndSuffix(candidates)]
+    if (length(non.temp)) non.temp[[1L]] else candidates[[1L]]
+  })
+}
+
+
+getModelThresholds <- function(model, sim.cont = NULL) {
+  threshold.vars <- getThresholdVariables(model, sim.cont = sim.cont)
+  if (!length(threshold.vars))
     return(numeric(0))
 
   support <- model@params$threshold.support
   if (is.null(support))
-    support <- getPROBSSupport(model@data, ordered)
+    support <- getPROBSSupport(model@data, threshold.vars)
 
-  PROBS <- getPROBSFixedSupport(model@data, ordered, support = support[ordered])
-  probsToThresholds(PROBS, sim.cont = sim.cont)
+  PROBS <- getPROBSFixedSupport(
+    model@data, threshold.vars, support = support[threshold.vars]
+  )
+  thresholds <- probsToThresholds(PROBS, sim.cont = sim.cont)
+  names(thresholds) <- sub(
+    paste0(TEMP_IND_SUFFIX, "[0-9]+(?=\\|)"), "", names(thresholds),
+    perl = TRUE
+  )
+  thresholds
 }
 
 

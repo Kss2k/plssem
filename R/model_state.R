@@ -51,7 +51,12 @@ initModelParams <- function(model) {
     se         = rep(NA_real_, k),
     vcov       = NULL,
     Jacobian0  = NULL, # free naive params to free mc params
-    Jacobian1  = NULL  # free mc params to all mc params
+    Jacobian1  = NULL, # free mc params to all mc params
+    JacobianProbs0 = NULL, # empirical probabilities to free MC root equation
+    JacobianProbs1 = NULL, # empirical probabilities to all MC params
+    PROBS      = NULL,
+    PROBS.support = NULL,
+    threshold.support = getPROBSSupport(model@data, model@info$ordered)
   )
 
   model

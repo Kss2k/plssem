@@ -46,6 +46,9 @@ bootstrap <- function(model,
   )
 
   combinedCoefs <- combinedModel(model)@params$values
+  mc.params <- modelParams(combinedModel(model))
+  probsTemplate <- if (mc.delta.se && is.mcpls) flattenPROBS(mc.params$PROBS) else numeric(0)
+  probsSupport <- if (mc.delta.se && is.mcpls) mc.params$PROBS.support else NULL
   # parTemplate might be stale with mc.delta=TRUE...
 
   parTemplate <- stats::setNames(
@@ -106,23 +109,29 @@ bootstrap <- function(model,
       par <- formatBootPars(
         modelParams(combinedModel(model.b))$values
       )
+      probs <- if (length(probsTemplate)) {
+        flattenPROBS(getPROBSFixedSupport(sampleData, ordered, support = probsSupport))
+      } else {
+        numeric(0)
+      }
 
       if (low.tol.penalty > 0 && is.mcpls && !mc.delta.se) {
         k <- length(par)
         par <- par + stats::rnorm(k, mean = 0, sd = low.tol.penalty)
       }
 
-      attr(par, "id") <- i
-      par
+      out <- c(par, probs)
+      attr(out, "id") <- i
+      out
 
     }, error = \(e) {
       pls_msg_warn(
         paste0("Bootstrap replicate ", i, " failed: ", conditionMessage(e))
       )
 
-      par <- parTemplate
-      attr(par, "id") <- i
-      par
+      out <- c(parTemplate, probsTemplate + NA_real_)
+      attr(out, "id") <- i
+      out
     })
   }
 
@@ -242,9 +251,11 @@ bootstrap <- function(model,
 
   resultsMat <- do.call(rbind, results)
   rownames(resultsMat) <- ids
-  colnames(resultsMat) <- names(combinedModel(model)@params$values)
+  colnames(resultsMat) <- c(names(combinedModel(model)@params$values), names(probsTemplate))
 
-  vcov <- stats::cov(resultsMat, use = "complete.obs")
+  vcov.joint <- stats::cov(resultsMat, use = "complete.obs")
+  par.names <- names(combinedModel(model)@params$values)
+  vcov <- vcov.joint[par.names, par.names, drop = FALSE]
 
   if (mc.delta.se) {
     combined <- combinedModel(model)
@@ -252,9 +263,8 @@ bootstrap <- function(model,
 
     if (!is.null(params$Jacobian0)) {
       Jacobian0 <- params$Jacobian0
-      pars.free <- intersect(colnames(Jacobian0), colnames(vcov))
+      pars.free <- intersect(colnames(Jacobian0), colnames(vcov.joint))
 
-      vcov.sub <- vcov[pars.free, pars.free, drop = FALSE]
       J0 <- Jacobian0[pars.free, pars.free, drop = FALSE]
 
       tryCatch({
@@ -266,8 +276,6 @@ bootstrap <- function(model,
             MASS::ginv(J0)
           }
         )
-
-        vcov.mc.free <- J0.inv %*% vcov.sub %*% t(J0.inv)
 
         if (!is.null(params$Jacobian1)) {
           Jacobian1 <- params$Jacobian1
@@ -287,13 +295,34 @@ bootstrap <- function(model,
           )
 
           J1 <- Jacobian1[pars.all, pars.free, drop = FALSE]
-          vcov.mc.full <- J1 %*% vcov.mc.free %*% t(J1)
+          D.par <- J1 %*% J0.inv
+          prob.names <- intersect(names(probsTemplate), colnames(vcov.joint))
+
+          if (length(prob.names)) {
+            # Implicit delta method:
+            # dp = J0^-1 da - J0^-1 Jp dc
+            # dy = J1 dp + Gp dc
+            Jp <- params$JacobianProbs0[pars.free, prob.names, drop = FALSE]
+            Gp <- params$JacobianProbs1[pars.all, prob.names, drop = FALSE]
+            D.probs <- Gp - D.par %*% Jp
+            D <- cbind(D.par, D.probs)
+            vcov.sub <- vcov.joint[
+              c(pars.free, prob.names), c(pars.free, prob.names), drop = FALSE
+            ]
+          } else {
+            D <- D.par
+            vcov.sub <- vcov.joint[pars.free, pars.free, drop = FALSE]
+          }
+
+          vcov.mc.full <- D %*% vcov.sub %*% t(D)
 
           vcov[] <- 0
           vcov[pars.all, pars.all] <- vcov.mc.full[pars.all, pars.all]
 
         } else {
           # Just use standard errors for free parameters
+          vcov.sub <- vcov.joint[pars.free, pars.free, drop = FALSE]
+          vcov.mc.free <- J0.inv %*% vcov.sub %*% t(J0.inv)
           vcov[] <- 0
           vcov[pars.free, pars.free] <- vcov.mc.free[pars.free, pars.free]
 
@@ -314,7 +343,7 @@ bootstrap <- function(model,
   se <- sqrt(diag(vcov))
   se[se <= zero.tol] <- NA_real_
 
-  list(se = se, boot = resultsMat, vcov = vcov)
+  list(se = se, boot = resultsMat[, par.names, drop = FALSE], vcov = vcov)
 }
 
 

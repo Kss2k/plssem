@@ -120,7 +120,7 @@ modelFitIsAdmissible <- function(fit) {
 }
 
 
-getParamVecNames <- function(model) {
+getParamVecNames <- function(model, sim.cont = NULL) {
   selectLambda <- model@matrices$select$lambda
   modes        <- model@info$modes
   lvs.linear   <- model@info$lvs.linear
@@ -147,11 +147,14 @@ getParamVecNames <- function(model) {
   for (j in colnames(theta)) for (i in rownames(theta))
     theta[i, j] <- paste0(j, "~~", i)
 
-  c(lambda[selectLambda], gamma[selectGamma], psi[selectCov], theta[selectTheta])
+  thresholds <- getModelThresholds(model, sim.cont = sim.cont)
+
+  c(lambda[selectLambda], gamma[selectGamma], psi[selectCov], theta[selectTheta],
+    names(thresholds))
 }
 
 
-extractCoefs <- function(model) {
+extractCoefs <- function(model, sim.cont = NULL) {
   fit <- model@fit
 
   lambda       <- fit$fitMeasurement
@@ -170,7 +173,8 @@ extractCoefs <- function(model) {
     lambda[selectLambda],
     gamma[selectGamma],
     fitCov[selectCov],
-    fitTheta[selectTheta]
+    fitTheta[selectTheta],
+    getModelThresholds(model, sim.cont = sim.cont)
   )
 
   names(out) <- model@params$names
@@ -206,13 +210,13 @@ getEstimatorFromInfo <- function(info) {
 }
 
 
-refreshModelParams <- function(model, update.names = TRUE) {
+refreshModelParams <- function(model, update.names = TRUE, sim.cont = NULL) {
   # Should we update names?
   if (update.names)
-    model@params$names <- getParamVecNames(model)
+    model@params$names <- getParamVecNames(model, sim.cont = sim.cont)
 
   # Single level params
-  model@params$values <- extractCoefs(model)
+  model@params$values <- extractCoefs(model, sim.cont = sim.cont)
   model@params$se     <- rep(NA_real_, length(model@params$values))
 
   # Multilevel/Mixed-Effect params
@@ -243,4 +247,3 @@ refreshLmerParams <- function(model) {
 
   model
 }
-

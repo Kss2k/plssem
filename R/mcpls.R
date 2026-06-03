@@ -24,7 +24,14 @@ mcpls <- function(
   ordered   <- fit0@info$ordered
   is.hi.ord <- isTRUE(fit0.combined@info$is.high.ord)
 
-  PROBS <- getPROBS(data = data, ordered = ordered)
+  PROBS.support <- fit0.combined@params$threshold.support
+  if (is.null(PROBS.support))
+    PROBS.support <- getPROBSSupport(data = data, ordered = ordered)
+
+  PROBS <- getPROBSFixedSupport(
+    data = data, ordered = ordered, support = PROBS.support[ordered]
+  )
+  probs0 <- flattenPROBS(PROBS)
 
   par0 <- getFreeParamsTable(fit0.combined)
   par1 <- par0[c("lhs", "op", "rhs", "est", "is.free")]
@@ -44,21 +51,30 @@ mcpls <- function(
 
   }
 
-  .f <- function(p) {
-    par1[par1$is.free, "est"] <- p
+  .parTable <- function(p) {
+    parx <- par1
+    parx[parx$is.free, "est"] <- p
+    parx
+  }
 
-    sim <- simulateDataParTable(
-      parTable     = par1,
+  .simulate <- function(p, standardize = FALSE) {
+    simulateDataParTable(
+      parTable     = .parTable(p),
       N            = mc.reps,
       seed         = rng.seed,
       check.hi.ord = is.hi.ord,
       clusterSizes = clusterSizes,
-      clusterName  = clusterName
+      clusterName  = clusterName,
+      standardize  = standardize
     )
+  }
+
+  .f.from.sim <- function(sim, probs = NULL) {
+    PROBS.x <- if (is.null(probs)) PROBS else unflattenPROBS(probs, PROBS)
 
     sim.ov  <- ordinalizeDataFrame(
       df      = sim$ov,
-      PROBS   = PROBS,
+      PROBS   = PROBS.x,
       ordered = ordered
     )
 
@@ -81,6 +97,46 @@ mcpls <- function(
 
     eps <- par2$est - par0$est + sim$penalty
     eps[par0$is.free]
+  }
+
+  .f <- function(p, probs = NULL, sim = NULL) {
+    if (is.null(sim)) {
+      par1[par1$is.free, "est"] <- p
+      sim <- simulateDataParTable(
+        parTable     = par1,
+        N            = mc.reps,
+        seed         = rng.seed,
+        check.hi.ord = is.hi.ord,
+        clusterSizes = clusterSizes,
+        clusterName  = clusterName
+      )
+    }
+
+    .f.from.sim(sim, probs = probs)
+  }
+
+  .g <- function(p, probs = probs0, sim = NULL) {
+    fit <- updateModelFromFreeParTableMC(
+      parTable     = .parTable(p),
+      model        = fit0.combined,
+      mc.reps      = mc.reps,
+      PROBS        = unflattenPROBS(probs, PROBS),
+      ordered      = ordered,
+      seed         = rng.seed,
+      clusterSizes = clusterSizes,
+      clusterName  = clusterName,
+      sim           = sim
+    )
+
+    fit@params$values
+  }
+
+  .fg <- function(p, probs = probs0, sim = NULL) {
+    if (is.null(sim))
+      sim <- .simulate(p, standardize = TRUE)
+
+    list(f = .f(p, probs = probs, sim = sim),
+         g = .g(p, probs = probs, sim = sim))
   }
 
   ok.start <- !is.null(p.start) && length(p.start) == sum(par1$is.free)
@@ -192,29 +248,10 @@ mcpls <- function(
     p0 <- stats::setNames(mcfit$root, nm[par1$is.free])
     p1 <- fit1.combined@params$values
 
-    # .g(free.params) -> all.params
-    .g <- function(p) {
-      parx <- par1
-      parx[parx$is.free, "est"] <- p
-
-      fit <- updateModelFromFreeParTableMC(
-        parTable     = parx,
-        model        = fit0.combined,
-        mc.reps      = mc.reps,
-        PROBS        = PROBS,
-        ordered      = ordered,
-        seed         = rng.seed,
-        clusterSizes = clusterSizes,
-        clusterName  = clusterName
-      )
-
-      fit@params$values
-    }
-
     if (verbose) {
       pb <- utils::txtProgressBar(
         min     = 0,
-        max     = delta.jacobian.k * length(p),
+        max     = delta.jacobian.k * (length(p) + length(probs0)),
         initial = 0,
         style   = 3,
         file    = stderr()
@@ -236,23 +273,38 @@ mcpls <- function(
         rng.seed <- floor(stats::runif(1L, min = 0, max = 9999999))
 
       JAC  <- calcMcJacobians(
+        .fg         = .fg,
         .f          = .f,
-        .g          = .g,
+        .simulate.f = .simulate,
         p0          = p0,
         p1          = p1,
+        probs0      = probs0,
         progressBar = pb,
         k           = i
       )
 
       J0.i <- JAC$J0
       J1.i <- JAC$J1
+      Jp.i <- JAC$Jp
+      Gp.i <- JAC$Gp
 
       J1 <- J1 + J1.i / delta.jacobian.k
       J0 <- J0 + J0.i / delta.jacobian.k
+      if (i == 1L) {
+        Jp <- Jp.i / delta.jacobian.k
+        Gp <- Gp.i / delta.jacobian.k
+      } else {
+        Jp <- Jp + Jp.i / delta.jacobian.k
+        Gp <- Gp + Gp.i / delta.jacobian.k
+      }
     }
 
     fit1.combined@params$Jacobian0 <- J0
     fit1.combined@params$Jacobian1 <- J1
+    fit1.combined@params$JacobianProbs0 <- Jp
+    fit1.combined@params$JacobianProbs1 <- Gp
+    fit1.combined@params$PROBS <- PROBS
+    fit1.combined@params$PROBS.support <- PROBS.support
   }
 
 
@@ -299,7 +351,8 @@ getFreeParamsTable <- function(model) {
   cond2 <- !((isIntTermVariable(lhs) | isIntTermVariable(rhs)) & op == "~~")
   cond3 <- op != "~1"
   cond4 <- !(lhs %in% inds.b & op == "~~") & !(rhs %in% inds.b & op == "~~")
-  cond  <- cond1 & cond2 & cond3 & cond4
+  cond5 <- op != "|"
+  cond  <- cond1 & cond2 & cond3 & cond4 & cond5
 
   out <- parTable[cond, , drop = FALSE]
   attr(out, "cond") <- cond
@@ -323,16 +376,18 @@ updateModelFromFreeParTableMC <- function(parTable,
                                           ordered,
                                           seed = NULL,
                                           clusterSizes = NULL,
-                                          clusterName = NULL) {
-  sim <- simulateDataParTable(
-    parTable     = parTable,
-    N            = mc.reps,
-    seed         = seed,
-    check.hi.ord = model@info$is.high.ord,
-    clusterSizes = clusterSizes,
-    clusterName  = clusterName,
-    standardize  = TRUE
-  )
+                                          clusterName = NULL,
+                                          sim = NULL) {
+  if (is.null(sim))
+    sim <- simulateDataParTable(
+      parTable     = parTable,
+      N            = mc.reps,
+      seed         = seed,
+      check.hi.ord = model@info$is.high.ord,
+      clusterSizes = clusterSizes,
+      clusterName  = clusterName,
+      standardize  = TRUE
+    )
 
   sim.ord <- ordinalizeDataFrame(
     df      = sim$ov,
@@ -435,7 +490,7 @@ updateModelFromFreeParTableMC <- function(parTable,
     clusterName  = clusterName
   )
 
-  refreshModelParams(model, update.names = TRUE)
+  refreshModelParams(model, update.names = TRUE, sim.cont = sim$ov)
 }
 
 
@@ -444,6 +499,14 @@ resampleMCPLS_Fit <- function(model, ...) {
   new.args     <- list(...)
   args[names(new.args)] <- new.args
   do.call(updateModelFromFreeParTableMC, args)
+}
+
+
+getPROBSSupport <- function(data, ordered) {
+  stats::setNames(
+    lapply(ordered, \(ord) sort(unique(data[, ord]))),
+    ordered
+  )
 }
 
 
@@ -458,7 +521,144 @@ getPROBS <- function(data, ordered) {
 }
 
 
-calcMcJacobians <- function(.f, .g, p0, p1, eps = 5e-3, progressBar = NULL, k = 1) {
+getPROBSFixedSupport <- function(data, ordered, support) {
+  PROBS <- stats::setNames(vector("list", length(ordered)), nm = ordered)
+  for (ord in ordered) {
+    freq <- table(factor(data[, ord], levels = support[[ord]]))
+    pct  <- cumsum(freq) / sum(freq)
+    PROBS[[ord]] <- unname(pct[-length(pct)])
+  }
+  PROBS
+}
+
+
+probsToThresholds <- function(PROBS, sim.cont = NULL, zero.tol = .Machine$double.eps^0.5) {
+  probs <- if (is.list(PROBS)) flattenPROBS(PROBS) else PROBS
+  probs <- pmin(pmax(probs, zero.tol), 1 - zero.tol)
+  threshold.names <- probNamesToThresholdNames(names(probs))
+
+  if (is.null(sim.cont)) {
+    thresholds <- stats::qnorm(probs)
+    names(thresholds) <- threshold.names
+    return(thresholds)
+  }
+
+  lhs <- sub("^PROBS::(.*)::[0-9]+$", "\\1", names(probs))
+
+  thresholds <- NULL
+  for (var in unique(lhs)) {
+    x <- sim.cont[, var]
+    probs.x <- probs[lhs == var]
+    thr.x <- collapse::fquantile(x, probs = probs.x)
+    names(thr.x) <- paste0(var, "|t", seq_along(thr.x))
+    thresholds <- c(thresholds, thr.x)
+  }
+
+  missing <- setdiff(threshold.names, names(thresholds))
+  pls_warnif(length(missing),
+    "Missing thresholds for proportions: ",
+    paste0(missing, collapse = ", ")
+  )
+
+  thresholds[threshold.names]
+}
+
+
+thresholdJacobian <- function(PROBS, sim.cont = NULL, eps = 1e-3,
+                              zero.tol = .Machine$double.eps^0.5) {
+  probs <- if (is.list(PROBS)) flattenPROBS(PROBS) else PROBS
+
+  # if we have no simulated data, we assume the normal distribution
+  if (is.null(sim.cont)) {
+    thr <- probsToThresholds(
+      PROBS    = probs,
+      sim.cont = sim.cont,
+      zero.tol = zero.tol
+    )
+
+    out <- diag(1 / stats::dnorm(thr), nrow = length(thr))
+    dimnames(out) <- list(names(thr), names(probs))
+
+    return(out)
+  }
+
+  # Get empirical finite difference jacobian
+  p0 <- probs - eps
+  p1 <- probs + eps
+
+  # check bounds
+  p0[p0 < 0] <- probs[p0 < 0]
+  p1[p1 > 1] <- probs[p1 > 1]
+
+  t0 <- probsToThresholds(
+    PROBS    = p0,
+    sim.cont = sim.cont,
+    zero.tol = zero.tol
+  )
+
+  t1 <- probsToThresholds(
+    PROBS    = p1,
+    sim.cont = sim.cont,
+    zero.tol = zero.tol
+  )
+
+  # get step sizes (potentially affected by clamping above) from p1 and p0
+  out <- diag((t1 - t0) / (p1 - p0), nrow = length(t1))
+  dimnames(out) <- list(names(t0), names(p0))
+
+  out
+}
+
+
+getModelThresholds <- function(model, sim.cont = NULL) {
+  ordered <- intersect(model@info$ordered, colnames(model@data))
+  if (!length(ordered))
+    return(numeric(0))
+
+  support <- model@params$threshold.support
+  if (is.null(support))
+    support <- getPROBSSupport(model@data, ordered)
+
+  PROBS <- getPROBSFixedSupport(model@data, ordered, support = support[ordered])
+  probsToThresholds(PROBS, sim.cont = sim.cont)
+}
+
+
+flattenPROBS <- function(PROBS) {
+  out <- unlist(PROBS, use.names = FALSE)
+  names(out) <- unlist(lapply(names(PROBS), \(nm) {
+    paste0("PROBS::", nm, "::", seq_along(PROBS[[nm]]))
+  }), use.names = FALSE)
+  out
+}
+
+
+probNamesToThresholdNames <- function(names) {
+  sub("^PROBS::(.*)::([0-9]+)$", "\\1|t\\2", names)
+}
+
+
+unflattenPROBS <- function(probs, template) {
+  n <- lengths(template)
+  ends <- cumsum(n)
+  starts <- ends - n + 1L
+  out <- Map(
+    \(first, last) unname(as.numeric(probs[first:last])),
+    starts, ends
+  )
+  stats::setNames(out, names(template))
+}
+
+
+probFiniteDiffStep <- function(probs, i, eps) {
+  lo <- if (i == 1L) 0 else probs[i - 1L]
+  hi <- if (i == length(probs)) 1 else probs[i + 1L]
+  min(eps, 0.45 * (probs[i] - lo), 0.45 * (hi - probs[i]))
+}
+
+
+calcMcJacobians <- function(.fg, .f, .simulate.f, p0, p1, probs0 = numeric(0),
+                            eps = 5e-3, progressBar = NULL, k = 1) {
   J0 <- matrix(
     NA_real_,
     nrow = length(p0), ncol = length(p0),
@@ -471,17 +671,69 @@ calcMcJacobians <- function(.f, .g, p0, p1, eps = 5e-3, progressBar = NULL, k = 
     dimnames = list(names(p1), names(p0))
   )
 
+  Jp <- matrix(
+    0,
+    nrow = length(p0), ncol = length(probs0),
+    dimnames = list(names(p0), names(probs0))
+  )
+
+  Gp <- matrix(
+    0,
+    nrow = length(p1), ncol = length(probs0),
+    dimnames = list(names(p1), names(probs0))
+  )
+
   for (i in seq_along(p0)) {
     pp <- pm <- p0
     pp[i] <- pp[i] + eps
     pm[i] <- pm[i] - eps
 
-    J0[,i] <- (.f(pp) - .f(pm)) / (2 * eps)
-    J1[,i] <- (.g(pp) - .g(pm)) / (2 * eps)
+    fg.p <- .fg(pp, probs = probs0)
+    fg.m <- .fg(pm, probs = probs0)
+    J0[,i] <- (fg.p$f - fg.m$f) / (2 * eps)
+    J1[,i] <- (fg.p$g - fg.m$g) / (2 * eps)
 
     if (!is.null(progressBar))
-      utils::setTxtProgressBar(progressBar, (k - 1) * length(p0) + i)
+      utils::setTxtProgressBar(
+        progressBar, (k - 1) * (length(p0) + length(probs0)) + i
+      )
   }
 
-  list(J0 = J0, J1 = J1)
+  offset <- length(p0)
+  prob.groups <- sub("::[^:]+$", "", names(probs0))
+  sim0 <- if (length(probs0)) .simulate.f(p0, standardize = TRUE) else NULL
+
+  for (i in seq_along(probs0)) {
+    idx <- which(prob.groups[i] == prob.groups)
+    step <- probFiniteDiffStep(probs0[idx], which(idx == i), eps)
+    if (!is.finite(step) || step <= .Machine$double.eps^0.5)
+      next
+
+    pp <- pm <- probs0
+    pp[i] <- pp[i] + step
+    pm[i] <- pm[i] - step
+
+    Jp[,i] <- (
+      .f(p0, probs = pp, sim = sim0) - .f(p0, probs = pm, sim = sim0)
+    ) / (2 * step)
+
+    if (!is.null(progressBar)) {
+      utils::setTxtProgressBar(
+        progressBar, (k - 1) * (length(p0) + length(probs0)) + offset + i
+      )
+    }
+  }
+
+  # Jacobian probs->thresholds
+  if (length(probs0)) {
+    # use larger eps for better numerical stability
+    T <- thresholdJacobian(probs0, sim.cont = sim0$ov, eps = 2 * eps)
+
+    thr.rows <- intersect(rownames(Gp), rownames(T))
+    prob.cols <- intersect(colnames(Gp), colnames(T))
+
+    Gp[thr.rows, prob.cols] <- T[thr.rows, prob.cols, drop = FALSE]
+  }
+
+  list(J0 = J0, J1 = J1, Jp = Jp, Gp = Gp)
 }

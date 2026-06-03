@@ -27,6 +27,10 @@ getParTableEstimates <- function(model, rm.tmp.ov = TRUE, clean.tmp.ind = TRUE) 
     ci.upper = ci.upper
   )
 
+  is.threshold <- parTable$op == "|"
+  parTable$lhs[is.threshold] <- removeTempAffixes(parTable$lhs[is.threshold])
+  parTable$rhs[is.threshold] <- removeTempAffixes(parTable$rhs[is.threshold])
+
   if (rm.tmp.ov)
     parTable <- removeTempOV_RowsParTable(parTable)
 

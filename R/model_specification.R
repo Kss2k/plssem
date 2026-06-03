@@ -152,6 +152,11 @@ specifySubModel <- function(parTable,
     boot           = boot.info
   )
 
+  thresholdStruct <- ThresholdStruct( # holds information about thresholds and
+    data = preppedData$X,             # category proportions
+    ordered = ordered
+  )
+
   if (info$is.mlm && !info$is.mcpls) {
     pls_msg_note(
       "Multilevel/Mixed-Effects PLSc models are currently under development!\n",
@@ -163,13 +168,14 @@ specifySubModel <- function(parTable,
   matrices$SC <- diagPartitioned(matrices$S, matrices$C)
 
   model <- PlsModel(
-    parTableInput = pt,
-    matrices      = matrices,
-    data          = preppedData$X,
-    info          = info,
-    status        = initModelStatus(
-      tolerance = tolerance,
-      max.iter.0_5 = max.iter.0_5
+    parTableInput    = pt,
+    matrices         = matrices,
+    data             = preppedData$X,
+    thresholdStruct  = thresholdStruct,
+    info             = info,
+    status           = initModelStatus(
+      tolerance      = tolerance,
+      max.iter.0_5   = max.iter.0_5
     )
   )
 

@@ -38,3 +38,7 @@ namedListUnion <- function(x, y) {
   out
 }
 
+
+emptyNamedList <- function(nm) {
+  stats::setNames(vector("list", length(nm)), nm = nm)
+}

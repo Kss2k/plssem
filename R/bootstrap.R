@@ -46,11 +46,8 @@ bootstrap <- function(model,
   )
 
   combinedCoefs <- combinedModel(model)@params$values
-  mc.params <- modelParams(combinedModel(model))
-  probsTemplate <- if (mc.delta.se && is.mcpls) flattenPROBS(mc.params$PROBS) else numeric(0)
-  probsSupport <- if (mc.delta.se && is.mcpls) mc.params$PROBS.support else NULL
-  # parTemplate might be stale with mc.delta=TRUE...
 
+  probsTemplate <- model@thresholdStruct@proportions
   parTemplate <- stats::setNames(
     rep(NA_real_, length(combinedCoefs)),
     names(combinedCoefs)
@@ -80,6 +77,11 @@ bootstrap <- function(model,
       model.b@data       <- sampleData
       model.b@matrices$S <- sampleS
 
+      model.b@thresholdStruct <- updateProportions(
+        thr  = baseModel@thresholdStruct,
+        data = sampleData
+      )
+
       mc.args             <- model.b@info$mc.args
       boot.fixed.seed     <- mc.boot.control$fixed.seed
       boot.polyak         <- mc.boot.control$polyak.juditsky
@@ -106,14 +108,8 @@ bootstrap <- function(model,
 
       })
 
-      par <- formatBootPars(
-        modelParams(combinedModel(model.b))$values
-      )
-      probs <- if (length(probsTemplate)) {
-        flattenPROBS(getPROBSFixedSupport(sampleData, ordered, support = probsSupport))
-      } else {
-        numeric(0)
-      }
+      par <- formatBootPars(modelParams(combinedModel(model.b))$values)
+      probs <- model.b@thresholdStruct@proportions
 
       if (low.tol.penalty > 0 && is.mcpls && !mc.delta.se) {
         k <- length(par)

@@ -120,7 +120,7 @@ modelFitIsAdmissible <- function(fit) {
 }
 
 
-getParamVecNames <- function(model, sim.cont = NULL) {
+getParamVecNames <- function(model) {
   selectLambda <- model@matrices$select$lambda
   modes        <- model@info$modes
   lvs.linear   <- model@info$lvs.linear
@@ -147,15 +147,16 @@ getParamVecNames <- function(model, sim.cont = NULL) {
   for (j in colnames(theta)) for (i in rownames(theta))
     theta[i, j] <- paste0(j, "~~", i)
 
-  thresholds <- getModelThresholds(model, sim.cont = sim.cont)
+  thresholds <- model@thresholdStruct@thresholds
 
   c(lambda[selectLambda], gamma[selectGamma], psi[selectCov], theta[selectTheta],
     names(thresholds))
 }
 
 
-extractCoefs <- function(model, sim.cont = NULL, include.thresholds = TRUE) {
+extractCoefs <- function(model) {
   fit <- model@fit
+  thresholdStruct <- model@thresholdStruct
 
   lambda       <- fit$fitMeasurement
   selectLambda <- model@matrices$select$lambda
@@ -169,18 +170,16 @@ extractCoefs <- function(model, sim.cont = NULL, include.thresholds = TRUE) {
   fitTheta    <- fit$fitTheta
   selectTheta <- model@matrices$select$theta
 
-  out <- c(
+  thr  <- thresholdStruct@thresholds
+  pars <- c(
     lambda[selectLambda],
     gamma[selectGamma],
     fitCov[selectCov],
     fitTheta[selectTheta]
   )
 
-  if (include.thresholds)
-    out <- c(out, getModelThresholds(model, sim.cont = sim.cont))
-
-  names(out) <- model@params$names[seq_along(out)]
-  plssemVector(out)
+  names(pars) <- model@params$names[seq_along(pars)]
+  plssemVector(c(pars, thr))
 }
 
 
@@ -212,13 +211,13 @@ getEstimatorFromInfo <- function(info) {
 }
 
 
-refreshModelParams <- function(model, update.names = TRUE, sim.cont = NULL) {
+refreshModelParams <- function(model, update.names = TRUE) {
   # Should we update names?
   if (update.names)
-    model@params$names <- getParamVecNames(model, sim.cont = sim.cont)
+    model@params$names <- getParamVecNames(model)
 
   # Single level params
-  model@params$values <- extractCoefs(model, sim.cont = sim.cont)
+  model@params$values <- extractCoefs(model)
   model@params$se     <- rep(NA_real_, length(model@params$values))
 
   # Multilevel/Mixed-Effect params

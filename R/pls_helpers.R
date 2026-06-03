@@ -14,8 +14,8 @@ updateFitObjects <- function(model) {
 }
 
 
-updateParamVector <- function(model, include.thresholds = TRUE) {
-  estimatePLS_Step8(model, include.thresholds = include.thresholds)
+updateParamVector <- function(model) {
+  estimatePLS_Step8(model)
 }
 
 
@@ -24,12 +24,10 @@ updateEstimationStatus <- function(model) {
 }
 
 
-estimateHigherOrderChain <- function(model, include.thresholds = TRUE) {
+estimateHigherOrderChain <- function(model) {
   force(model)
 
-  model <- estimatePLS_InnerLocal(
-    model, include.thresholds = include.thresholds
-  )
+  model <- estimatePLS_InnerLocal(model)
   model@combinedModel <- NULL
 
   if (!hasHigherOrderModel(model))
@@ -43,9 +41,7 @@ estimateHigherOrderChain <- function(model, include.thresholds = TRUE) {
   indCorrMatrix(higherOrder) <- Rfast::cova(newdata)
   inputReliabilities(higherOrder) <- constructReliabilities(model)
 
-  higherOrder <- estimateHigherOrderChain(
-    higherOrder, include.thresholds = include.thresholds
-  )
+  higherOrder <- estimateHigherOrderChain(higherOrder)
   higherOrder <- correctLoadingsAndWeightsSecondOrder(
     firstOrder = model,
     secondOrder = higherOrder

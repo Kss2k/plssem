@@ -21,4 +21,3 @@ hasTempIndSuffix <- function(x) {
 removeTempAffixes <- function(x) {
   x |> removeTempOvPrefix() |> removeTempIndSuffix()
 }
-

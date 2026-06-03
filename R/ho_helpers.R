@@ -271,6 +271,12 @@ computeCombinedModel <- function(model, lowerOrderAsEta = FALSE) {
   # Ensure downstream methods see combined state.
   combined@info$is.high.ord <- TRUE
 
+  # Thresholds, only first order should ever exist...
+  combined@thresholdStruct <- fo@thresholdStruct
+  pls_warnif(length(so@thresholdStruct@ordered),
+    "Did not expect a filled thresholdStruct in the higher order model!"
+  )
+
   # Recompute parameter names using combined metadata.
   combined <- refreshModelParams(combined, update.names = TRUE)
   combined

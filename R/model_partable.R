@@ -28,8 +28,8 @@ getParTableEstimates <- function(model, rm.tmp.ov = TRUE, clean.tmp.ind = TRUE) 
   )
 
   is.threshold <- parTable$op == "|"
-  parTable$lhs[is.threshold] <- removeTempAffixes(parTable$lhs[is.threshold])
-  parTable$rhs[is.threshold] <- removeTempAffixes(parTable$rhs[is.threshold])
+  parTable$lhs[is.threshold] <- removeTempOvPrefix(parTable$lhs[is.threshold])
+  parTable$rhs[is.threshold] <- removeTempOvPrefix(parTable$rhs[is.threshold])
 
   if (rm.tmp.ov)
     parTable <- removeTempOV_RowsParTable(parTable)
@@ -102,6 +102,28 @@ cleanTempInd_RowsParTable <- function(parTable) {
     !((parTable$lhs %in% cln | parTable$rhs %in% cln) & parTable$op == "~~"),
     , drop = FALSE
   ]
+
+  # Thresholds are properties of the original observed indicator. Internal
+  # copies of a duplicated indicator must not create duplicate public rows.
+  is.threshold <- parTable$op == "|"
+  is.tmp.threshold <- is.threshold & (
+    hasTempIndSuffix(parTable$lhs) | hasTempIndSuffix(parTable$rhs)
+  )
+  threshold.key <- paste(
+    removeTempIndSuffix(parTable$lhs),
+    parTable$op,
+    removeTempIndSuffix(parTable$rhs),
+    sep = "\r"
+  )
+
+  drop.threshold <- logical(NROW(parTable))
+  for (key in unique(threshold.key[is.tmp.threshold])) {
+    idx <- which(is.threshold & threshold.key == key)
+    keep <- idx[!is.tmp.threshold[idx]]
+    keep <- if (length(keep)) keep[[1L]] else idx[[1L]]
+    drop.threshold[setdiff(idx, keep)] <- TRUE
+  }
+  parTable <- parTable[!drop.threshold, , drop = FALSE]
 
   parTable$rhs <- removeTempIndSuffix(parTable$rhs)
   parTable$lhs <- removeTempIndSuffix(parTable$lhs)

@@ -62,19 +62,6 @@ unstandardized_estimates <- function(model, unstandardized = "all",
   resvar   <- diag(fit$fitTheta)
   n        <- NROW(modelData(combined))
 
-  # make it a function since we use it twice
-  getUvarsFromUnstandardized <- function(unstandardized) {
-    uvars <- unstandardized
-
-    # check for potential temp_ov/temp_ind
-    tmp0 <- paste0(TEMP_OV_PREFIX, uvars)
-    tmp1 <- paste0(uvars, TEMP_IND_SUFFIX)
-    tmp2 <- paste0(tmp0, TEMP_IND_SUFFIX)
-    tmp  <- c(tmp0, tmp1, tmp2)
-
-    uvars <- union(uvars, intersect(tmp, ovs))
-  }
-
   if (length(unstandardized) == 1L) {
 
     uvars <- switch(
@@ -82,14 +69,23 @@ unstandardized_estimates <- function(model, unstandardized = "all",
       all = c(lvs, ovs),
       ov  = ovs,
       lv  = lvs,
-      # assume it's a single variable
-      getUvarsFromUnstandardized(unstandardized)
+      unstandardized
     )
 
   } else {
-    # assume it's a set of variables
-    uvars <- getUvarsFromUnstandardized(unstandardized)
+    uvars <- unstandardized
 
+  }
+
+  # check for potential temp_ov/temp_ind
+  # relevant for all but `unstandardized="all"`
+  if (length(setdiff(ovs, uvars))) {
+    tmp0 <- paste0(TEMP_OV_PREFIX, uvars)
+    tmp1 <- paste0(uvars, TEMP_IND_SUFFIX)
+    tmp2 <- paste0(tmp0, TEMP_IND_SUFFIX)
+    tmp  <- c(tmp0, tmp1, tmp2)
+
+    uvars <- union(uvars, intersect(tmp, ovs))
   }
 
   # validate

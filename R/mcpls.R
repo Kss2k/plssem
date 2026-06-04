@@ -86,9 +86,6 @@ mcpls <- function(
     if (!is.null(sim$cluster))
       attr(X, "cluster") <- sim$cluster
 
-    if (!is.null(sim$cluster))
-      attr(X, "cluster") <- sim$cluster
-
     # Update observed-data (lowest-order) model input
     modelData(fit.sim)  <- X
     indCorrMatrix(fit.sim) <- S
@@ -112,7 +109,8 @@ mcpls <- function(
       seed             = rng.seed,
       clusterSizes     = clusterSizes,
       clusterName      = clusterName,
-      sim              = sim
+      sim              = sim,
+      params.only      = TRUE
     )
 
     fit@params$values
@@ -268,6 +266,8 @@ mcpls <- function(
         p0              = p0,
         p1              = p1,
         thresholdStruct = thresholdStruct0,
+        lower           = lower,
+        upper           = upper,
         progressBar     = pb,
         k               = i
       )
@@ -365,7 +365,8 @@ updateModelFromFreeParTableMC <- function(parTable,
                                           seed = NULL,
                                           clusterSizes = NULL,
                                           clusterName = NULL,
-                                          sim = NULL) {
+                                          sim = NULL,
+                                          params.only = FALSE) {
   if (is.null(sim)) {
     sim <- simulateDataParTable(
       parTable     = parTable,
@@ -378,21 +379,21 @@ updateModelFromFreeParTableMC <- function(parTable,
     )
   }
 
-  sim.ord <- ordinalizeDataFrame(
-    df = sim$ov, thresholdStruct = thresholdStruct
-  )
-
-  lvs    <- getLVs(parTable)
-  indsLVs <- getIndsLVs(parTable, lVs = lvs)
-
   SC   <- Rfast::cova(as.matrix(sim$all))
   ovs  <- colnames(model@matrices$S)
   lvsc <- colnames(model@matrices$C)
 
-  model@matrices$S.ord.expected <- cov2cor(Rfast::cova(as.matrix(sim.ord)[, ovs]))
-  model@matrices$S.ord.observed <- cov2cor(Rfast::cova(model@data[, ovs]))
-  model@matrices$sim.ov.cont    <- sim$ov
-  model@matrices$sim.ov.ord     <- sim.ord
+  if (!params.only) {
+    sim.ord <- ordinalizeDataFrame(
+      df = sim$ov, thresholdStruct = thresholdStruct
+    )
+
+    model@matrices$S.ord.expected <- cov2cor(Rfast::cova(as.matrix(sim.ord)[, ovs]))
+    model@matrices$S.ord.observed <- cov2cor(Rfast::cova(model@data[, ovs]))
+    model@matrices$sim.ov.cont    <- sim$ov
+    model@matrices$sim.ov.ord     <- sim.ord
+  }
+
   model@matrices$S              <- SC[ovs,  ovs,  drop = FALSE]
   model@matrices$C              <- SC[lvsc, lvsc, drop = FALSE]
   model@matrices$SC             <- SC[c(ovs, lvsc), c(ovs, lvsc), drop = FALSE]
@@ -474,7 +475,8 @@ updateModelFromFreeParTableMC <- function(parTable,
     ordered         = ordered,
     seed            = seed,
     clusterSizes    = clusterSizes,
-    clusterName     = clusterName
+    clusterName     = clusterName,
+    params.only     = params.only
   )
 
   model@thresholdStruct <- updateThresholds(
@@ -534,7 +536,7 @@ thresholdJacobian <- function(thresholdStruct, sim.cont = NULL, eps = 1e-3,
 
 
 calcMcJacobians <- function(.fg, .f, .simulate, p0, p1,
-                            thresholdStruct,
+                            thresholdStruct, lower = -Inf, upper = Inf,
                             eps = 5e-3, progressBar = NULL, k = 1) {
   probs0 <- thresholdStruct@proportions
 
@@ -563,14 +565,14 @@ calcMcJacobians <- function(.fg, .f, .simulate, p0, p1,
   )
 
   for (i in seq_along(p0)) {
-    pp <- pm <- p0
-    pp[i] <- pp[i] + eps
-    pm[i] <- pm[i] - eps
+    points <- boundedParameterFiniteDiffPoints(
+      x = p0, i = i, eps = eps, lower = lower, upper = upper
+    )
 
-    fg.p <- .fg(pp, thresholdStruct = thresholdStruct)
-    fg.m <- .fg(pm, thresholdStruct = thresholdStruct)
-    J0[,i] <- (fg.p$f - fg.m$f) / (2 * eps)
-    J1[,i] <- (fg.p$g - fg.m$g) / (2 * eps)
+    fg.p <- .fg(points$plus, thresholdStruct = thresholdStruct)
+    fg.m <- .fg(points$minus, thresholdStruct = thresholdStruct)
+    J0[,i] <- (fg.p$f - fg.m$f) / points$denominator
+    J1[,i] <- (fg.p$g - fg.m$g) / points$denominator
 
     if (!is.null(progressBar)) {
       utils::setTxtProgressBar(
@@ -583,19 +585,24 @@ calcMcJacobians <- function(.fg, .f, .simulate, p0, p1,
   sim0 <- if (length(probs0)) .simulate(p0, standardize = TRUE) else NULL
 
   for (i in seq_along(probs0)) {
-    pp <- pm <- probs0
-    pp[i] <- addEpsToBoundedProb(probs = probs0, i = i, eps = +eps)
-    pm[i] <- addEpsToBoundedProb(probs = probs0, i = i, eps = -eps)
+    points <- boundedProbabilityFiniteDiffPoints(probs0, i = i, eps = eps)
+    if (is.null(points)) {
+      pls_msg_warn(
+        "Skipping a threshold-probability derivative because no stable ",
+        "finite-difference step is available for: ", names(probs0)[[i]]
+      )
+      next
+    }
 
     # check bounds
     T0 <- T1 <- thresholdStruct
-    T1@proportions <- pp
-    T0@proportions <- pm
+    T1@proportions <- points$plus
+    T0@proportions <- points$minus
 
     Jp[,i] <- (
       .f(p0, thresholdStruct = T1, sim = sim0) - 
       .f(p0, thresholdStruct = T0, sim = sim0)
-    ) / (pp[i] - pm[i])
+    ) / points$denominator
 
     if (!is.null(progressBar)) {
       utils::setTxtProgressBar(
@@ -619,7 +626,26 @@ calcMcJacobians <- function(.fg, .f, .simulate, p0, p1,
 }
 
 
-addEpsToBoundedProb <- function(probs, i, eps = 1e-3, tol = 1e-5) {
+boundedParameterFiniteDiffPoints <- function(x, i, eps, lower = -Inf, upper = Inf) {
+  lower <- rep_len(lower, length(x))
+  upper <- rep_len(upper, length(x))
+
+  plus <- minus <- x
+  plus[i]  <- min(x[i] + eps, upper[i])
+  minus[i] <- max(x[i] - eps, lower[i])
+  denominator <- plus[i] - minus[i]
+
+  pls_stopif(
+    !is.finite(denominator) || denominator <= .Machine$double.eps^0.5,
+    "Unable to calculate a finite-difference derivative at a parameter bound."
+  )
+
+  list(plus = plus, minus = minus, denominator = denominator)
+}
+
+
+boundedProbabilityFiniteDiffPoints <- function(probs, i, eps = 1e-3,
+                                               tol = .Machine$double.eps^0.5) {
   par <- names(probs)[[i]]
   var <- stringr::str_split_i(par, pattern = "\\|", i = 1L)
 
@@ -629,11 +655,16 @@ addEpsToBoundedProb <- function(probs, i, eps = 1e-3, tol = 1e-5) {
   ix <- which(idx == i)
   bound <- \(j) if (j < 1) 0 else if (j > length(probs.x)) 1 else probs.x[j]
 
-  lower    <- bound(ix - 1)
-  upper    <- bound(ix + 1)
-  proposal <- probs.x[ix] + eps
+  lower <- bound(ix - 1)
+  upper <- bound(ix + 1)
+  step <- min(eps, 0.45 * (probs.x[ix] - lower), 0.45 * (upper - probs.x[ix]))
 
-  if      (proposal > upper) upper - abs(tol)
-  else if (proposal < lower) lower + abs(tol)
-  else                       proposal
+  if (!is.finite(step) || step <= tol)
+    return(NULL)
+
+  plus <- minus <- probs
+  plus[i] <- probs[i] + step
+  minus[i] <- probs[i] - step
+
+  list(plus = plus, minus = minus, denominator = 2 * step)
 }

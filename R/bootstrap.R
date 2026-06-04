@@ -82,7 +82,6 @@ bootstrap <- function(model,
         data = sampleData
       ))
 
-      mc.args             <- model.b@info$mc.args
       boot.fixed.seed     <- mc.boot.control$fixed.seed
       boot.polyak         <- mc.boot.control$polyak.juditsky
       boot.pj.extrapolate <- mc.boot.control$pj.extrapolate
@@ -264,14 +263,7 @@ bootstrap <- function(model,
       J0 <- Jacobian0[pars.free, pars.free, drop = FALSE]
 
       tryCatch({
-        # Try to invert J
-        J0.inv <- tryCatch(
-          solve(J0),
-          error = function(e) {
-            pls_msg_warn("Jacobian is not positive definite!")
-            MASS::ginv(J0)
-          }
-        )
+        J0.inv <- invertMcJacobian(J0)
 
         if (!is.null(params$Jacobian1)) {
           Jacobian1 <- params$Jacobian1
@@ -356,11 +348,12 @@ bootstrap <- function(model,
         ]
 
         if (NROW(split.sub)) {
-          rm <- paste0(split.sub[,1L], "~~", split.sub[,2L]) 
+          rm <- paste0(split.sub[,1L], "~~", split.sub[,2L])
           vcov[rm,] <- 0
           vcov[,rm] <- 0
         }
       }
+
     }
   }
 
@@ -368,6 +361,30 @@ bootstrap <- function(model,
   se[se <= zero.tol] <- NA_real_
 
   list(se = se, boot = resultsMat[, par.names, drop = FALSE], vcov = vcov)
+}
+
+
+invertMcJacobian <- function(J, rcond.tol = 1e-10) {
+  condition <- tryCatch(rcond(J), error = function(e) 0)
+
+  if (!is.finite(condition) || condition < rcond.tol) {
+    pls_msg_warn(
+      "MC-PLS root-equation Jacobian is ill-conditioned; ",
+      "using a generalized inverse for delta-method standard errors."
+    )
+    return(MASS::ginv(J))
+  }
+
+  tryCatch(
+    solve(J),
+    error = function(e) {
+      pls_msg_warn(
+        "Unable to invert the MC-PLS root-equation Jacobian; ",
+        "using a generalized inverse for delta-method standard errors."
+      )
+      MASS::ginv(J)
+    }
+  )
 }
 
 

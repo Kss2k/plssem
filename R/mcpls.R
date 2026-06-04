@@ -349,7 +349,7 @@ ordinalizeDataFrame <- function(df, thresholdStruct) {
   nm <- colnames(df)
   ordered <- thresholdStruct@ordered
   probs   <- thresholdStruct@proportions
-  indices <- thresholdStruct@indices.thr
+  indices <- thresholdStruct@indices
 
   quickdf(stats::setNames(
     lapply(nm, FUN = function(v) {
@@ -496,8 +496,6 @@ updateModelFromFreeParTableMC <- function(parTable,
     modelFitLmer(model)$values <- params$values
   }
 
-  pls_msg_warn("FIXME: THE THRESHOLDS IN thresholdStruct NEED TO BE UPDATED!")
-  model@thresholdStruct       <- thresholdStruct
   model@fit$fitMeasurement    <- fitMeasurement
   model@fit$fitStructural     <- fitStructural
   model@fit$fitCov            <- fitCov
@@ -515,6 +513,10 @@ updateModelFromFreeParTableMC <- function(parTable,
     seed            = seed,
     clusterSizes    = clusterSizes,
     clusterName     = clusterName
+  )
+
+  model@thresholdStruct <- updateThresholds(
+    thr = thresholdStruct, sim.cont = sim$ov
   )
 
   refreshModelParams(model, update.names = TRUE)

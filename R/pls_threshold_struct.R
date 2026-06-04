@@ -2,12 +2,10 @@ ThresholdStruct <- function(data, ordered = NULL, digits = 5L) {
   if (!length(ordered))
     return(methods::new("ThresholdStruct"))
 
-  indices.lev <- emptyNamedList(ordered)
-  indices.thr <- emptyNamedList(ordered)
+  indices     <- emptyNamedList(ordered)
   levels      <- emptyNamedList(ordered)
   thresholds  <- NULL
   proportions <- NULL
-  levels.flat <- NULL
 
   for (ord in ordered) {
     # round to avoid bad floating point comparisons
@@ -21,28 +19,24 @@ ThresholdStruct <- function(data, ordered = NULL, digits = 5L) {
     thresholds.x  <- qnorm(proportions.x)   
 
     # get indices
-    idx.lev.x <- seq_along(levels.x) + length(levels.flat)
-    idx.thr.x <- seq_along(thresholds.x) + length(thresholds)
+    idx.x <- seq_along(thresholds.x) + length(thresholds)
 
     # set names
     names(proportions.x) <- paste0(ord, "|P", seq_along(proportions.x))
     names(thresholds.x)  <- paste0(ord, "|t", seq_along(thresholds.x))
 
     # set indices
-    indices.lev[[ord]] <- idx.lev.x
-    indices.thr[[ord]] <- idx.thr.x
-    levels[[ord]]      <- levels.x
+    indices[[ord]] <- idx.x
+    levels[[ord]]  <- levels.x
 
     # set values
     thresholds  <- c(thresholds, thresholds.x)
     proportions <- c(proportions, proportions.x)
-    levels.flat <- c(levels.flat, levels.x)
   }
 
   methods::new("ThresholdStruct",
     ordered     = ordered,
-    indices.lev = indices.lev,
-    indices.thr = indices.thr,
+    indices     = indices,
     thresholds  = thresholds,
     proportions = proportions,
     levels      = levels,
@@ -63,11 +57,8 @@ updateProportions <- function(thr, data) {
     pct.x         <- cumsum(freq.x) / sum(freq.x)
     proportions.x <- pct.x[-length(pct.x)]
 
-    if (length(freq.x) < length(thr@levels[[ord]]))
-      pls_stop("FIXME: Missing a level!")
-
     # TODO: handle missing levels
-    thr@proportions[thr@indices.thr[[ord]]] <- proportions.x
+    thr@proportions[thr@indices[[ord]]] <- proportions.x
   }
 
   thr
@@ -82,7 +73,7 @@ updateThresholds <- function(thr, sim.cont = NULL, zero.tol = .Machine$double.ep
   probs <- pmin(pmax(probs, zero.tol), 1 - zero.tol)
 
   for (ord in thr@ordered) {
-    idx <- thr@indices.thr[[ord]]
+    idx <- thr@indices[[ord]]
     probs.x <- probs[idx]
 
     if (!is.null(sim.cont)) {

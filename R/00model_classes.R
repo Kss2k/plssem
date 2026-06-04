@@ -11,8 +11,7 @@ setClass(
   "ThresholdStruct",
   slots     = c(
     ordered     = "character",
-    indices.lev = "list",
-    indices.thr = "list",
+    indices     = "list",
     thresholds  = "numeric",
     proportions = "numeric",
     levels      = "list",
@@ -20,8 +19,7 @@ setClass(
   ),
   prototype = list(
     ordered     = character(0L),
-    indices.lev = vector("list", 0L),
-    indices.thr = vector("list", 0L),
+    indices     = vector("list", 0L),
     thresholds  = numeric(0L),
     proportions = numeric(0L),
     levels      = vector("list", 0L),

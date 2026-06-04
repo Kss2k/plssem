@@ -501,8 +501,8 @@ getOuterDataMatrices <- function(model, newdata = NULL, std.ord.exp = FALSE) {
   for (ord in ordered)
     newdata.ord[,ord] <- reindex(newdata.ord[,ord])
 
-  PROBS <- getPROBS(data = olddata, ordered = ordered)
-  Tau   <- stats::setNames(vector("list", length(ordered)), nm = ordered)
+  thresholdStruct <- model@thresholdStruct
+  Tau <- stats::setNames(vector("list", length(ordered)), nm = ordered)
 
   if (is.mcpls) {
     sim.ov.cont <- model@matrices$sim.ov.cont
@@ -512,7 +512,7 @@ getOuterDataMatrices <- function(model, newdata = NULL, std.ord.exp = FALSE) {
       y <- assignScoresOrdinalMonteCarlo(
         x = newdata.cont[,ord], y = sim.ov.cont[[ord]],
         y.i = sim.ov.ord[[ord]], std.ord.exp = std.ord.exp,
-        probs = PROBS[[ord]]
+        probs = thresholdStruct@proportions[thresholdStruct@indices[[ord]]]
       )
 
       newdata.cont[,ord] <- y
@@ -523,7 +523,8 @@ getOuterDataMatrices <- function(model, newdata = NULL, std.ord.exp = FALSE) {
 
     for (ord in ordered) {
       y <- assignScoresOrdinalNormal(
-        x = newdata.cont[,ord], std.ord.exp = std.ord.exp, probs = PROBS[[ord]]
+        x = newdata.cont[,ord], std.ord.exp = std.ord.exp,
+        probs = thresholdStruct@proportions[thresholdStruct@indices[[ord]]]
       )
 
       newdata.cont[,ord] <- y

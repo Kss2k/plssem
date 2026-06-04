@@ -305,6 +305,7 @@ bootstrap <- function(model,
             vcov.sub <- vcov.joint[
               c(pars.free, prob.names), c(pars.free, prob.names), drop = FALSE
             ]
+
           } else {
             D <- D.par
             vcov.sub <- vcov.joint[pars.free, pars.free, drop = FALSE]
@@ -333,6 +334,29 @@ bootstrap <- function(model,
 
         vcov[] <<- NA_real_
       })
+
+      # The (co-)variances structure of the interaction terms, is often
+      # not a function of the free model parameters (though some are).
+      # E.g., the variance of a quadratic terms should analytically always be 2,
+      # and X~X:Z should always be zero. The delta-method should therefore not
+      # add any information here. However, it might seem like it, due to sampling error.
+      # Here we just remove these from the vcov
+      pars   <- rownames(vcov)
+      is.cov <- grepl("~~", pars)
+      is.int <- grepl(":", pars)
+
+      split  <- stringr::str_split_fixed(
+        pars[is.cov & is.int], pattern = "~~", n = 2
+      )
+
+      split <- split[
+        !grepl("~", split[,1L]) & !grepl("~", split[,2L]) & # remove random effect variances
+        !is.na(split[,1L])      & !is.na(split[,2L]), , drop = FALSE
+      ]
+
+      rm <- paste0(split[,1L], "~~", split[,2L]) 
+      vcov[rm,] <- 0
+      vcov[,rm] <- 0
     }
   }
 

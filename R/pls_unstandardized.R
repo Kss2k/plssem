@@ -75,6 +75,13 @@ unstandardized_estimates <- function(model, unstandardized = "all",
   } else {
     uvars <- unstandardized
 
+    # check for potential temp_ov/temp_ind
+    tmp0 <- paste0(TEMP_OV_PREFIX, uvars)
+    tmp1 <- paste0(uvars, TEMP_IND_SUFFIX)
+    tmp2 <- paste0(tmp0, TEMP_IND_SUFFIX)
+    tmp  <- c(tmp0, tmp1, tmp2)
+
+    uvars <- union(uvars, intersect(tmp, ovs))
   }
 
   # validate
@@ -191,16 +198,16 @@ unstandardized_estimates <- function(model, unstandardized = "all",
   parTableOut <- addZStatsParTable(parTableUstd)
 
   if (rm.tmp.ov)
-    parTableOut <- removeTempOV_RowsParTable(parTableOut)
+    parTableOut <- removeTempOvRowsParTable(parTableOut)
 
   if (clean.tmp.ind)
-    parTableOut <- cleanTempInd_RowsParTable(parTableOut)
+    parTableOut <- cleanTempIndRowsParTable(parTableOut)
 
   parTableOut <- plssemParTable(parTableOut)
 
   # add vcov?
   if (!is.null(Vstd))
-    attr(parTableOut, "vcov") <- Vstd
+    attr(parTableOut, "vcov") <- plssemMatrix(Vstd, is.public = TRUE)
 
   parTableOut
 }

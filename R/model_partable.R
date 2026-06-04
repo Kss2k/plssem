@@ -19,15 +19,11 @@ getParTableEstimates <- function(model, rm.tmp.ov = TRUE, clean.tmp.ind = TRUE) 
     se       = se
   ))
 
-  is.threshold <- parTable$op == "|"
-  parTable$lhs[is.threshold] <- removeTempOvPrefix(parTable$lhs[is.threshold])
-  parTable$rhs[is.threshold] <- removeTempOvPrefix(parTable$rhs[is.threshold])
-
   if (rm.tmp.ov)
-    parTable <- removeTempOV_RowsParTable(parTable)
+    parTable <- removeTempOvRowsParTable(parTable)
 
   if (clean.tmp.ind)
-    parTable <- cleanTempInd_RowsParTable(parTable)
+    parTable <- cleanTempIndRowsParTable(parTable)
 
   plssemParTable(parTable)
 }
@@ -76,13 +72,20 @@ splitParameterNames <- function(names) {
 }
 
 
-removeTempOV_RowsParTable <- function(parTable) {
+removeTempOvRowsParTable <- function(parTable, clean.thr = TRUE) {
+
+  if (clean.thr) {
+    is.thr <- parTable$op == "|"
+    parTable$lhs[is.thr] <- removeTempOvPrefix(parTable$lhs[is.thr])
+    parTable$rhs[is.thr] <- removeTempOvPrefix(parTable$rhs[is.thr])
+  }
+
   tmp <- hasTempOvPrefix(parTable$lhs) | hasTempOvPrefix(parTable$rhs)
   parTable[!tmp, , drop = FALSE]
 }
 
 
-cleanTempInd_RowsParTable <- function(parTable) {
+cleanTempIndRowsParTable <- function(parTable) {
   rhs <- unique(parTable$rhs) # Only injected into the rhs column
   tmp <- rhs[hasTempIndSuffix(rhs)]
   cln <- removeTempIndSuffix(tmp)

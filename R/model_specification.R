@@ -266,12 +266,22 @@ initMatrices <- function(pt, higherOrderLVs = NULL) {
 
   # Residual covariances ---------------------------------------------------
   k           <- length(allInds)
-  selectTheta <- matrix(FALSE, nrow = k, ncol = k,
-                        dimnames = list(allInds, allInds))
+  selectTheta <- matrix(
+    FALSE, nrow = k, ncol = k,
+    dimnames = list(allInds, allInds)
+  )
+
+  # always keep diagonal
   diag(selectTheta)     <- TRUE
-  is.formative          <- allInds %in% inds.b
-  selectTheta[outer(is.formative, is.formative, "&")] <- TRUE
-  selectTheta[upper.tri(selectTheta, diag = FALSE)]   <- FALSE
+
+  # keep formative blocks
+  for (b in mode.b) {
+    idx <- indsLvs[[b]]
+    selectTheta[idx, idx] <- TRUE
+  }
+
+  # only lower.tri
+  selectTheta[upper.tri(selectTheta, diag = FALSE)] <- FALSE
 
   Ip <- diag(nrow = nrow(lambda))
   colnames(Ip) <- rownames(Ip) <- rownames(lambda)

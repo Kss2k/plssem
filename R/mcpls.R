@@ -499,6 +499,7 @@ thresholdJacobian <- function(thresholdStruct, sim.cont = NULL, eps = 1e-3,
   # if we have no simulated data, we assume the normal distribution
   if (is.null(sim.cont)) {
     thr <- thresholdStruct@thresholds
+    probs <- thresholdStruct@proportions
 
     out <- diag(1 / stats::dnorm(thr), nrow = length(thr))
     dimnames(out) <- list(names(thr), names(probs))
@@ -529,13 +530,6 @@ thresholdJacobian <- function(thresholdStruct, sim.cont = NULL, eps = 1e-3,
   dimnames(out) <- list(names(t0), names(p0))
 
   out
-}
-
-
-probFiniteDiffStep <- function(probs, i, eps) {
-  lo <- if (i == 1L) 0 else probs[i - 1L]
-  hi <- if (i == length(probs)) 1 else probs[i + 1L]
-  min(eps, 0.45 * (probs[i] - lo), 0.45 * (hi - probs[i]))
 }
 
 
@@ -578,10 +572,11 @@ calcMcJacobians <- function(.fg, .f, .simulate, p0, p1,
     J0[,i] <- (fg.p$f - fg.m$f) / (2 * eps)
     J1[,i] <- (fg.p$g - fg.m$g) / (2 * eps)
 
-    if (!is.null(progressBar))
+    if (!is.null(progressBar)) {
       utils::setTxtProgressBar(
         progressBar, (k - 1) * (length(p0) + length(probs0)) + i
       )
+    }
   }
 
   offset <- length(p0)
@@ -628,7 +623,7 @@ addEpsToBoundedProb <- function(probs, i, eps = 1e-3, tol = 1e-5) {
   par <- names(probs)[[i]]
   var <- stringr::str_split_i(par, pattern = "\\|", i = 1L)
 
-  idx <- which(grepl(paste0(var, "\\|P[0-9]+"), names(probs)))
+  idx <- which(grepl(paste0("^", var, "\\|P[0-9]+$"), names(probs)))
   probs.x <- probs[idx] # keep only probabilities for the relevant variable
 
   ix <- which(idx == i)

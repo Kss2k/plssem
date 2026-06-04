@@ -118,10 +118,11 @@ unstandardized_estimates <- function(model, unstandardized = "all",
   )
 
   # full vcov
-  if (se == "delta") {
+  vcov <- modelParams(combined)$vcov
+  if (se == "delta" && NROW(vcov) && NCOL(vcov)) {
     # V[pars]
     pars <- paste0(parTable$lhs, parTable$op, parTable$rhs)
-    Vpar <- expandVcov(modelParams(combined)$vcov, labels = pars)
+    Vpar <- expandVcov(vcov, labels = pars)
 
     # V[vars]
     # use approximated std.errors
@@ -181,7 +182,7 @@ unstandardized_estimates <- function(model, unstandardized = "all",
 
     parTableUstd$se <- se
 
-  } else if (se == "none") {
+  } else {
     parTableUstd$se <- NA_real_
     Vstd <- NULL
   }
@@ -209,8 +210,7 @@ unstandardizedEstimatesInternal <- function(parTable,
                                             unstandardize,
                                             lvs, inds.a, inds.b,
                                             sds) {
-  parTable <- parTable[c("lhs", "op", "rhs", "est")]
-
+  # keep original parTable for restoring the higher order measurement model
   uinds.a  <- intersect(inds.a, unstandardize)
   uinds.b  <- intersect(inds.b, unstandardize)
   ulvs     <- intersect(lvs,    unstandardize)

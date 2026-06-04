@@ -79,6 +79,7 @@ testthat::expect_no_error({
 
   fitm <- fit_measures(fit)
   pred <- pls_predict(fit)
+  unstandardized_estimates(fit)
 })
 
 
@@ -89,6 +90,7 @@ testthat::expect_equal(
 )
 
 testthat::expect_no_error({
-  fit <- pls(sem.syntax, data = data, mcpls = TRUE, bootstrap=TRUE)
+  fit <- pls(sem.syntax, data = data, mcpls = TRUE)
+  unstandardized_estimates(fit)
   pls_predict(fit)
 })

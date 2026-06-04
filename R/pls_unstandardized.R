@@ -93,14 +93,14 @@ unstandardized_estimates <- function(model, unstandardized = "all",
     rep(1, length(ovs) + length(lvs)), nm = c(ovs, lvs)
   )
 
-  # for continuous variables we can just use the observed sds
-  for (x in cont) {
+  # for continuous (unstandardized) variables we can just use the observed sds
+  for (x in intersect(cont, uvars)) {
     sds[[x]] <- tryCatch(scale[[x]], error = \(...) NA)
   }
 
   # for ordered variables we try to fix the residual variance to 1
   # (for indicators which have residual variances)
-  for (x in ordered) {
+  for (x in intersect(ordered, uvars)) {
     if (x %in% inds.b) sds[[x]] <- 1 # best guess
     else sds[[x]] <- tryCatch(1 / sqrt(resvar[[x]]), error = \(...) NA)
   }

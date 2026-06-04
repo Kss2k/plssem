@@ -79,7 +79,7 @@ getPLS_Data <- function(data,
     ))
 
     scale <- stats::setNames(vapply(
-      X         = data[indicators, , drop=FALSE],
+      X         = data[,indicators, drop = FALSE],
       FUN.VALUE = numeric(1L),
       FUN       = stats::sd, na.rm = TRUE
     ), nm = indicators)

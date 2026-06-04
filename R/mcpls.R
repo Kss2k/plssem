@@ -23,7 +23,7 @@ mcpls <- function(
   vars      <- colnames(data)
   ordered   <- fit0@info$ordered
   is.hi.ord <- isTRUE(fit0.combined@info$is.high.ord)
-  thresholdStruct <- fit0.combined@thresholdStruct
+  thresholdStruct0 <- fit0.combined@thresholdStruct
 
   par0 <- getFreeParamsTable(fit0.combined)
   par1 <- par0[c("lhs", "op", "rhs", "est", "is.free")]
@@ -61,7 +61,20 @@ mcpls <- function(
     )
   }
 
-  .f.from.sim <- function(sim, thresholdStruct = NULL) {
+  .f <- function(p, thresholdStruct = thresholdStruct0, sim = NULL) {
+
+    if (is.null(sim)) {
+      par1[par1$is.free, "est"] <- p
+      sim <- simulateDataParTable(
+        parTable     = par1,
+        N            = mc.reps,
+        seed         = rng.seed,
+        check.hi.ord = is.hi.ord,
+        clusterSizes = clusterSizes,
+        clusterName  = clusterName
+      )
+    }
+
     sim.ov  <- ordinalizeDataFrame(
       df = sim$ov, thresholdStruct = thresholdStruct
     )
@@ -89,58 +102,7 @@ mcpls <- function(
     eps[par0$is.free]
   }
 
-  # Keep the Robbins-Monro hot path direct. The more flexible `.f()` below is
-  # used by the Jacobian workflow, where sharing a pre-simulated dataset matters.
-  .f.root <- function(p) {
-    par1[par1$is.free, "est"] <- p
-
-    sim <- simulateDataParTable(
-      parTable     = par1,
-      N            = mc.reps,
-      seed         = rng.seed,
-      check.hi.ord = is.hi.ord,
-      clusterSizes = clusterSizes,
-      clusterName  = clusterName
-    )
-
-    sim.ov <- ordinalizeDataFrame(
-      df = sim$ov, thresholdStruct = thresholdStruct
-    )
-
-    fit.sim <- fit0.base
-    X       <- Rfast::standardise(as.matrix(sim.ov[vars]))
-    S       <- Rfast::cova(X)
-
-    if (!is.null(sim$cluster))
-      attr(X, "cluster") <- sim$cluster
-
-    modelData(fit.sim)     <- X
-    indCorrMatrix(fit.sim) <- S
-
-    fit2 <- estimatePLS_Inner(fit.sim)
-    par2 <- getFreeParamsTable(combinedModel(fit2))
-
-    eps <- par2$est - par0$est + sim$penalty
-    eps[par0$is.free]
-  }
-
-  .f <- function(p, thresholdStruct = NULL, sim = NULL) {
-    if (is.null(sim)) {
-      par1[par1$is.free, "est"] <- p
-      sim <- simulateDataParTable(
-        parTable     = par1,
-        N            = mc.reps,
-        seed         = rng.seed,
-        check.hi.ord = is.hi.ord,
-        clusterSizes = clusterSizes,
-        clusterName  = clusterName
-      )
-    }
-
-    .f.from.sim(sim, thresholdStruct = thresholdStruct)
-  }
-
-  .g <- function(p, thresholdStruct = thresholdStruct, sim = NULL) {
+  .g <- function(p, thresholdStruct = thresholdStruct0, sim = NULL) {
     fit <- updateModelFromFreeParTableMC(
       parTable         = .parTable(p),
       model            = fit0.combined,
@@ -156,7 +118,7 @@ mcpls <- function(
     fit@params$values
   }
 
-  .fg <- function(p, thresholdStruct = thresholdStruct, sim = NULL) {
+  .fg <- function(p, thresholdStruct = thresholdStruct0, sim = NULL) {
     if (is.null(sim))
       sim <- .simulate(p, standardize = TRUE)
 
@@ -178,7 +140,7 @@ mcpls <- function(
 
     mcfit <- robbinsMonro1951(
       p               = p,
-      f               = .f.root,
+      f               = .f,
       tol             = 10 * tol,
       min.iter        = 5L,
       max.iter        = 20L,
@@ -195,7 +157,7 @@ mcpls <- function(
 
   mcfit <- robbinsMonro1951(
     p               = p,
-    f               = .f.root,
+    f               = .f,
     tol             = tol,
     min.iter        = min.iter,
     max.iter        = max.iter,
@@ -217,7 +179,7 @@ mcpls <- function(
 
     mcfit <- robbinsMonro1951(
       p               = as.vector(mcfit$root),
-      f               = .f.root,
+      f               = .f,
       tol             = tol,
       min.iter        = min.iter,
       max.iter        = max.iter,
@@ -249,7 +211,7 @@ mcpls <- function(
     parTable        = par1,
     model           = fit0.combined,
     mc.reps         = mc.reps,
-    thresholdStruct = thresholdStruct,
+    thresholdStruct = thresholdStruct0,
     ordered         = ordered,
     seed            = rng.seed,
     clusterSizes    = clusterSizes,
@@ -270,7 +232,7 @@ mcpls <- function(
     if (verbose) pls_msg_note("Calculating Jacobian...")
 
 
-    probs0 <- thresholdStruct@proportions
+    probs0 <- thresholdStruct0@proportions
     nm <- paste0(par1$lhs, par1$op, par1$rhs)
     p0 <- stats::setNames(mcfit$root, nm[par1$is.free])
     p1 <- fit1.combined@params$values
@@ -300,14 +262,14 @@ mcpls <- function(
         rng.seed <- floor(stats::runif(1L, min = 0, max = 9999999))
 
       JAC  <- calcMcJacobians(
-        .fg         = .fg,
-        .f          = .f,
-        .simulate.f = .simulate,
-        p0          = p0,
-        p1          = p1,
-        thresholdStruct = thresholdStruct,
-        progressBar = pb,
-        k           = i
+        .fg             = .fg,
+        .f              = .f,
+        .simulate       = .simulate,
+        p0              = p0,
+        p1              = p1,
+        thresholdStruct = thresholdStruct0,
+        progressBar     = pb,
+        k               = i
       )
 
       J0.i <- JAC$J0
@@ -577,7 +539,7 @@ probFiniteDiffStep <- function(probs, i, eps) {
 }
 
 
-calcMcJacobians <- function(.fg, .f, .simulate.f, p0, p1,
+calcMcJacobians <- function(.fg, .f, .simulate, p0, p1,
                             thresholdStruct,
                             eps = 5e-3, progressBar = NULL, k = 1) {
   probs0 <- thresholdStruct@proportions
@@ -623,14 +585,12 @@ calcMcJacobians <- function(.fg, .f, .simulate.f, p0, p1,
   }
 
   offset <- length(p0)
-  sim0 <- if (length(probs0)) .simulate.f(p0, standardize = TRUE) else NULL
+  sim0 <- if (length(probs0)) .simulate(p0, standardize = TRUE) else NULL
 
   for (i in seq_along(probs0)) {
-    # TODO handle threshold overflow where +/- eps changes the sorted order
-    # of pm/pp
     pp <- pm <- probs0
-    pp[i] <- if (pp[i] + eps < 1) pp[i] + eps else pp[i]
-    pm[i] <- if (pm[i] - eps > 0) pm[i] - eps else pm[i]
+    pp[i] <- addEpsToBoundedProb(probs = probs0, i = i, eps = +eps)
+    pm[i] <- addEpsToBoundedProb(probs = probs0, i = i, eps = -eps)
 
     # check bounds
     T0 <- T1 <- thresholdStruct
@@ -661,4 +621,24 @@ calcMcJacobians <- function(.fg, .f, .simulate.f, p0, p1,
   }
 
   list(J0 = J0, J1 = J1, Jp = Jp, Gp = Gp)
+}
+
+
+addEpsToBoundedProb <- function(probs, i, eps = 1e-3, tol = 1e-5) {
+  par <- names(probs)[[i]]
+  var <- stringr::str_split_i(par, pattern = "\\|", i = 1L)
+
+  idx <- which(grepl(paste0(var, "\\|P[0-9]+"), names(probs)))
+  probs.x <- probs[idx] # keep only probabilities for the relevant variable
+
+  ix <- which(idx == i)
+  bound <- \(j) if (j < 1) 0 else if (j > length(probs.x)) 1 else probs.x[j]
+
+  lower    <- bound(ix - 1)
+  upper    <- bound(ix + 1)
+  proposal <- probs.x[ix] + eps
+
+  if      (proposal > upper) upper - abs(tol)
+  else if (proposal < lower) lower + abs(tol)
+  else                       proposal
 }

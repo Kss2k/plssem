@@ -15,10 +15,8 @@ resetModelStatusLowerOrder <- function(model, hard.reset = FALSE) {
   model@status$convergence <- FALSE
   model@status$iterations.0_5 <- 0L
 
-  if (hard.reset) {
+  if (hard.reset)
     model@status$iterations <- 0L
-    model@params$values.old <- NULL
-  }
 
   model
 }
@@ -47,7 +45,6 @@ initModelParams <- function(model) {
   model@params <- list(
     names          = parnames,
     values         = rep(NA_real_, k),
-    values.old     = NULL,
     se             = rep(NA_real_, k),
     vcov           = NULL,
     Jacobian0      = NULL, # free mc params to free naive params
@@ -116,7 +113,8 @@ initModelInfo <- function(baseInfo,
                           reliabilities,
                           is.lower.order,
                           mc.args,
-                          boot) {
+                          boot,
+                          scale) {
   stopifnot(is.list(baseInfo), is.list(parsed))
 
   info <- baseInfo
@@ -150,6 +148,7 @@ initModelInfo <- function(baseInfo,
   info$is.lower.order <- isTRUE(is.lower.order)
   info$mc.args        <- mc.args
   info$boot           <- boot
+  info$scale          <- scale
 
   info
 }

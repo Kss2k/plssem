@@ -379,9 +379,11 @@ updateModelFromFreeParTableMC <- function(parTable,
     )
   }
 
-  SC   <- Rfast::cova(as.matrix(sim$all))
-  ovs  <- colnames(model@matrices$S)
-  lvsc <- colnames(model@matrices$C)
+  SC     <- Rfast::cova(as.matrix(sim$all))
+  ovs    <- colnames(model@matrices$S)
+  lvsc   <- colnames(model@matrices$C)
+  mode.a <- model@info$mode.a
+  mode.b <- model@info$mode.b
 
   if (!params.only) {
     sim.ord <- ordinalizeDataFrame(
@@ -422,14 +424,51 @@ updateModelFromFreeParTableMC <- function(parTable,
     if (!length(par)) NA_real_ else par[[1L]]
   }
 
-  for (lv in colnames(fitMeasurement)) for (ov in rownames(fitMeasurement)) {
-    if (!selectLambda[ov, lv]) next
-    par <- getpar(lhs = lv, op = "=~", rhs = ov)
-    if (is.na(par)) par <- tryCatchNA(SC[ov, lv])
-    fitMeasurement[ov, lv] <- par
+  cn <- colnames(fitMeasurement)
+  rn <- rownames(fitMeasurement)
 
-    if (selectTheta[ov, ov])
-      fitTheta[ov, ov] <- max(0, 1 - par^2)
+  mode.a <- intersect(mode.a, cn)
+  mode.b <- intersect(mode.b, cn)
+
+  if (!length(mode.a) && !length(mode.b)) {
+    pls_msg_warn(
+      "mode.a and mode.b are missing! This is likely a bug!"
+    )
+
+    # fallback
+    mode.a <- cn
+  }
+
+  # Mode A
+  for (lv in mode.a) {
+    inds.lv <- rn[selectLambda[,lv, drop = TRUE]]
+
+    for (ov in inds.lv) {
+
+      par <- getpar(lhs = lv, op = "=~", rhs = ov)
+      if (is.na(par)) par <- tryCatchNA(SC[ov, lv])
+
+      fitMeasurement[ov, lv] <- par
+
+      if (selectTheta[ov, ov])
+        fitTheta[ov, ov] <- max(0, 1 - par^2)
+    }
+  }
+
+  # Mode B
+  for (lv in mode.b) {
+    inds.lv <- rn[selectLambda[,lv, drop = TRUE]]
+
+    for (ov in inds.lv) {
+
+      par <- getpar(lhs = lv, op = "<~", rhs = ov)
+      if (is.na(par)) par <- tryCatchNA(SC[ov, lv]) # this is likely a bad fallback
+                                                    # but currently it's ok, since
+      fitMeasurement[ov, lv] <- par                 # mode b isn't supported for more than
+                                                    # one indicator per composite
+      if (selectTheta[ov, ov])
+        fitTheta[ov, ov] <- 1
+    }
   }
 
   for (dep in colnames(fitStructural)) for (indep in rownames(fitStructural)) {

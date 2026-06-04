@@ -237,6 +237,8 @@ computeCombinedModel <- function(model, lowerOrderAsEta = FALSE) {
     mode.a       = union(info1$mode.a, info2$mode.a),
     mode.b       = union(info1$mode.b, info2$mode.b),
     modes        = namedListUnion(info1$modes, info2$modes),
+    inds.a       = intersect(ovInds, as.character(info1$inds.a)),
+    inds.b       = intersect(ovInds, as.character(info1$inds.b)),
     inds.x       = inds.x,
     inds.y       = inds.y,
     indsLvs      = namedListUnion(info1$indsLvs, info2$indsLvs),
@@ -254,6 +256,7 @@ computeCombinedModel <- function(model, lowerOrderAsEta = FALSE) {
     verbose      = isTRUE(info1$verbose) || isTRUE(info2$verbose),
     mc.args      = info1$mc.args,
     boot         = info1$boot,
+    scale        = info1$scale, # scale of input variables
 
     # Preserve additional fields used elsewhere.
     ordered.x      = intersect(inds.x, ordered.base),

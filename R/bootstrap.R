@@ -349,14 +349,18 @@ bootstrap <- function(model,
         pars[is.cov & is.int], pattern = "~~", n = 2
       )
 
-      split <- split[
-        !grepl("~", split[,1L]) & !grepl("~", split[,2L]) & # remove random effect variances
-        !is.na(split[,1L])      & !is.na(split[,2L]), , drop = FALSE
-      ]
+      if (NROW(split)) {
+        split.sub <- split[
+          !grepl("~", split[,1L]) & !grepl("~", split[,2L]) & # remove random effect variances
+          !is.na(split[,1L])      & !is.na(split[,2L]), , drop = FALSE
+        ]
 
-      rm <- paste0(split[,1L], "~~", split[,2L]) 
-      vcov[rm,] <- 0
-      vcov[,rm] <- 0
+        if (NROW(split.sub)) {
+          rm <- paste0(split.sub[,1L], "~~", split.sub[,2L]) 
+          vcov[rm,] <- 0
+          vcov[,rm] <- 0
+        }
+      }
     }
   }
 

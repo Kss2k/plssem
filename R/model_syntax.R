@@ -127,7 +127,8 @@ parseModelArguments <- function(parTable,
 
   has.ord            <- length(ordered) > 0L
   is.mlm             <- length(lme4.syntax) > 0L
-  is.mcpls           <- COALLESCE(mcpls, has.ord && (is.nlin || is.lower.order))
+  use.mcpls.default  <- (has.ord && (is.nlin || is.lower.order)) || is.mlm
+  is.mcpls           <- COALLESCE(mcpls, use.mcpls.default)
   is.probit          <- COALLESCE(probit, has.ord && !is.mcpls)
   mc.fast.lmer       <- COALLESCE(mc.fast.lmer, is.mcpls)
 

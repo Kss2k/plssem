@@ -285,7 +285,7 @@ estimatePLS_InnerLocal <- function(model) {
     updateOuterWeights() |>
     updateFactorScores() |>
     updateFitObjects()   |>
-    updateParamVector()  |>
+    updateParamVector() |>
     updateEstimationStatus()
 }
 

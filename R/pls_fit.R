@@ -147,12 +147,16 @@ getParamVecNames <- function(model) {
   for (j in colnames(theta)) for (i in rownames(theta))
     theta[i, j] <- paste0(j, "~~", i)
 
-  c(lambda[selectLambda], gamma[selectGamma], psi[selectCov], theta[selectTheta])
+  thresholds <- model@thresholdStruct@thresholds
+
+  c(lambda[selectLambda], gamma[selectGamma], psi[selectCov], theta[selectTheta],
+    names(thresholds))
 }
 
 
 extractCoefs <- function(model) {
   fit <- model@fit
+  thresholdStruct <- model@thresholdStruct
 
   lambda       <- fit$fitMeasurement
   selectLambda <- model@matrices$select$lambda
@@ -166,15 +170,16 @@ extractCoefs <- function(model) {
   fitTheta    <- fit$fitTheta
   selectTheta <- model@matrices$select$theta
 
-  out <- c(
+  thr  <- thresholdStruct@thresholds
+  pars <- c(
     lambda[selectLambda],
     gamma[selectGamma],
     fitCov[selectCov],
     fitTheta[selectTheta]
   )
 
-  names(out) <- model@params$names
-  plssemVector(out)
+  names(pars) <- model@params$names[seq_along(pars)]
+  plssemVector(c(pars, thr))
 }
 
 
@@ -243,4 +248,3 @@ refreshLmerParams <- function(model) {
 
   model
 }
-

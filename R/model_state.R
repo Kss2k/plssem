@@ -45,13 +45,15 @@ initModelParams <- function(model) {
   k <- length(parnames)
 
   model@params <- list(
-    names      = parnames,
-    values     = rep(NA_real_, k),
-    values.old = NULL,
-    se         = rep(NA_real_, k),
-    vcov       = NULL,
-    Jacobian0  = NULL, # free naive params to free mc params
-    Jacobian1  = NULL  # free mc params to all mc params
+    names          = parnames,
+    values         = rep(NA_real_, k),
+    values.old     = NULL,
+    se             = rep(NA_real_, k),
+    vcov           = NULL,
+    Jacobian0      = NULL, # free mc params to free naive params
+    Jacobian1      = NULL, # free mc params to all mc params
+    JacobianProbs0 = NULL, # empirical probabilities to free MC root equation
+    JacobianProbs1 = NULL  # empirical probabilities to all MC params
   )
 
   model

@@ -46,8 +46,8 @@ bootstrap <- function(model,
   )
 
   combinedCoefs <- combinedModel(model)@params$values
-  # parTemplate might be stale with mc.delta=TRUE...
 
+  probsTemplate <- model@thresholdStruct@proportions
   parTemplate <- stats::setNames(
     rep(NA_real_, length(combinedCoefs)),
     names(combinedCoefs)
@@ -77,6 +77,11 @@ bootstrap <- function(model,
       model.b@data       <- sampleData
       model.b@matrices$S <- sampleS
 
+      model.b@thresholdStruct <- updateThresholds(updateProportions(
+        thr  = baseModel@thresholdStruct,
+        data = sampleData
+      ))
+
       mc.args             <- model.b@info$mc.args
       boot.fixed.seed     <- mc.boot.control$fixed.seed
       boot.polyak         <- mc.boot.control$polyak.juditsky
@@ -103,26 +108,26 @@ bootstrap <- function(model,
 
       })
 
-      par <- formatBootPars(
-        modelParams(combinedModel(model.b))$values
-      )
+      par <- formatBootPars(modelParams(combinedModel(model.b))$values)
+      probs <- model.b@thresholdStruct@proportions
 
       if (low.tol.penalty > 0 && is.mcpls && !mc.delta.se) {
         k <- length(par)
         par <- par + stats::rnorm(k, mean = 0, sd = low.tol.penalty)
       }
 
-      attr(par, "id") <- i
-      par
+      out <- c(par, probs)
+      attr(out, "id") <- i
+      out
 
     }, error = \(e) {
       pls_msg_warn(
         paste0("Bootstrap replicate ", i, " failed: ", conditionMessage(e))
       )
 
-      par <- parTemplate
-      attr(par, "id") <- i
-      par
+      out <- c(parTemplate, probsTemplate + NA_real_)
+      attr(out, "id") <- i
+      out
     })
   }
 
@@ -242,9 +247,11 @@ bootstrap <- function(model,
 
   resultsMat <- do.call(rbind, results)
   rownames(resultsMat) <- ids
-  colnames(resultsMat) <- names(combinedModel(model)@params$values)
+  colnames(resultsMat) <- c(names(combinedModel(model)@params$values), names(probsTemplate))
 
-  vcov <- stats::cov(resultsMat, use = "complete.obs")
+  vcov.joint <- stats::cov(resultsMat, use = "complete.obs")
+  par.names <- names(combinedModel(model)@params$values)
+  vcov <- vcov.joint[par.names, par.names, drop = FALSE]
 
   if (mc.delta.se) {
     combined <- combinedModel(model)
@@ -252,9 +259,8 @@ bootstrap <- function(model,
 
     if (!is.null(params$Jacobian0)) {
       Jacobian0 <- params$Jacobian0
-      pars.free <- intersect(colnames(Jacobian0), colnames(vcov))
+      pars.free <- intersect(colnames(Jacobian0), colnames(vcov.joint))
 
-      vcov.sub <- vcov[pars.free, pars.free, drop = FALSE]
       J0 <- Jacobian0[pars.free, pars.free, drop = FALSE]
 
       tryCatch({
@@ -266,8 +272,6 @@ bootstrap <- function(model,
             MASS::ginv(J0)
           }
         )
-
-        vcov.mc.free <- J0.inv %*% vcov.sub %*% t(J0.inv)
 
         if (!is.null(params$Jacobian1)) {
           Jacobian1 <- params$Jacobian1
@@ -287,13 +291,35 @@ bootstrap <- function(model,
           )
 
           J1 <- Jacobian1[pars.all, pars.free, drop = FALSE]
-          vcov.mc.full <- J1 %*% vcov.mc.free %*% t(J1)
+          D.par <- J1 %*% J0.inv
+          prob.names <- intersect(names(probsTemplate), colnames(vcov.joint))
+
+          if (length(prob.names)) {
+            # Implicit delta method:
+            # dp = J0^-1 da - J0^-1 Jp dc
+            # dy = J1 dp + Gp dc
+            Jp <- params$JacobianProbs0[pars.free, prob.names, drop = FALSE]
+            Gp <- params$JacobianProbs1[pars.all, prob.names, drop = FALSE]
+            D.probs <- Gp - D.par %*% Jp
+            D <- cbind(D.par, D.probs)
+            vcov.sub <- vcov.joint[
+              c(pars.free, prob.names), c(pars.free, prob.names), drop = FALSE
+            ]
+
+          } else {
+            D <- D.par
+            vcov.sub <- vcov.joint[pars.free, pars.free, drop = FALSE]
+          }
+
+          vcov.mc.full <- D %*% vcov.sub %*% t(D)
 
           vcov[] <- 0
           vcov[pars.all, pars.all] <- vcov.mc.full[pars.all, pars.all]
 
         } else {
           # Just use standard errors for free parameters
+          vcov.sub <- vcov.joint[pars.free, pars.free, drop = FALSE]
+          vcov.mc.free <- J0.inv %*% vcov.sub %*% t(J0.inv)
           vcov[] <- 0
           vcov[pars.free, pars.free] <- vcov.mc.free[pars.free, pars.free]
 
@@ -308,13 +334,40 @@ bootstrap <- function(model,
 
         vcov[] <<- NA_real_
       })
+
+      # The (co-)variances structure of the interaction terms, is often
+      # not a function of the free model parameters (though some are).
+      # E.g., the variance of a quadratic terms should analytically always be 2,
+      # and X~X:Z should always be zero. The delta-method should therefore not
+      # add any information here. However, it might seem like it, due to sampling error.
+      # Here we just remove these from the vcov
+      pars   <- rownames(vcov)
+      is.cov <- grepl("~~", pars)
+      is.int <- grepl(":", pars)
+
+      split  <- stringr::str_split_fixed(
+        pars[is.cov & is.int], pattern = "~~", n = 2
+      )
+
+      if (NROW(split)) {
+        split.sub <- split[
+          !grepl("~", split[,1L]) & !grepl("~", split[,2L]) & # remove random effect variances
+          !is.na(split[,1L])      & !is.na(split[,2L]), , drop = FALSE
+        ]
+
+        if (NROW(split.sub)) {
+          rm <- paste0(split.sub[,1L], "~~", split.sub[,2L]) 
+          vcov[rm,] <- 0
+          vcov[,rm] <- 0
+        }
+      }
     }
   }
 
   se <- sqrt(diag(vcov))
   se[se <= zero.tol] <- NA_real_
 
-  list(se = se, boot = resultsMat, vcov = vcov)
+  list(se = se, boot = resultsMat[, par.names, drop = FALSE], vcov = vcov)
 }
 
 

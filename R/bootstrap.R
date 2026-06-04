@@ -77,10 +77,10 @@ bootstrap <- function(model,
       model.b@data       <- sampleData
       model.b@matrices$S <- sampleS
 
-      model.b@thresholdStruct <- updateProportions(
+      model.b@thresholdStruct <- updateThresholds(updateProportions(
         thr  = baseModel@thresholdStruct,
         data = sampleData
-      )
+      ))
 
       mc.args             <- model.b@info$mc.args
       boot.fixed.seed     <- mc.boot.control$fixed.seed

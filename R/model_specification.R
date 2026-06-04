@@ -149,7 +149,8 @@ specifySubModel <- function(parTable,
     reliabilities  = reliabilities,
     is.lower.order = is.lower.order,
     mc.args        = mc.args,
-    boot           = boot.info
+    boot           = boot.info,
+    scale          = preppedData$scale
   )
 
   thresholdStruct <- ThresholdStruct( # holds information about thresholds and

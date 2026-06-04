@@ -1,4 +1,4 @@
-CI_QUANTILE <- qnorm(0.05)
+CI_QUANTILE <- qnorm(0.975)
 
 
 getParTableEstimates <- function(model, rm.tmp.ov = TRUE, clean.tmp.ind = TRUE) {
@@ -10,22 +10,14 @@ getParTableEstimates <- function(model, rm.tmp.ov = TRUE, clean.tmp.ind = TRUE) 
   lhs      <- split$lhs
   op       <- split$op
   rhs      <- split$rhs
-  z        <- est / se
-  pvalue   <- 2 * stats::pnorm(-abs(z))
-  ci.lower <- est - CI_QUANTILE * z
-  ci.upper <- est + CI_QUANTILE * z
 
-  parTable <- data.frame(
+  parTable <- addZStatsParTable(data.frame(
     lhs      = lhs,
     op       = op,
     rhs      = rhs,
     est      = est,
-    se       = se,
-    z        = z,
-    pvalue   = pvalue,
-    ci.lower = ci.lower,
-    ci.upper = ci.upper
-  )
+    se       = se
+  ))
 
   is.threshold <- parTable$op == "|"
   parTable$lhs[is.threshold] <- removeTempOvPrefix(parTable$lhs[is.threshold])
@@ -48,14 +40,13 @@ parTableToParams <- function(parTable) {
   est <- parTable$est
   se  <- parTable$se
 
-  k          <- NROW(parTable)
-  names      <- paste0(lhs, op, rhs)
-  values     <- stats::setNames(est, nm = names)
+  k      <- NROW(parTable)
+  names  <- paste0(lhs, op, rhs)
+  values <- stats::setNames(est, nm = names)
 
   list(
     names      = names,
     values     = values,
-    values.old = NULL,
     se         = se,
     vcov       = NULL
   )
@@ -156,4 +147,30 @@ addColonPI_ParTable <- function(parTable, model, label.renamed.prod = FALSE) {
   }
 
   parTable
+}
+
+
+addZStatsParTable <- function(parTable) {
+  lhs      <- parTable$lhs
+  op       <- parTable$op
+  rhs      <- parTable$rhs
+  est      <- parTable$est
+  se       <- parTable$se
+
+  z        <- est / se
+  pvalue   <- 2 * stats::pnorm(-abs(z))
+  ci.lower <- est - CI_QUANTILE * se
+  ci.upper <- est + CI_QUANTILE * se
+
+  data.frame(
+    lhs      = lhs,
+    op       = op,
+    rhs      = rhs,
+    est      = est,
+    se       = se,
+    z        = z,
+    pvalue   = pvalue,
+    ci.lower = ci.lower,
+    ci.upper = ci.upper
+  )
 }

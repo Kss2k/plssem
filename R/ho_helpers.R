@@ -254,6 +254,7 @@ computeCombinedModel <- function(model, lowerOrderAsEta = FALSE) {
     verbose      = isTRUE(info1$verbose) || isTRUE(info2$verbose),
     mc.args      = info1$mc.args,
     boot         = info1$boot,
+    scale        = info1$scale, # scale of input variables
 
     # Preserve additional fields used elsewhere.
     ordered.x      = intersect(inds.x, ordered.base),

@@ -69,12 +69,20 @@ getPLS_Data <- function(data,
       cluster = cluster
     )
 
+    # sd's are a natural byproduct of standardizing
+    scale <- attr(data, "sigma")
+
   } else {
     pls_msg_warn(paste0(
       "The `pls()` function usually assumes that the data is standardized!\n",
       "Setting `standardized=FALSE` may have unexpected side effects!"
     ))
 
+    scale <- stats::setNames(vapply(
+      X         = data[indicators, , drop=FALSE],
+      FUN.VALUE = numeric(1L),
+      FUN       = stats::sd, na.rm = TRUE
+    ), nm = indicators)
   }
 
   S <- getCorrMat(data[indicators], probit = is.probit, ordered = ordered)
@@ -87,7 +95,7 @@ getPLS_Data <- function(data,
     attr(X, "cluster") <- data[, cluster, drop = FALSE]
   }
 
-  list(X = X, S = S)
+  list(X = X, S = S, scale = scale)
 }
 
 
@@ -133,12 +141,26 @@ standardizeDataFrame <- function(data, cluster = NULL, subset = colnames(data)) 
   Z <- lapply(data[subset], FUN = standardizeAtomic)
   data[subset] <- Z
 
+  mu <- vapply(Z, FUN.VALUE = numeric(1L), FUN = \(x) attr(x, "mu"))
+  sigma <- vapply(Z, FUN.VALUE = numeric(1L), FUN = \(x) attr(x, "sigma"))
+  names(mu) <- names(sigma) <- subset
+
+  attr(data, "mu") <- mu
+  attr(data, "sigma") <- sigma
+
   data
 }
 
 
 standardizeAtomic <- function(x) {
-  (x - mean(x, na.rm = TRUE)) / stats::sd(x, na.rm = TRUE)
+  mu <- mean(x, na.rm = TRUE)
+  sigma <- stats::sd(x, na.rm = TRUE)
+
+  y <- (x - mu) / sigma
+  attr(y, "mu") <- mu
+  attr(y, "sigma") <- sigma
+
+  y
 }
 
 

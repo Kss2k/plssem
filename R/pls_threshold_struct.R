@@ -16,7 +16,7 @@ ThresholdStruct <- function(data, ordered = NULL, digits = 5L) {
     freq.x        <- table(factor(x, levels = levels.x))
     pct.x         <- cumsum(freq.x) / sum(freq.x)
     proportions.x <- unname(pct.x[-length(pct.x)])
-    thresholds.x  <- qnorm(proportions.x)   
+    thresholds.x  <- stats::qnorm(proportions.x)   
 
     # get indices
     idx.x <- seq_along(thresholds.x) + length(thresholds)

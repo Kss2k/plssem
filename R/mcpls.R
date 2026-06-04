@@ -634,8 +634,8 @@ calcMcJacobians <- function(.fg, .f, .simulate.f, p0, p1,
 
     # check bounds
     T0 <- T1 <- thresholdStruct
-    T1@proportions <- pm
-    T0@proportions <- pp
+    T1@proportions <- pp
+    T0@proportions <- pm
 
     Jp[,i] <- (
       .f(p0, thresholdStruct = T1, sim = sim0) - 

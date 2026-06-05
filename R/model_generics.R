@@ -42,7 +42,7 @@ setMethod("summary", "PlsModel", function(object, fit = TRUE, unstandardized = F
   inds       <- getIndicators(parTable)
   inds.a     <- getReflectiveIndicators(parTable)
   is.probit  <- combined@info$is.probit
-  ordered    <- combined@info$is.ordered
+  ordered    <- combined@info$ordered
   is.mcpls   <- combined@info$is.mcpls
   extra.cols <- NULL
 

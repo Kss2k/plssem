@@ -9,6 +9,8 @@
 #'   one of \code{"all"}, \code{"ov"}, or \code{"lv"}.
 #' @param se Character string selecting delta-method standard errors
 #'   (\code{"delta"}) or no standard errors (\code{"none"}).
+#' @param scale.uncertainty Should scale uncertainty be included?
+#'   defaults to \code{FALSE}.
 #' @param eps Positive numeric finite-difference step used for the delta-method
 #'   Jacobian.
 #' @param zero.tol Non-negative numeric tolerance below which standard errors
@@ -43,6 +45,7 @@
 #' @export
 unstandardized_estimates <- function(model, unstandardized = "all",
                                      se = c("delta", "none"),
+                                     scale.uncertainty = FALSE,
                                      eps = 1e-4, zero.tol = 1e-10,
                                      rm.tmp.ov = TRUE, clean.tmp.ind = TRUE) {
   se <- tolower(se)
@@ -61,6 +64,12 @@ unstandardized_estimates <- function(model, unstandardized = "all",
   scale    <- info$scale
   resvar   <- diag(fit$fitTheta)
   n        <- NROW(modelData(combined))
+
+  # do we have a multilevel/mixed-effects model?
+  pls_stopif(isMLM(combined),
+    "`unstandardized_estimates()` is not available for",
+    "mixed-effects/multilevel models (yet)!"
+  )
 
   if (length(unstandardized) == 1L) {
 
@@ -140,11 +149,19 @@ unstandardized_estimates <- function(model, unstandardized = "all",
     sdsu <- sds[uvars]
     sdss <- sds[setdiff(names(sds), uvars)]
 
-    Vsds <- diag(sdsu^2 / (2 * (n - 1)), nrow = length(sdsu))
-    dimnames(Vsds) <- list(names(sdsu), names(sdsu))
+    if (scale.uncertainty) {
+      # add uncertainty estimates to the scale of the variables
+      Vsds <- diag(sdsu^2 / (2 * (n - 1)), nrow = length(sdsu))
+      dimnames(Vsds) <- list(names(sdsu), names(sdsu))
 
-    # V[vars,pars]
-    V <- diagPartitioned(Vpar, Vsds)
+      # V[vars,pars]
+      V <- diagPartitioned(Vpar, Vsds)
+
+    } else {
+      # else we just consider the uncertainty in the parameters
+      V <- Vpar
+
+    }
 
     # jacobian for delta method standard errors
     J <- matrix(
@@ -152,6 +169,8 @@ unstandardized_estimates <- function(model, unstandardized = "all",
       dimnames = list(pars, colnames(V))
     )
 
+    # if scale.uncertainty=FALSE i never reaches any of the values in
+    # idx.var, and thus it stays constant.
     idx.par <- seq_along(pars)
     idx.var <- seq_along(sdsu) + length(pars)
 

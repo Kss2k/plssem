@@ -6,10 +6,10 @@
 }
 
 
-parTableToSyntax      <- .internalModsemAPI("parTableToSyntax")
-modsemGetStructOVs    <- .internalModsemAPI("getStructOVs")
-getParTableLabels     <- .internalModsemAPI("getParTableLabels")
-multiplyIndicatorsCpp <- .internalModsemAPI("multiplyIndicatorsCpp")
-# simulateDataParTable  <- .internalModsemAPI("simulateDataParTable")
-createProdInds        <- .internalModsemAPI("createProdInds")
-allignLhsRhs          <- .internalModsemAPI("allignLhsRhs")
+parTableToSyntax           <- .internalModsemAPI("parTableToSyntax")
+modsemGetStructOVs         <- .internalModsemAPI("getStructOVs")
+getParTableLabels          <- .internalModsemAPI("getParTableLabels")
+multiplyIndicatorsCpp      <- .internalModsemAPI("multiplyIndicatorsCpp")
+allignLhsRhs               <- .internalModsemAPI("allignLhsRhs")
+modGetWidthPrintedParTable <- .internalModsemAPI("getWidthPrintedParTable")
+modPrintParTable           <- .internalModsemAPI("printParTable")

@@ -8,6 +8,7 @@ unstandardized_estimates(
   model,
   unstandardized = "all",
   se = c("delta", "none"),
+  scale.uncertainty = FALSE,
   eps = 1e-04,
   zero.tol = 1e-10,
   rm.tmp.ov = TRUE,
@@ -22,6 +23,9 @@ one of \code{"all"}, \code{"ov"}, or \code{"lv"}.}
 
 \item{se}{Character string selecting delta-method standard errors
 (\code{"delta"}) or no standard errors (\code{"none"}).}
+
+\item{scale.uncertainty}{Should scale uncertainty be included?
+defaults to \code{FALSE}.}
 
 \item{eps}{Positive numeric finite-difference step used for the delta-method
 Jacobian.}

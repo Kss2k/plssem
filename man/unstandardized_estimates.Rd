@@ -8,6 +8,7 @@ unstandardized_estimates(
   model,
   unstandardized = "all",
   se = c("delta", "none"),
+  scale.uncertainty = FALSE,
   eps = 1e-04,
   zero.tol = 1e-10,
   rm.tmp.ov = TRUE,
@@ -34,6 +35,9 @@ variables should be removed from the returned parameter table.}
 
 \item{clean.tmp.ind}{Logical; whether rows involving temporary indicators
 should be cleaned from the returned parameter table.}
+
+\item{add.scale.uncertainty}{Should scale uncertainty be included?
+defaults to \code{FALSE}.}
 }
 \value{
 A \code{PlsSemParTable} containing transformed estimates and (when

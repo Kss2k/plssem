@@ -49,7 +49,8 @@ setMethod("summary", "PlsModel", function(object, fit = TRUE, unstandardized = F
   if (unstandardized) {
     tryCatch({
 
-      parTableu <- unstandardized_estimates(object, ...)
+      # we don't need any standard errors, so save the computation
+      parTableu <- unstandardized_estimates(object, se = "none", ...)
 
       idx0 <- paste0(parTable$lhs, parTable$op, parTable$rhs)
       idx1 <- paste0(parTableu$lhs, parTableu$op, parTableu$rhs)

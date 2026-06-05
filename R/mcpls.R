@@ -127,8 +127,8 @@ mcpls <- function(
   ok.start <- !is.null(p.start) && length(p.start) == sum(par1$is.free)
   p        <- if (ok.start) p.start else par1[par1$is.free, "est"]
 
-  lower <- ifelse(par1[par1$is.free, "op"] == "=~", yes = -0.999, no = -Inf)
-  upper <- ifelse(par1[par1$is.free, "op"] == "=~", yes =  0.999, no =  Inf)
+  lower <- getMcLowerBounds(par1)
+  upper <- getMcUpperBounds(par1)
 
   if (polyak.juditsky && !pj.extrapolate) {
     # If we're not using a Nonlinear Regression to solve for the convergence
@@ -639,7 +639,7 @@ calcMcJacobians <- function(.fg, .f, .simulate, p0, p1,
     T0@proportions <- points$minus
 
     Jp[,i] <- (
-      .f(p0, thresholdStruct = T1, sim = sim0) - 
+      .f(p0, thresholdStruct = T1, sim = sim0) -
       .f(p0, thresholdStruct = T0, sim = sim0)
     ) / points$denominator
 
@@ -706,4 +706,25 @@ boundedProbabilityFiniteDiffPoints <- function(probs, i, eps = 1e-3,
   minus[i] <- probs[i] - step
 
   list(plus = plus, minus = minus, denominator = 2 * step)
+}
+
+
+getMcLowerBounds <- function(par, tol = 1e-3) {
+  parf  <- par[par$is.free, , drop = FALSE]
+  lower <- rep(-Inf, NROW(parf))
+
+  lower[parf$op == "=~"]                        <- tol - 1
+  lower[parf$op == "~~" & parf$lhs == parf$rhs] <- tol
+
+  lower
+}
+
+
+getMcUpperBounds <- function(par, tol = 1e-3) {
+  parf  <- par[par$is.free, , drop = FALSE]
+  upper <- rep(Inf, NROW(parf))
+
+  upper[parf$op == "=~"] <- 1 - tol
+
+  upper
 }

@@ -9,7 +9,7 @@
 #'   one of \code{"all"}, \code{"ov"}, or \code{"lv"}.
 #' @param se Character string selecting delta-method standard errors
 #'   (\code{"delta"}) or no standard errors (\code{"none"}).
-#' @param add.scale.uncertainty Should scale uncertainty be included?
+#' @param scale.uncertainty Should scale uncertainty be included?
 #'   defaults to \code{FALSE}.
 #' @param eps Positive numeric finite-difference step used for the delta-method
 #'   Jacobian.

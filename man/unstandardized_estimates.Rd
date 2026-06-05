@@ -24,6 +24,9 @@ one of \code{"all"}, \code{"ov"}, or \code{"lv"}.}
 \item{se}{Character string selecting delta-method standard errors
 (\code{"delta"}) or no standard errors (\code{"none"}).}
 
+\item{scale.uncertainty}{Should scale uncertainty be included?
+defaults to \code{FALSE}.}
+
 \item{eps}{Positive numeric finite-difference step used for the delta-method
 Jacobian.}
 
@@ -35,9 +38,6 @@ variables should be removed from the returned parameter table.}
 
 \item{clean.tmp.ind}{Logical; whether rows involving temporary indicators
 should be cleaned from the returned parameter table.}
-
-\item{add.scale.uncertainty}{Should scale uncertainty be included?
-defaults to \code{FALSE}.}
 }
 \value{
 A \code{PlsSemParTable} containing transformed estimates and (when

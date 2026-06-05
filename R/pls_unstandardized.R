@@ -43,11 +43,11 @@
 #' unstandardized_estimates(fit)
 #' }
 #' @export
-unstandardized_estimates <- function(model, unstandardized = "all",
-                                     se = c("delta", "none"),
-                                     scale.uncertainty = FALSE,
-                                     eps = 1e-4, zero.tol = 1e-10,
-                                     rm.tmp.ov = TRUE, clean.tmp.ind = TRUE) {
+plsUnstandardizedEstimates <- function(model, unstandardized = "all",
+                                       se = c("delta", "none"),
+                                       scale.uncertainty = FALSE,
+                                       eps = 1e-4, zero.tol = 1e-10,
+                                       rm.tmp.ov = TRUE, clean.tmp.ind = TRUE) {
   se <- tolower(se)
   se <- match.arg(se)
 

@@ -367,6 +367,88 @@ setMethod("implied_indicator_corr", "PlsModel",
 })
 
 
+#' Unstandardized Parameter Estimates
+#'
+#' Transform parameter estimates from a fitted PLS-SEM model to observed- and
+#' latent-variable scales. Variables not selected through \code{unstandardized}
+#' remain on their standardized scales.
+#'
+#' @param model A fitted \code{PlsModel} object.
+#' @param unstandardized Character vector naming variables to unstandardize, or
+#'   one of \code{"all"}, \code{"ov"}, or \code{"lv"}.
+#' @param se Character string selecting delta-method standard errors
+#'   (\code{"delta"}) or no standard errors (\code{"none"}).
+#' @param scale.uncertainty Should scale uncertainty be included?
+#'   defaults to \code{FALSE}.
+#' @param eps Positive numeric finite-difference step used for the delta-method
+#'   Jacobian.
+#' @param zero.tol Non-negative numeric tolerance below which standard errors
+#'   are returned as missing.
+#' @param rm.tmp.ov Logical; whether rows involving temporary observed
+#'   variables should be removed from the returned parameter table.
+#' @param clean.tmp.ind Logical; whether rows involving temporary indicators
+#'   should be cleaned from the returned parameter table.
+#'
+#' @return A \code{PlsSemParTable} containing transformed estimates and (when
+#'   requested) delta-method standard errors. The transformed covariance matrix
+#'   is stored in the \code{"vcov"} attribute.
+#'
+#' @examples
+#' tpb <- '
+#' # Outer Model (Based on Hagger et al., 2007)
+#'   ATT <~ att1 + att2 + att3 + att4 + att5
+#'   SN =~ sn1 + sn2
+#'   PBC =~ pbc1 + pbc2 + pbc3
+#'   INT =~ int1 + int2 + int3
+#'   BEH <~ b1 + b2
+#'
+#' # Inner Model (Based on Steinmetz et al., 2011)
+#'   INT ~ ATT + SN + PBC
+#'   BEH ~ INT + PBC + INT:PBC
+#' '
+#'
+#' fit <- pls(tpb, modsem::TPB, bootstrap = TRUE, boot.R = 50)
+#' unstandardized_estimates(fit)
+#' @export
+setGeneric(
+  "unstandardized_estimates",
+  function(model,
+           unstandardized    = "all",
+           se                = c("delta", "none"),
+           scale.uncertainty = FALSE,
+           eps               = 1e-4,
+           zero.tol          = 1e-10,
+           rm.tmp.ov         = TRUE,
+           clean.tmp.ind     = TRUE)
+    standardGeneric("unstandardized_estimates")
+)
+
+
+#' @rdname unstandardized_estimates
+#' @export
+setMethod("unstandardized_estimates", "PlsModel",
+  function(model,
+           unstandardized    = "all",
+           se                = c("delta", "none"),
+           scale.uncertainty = FALSE,
+           eps               = 1e-4,
+           zero.tol          = 1e-10,
+           rm.tmp.ov         = TRUE,
+           clean.tmp.ind     = TRUE) {
+
+  plsUnstandardizedEstimates(
+    model             = model,
+    unstandardized    = unstandardized,
+    se                = se,
+    scale.uncertainty = scale.uncertainty,
+    eps               = eps,
+    zero.tol          = zero.tol,
+    rm.tmp.ov         = rm.tmp.ov,
+    clean.tmp.ind     = clean.tmp.ind
+  )
+})
+
+
 #' Fit Measures
 #'
 #' Computes global fit measures (e.g., chi-square, SRMR, RMSEA) for a fitted

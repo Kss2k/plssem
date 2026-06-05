@@ -80,7 +80,7 @@ updateThresholds <- function(thr, sim.cont = NULL, zero.tol = .Machine$double.ep
       sim.x <- sim.cont[, ord]
       thr.x <- collapse::fquantile(sim.x, probs = probs.x)
     } else {
-      thr.x <- qnorm(probs.x)
+      thr.x <- stats::qnorm(probs.x)
     }
 
     thr@thresholds[idx] <- thr.x

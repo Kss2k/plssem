@@ -43,7 +43,6 @@ Imports:
     lme4,
     lavaan,
     stringr,
-    purrr,
     matrixStats,
     Rfast,
     collapse,

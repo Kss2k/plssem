@@ -66,3 +66,15 @@ expandVcov <- function(vcov, labels) {
   V <- rbind(cbind(Vvv, Vvz), cbind(t(Vvz), Vzz))
   V[labels, labels] # sort
 }
+
+
+rename <- function(.X, ...) {
+  newNames <- list(...)
+  oldNames <- names(newNames)
+
+  for (old in oldNames) {
+    names(.X)[names(.X) == old] <- newNames[[old]]
+  }
+
+  .X
+}

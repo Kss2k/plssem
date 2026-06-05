@@ -62,6 +62,12 @@ unstandardized_estimates <- function(model, unstandardized = "all",
   resvar   <- diag(fit$fitTheta)
   n        <- NROW(modelData(combined))
 
+  # do we have a multilevel/mixed-effects model?
+  pls_stopif(isMLM(combined),
+    "`unstandardized_estimates()` is not available for",
+    "mixed-effects/multilevel models (yet)!"
+  )
+
   if (length(unstandardized) == 1L) {
 
     uvars <- switch(

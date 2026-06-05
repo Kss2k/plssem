@@ -28,23 +28,48 @@ setMethod("show", "PlsModel", function(object) {
 #'
 #' @param object A \code{PlsModel} object.
 #' @param fit Logical; whether to compute fit measures.
-#' @param ... Currently unused.
+#' @param unstandardized Logical; Should unstandardized estiamtes be included?
+#' @param ... Arguments passes to \code{\link{unstandardized_estimates}}.
 #' @return A \code{SummaryPlsSem} list with formatted results.
 #' @export
-setMethod("summary", "PlsModel", function(object, fit = TRUE, ...) {
-  combined <- combinedModel(object)
-  parTable <- parameter_estimates(combined)
+setMethod("summary", "PlsModel", function(object, fit = TRUE, unstandardized = FALSE, ...) {
 
-  lvs    <- getLVs(parTable)
-  ovs    <- getOVs(parTable)
-  etas   <- getEtas(parTable, checkAny = FALSE)
-  inds   <- getIndicators(parTable)
-  inds.a <- getReflectiveIndicators(parTable)
+  combined   <- combinedModel(object)
+  parTable   <- parameter_estimates(combined)
+  lvs        <- getLVs(parTable)
+  ovs        <- getOVs(parTable)
+  etas       <- getEtas(parTable, checkAny = FALSE)
+  inds       <- getIndicators(parTable)
+  inds.a     <- getReflectiveIndicators(parTable)
+  is.probit  <- combined@info$is.probit
+  ordered    <- combined@info$is.ordered
+  is.mcpls   <- combined@info$is.mcpls
+  extra.cols <- NULL
 
-  strParTableLines <- utils::capture.output(modsem::summarize_partable(parTable))
-  strParTable <- paste0(paste0(strParTableLines[-(1:6)], collapse = "\n"), "\n")
+  if (unstandardized) {
+    tryCatch({
 
-  is.ord <- combined@info$is.probit || (length(combined@info$ordered) && combined@info$is.mcpls)
+      parTableu <- unstandardized_estimates(object, ...)
+
+      idx0 <- paste0(parTable$lhs, parTable$op, parTable$rhs)
+      idx1 <- paste0(parTableu$lhs, parTableu$op, parTableu$rhs)
+   
+      parTable$Unstd <- parTableu$est[match(idx0, idx1)]
+      extra.cols <- c(extra.cols, "Unstd")
+
+    }, error = function(e) {
+
+      pls_msg_warn(
+        "Calculation of unstandardized estimates failed!",
+        "Message:", conditionMessage(e)
+      )
+
+    })
+  }
+
+  width.out <- plsGetWidthPrintedParTable(parTable)
+
+  is.ord <- is.probit || (length(ordered) && is.mcpls)
   link   <- if (is.ord) "PROBIT" else "LINEAR"
 
   getR2 <- function(x, pt = parTable) {
@@ -56,9 +81,10 @@ setMethod("summary", "PlsModel", function(object, fit = TRUE, ...) {
   r2.inds <- vapply(inds.a, FUN.VALUE = numeric(1L), FUN = getR2)
 
   out <- list(
+    parTable = parTable,
     print = list(
-      strParTable = strParTable,
-      width       = max(nchar(strParTableLines))
+      width      = width.out,
+      extra.cols = extra.cols
     ),
     fit  = object,
     info = list(
@@ -150,7 +176,7 @@ print.SummaryPlsSem <- function(x, ...) {
                      width.out = width.out), "\n", sep = "")
   }
 
-  cat(x$print$strParTable)
+  plsPrintParTable(x$parTable, extra.cols = x$print$extra.cols)
   invisible(x)
 }
 

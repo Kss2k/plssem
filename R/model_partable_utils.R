@@ -1,7 +1,18 @@
-getIntTerms <- function(parTable) {
-  cond1 <- grepl(":", parTable$rhs)
-  cond2 <- !grepl("\\(|\\)\\|", parTable$rhs)
-  unique(parTable[cond1 & cond2, "rhs"])
+getIntTerms <- function(parTable, col = "rhs") {
+  cond1 <- grepl(":", parTable[[col]])
+  cond2 <- !grepl("~|\\(|\\)\\|", parTable[[col]])
+  cond3 <- parTable$op == "~"
+
+  unique(parTable[cond1 & cond2 & cond3, col])
+}
+
+
+checkLhsIntTerms <- function(parTable) {
+  bad <- getIntTerms(parTable, col = "lhs")
+  pls_stopif(length(bad),
+    "Interaction terms can (currently) not be treated as dependent variables!",
+    "Independent variable interaction terms:", paste0(bad, collapse = ", ")
+  )
 }
 
 

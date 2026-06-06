@@ -65,12 +65,6 @@ plsUnstandardizedEstimates <- function(model, unstandardized = "all",
   resvar   <- diag(fit$fitTheta)
   n        <- NROW(modelData(combined))
 
-  # do we have a multilevel/mixed-effects model?
-  pls_stopif(isMLM(combined),
-    "`unstandardized_estimates()` is not available for",
-    "mixed-effects/multilevel models (yet)!"
-  )
-
   if (length(unstandardized) == 1L) {
 
     uvars <- switch(
@@ -85,6 +79,7 @@ plsUnstandardizedEstimates <- function(model, unstandardized = "all",
     uvars <- unstandardized
 
   }
+
 
   # check for potential temp_ov/temp_ind
   # relevant for all but `unstandardized="all"`
@@ -240,6 +235,33 @@ unstandardizedEstimatesInternal <- function(parTable,
                                             unstandardize,
                                             lvs, inds.a, inds.b,
                                             sds) {
+
+
+  # do we have a multilevel/mixed-effects model?
+  is.mlm <- any(grepl("~", c(parTable$lhs, parTable$rhs)))
+
+  if (is.mlm) {
+    # add some additional cols for splitting random effect (co-)variance
+    # parameters (i.e., we currently have Y~X:Z ~~ Y~X:Z, but we want
+    # Y ~ X:Z ~~ Y ~ X:Z
+    lhs <- parTable$lhs
+    rhs <- parTable$rhs
+
+    isRandEffVar <- grepl("~", lhs) & grepl("~", rhs)
+
+    extractPar <- function(pars, i) {
+      out <- stringr::str_split_i(pars, pattern = "~", i = i)
+      out[is.na(out) | !isRandEffVar] <- ""
+      out
+    }
+
+    llhs <- extractPar(lhs, i = 1L)
+    lrhs <- extractPar(lhs, i = 2L)
+
+    rlhs <- extractPar(rhs, i = 1L)
+    rrhs <- extractPar(rhs, i = 2L)
+  }
+
   # keep original parTable for restoring the higher order measurement model
   uinds.a  <- intersect(inds.a, unstandardize)
   uinds.b  <- intersect(inds.b, unstandardize)
@@ -339,8 +361,28 @@ unstandardizedEstimatesInternal <- function(parTable,
     # incoming paths
     idxp1 <- which(parTable$lhs == lv & parTable$op == "~")
     parTable[idxp1, "est"] <- parTable[idxp1, "est"] * target
+
+    if (is.mlm) {
+      # outgoing paths
+      idxOutLeft  <- which(lrhs == lv & isRandEffVar)
+      idxOutRight <- which(rrhs == lv & isRandEffVar)
+
+      # for variances we get `/ target^2`, and covariances we get `/ target`
+      # e.g., Y~X ~~ Y~X, we get lrhs=X, rrhs=X, so we divide by target twice
+      parTable[idxOutLeft, "est"]  <- parTable[idxOutLeft, "est"] / target
+      parTable[idxOutRight, "est"] <- parTable[idxOutRight, "est"] / target
+
+      # incoming paths
+      idxInLeft  <- which(llhs == lv & isRandEffVar)
+      idxInRight <- which(rlhs == lv & isRandEffVar)
+
+      # for variances we get `* target^2`, and covariances we get `* target`
+      parTable[idxInLeft, "est"]  <- parTable[idxInLeft, "est"] * target
+      parTable[idxInRight, "est"] <- parTable[idxInRight, "est"] * target
+    }
   }
 
+  checkLhsIntTerms(parTable)
   intTerms <- getIntTerms(parTable)
 
   for (intTerm in intTerms) {
@@ -361,6 +403,19 @@ unstandardizedEstimatesInternal <- function(parTable,
     parTable[idxp,  "est"] <- parTable[idxp,  "est"] / target
     parTable[idxvl, "est"] <- parTable[idxvl, "est"] * target
     parTable[idxvr, "est"] <- parTable[idxvr, "est"] * target
+
+    if (is.mlm) {
+      # by definition we only need to check *rhs, since interaction terms
+      # always are independent
+
+      # outgoing paths
+      idxOutLeft  <- which(lrhs == intTerm & isRandEffVar)
+      idxOutRight <- which(rrhs == intTerm & isRandEffVar)
+
+      # for variances we get `/ target^2`, and covariances we get `/ target`
+      parTable[idxOutLeft, "est"]  <- parTable[idxOutLeft, "est"] / target
+      parTable[idxOutRight, "est"] <- parTable[idxOutRight, "est"] / target
+    }
   }
 
   parTable

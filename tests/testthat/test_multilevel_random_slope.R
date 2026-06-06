@@ -13,6 +13,7 @@ testthat::expect_no_error({
   fit.c <- pls(syntax, data = randomSlopes,
              consistent = TRUE, bootstrap = TRUE)
   summary(fit.c)
+  unstandardized_estimates(fit.c)
 })
 
 testthat::expect_no_error({

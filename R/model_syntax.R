@@ -15,6 +15,7 @@ parseModelArguments <- function(parTable,
   data <- as.data.frame(data)
 
   # Check for interation terms
+  checkLhsIntTerms(parTable) # make sure they are all independent
   intTermNames <- getIntTerms(parTable)
   intTermElems <- stringr::str_split(intTermNames, pattern = ":")
   names(intTermElems)  <- intTermNames

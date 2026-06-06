@@ -199,6 +199,7 @@ initMatrices <- function(pt, higherOrderLVs = NULL) {
     nm = lvs.linear
   )
 
+  checkLhsIntTerms(pt)
   etas <- unique(pt[pt$op == "~", "lhs"])
   lvs  <- c(lvs.linear, getIntTerms(pt))
   xis  <- lvs[!lvs %in% etas]

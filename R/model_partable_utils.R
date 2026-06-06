@@ -1,6 +1,6 @@
 getIntTerms <- function(parTable, col = "rhs") {
   cond1 <- grepl(":", parTable[[col]])
-  cond2 <- !grepl("\\(|\\)\\|", parTable[[col]])
+  cond2 <- !grepl("~|\\(|\\)\\|", parTable[[col]])
 
   unique(parTable[cond1 & cond2, col])
 }

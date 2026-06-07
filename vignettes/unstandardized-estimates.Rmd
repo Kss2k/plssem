@@ -1,0 +1,81 @@
+
+---
+title: "Unstandardized Estimates"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Unstandardized Estimates}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  message = FALSE,
+  warning = FALSE
+)
+
+library(plssem)
+```
+
+In general, the PLS-SEM framework and the `pls()` function assume that
+the model is fully standardized (i.e., all observed and latent variables
+have zero mean and unit variance). However, it is possible to get
+unstandardized estimates for your models using a post-estimation
+procedure. This can be done either by using the `unstandardized_estimates()`
+function or by passing `unstandardized = TRUE` to the `summary()` function.
+Here is an example using `summary()`.
+
+```{r}
+m <- '
+  X =~ x1 + x2 + x3
+  Z =~ z1 + z2 + z3
+  Y =~ y1 + y2 + y3
+
+  Y ~ X + Z + X:Z + X:X
+'
+
+fit <- pls(m, modsem::oneInt, bootstrap = TRUE, boot.R = 100)
+summary(fit, unstandardized = TRUE)
+```
+
+To get more detailed results, including standard errors, we can use the
+`unstandardized_estimates()` function directly.
+
+```{r}
+unstandardized_estimates(fit)
+```
+
+It is also possible to pass a vector of variable names, detailing which
+variables should be unstandardized. The rules for different variables
+are as follows:
+
+  - **Observed Continuous Variables** are rescaled to their original standard deviations in the input data.
+  - **Latent Variables** get rescaled by fixing their first factor loadings to 1.
+  - **Composite Variables** are rescaled by fixing their first weight to 1.
+  - **Observed Ordinal Variables** have their residual variance constrained to 1. If they do not have a residual
+    variance (e.g., if they belong to a composite), they remain standardized.
+
+Note that the observed and latent variables can be standardized separately. This
+has implications for latent variables. Since we unstandardize latent/composite variables
+by fixing the first loading/weight to 1, their scale is inherited from the first
+indicator. That means that we will get a different result depending on whether the
+first indicator gets unstandardized or not.
+
+Here, for example, we can see that we get different results if we do not
+unstandardize `x1` when unstandardizing `X`.
+
+```{r}
+# x1 is unstandardized
+subset(
+  unstandardized_estimates(fit, unstandardized = c("x1", "X")),
+  lhs == "X" | rhs == "X"
+)
+
+# x1 is standardized
+subset(
+  unstandardized_estimates(fit, unstandardized = "X"),
+  lhs == "X" | rhs == "X"
+)
+```

@@ -77,7 +77,9 @@ specifySubModel <- function(parTable,
                             mc.boot.control     = list(),
                             knn.k               = 5,
                             reliabilities       = NULL,
-                            higherOrderLVs      = NULL) {
+                            higherOrderLVs      = NULL,
+                            within              = NULL,
+                            between             = NULL) {
   if (is.null(parTable))
     return(NULL)
       
@@ -150,7 +152,9 @@ specifySubModel <- function(parTable,
     is.lower.order = is.lower.order,
     mc.args        = mc.args,
     boot           = boot.info,
-    scale          = preppedData$scale
+    scale          = preppedData$scale,
+    within         = within,
+    between        = between
   )
 
   thresholdStruct <- ThresholdStruct( # holds information about thresholds and

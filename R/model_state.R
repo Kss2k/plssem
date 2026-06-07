@@ -114,7 +114,9 @@ initModelInfo <- function(baseInfo,
                           is.lower.order,
                           mc.args,
                           boot,
-                          scale) {
+                          scale,
+                          within,
+                          between) {
   stopifnot(is.list(baseInfo), is.list(parsed))
 
   info <- baseInfo
@@ -127,6 +129,8 @@ initModelInfo <- function(baseInfo,
 
   info$lme4.syntax    <- parsed$lme4.syntax
   info$is.mlm         <- parsed$is.mlm
+  info$within         <- within
+  info$between        <- between
   info$is.mcpls       <- parsed$is.mcpls
   info$mc.fast.lmer   <- parsed$mc.fast.lmer
   info$is.probit      <- parsed$is.probit

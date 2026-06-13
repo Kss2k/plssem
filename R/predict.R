@@ -60,7 +60,12 @@ setMethod("pls_predict", "PlsModel", function(object,
   Y <- X.cont %*% W
 
   if (approach == "earliest") {
-    parTable <- getParTableEstimates(combined, rm.tmp.ov = FALSE, clean.tmp.ind = FALSE)
+    parTable <- getParTableEstimates(
+      combined,
+      rm.tmp.ov = FALSE,
+      clean.tmp.ind = FALSE,
+      clean.tmp.mimic = FALSE
+    )
 
     if (isTRUE(info$is.high.ord))
       parTable <- highOrdMeasrAsStructParTable(parTable)

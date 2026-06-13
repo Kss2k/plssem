@@ -1,7 +1,10 @@
 CI_QUANTILE <- qnorm(0.975)
 
 
-getParTableEstimates <- function(model, rm.tmp.ov = TRUE, clean.tmp.ind = TRUE) {
+getParTableEstimates <- function(model,
+                                 rm.tmp.ov = TRUE,
+                                 clean.tmp.ind = TRUE,
+                                 clean.tmp.mimic = TRUE) {
   est    <- model@params$values
   se     <- model@params$se
   names  <- names(est)
@@ -24,6 +27,9 @@ getParTableEstimates <- function(model, rm.tmp.ov = TRUE, clean.tmp.ind = TRUE) 
 
   if (clean.tmp.ind)
     parTable <- cleanTempIndRowsParTable(parTable)
+
+  if (clean.tmp.mimic)
+    parTable <- cleanTempMimicRowsParTable(parTable)
 
   plssemParTable(parTable)
 }
@@ -121,6 +127,26 @@ cleanTempIndRowsParTable <- function(parTable) {
 
   parTable$rhs <- removeTempIndSuffix(parTable$rhs)
   parTable$lhs <- removeTempIndSuffix(parTable$lhs)
+
+  parTable
+}
+
+
+cleanTempMimicRowsParTable <- function(parTable) {
+  lhs <- parTable$lhs
+  op  <- parTable$op
+  rhs <- parTable$rhs
+
+  idx <- which(hasTempMimicSuffix(lhs) & op == "~")
+
+  # redefine
+  parTable[idx, "lhs"] <- rhs[idx]
+  parTable[idx, "op"]  <- "=~"
+  parTable[idx, "rhs"] <- lhs[idx]
+
+  # clean
+  parTable$lhs <- removeTempMimicSuffix(parTable$lhs)
+  parTable$rhs <- removeTempMimicSuffix(parTable$rhs)
 
   parTable
 }

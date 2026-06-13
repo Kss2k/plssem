@@ -19,6 +19,8 @@
 #'   variables should be removed from the returned parameter table.
 #' @param clean.tmp.ind Logical; whether rows involving temporary indicators
 #'   should be cleaned from the returned parameter table.
+#' @param clean.tmp.mimic Logical; whether rows involving temporary mimic indicators
+#'   should be cleaned from the returned parameter table.
 #'
 #' @return A \code{PlsSemParTable} containing transformed estimates and (when
 #'   requested) delta-method standard errors. The transformed covariance matrix
@@ -47,7 +49,9 @@ plsUnstandardizedEstimates <- function(model, unstandardized = "all",
                                        se = c("delta", "none"),
                                        scale.uncertainty = FALSE,
                                        eps = 1e-4, zero.tol = 1e-10,
-                                       rm.tmp.ov = TRUE, clean.tmp.ind = TRUE) {
+                                       rm.tmp.ov = TRUE,
+                                       clean.tmp.ind = TRUE,
+                                       clean.tmp.mimic = TRUE) {
   se <- tolower(se)
   se <- match.arg(se)
 
@@ -100,7 +104,10 @@ plsUnstandardizedEstimates <- function(model, unstandardized = "all",
   )
 
   parTable <- getParTableEstimates(
-    combined, rm.tmp.ov = FALSE, clean.tmp.ind = FALSE
+    combined,
+    rm.tmp.ov = FALSE,
+    clean.tmp.ind = FALSE,
+    clean.tmp.mimic = FALSE
   )
 
   # get target sds for observed variables, and placeholders for lvs
@@ -220,6 +227,9 @@ plsUnstandardizedEstimates <- function(model, unstandardized = "all",
 
   if (clean.tmp.ind)
     parTableOut <- cleanTempIndRowsParTable(parTableOut)
+
+  if (clean.tmp.mimic)
+    parTableOut <- cleanTempMimicRowsParTable(parTableOut)
 
   parTableOut <- plssemParTable(parTableOut)
 

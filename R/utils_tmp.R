@@ -43,3 +43,10 @@ removeTempAffixes <- function(x) {
     removeTempIndSuffix() |>
     removeTempMimicSuffix()
 }
+
+
+hasTempAffixes <- function(x) {
+  hasTempOvPrefix(x) |
+  hasTempIndSuffix(x) |
+  hasTempMimicSuffix(x)
+}

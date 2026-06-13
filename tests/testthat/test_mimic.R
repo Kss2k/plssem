@@ -29,5 +29,6 @@ model <- '
 testthat::expect_no_error({
   fit <- pls(model, data = data)
   unstandardized_estimates(fit)
+  pls_predict(fit, newdata = data)
   pls_predict(fit)
 })

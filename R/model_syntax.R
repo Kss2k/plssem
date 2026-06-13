@@ -34,6 +34,9 @@ parseModelArguments <- function(parTable,
       if (ov %in% colnames(data))
         data[[tmp]] <- data[[ov]]
 
+      if (ov %in% ordered)
+        ordered <- c(ordered, tmp)
+
       # redefine measurement model
       parTable[idx, "lhs"] <- tmp
       parTable[idx, "op"]  <- "~"

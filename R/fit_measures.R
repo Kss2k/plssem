@@ -94,6 +94,35 @@ impliedIndicatorCorrMat <- function(object, saturated = FALSE, mc.reps = 1e6) {
 }
 
 
+# Joint model-implied correlation matrix of observed and latent variables.
+# The observed-observed and latent-latent blocks reuse the canonical implied
+# helpers; the cross block is Cov(y, eta) = Lambda %*% Phi. The full loading
+# matrix is used so that associations running through single-indicator stand-in
+# latents (observed structural variables, composite-MIMIC reflective indicators)
+# are captured.
+impliedJointCorrMat <- function(object, saturated = FALSE, mc.reps = 1e6) {
+  Phi    <- impliedConstructCorrMat(object, saturated = saturated, mc.reps = mc.reps)
+  SigmaO <- impliedIndicatorCorrMat(object, saturated = saturated, mc.reps = mc.reps)
+
+  ovs <- rownames(SigmaO)
+  lvs <- colnames(Phi)
+
+  Lambda    <- matrix(0, nrow = length(ovs), ncol = length(lvs),
+                      dimnames = list(ovs, lvs))
+  fitLambda <- object@fit$fitLambda
+  ovs.f     <- intersect(ovs, rownames(fitLambda))
+  lvs.f     <- intersect(lvs, colnames(fitLambda))
+  Lambda[ovs.f, lvs.f] <- fitLambda[ovs.f, lvs.f]
+
+  cross <- Lambda %*% Phi # Cov(observed, latent)
+
+  rbind(
+    cbind(SigmaO, cross),
+    cbind(t(cross), Phi)
+  )
+}
+
+
 fitMeasures <- function(model, saturated = FALSE, mc.reps = 1e6) {
   tryCatch({
 

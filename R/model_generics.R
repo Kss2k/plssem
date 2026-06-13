@@ -356,12 +356,43 @@ setGeneric(
 )
 
 
-#' @rdname implied_indicator_corr 
+#' @rdname implied_indicator_corr
 #' @export
 setMethod("implied_indicator_corr", "PlsModel",
           function(object, saturated = FALSE, mc.reps = 1e6, ...) {
   plssemMatrix(
     impliedIndicatorCorrMat(object, saturated = saturated, mc.reps = mc.reps),
+    is.public = TRUE
+  )
+})
+
+
+#' Implied Joint Correlation Matrix
+#'
+#' Returns the joint implied correlation matrix of the observed and latent
+#' variables for a fitted model.
+#'
+#' For higher-order models, this is computed for the combined model returned by
+#' [combinedModel()].
+#'
+#' @param object A fitted [PlsModel] object.
+#' @param saturated Logical; if `TRUE`, return the saturated implied matrix.
+#' @param mc.reps Integer; number of Monte Carlo resamples used for MC-PLSc.
+#' @param ... Reserved for future extensions.
+#' @return A [PlsSemMatrix].
+#' @export
+setGeneric(
+  "implied_joint_corr",
+  function(object, saturated = FALSE, mc.reps = 1e6, ...) standardGeneric("implied_joint_corr")
+)
+
+
+#' @rdname implied_joint_corr
+#' @export
+setMethod("implied_joint_corr", "PlsModel",
+          function(object, saturated = FALSE, mc.reps = 1e6, ...) {
+  plssemMatrix(
+    impliedJointCorrMat(object, saturated = saturated, mc.reps = mc.reps),
     is.public = TRUE
   )
 })

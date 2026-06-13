@@ -35,7 +35,7 @@
 #'   pls_inspect(fit, "cov.lv")
 #' }
 #'
-# #export
+#' @export
 setGeneric("pls_inspect", function(object, what = "fit", ...) {
   standardGeneric("pls_inspect")
 })

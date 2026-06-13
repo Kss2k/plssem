@@ -99,7 +99,8 @@ remain on their standardized scales.</p>
 <span>  eps <span class="op">=</span> <span class="fl">1e-04</span>,</span>
 <span>  zero.tol <span class="op">=</span> <span class="fl">1e-10</span>,</span>
 <span>  rm.tmp.ov <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  clean.tmp.ind <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>  clean.tmp.ind <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  clean.tmp.mimic <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># S4 method for class 'PlsModel'</span></span>
@@ -111,7 +112,8 @@ remain on their standardized scales.</p>
 <span>  eps <span class="op">=</span> <span class="fl">1e-04</span>,</span>
 <span>  zero.tol <span class="op">=</span> <span class="fl">1e-10</span>,</span>
 <span>  rm.tmp.ov <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  clean.tmp.ind <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>  clean.tmp.ind <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  clean.tmp.mimic <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -155,6 +157,11 @@ variables should be removed from the returned parameter table.</p></dd>
 
 <dt id="arg-clean-tmp-ind">clean.tmp.ind<a class="anchor" aria-label="anchor" href="#arg-clean-tmp-ind"></a></dt>
 <dd><p>Logical; whether rows involving temporary indicators
+should be cleaned from the returned parameter table.</p></dd>
+
+
+<dt id="arg-clean-tmp-mimic">clean.tmp.mimic<a class="anchor" aria-label="anchor" href="#arg-clean-tmp-mimic"></a></dt>
+<dd><p>Logical; whether rows involving temporary mimic indicators
 should be cleaned from the returned parameter table.</p></dd>
 
 </dl></div>

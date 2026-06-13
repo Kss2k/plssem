@@ -195,8 +195,6 @@ pls <- function(syntax,
                   reuse.p.start   = TRUE
                 ),
                 reliabilities = NULL,
-                within = NULL,
-                between = NULL,
                 ...) {
 
   missing       <- match.arg(tolower(missing), c("listwise", "mean", "knn"))
@@ -246,8 +244,6 @@ pls <- function(syntax,
     mc.boot.control     = mc.boot.control,
     knn.k               = knn.k,
     reliabilities       = reliabilities,
-    within              = within,
-    between             = between,
     ...
   )
 

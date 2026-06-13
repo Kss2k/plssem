@@ -202,23 +202,3 @@ tetracor <- function(x, y) {
   X <- data.frame(x, y)
   lavaan::lavCor(X, ordered = "y")[1, 2]
 }
-
-
-pls_between_values <- function(x, cluster) {
-  pls_stopif(is.null(cluster) || length(cluster) != length(x),
-    "`cluster` must be a vector with the same length as `x`!"
-  )
-  
-  pls_stopif(anyNA(cluster),
-    "`cluster` cannot have any missing values!"
-  )
-
-  idx <- as.integer(as.factor(cluster))
-  standings <- tapply(X = x, INDEX = idx, FUN = mean)
-  standings[idx]
-}
-
-
-pls_within_values <- function(x, cluster) {
-  x - pls_between_values(x, cluster = cluster)
-}

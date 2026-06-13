@@ -388,6 +388,8 @@ setMethod("implied_indicator_corr", "PlsModel",
 #'   variables should be removed from the returned parameter table.
 #' @param clean.tmp.ind Logical; whether rows involving temporary indicators
 #'   should be cleaned from the returned parameter table.
+#' @param clean.tmp.mimic Logical; whether rows involving temporary mimic indicators
+#'   should be cleaned from the returned parameter table.
 #'
 #' @return A \code{PlsSemParTable} containing transformed estimates and (when
 #'   requested) delta-method standard errors. The transformed covariance matrix
@@ -419,7 +421,8 @@ setGeneric(
            eps               = 1e-4,
            zero.tol          = 1e-10,
            rm.tmp.ov         = TRUE,
-           clean.tmp.ind     = TRUE)
+           clean.tmp.ind     = TRUE,
+           clean.tmp.mimic   = TRUE)
     standardGeneric("unstandardized_estimates")
 )
 
@@ -434,7 +437,8 @@ setMethod("unstandardized_estimates", "PlsModel",
            eps               = 1e-4,
            zero.tol          = 1e-10,
            rm.tmp.ov         = TRUE,
-           clean.tmp.ind     = TRUE) {
+           clean.tmp.ind     = TRUE,
+           clean.tmp.mimic   = TRUE) {
 
   plsUnstandardizedEstimates(
     model             = model,
@@ -444,7 +448,8 @@ setMethod("unstandardized_estimates", "PlsModel",
     eps               = eps,
     zero.tol          = zero.tol,
     rm.tmp.ov         = rm.tmp.ov,
-    clean.tmp.ind     = clean.tmp.ind
+    clean.tmp.ind     = clean.tmp.ind,
+    clean.tmp.mimic   = clean.tmp.mimic
   )
 })
 

@@ -7,7 +7,7 @@
 #' @param benchmark.vars What predictions should be benchmarked? If \code{benchmark.vars = "endog"}
 #'   (default), preidction benchmarks are applied to indicators of endogenous benchmark.vars.
 #'   If \code{benchmark.vars = "exog"}, preidction benchmarks are applied to indicators
-#'   of exogenous benchmark.vars. If \code{benchmark.vars = "all"}, preidction benchmarks are applied to
+#'   of exogenous benchmark.vars. If \code{benchmark.vars = "all"}, prediction benchmarks are applied to
 #'   all of the indicators in the model.
 #' @param newdata Optional new data matrix/data frame.
 #' @param std.ord.exp Logical; standardize ordinal expectation scores.
@@ -133,12 +133,12 @@ setMethod("pls_predict", "PlsModel", function(object,
   X.cont.pred <- plssemMatrix(X.cont.pred, is.public = TRUE)
   X.ord       <- plssemMatrix(X.ord, is.public = TRUE)
   X.ord.pred  <- plssemMatrix(X.ord.pred, is.public = TRUE)
-  ordered     <- unique(c(ordered, removeTempOvPrefix(ordered)))
+  ordered     <- unique(c(ordered, removeTempAffixes(ordered)))
   all.vars    <- colnames(X.cont.pred)
   benchmarked <- NULL
 
-  inds.x <- removeTempOvPrefix(combined@info$inds.x)
-  inds.y <- removeTempOvPrefix(combined@info$inds.y)
+  inds.x <- removeTempAffixes(combined@info$inds.x)
+  inds.y <- removeTempAffixes(combined@info$inds.y)
 
   pred.vars <- switch(benchmark.vars,
     all = all.vars,

@@ -1,9 +1,3 @@
-TEMP_OV_PREFIX <- ".TEMP_OV__"
-TEMP_IND_SUFFIX <- "__TEMP_IND_"
-
-TEMP_OV_PREFIX_PATTERN <- paste0("^", TEMP_OV_PREFIX)
-TEMP_IND_SUFFIX_PATTERN <- paste0(TEMP_IND_SUFFIX, "([0-9]+)$")
-
 parseModelArguments <- function(parTable,
                                 data,
                                 ordered = NULL,
@@ -20,6 +14,35 @@ parseModelArguments <- function(parTable,
   intTermElems <- stringr::str_split(intTermNames, pattern = ":")
   names(intTermElems)  <- intTermNames
   is.nlin <- length(intTermElems) > 0L
+
+  # Check for MIMIC blocks
+  # If we have constructs which have a mix of "<~" and "=~" we redefine
+  # lv=~ov -> ov~lv. We add a suffix such that we can clean it up later
+  mode.c <- intersect(
+    getFormativeLVs(parTable),
+    getReflectiveLVs(parTable)
+  )
+
+  for (lv in mode.c) {
+    # what needs to be redefined?
+    idxs <- which(parTable$lhs == lv & parTable$op == "=~")
+
+    for (idx in idxs) {
+      ov <- parTable[idx, "rhs"]
+      tmp <- paste0(ov, TEMP_MIMIC_SUFFIX)
+
+      if (ov %in% colnames(data))
+        data[[tmp]] <- data[[ov]]
+
+      if (ov %in% ordered)
+        ordered <- c(ordered, tmp)
+
+      # redefine measurement model
+      parTable[idx, "lhs"] <- tmp
+      parTable[idx, "op"]  <- "~"
+      parTable[idx, "rhs"] <- lv
+    }
+  }
 
   # Check for dupliacted indicators
   isind <- parTable$op %in% MOPS

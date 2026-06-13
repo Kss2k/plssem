@@ -7,7 +7,7 @@
 #' @param benchmark.vars What predictions should be benchmarked? If \code{benchmark.vars = "endog"}
 #'   (default), preidction benchmarks are applied to indicators of endogenous benchmark.vars.
 #'   If \code{benchmark.vars = "exog"}, preidction benchmarks are applied to indicators
-#'   of exogenous benchmark.vars. If \code{benchmark.vars = "all"}, preidction benchmarks are applied to
+#'   of exogenous benchmark.vars. If \code{benchmark.vars = "all"}, prediction benchmarks are applied to
 #'   all of the indicators in the model.
 #' @param newdata Optional new data matrix/data frame.
 #' @param std.ord.exp Logical; standardize ordinal expectation scores.
@@ -60,7 +60,12 @@ setMethod("pls_predict", "PlsModel", function(object,
   Y <- X.cont %*% W
 
   if (approach == "earliest") {
-    parTable <- getParTableEstimates(combined, rm.tmp.ov = FALSE, clean.tmp.ind = FALSE)
+    parTable <- getParTableEstimates(
+      combined,
+      rm.tmp.ov = FALSE,
+      clean.tmp.ind = FALSE,
+      clean.tmp.mimic = FALSE
+    )
 
     if (isTRUE(info$is.high.ord))
       parTable <- highOrdMeasrAsStructParTable(parTable)
@@ -128,12 +133,12 @@ setMethod("pls_predict", "PlsModel", function(object,
   X.cont.pred <- plssemMatrix(X.cont.pred, is.public = TRUE)
   X.ord       <- plssemMatrix(X.ord, is.public = TRUE)
   X.ord.pred  <- plssemMatrix(X.ord.pred, is.public = TRUE)
-  ordered     <- unique(c(ordered, removeTempOvPrefix(ordered)))
+  ordered     <- unique(c(ordered, removeTempAffixes(ordered)))
   all.vars    <- colnames(X.cont.pred)
   benchmarked <- NULL
 
-  inds.x <- removeTempOvPrefix(combined@info$inds.x)
-  inds.y <- removeTempOvPrefix(combined@info$inds.y)
+  inds.x <- removeTempAffixes(combined@info$inds.x)
+  inds.y <- removeTempAffixes(combined@info$inds.y)
 
   pred.vars <- switch(benchmark.vars,
     all = all.vars,
@@ -443,35 +448,47 @@ getOuterDataMatrices <- function(model, newdata = NULL, std.ord.exp = FALSE) {
   ordered  <- intersect(colnames(olddata), ordered)
 
   if (!is.null(newdata)) {
+    # Make sure we're working with a data.frame
+    tryCatch(
+      newdata <- as.data.frame(newdata),
+      error = function(e) {
+        pls_msg_stop(
+          "Could not convert `newdata` to a data.frame!",
+          "Message:", conditionMessage(e)
+        )
+      }
+    )
+
     nm.o <- colnames(olddata)
     nm.n <- colnames(newdata)
 
-    is.tmp <- grepl(TEMP_OV_PREFIX, nm.o)
+    tmpVars <- nm.o[hasTempAffixes(nm.o)]
 
-    if (any(is.tmp)) {
-      tmpReplacements <- stats::setNames(
-        nm.o[is.tmp], removeTempOvPrefix(nm.o[is.tmp])
-      )
+    for (tmp in tmpVars) {
+      clean <- removeTempAffixes(tmp)
 
-      keys <- intersect(nm.n, names(tmpReplacements))
-      nm.n <- stats::setNames(nm.n, nm = nm.n)
-      nm.n[keys] <- tmpReplacements[keys]
-
-      colnames(newdata) <- nm.n
+      # If the cleaned version doesn't exist, do nothing...
+      # If the user supplies the correct tmp names we don't
+      # want to throw an error
+      if (clean %in% colnames(newdata))
+        newdata[[tmp]] <- newdata[[clean]]
     }
 
     missing <- setdiff(colnames(olddata), colnames(newdata))
-    pls_stopif(length(missing), paste0("Missing variables in `newdata`!\n",
-               "Missing: ", paste0(missing, collapse = ", ")))
+    pls_stopif(length(missing),
+      paste0("Missing variables in `newdata`!\n",
+             "Missing: ", paste0(missing, collapse = ", "))
+    )
 
-    newdata.df <- as.data.frame(newdata)[colnames(olddata)]
-    is.ord <- vapply(newdata.df, FUN.VALUE = logical(1L), FUN = is.ordered)
-    newdata.df[is.ord] <- lapply(newdata.df[is.ord], reindex)
+    # order/select variables
+    newdata <- newdata[colnames(olddata)]
+    is.ord <- vapply(newdata, FUN.VALUE = logical(1L), FUN = is.ordered)
+    newdata[is.ord] <- lapply(newdata[is.ord], reindex)
 
     if (model@info$standardized)
-      newdata <- Rfast::standardise(as.matrix(newdata.df))
+      newdata <- Rfast::standardise(as.matrix(newdata))
     else
-      newdata <- as.matrix(newdata.df)
+      newdata <- as.matrix(newdata)
 
   } else {
     newdata <- olddata

@@ -13,7 +13,8 @@ unstandardized_estimates(
   eps = 1e-04,
   zero.tol = 1e-10,
   rm.tmp.ov = TRUE,
-  clean.tmp.ind = TRUE
+  clean.tmp.ind = TRUE,
+  clean.tmp.mimic = TRUE
 )
 
 \S4method{unstandardized_estimates}{PlsModel}(
@@ -24,7 +25,8 @@ unstandardized_estimates(
   eps = 1e-04,
   zero.tol = 1e-10,
   rm.tmp.ov = TRUE,
-  clean.tmp.ind = TRUE
+  clean.tmp.ind = TRUE,
+  clean.tmp.mimic = TRUE
 )
 }
 \arguments{
@@ -49,6 +51,9 @@ are returned as missing.}
 variables should be removed from the returned parameter table.}
 
 \item{clean.tmp.ind}{Logical; whether rows involving temporary indicators
+should be cleaned from the returned parameter table.}
+
+\item{clean.tmp.mimic}{Logical; whether rows involving temporary mimic indicators
 should be cleaned from the returned parameter table.}
 }
 \value{

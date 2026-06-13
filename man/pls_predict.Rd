@@ -37,7 +37,7 @@ per indicator (optionally named). Supported: \code{"r2"}, \code{"rmse"},
 \item{benchmark.vars}{What predictions should be benchmarked? If \code{benchmark.vars = "endog"}
 (default), preidction benchmarks are applied to indicators of endogenous benchmark.vars.
 If \code{benchmark.vars = "exog"}, preidction benchmarks are applied to indicators
-of exogenous benchmark.vars. If \code{benchmark.vars = "all"}, preidction benchmarks are applied to
+of exogenous benchmark.vars. If \code{benchmark.vars = "all"}, prediction benchmarks are applied to
 all of the indicators in the model.}
 }
 \value{

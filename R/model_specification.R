@@ -190,9 +190,27 @@ initMatrices <- function(pt, higherOrderLVs = NULL) {
 
   mode.a <- getReflectiveLVs(pt)
   mode.b <- getFormativeLVs(pt)
+  mode.c <- intersect(mode.a, mode.b)
 
-  getmode <- function(x)
-    ifelse(x %in% mode.a, yes = "A", no = ifelse(x %in% mode.b, yes = "B", no = NA))
+  # Should be handled by parseModelArguments() but we check
+  # anyways...
+  pls_stopif(length(mode.c),
+    "Constructs must be either of mode A or mode B!",
+    "Constructs with both mode A and B:",
+    paste0(mode.c, collapse = ", ")
+  )
+
+  getmode <- function(x) {
+    ifelse(x %in% mode.a,
+      yes = "A",
+      no = ifelse(x %in% mode.b,
+        yes = "B",
+        no = pls_msg_stop(
+          sprintf("Unrecognized mode for variable `%s`!", x)
+        )
+      )
+    )
+  }
 
   modes <- stats::setNames(
     vapply(lvs.linear, FUN.VALUE = character(1L), FUN = getmode),

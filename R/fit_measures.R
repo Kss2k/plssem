@@ -94,6 +94,35 @@ impliedIndicatorCorrMat <- function(object, saturated = FALSE, mc.reps = 1e6) {
 }
 
 
+# Joint model-implied correlation matrix of observed and latent variables.
+# The observed-observed and latent-latent blocks reuse the canonical implied
+# helpers; the cross block is Cov(y, eta) = Lambda %*% Phi. The full loading
+# matrix is used so that associations running through single-indicator stand-in
+# latents (observed structural variables, composite-MIMIC reflective indicators)
+# are captured.
+impliedJointCorrMat <- function(object, saturated = FALSE, mc.reps = 1e6) {
+  Phi    <- impliedConstructCorrMat(object, saturated = saturated, mc.reps = mc.reps)
+  SigmaO <- impliedIndicatorCorrMat(object, saturated = saturated, mc.reps = mc.reps)
+
+  ovs <- rownames(SigmaO)
+  lvs <- colnames(Phi)
+
+  Lambda    <- matrix(0, nrow = length(ovs), ncol = length(lvs),
+                      dimnames = list(ovs, lvs))
+  fitLambda <- object@fit$fitLambda
+  ovs.f     <- intersect(ovs, rownames(fitLambda))
+  lvs.f     <- intersect(lvs, colnames(fitLambda))
+  Lambda[ovs.f, lvs.f] <- fitLambda[ovs.f, lvs.f]
+
+  cross <- Lambda %*% Phi # Cov(observed, latent)
+
+  rbind(
+    cbind(SigmaO, cross),
+    cbind(t(cross), Phi)
+  )
+}
+
+
 fitMeasures <- function(model, saturated = FALSE, mc.reps = 1e6) {
   tryCatch({
 
@@ -252,4 +281,31 @@ calcRMSEA <- function(chi.sq, df, N, ci.level = 0.90, close.h0 = 0.05) {
     list(rmsea = NA_real_, lower = NA_real_, upper = NA_real_,
          ci.level = NA_real_, pvalue = NA_real_, close.h0 = NA_real_)
   })
+}
+
+
+plsImpliedR2 <- function(object, output = c("all", "lv", "ov")) {
+  output <- match.arg(output)
+
+  parTable <- combinedModel(object)@parTable
+
+  getR2 <- function(x, pt = parTable) {
+    rvar <- pt[pt$lhs == x & pt$op == "~~" & pt$rhs == x, "est"]
+    if (!length(rvar)) 0 else 1 - rvar
+  }
+
+  etas <- getEtas(parTable, checkAny = FALSE)
+  inds.a <- getReflectiveIndicators(parTable)
+
+  r2.etas <- vapply(etas,   FUN.VALUE = numeric(1L), FUN = getR2)
+  r2.inds <- vapply(inds.a, FUN.VALUE = numeric(1L), FUN = getR2)
+
+  names(r2.etas) <- etas
+  names(r2.inds) <- inds.a
+
+  switch(output,
+    all = c(r2.inds, r2.etas),
+    lv  = r2.etas,
+    ov  = r2.inds
+  )
 }

@@ -291,7 +291,7 @@ initMatrices <- function(pt, higherOrderLVs = NULL) {
   )
 
   # always keep diagonal
-  diag(selectTheta)     <- TRUE
+  diag(selectTheta) <- TRUE
 
   # keep formative blocks
   for (b in mode.b) {

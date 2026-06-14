@@ -155,5 +155,15 @@ needsAdditionalDistributionalAssumptions <- function(terms) {
 }
 
 
-# getConsistentCorrelationMatrix — work in progress, currently disabled.
-# See nlin_djikstra_correction.R for the partial implementation.
+plsConstructQualities <- function(object) {
+  fit <- modelFit(combinedModel(object))
+  Q <- fit$Q
+
+  if (length(Q)) Q else NULL
+}
+
+
+plsConstructReliabilities <- function(object) {
+  Q <- plsConstructQualities(object)
+  if (length(Q)) Q^2 else NULL
+}

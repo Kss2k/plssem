@@ -294,7 +294,7 @@ plsImpliedR2 <- function(object, output = c("all", "lv", "ov")) {
     if (!length(rvar)) 0 else 1 - rvar
   }
 
-  etas <- getEtas(parTable)
+  etas <- getEtas(parTable, checkAny = FALSE)
   inds.a <- getReflectiveIndicators(parTable)
 
   r2.etas <- vapply(etas,   FUN.VALUE = numeric(1L), FUN = getR2)

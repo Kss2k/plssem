@@ -71,13 +71,11 @@ setMethod("pls_inspect", "PlsModel", function(object, what = "estimates", ...) {
 
   pls_stopif(length(what) != 1L, "`what` must be an argument of length 1!")
 
-  chainBasedMeasures <- c(
-    "cov.lv", "cov.ov", "cov.all", "fit", "rmsea", "srmr",
-    "chisq", "chisq.df", "info"
-  )
-
-  if (!what %in% chainBasedMeasures)
-    object <- combinedModel(object)
+  # `object` is passed through untouched: the helpers/methods below decide for
+  # themselves whether they need the combined higher-order model (most do so
+  # internally, the fit/cov.* family walk the chain explicitly). `combined` is
+  # provided for the raw attribute selectors that explicitly rely on it.
+  combined <- combinedModel(object)
 
   switch(what,
     # Fit Measures
@@ -97,11 +95,11 @@ setMethod("pls_inspect", "PlsModel", function(object, what = "estimates", ...) {
     wmat      = plsMatricesLavRep(object)$wmat,
     theta     = plsMatricesLavRep(object)$theta,
     psi       = plsMatricesLavRep(object)$psi,
-    C         = plsMatricesLavRep(object)$C,
+    c         = plsMatricesLavRep(object)$C,
     gamma     = plsMatricesLavRep(object)$gamma,
 
-    par       = object@parTable,
-    partable  = object@parTable,
+    par       = combined@parTable,
+    partable  = combined@parTable,
     
     coef         = coef(object),
     coefficients = coef(object),
@@ -153,18 +151,19 @@ plsInspectInfo <- function(object) {
 
 
 plsInspectStatus <- function(object) {
-  status <- modelStatus(object)
+  combined <- combinedModel(object)
+  status   <- modelStatus(combined)
 
   list(
     iterations = status$iterations,
     converged  = isTRUE(status$convergence),
-    admissible = isAdmissible(object)
+    admissible = isAdmissible(combined)
   )
 }
 
 
 plsInspectData <- function(object) {
-  data <- modelData(object)
+  data <- modelData(combinedModel(object))
   colnames(data) <- removeTempAffixes(colnames(data))
   data
 }

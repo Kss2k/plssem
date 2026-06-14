@@ -165,5 +165,5 @@ plsConstructQualities <- function(object) {
 
 plsConstructReliabilities <- function(object) {
   Q <- plsConstructQualities(object)
-  if (length(Q)) sqrt(Q) else NULL
+  if (length(Q)) Q^2 else NULL
 }

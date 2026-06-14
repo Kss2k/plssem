@@ -6,7 +6,7 @@ plssemMatrix <- function(mat, symmetric = isSymmetric(mat), is.public = FALSE) {
     cn <- colnames(mat)
 
     if (!is.null(rn)) {
-      isTempRn <- startsWith(rn, prefix = TEMP_OV_PREFIX)
+      isTempRn <- hasTempAffixes(rn)
       rnClean <- removeTempAffixes(rn)
       isDupTempRn <- rnClean[isTempRn] %in% rnClean[!isTempRn]
 
@@ -17,7 +17,7 @@ plssemMatrix <- function(mat, symmetric = isSymmetric(mat), is.public = FALSE) {
     }
 
     if (!is.null(cn)) {
-      isTempCn <- startsWith(cn, prefix = TEMP_OV_PREFIX)
+      isTempCn <- hasTempAffixes(cn)
       cnClean <- removeTempAffixes(cn)
       isDupTempCn <- cnClean[isTempCn] %in% cnClean[!isTempCn]
 
@@ -83,7 +83,7 @@ plssemVector <- function(vec, is.public = FALSE) {
 
   if (is.public) {
     nm <- names(vec)
-    isTemp <- startsWith(nm, prefix = TEMP_OV_PREFIX)
+    isTemp <- hasTempAffixes(nm)
 
     if (any(isTemp)) {
       clean <- removeTempAffixes(nm)

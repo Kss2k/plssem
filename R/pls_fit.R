@@ -12,6 +12,7 @@ getFitPLSModel <- function(model, consistent = TRUE) {
   indsLvs <- model@info$indsLvs
   modes   <- model@info$modes
   mode.a  <- model@info$mode.a
+  mode.b  <- model@info$mode.b
   ptl     <- model@parTableInput
   SC      <- model@matrices$SC
 
@@ -68,9 +69,12 @@ getFitPLSModel <- function(model, consistent = TRUE) {
   )
 
   fitThetaFull <- model@matrices$SC[inds, inds]
-  is.formative <- inds %in% inds.b
-  mask         <- outer(is.formative, is.formative, FUN = "&")
-  fitTheta[mask] <- fitThetaFull[mask]
+
+  # keep formative blocks
+  for (b in mode.b) {
+    idx <- indsLvs[[b]]
+    fitTheta[idx, idx] <- fitThetaFull[idx, idx]
+  }
 
   pls_warnif(any(crossLoaded),
              "Did not expect any cross loaded indicators,\n",
@@ -247,4 +251,19 @@ refreshLmerParams <- function(model) {
   model@params$se     <- rep(NA_real_, length(coefs.all))
 
   model
+}
+
+
+plsMatricesLavRep <- function(object) {
+  combined <- combinedModel(object)
+  fit      <- modelFit(combined)
+
+  list(
+    lambda = fit$fitLambda,
+    wmat   = fit$fitWeights,
+    theta  = fit$fitTheta,
+    C      = fit$fitC,
+    psi    = fit$fitCov,
+    gamma  = fit$fitStructural
+  )
 }

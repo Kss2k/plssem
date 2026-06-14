@@ -294,6 +294,37 @@ setMethod("boot", "PlsModel", function(object) {
 })
 
 
+#' Retrieve bootstrap coefficient matrix
+#'
+#' @param object A fitted model object.
+#' @return A \code{PlsSemMatrix} of bootstrap replicate parameter vectors
+#'   (rows = replicates, cols = parameters).
+#'
+#' @examples
+#' library(modsem)
+#' library(plssem)
+#'
+#' m <- "
+#'   X =~ x1 + x2 + x3
+#'   Z =~ z1 + z2 + z3
+#'   Y =~ y1 + y2 + y3
+#'   Y ~ X + Z + X:Z
+#' "
+#'
+#' fit <- pls(m, oneInt, bootstrap = TRUE, boot.R = 50)
+#' pls_boot(fit)
+#'
+#' @export
+setGeneric("pls_boot", function(object) standardGeneric("pls_boot"))
+
+#' @rdname boot
+#' @export
+setMethod("pls_boot", "PlsModel", function(object) {
+  object <- combinedModel(object)
+  plssemMatrix(object@boot$boot, is.public = TRUE)
+})
+
+
 
 #' Check whether a fitted model has admissible parameter estimates
 #'
@@ -322,13 +353,13 @@ setMethod("is_admissible", "PlsModel", function(object) isAdmissible(object))
 #' @return A [PlsSemMatrix].
 #' @export
 setGeneric(
-  "implied_construct_corr",
-  function(object, saturated = FALSE, mc.reps = 1e6, ...) standardGeneric("implied_construct_corr")
+  "pls_implied_construct_corr",
+  function(object, saturated = FALSE, mc.reps = 1e6, ...) standardGeneric("pls_implied_construct_corr")
 )
 
-#' @rdname implied_construct_corr
+#' @rdname pls_implied_construct_corr
 #' @export
-setMethod("implied_construct_corr", "PlsModel",
+setMethod("pls_implied_construct_corr", "PlsModel",
           function(object, saturated = FALSE, mc.reps = 1e6, ...) {
   plssemMatrix(
     impliedConstructCorrMat(object, saturated = saturated, mc.reps = mc.reps),
@@ -351,14 +382,14 @@ setMethod("implied_construct_corr", "PlsModel",
 #' @return A numeric matrix.
 #' @export
 setGeneric(
-  "implied_indicator_corr",
-  function(object, saturated = FALSE, mc.reps = 1e6, ...) standardGeneric("implied_indicator_corr")
+  "pls_implied_indicator_corr",
+  function(object, saturated = FALSE, mc.reps = 1e6, ...) standardGeneric("pls_implied_indicator_corr")
 )
 
 
-#' @rdname implied_indicator_corr
+#' @rdname pls_implied_indicator_corr
 #' @export
-setMethod("implied_indicator_corr", "PlsModel",
+setMethod("pls_implied_indicator_corr", "PlsModel",
           function(object, saturated = FALSE, mc.reps = 1e6, ...) {
   plssemMatrix(
     impliedIndicatorCorrMat(object, saturated = saturated, mc.reps = mc.reps),
@@ -382,14 +413,14 @@ setMethod("implied_indicator_corr", "PlsModel",
 #' @return A [PlsSemMatrix].
 #' @export
 setGeneric(
-  "implied_joint_corr",
-  function(object, saturated = FALSE, mc.reps = 1e6, ...) standardGeneric("implied_joint_corr")
+  "pls_implied_joint_corr",
+  function(object, saturated = FALSE, mc.reps = 1e6, ...) standardGeneric("pls_implied_joint_corr")
 )
 
 
-#' @rdname implied_joint_corr
+#' @rdname pls_implied_joint_corr
 #' @export
-setMethod("implied_joint_corr", "PlsModel",
+setMethod("pls_implied_joint_corr", "PlsModel",
           function(object, saturated = FALSE, mc.reps = 1e6, ...) {
   plssemMatrix(
     impliedJointCorrMat(object, saturated = saturated, mc.reps = mc.reps),
@@ -520,3 +551,95 @@ printModelStatusHeader <- function(model) {
     combined@status$iterations
   )
 }
+
+
+#' RMSEA
+#'
+#' Compute RMSEA for a PLS model.
+#'
+#' @param object A fitted [PlsModel] object.
+#' @param saturated Logical; if `TRUE`, compute the saturated fit.
+#' @param mc.reps Integer; number of Monte Carlo resamples used for MC-PLSc fit.
+#' @param ... Reserved for future extensions.
+#' @return RMSEA value
+#' @export
+setGeneric(
+  "pls_rmsea",
+  function(object, saturated = FALSE, mc.reps = 1e6, ...) standardGeneric("pls_rmsea")
+)
+
+
+#' @rdname pls_rmsea 
+#' @export
+setMethod("pls_rmsea", "PlsModel", function(object, saturated = FALSE, mc.reps = 1e6, ...) {
+  fitMeasures(object, saturated = saturated, mc.reps = mc.reps)$rmsea
+})
+
+
+#' SRMR
+#'
+#' Compute SRMR for a PLS model.
+#'
+#' @param object A fitted [PlsModel] object.
+#' @param saturated Logical; if `TRUE`, compute the saturated fit.
+#' @param mc.reps Integer; number of Monte Carlo resamples used for MC-PLSc fit.
+#' @param ... Reserved for future extensions.
+#' @return SRMR value
+#' @export
+setGeneric(
+  "pls_srmr",
+  function(object, saturated = FALSE, mc.reps = 1e6, ...) standardGeneric("pls_srmr")
+)
+
+
+#' @rdname pls_srmr 
+#' @export
+setMethod("pls_srmr", "PlsModel", function(object, saturated = FALSE, mc.reps = 1e6, ...) {
+  fitMeasures(object, saturated = saturated, mc.reps = mc.reps)$srmr
+})
+
+
+#' Chi-Square
+#'
+#' Compute Chi-Square value for a PLS model.
+#'
+#' @param object A fitted [PlsModel] object.
+#' @param saturated Logical; if `TRUE`, compute the saturated fit.
+#' @param mc.reps Integer; number of Monte Carlo resamples used for MC-PLSc fit.
+#' @param ... Reserved for future extensions.
+#' @return Chi-Square value
+#' @export
+setGeneric(
+  "pls_chisq",
+  function(object, saturated = FALSE, mc.reps = 1e6, ...) standardGeneric("pls_chisq")
+)
+
+
+#' @rdname pls_chisq 
+#' @export
+setMethod("pls_chisq", "PlsModel", function(object, saturated = FALSE, mc.reps = 1e6, ...) {
+  fitMeasures(object, saturated = saturated, mc.reps = mc.reps)$chisq
+})
+
+
+#' Chi-Square Degrees of Freedom
+#'
+#' Compute Chi-Square degrees of freedom for a PLS model.
+#'
+#' @param object A fitted [PlsModel] object.
+#' @param saturated Logical; if `TRUE`, compute the saturated fit.
+#' @param mc.reps Integer; number of Monte Carlo resamples used for MC-PLSc fit.
+#' @param ... Reserved for future extensions.
+#' @return Chi-Square degrees of freedom
+#' @export
+setGeneric(
+  "pls_chisq_df",
+  function(object, saturated = FALSE, mc.reps = 1e6, ...) standardGeneric("pls_chisq_df")
+)
+
+
+#' @rdname pls_chisq 
+#' @export
+setMethod("pls_chisq_df", "PlsModel", function(object, saturated = FALSE, mc.reps = 1e6, ...) {
+  fitMeasures(object, saturated = saturated, mc.reps = mc.reps)$chisq.df
+})

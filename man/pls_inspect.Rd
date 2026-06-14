@@ -5,17 +5,35 @@
 \alias{pls_inspect,PlsModel-method}
 \title{Inspect a fitted PLS-SEM model}
 \usage{
-pls_inspect(object, what = "fit", ...)
+pls_inspect(object, what = "estimates", ...)
 
-\S4method{pls_inspect}{PlsModel}(object, what = "fit", ...)
+\S4method{pls_inspect}{PlsModel}(object, what = "estimates", ...)
 }
 \arguments{
 \item{object}{A fitted \code{PlsModel} object.}
 
-\item{what}{A single string selecting what to extract (case-insensitive).
-One of:
+\item{what}{A single string selecting what to extract (case-insensitive);
+defaults to \code{"estimates"}. Several values accept aliases, given in
+parentheses. One of:
 \describe{
-  \item{\code{"fit"}}{The model fit object, i.e. \code{\link{modelFit}(object)}.}
+  \item{\code{"estimates"} (aliases \code{"est"}, \code{"x"},
+    \code{"matrices"})}{A list of the estimated model matrices in
+    lavaan-style representation (\code{lambda}, \code{wmat}, \code{theta},
+    \code{psi}, \code{C}, \code{gamma}).}
+  \item{\code{"lambda"}, \code{"wmat"}, \code{"theta"}, \code{"psi"},
+    \code{"C"}, \code{"gamma"}}{The corresponding single matrix from the
+    \code{"estimates"} list.}
+  \item{\code{"coef"} (alias \code{"coefficients"})}{The model coefficients.}
+  \item{\code{"par"} (alias \code{"partable"})}{The parameter table.}
+  \item{\code{"fit"}}{Fit measures.}
+  \item{\code{"chisq"}}{The model chi-square statistic.}
+  \item{\code{"chisq.df"} (alias \code{"df"})}{The chi-square degrees of
+    freedom.}
+  \item{\code{"srmr"}}{The standardized root mean square residual.}
+  \item{\code{"rmsea"}}{The root mean square error of approximation.}
+  \item{\code{"se"}}{The standard errors of the estimates.}
+  \item{\code{"vcov"}}{The variance-covariance matrix of the estimates.}
+  \item{\code{"boot"}}{The bootstrap results.}
   \item{\code{"info"}}{A list with the number of observations (\code{nobs}),
     the number of latent variables (\code{nlv}), the number of observed
     variables (\code{nov}), and the estimation \code{modes} (\code{"A"}/\code{"B"})
@@ -23,12 +41,17 @@ One of:
   \item{\code{"status"}}{A list with the number of \code{iterations}, whether
     the algorithm \code{converged}, and whether the solution is
     \code{admissible}.}
+  \item{\code{"qualities"}}{The construct qualities (\eqn{Q^2}).}
+  \item{\code{"reliabilities"} (alias \code{"rel"})}{The construct
+    reliabilities.}
   \item{\code{"cov.lv"}}{The model-implied covariance matrix of the latent
     variables.}
   \item{\code{"cov.ov"}}{The model-implied covariance matrix of the observed
     variables.}
   \item{\code{"cov.all"}}{The joint model-implied covariance matrix of the
     observed and latent variables.}
+  \item{\code{"r2.lv"}, \code{"r2.ov"}, \code{"r2.all"}}{The model-implied
+    \eqn{R^2} for the latent variables, the observed variables, or both.}
   \item{\code{"data"}}{The (standardized) data matrix used for estimation.}
 }}
 

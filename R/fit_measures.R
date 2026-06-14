@@ -282,3 +282,30 @@ calcRMSEA <- function(chi.sq, df, N, ci.level = 0.90, close.h0 = 0.05) {
          ci.level = NA_real_, pvalue = NA_real_, close.h0 = NA_real_)
   })
 }
+
+
+plsImpliedR2 <- function(object, output = c("all", "lv", "ov")) {
+  output <- match.arg(output)
+
+  parTable <- combinedModel(object)@parTable
+
+  getR2 <- function(x, pt = parTable) {
+    rvar <- pt[pt$lhs == x & pt$op == "~~" & pt$rhs == x, "est"]
+    if (!length(rvar)) 0 else 1 - rvar
+  }
+
+  etas <- getEtas(parTable)
+  inds.a <- getReflectiveIndicators(parTable)
+
+  r2.etas <- vapply(etas,   FUN.VALUE = numeric(1L), FUN = getR2)
+  r2.inds <- vapply(inds.a, FUN.VALUE = numeric(1L), FUN = getR2)
+
+  names(r2.etas) <- etas
+  names(r2.inds) <- inds.a
+
+  switch(output,
+    all = c(r2.inds, r2.etas),
+    lv  = r2.etas,
+    ov  = r2.inds
+  )
+}

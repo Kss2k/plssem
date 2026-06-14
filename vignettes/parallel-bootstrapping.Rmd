@@ -10,7 +10,8 @@ vignette: >
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
-  comment = "#>"
+  comment = "#>",
+  eval = identical(Sys.getenv("IN_PKGDOWN"), "true")
 )
 
 library(plssem)

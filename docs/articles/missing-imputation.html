@@ -133,7 +133,9 @@ vignette.</p>
 model are removed. Here we can see an example.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">model</span> <span class="op">&lt;-</span> <span class="st">"Survived ~ Age + Female + Age:Female"</span></span>
-<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pls.html">pls</a></span><span class="op">(</span><span class="va">model</span>, data <span class="op">=</span> <span class="va">titanic</span>, missing <span class="op">=</span> <span class="st">"listwise"</span>, ordered <span class="op">=</span> <span class="st">"Survived"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pls.html">pls</a></span><span class="op">(</span><span class="va">model</span>, data <span class="op">=</span> <span class="va">titanic</span>, missing <span class="op">=</span> <span class="st">"listwise"</span>, ordered <span class="op">=</span> <span class="st">"Survived"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; plssem-&gt;getPLS_Data():  </span></span>
+<span><span class="co">#&gt;    Removing missing data using listwise deletion...</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="mean-imputation">Mean Imputation<a class="anchor" aria-label="anchor" href="#mean-imputation"></a>
@@ -149,7 +151,9 @@ binary variables, where the missing values get imputed with the most
 common value.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">model</span> <span class="op">&lt;-</span> <span class="st">"Survived ~ Age + Female + Age:Female"</span></span>
-<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pls.html">pls</a></span><span class="op">(</span><span class="va">model</span>, data <span class="op">=</span> <span class="va">titanic</span>, missing <span class="op">=</span> <span class="st">"mean"</span>, ordered <span class="op">=</span> <span class="st">"Survived"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pls.html">pls</a></span><span class="op">(</span><span class="va">model</span>, data <span class="op">=</span> <span class="va">titanic</span>, missing <span class="op">=</span> <span class="st">"mean"</span>, ordered <span class="op">=</span> <span class="st">"Survived"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; plssem-&gt;getPLS_Data():  </span></span>
+<span><span class="co">#&gt;    Imputing missing data using mean imputation...</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="knn-imputation">kNN Imputation<a class="anchor" aria-label="anchor" href="#knn-imputation"></a>
@@ -163,7 +167,9 @@ using the <code>knn.k</code> argument.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">model</span> <span class="op">&lt;-</span> <span class="st">"Survived ~ Age + Female + Age:Female"</span></span>
 <span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pls.html">pls</a></span><span class="op">(</span><span class="va">model</span>, data <span class="op">=</span> <span class="va">titanic</span>, missing <span class="op">=</span> <span class="st">"kNN"</span>,</span>
-<span>           ordered <span class="op">=</span> <span class="st">"Survived"</span>, knn.k <span class="op">=</span> <span class="fl">5</span><span class="op">)</span> <span class="co"># use the 5 nearest neighbors</span></span></code></pre></div>
+<span>           ordered <span class="op">=</span> <span class="st">"Survived"</span>, knn.k <span class="op">=</span> <span class="fl">5</span><span class="op">)</span> <span class="co"># use the 5 nearest neighbors</span></span>
+<span><span class="co">#&gt; plssem-&gt;getPLS_Data():  </span></span>
+<span><span class="co">#&gt;    Imputing missing data using k-Nearest Neighbors (kNN), k = 5...</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="multiple-imputation">Multiple Imputation<a class="anchor" aria-label="anchor" href="#multiple-imputation"></a>
@@ -175,11 +181,121 @@ the <code>mice</code> package, but other packages can be used as well
 (e.g., the <code>Amelia</code> package).</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/amices/mice" class="external-link">mice</a></span><span class="op">)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Attaching package: 'mice'</span></span>
+<span><span class="co">#&gt; The following object is masked from 'package:stats':</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;     filter</span></span>
+<span><span class="co">#&gt; The following objects are masked from 'package:base':</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;     cbind, rbind</span></span>
 <span></span>
 <span><span class="va">m</span> <span class="op">&lt;-</span> <span class="fl">20</span> <span class="co"># Number of imputations</span></span>
 <span><span class="va">vars</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Survived"</span>, <span class="st">"Age"</span>, <span class="st">"Female"</span><span class="op">)</span> <span class="co"># Variables to impute/use in the analysis</span></span>
 <span></span>
 <span><span class="va">imputations</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://amices.org/mice/reference/mice.html" class="external-link">mice</a></span><span class="op">(</span><span class="va">titanic</span><span class="op">[</span><span class="va">vars</span><span class="op">]</span>, m <span class="op">=</span> <span class="va">m</span><span class="op">)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;  iter imp variable</span></span>
+<span><span class="co">#&gt;   1   1  Survived  Age</span></span>
+<span><span class="co">#&gt;   1   2  Survived  Age</span></span>
+<span><span class="co">#&gt;   1   3  Survived  Age</span></span>
+<span><span class="co">#&gt;   1   4  Survived  Age</span></span>
+<span><span class="co">#&gt;   1   5  Survived  Age</span></span>
+<span><span class="co">#&gt;   1   6  Survived  Age</span></span>
+<span><span class="co">#&gt;   1   7  Survived  Age</span></span>
+<span><span class="co">#&gt;   1   8  Survived  Age</span></span>
+<span><span class="co">#&gt;   1   9  Survived  Age</span></span>
+<span><span class="co">#&gt;   1   10  Survived  Age</span></span>
+<span><span class="co">#&gt;   1   11  Survived  Age</span></span>
+<span><span class="co">#&gt;   1   12  Survived  Age</span></span>
+<span><span class="co">#&gt;   1   13  Survived  Age</span></span>
+<span><span class="co">#&gt;   1   14  Survived  Age</span></span>
+<span><span class="co">#&gt;   1   15  Survived  Age</span></span>
+<span><span class="co">#&gt;   1   16  Survived  Age</span></span>
+<span><span class="co">#&gt;   1   17  Survived  Age</span></span>
+<span><span class="co">#&gt;   1   18  Survived  Age</span></span>
+<span><span class="co">#&gt;   1   19  Survived  Age</span></span>
+<span><span class="co">#&gt;   1   20  Survived  Age</span></span>
+<span><span class="co">#&gt;   2   1  Survived  Age</span></span>
+<span><span class="co">#&gt;   2   2  Survived  Age</span></span>
+<span><span class="co">#&gt;   2   3  Survived  Age</span></span>
+<span><span class="co">#&gt;   2   4  Survived  Age</span></span>
+<span><span class="co">#&gt;   2   5  Survived  Age</span></span>
+<span><span class="co">#&gt;   2   6  Survived  Age</span></span>
+<span><span class="co">#&gt;   2   7  Survived  Age</span></span>
+<span><span class="co">#&gt;   2   8  Survived  Age</span></span>
+<span><span class="co">#&gt;   2   9  Survived  Age</span></span>
+<span><span class="co">#&gt;   2   10  Survived  Age</span></span>
+<span><span class="co">#&gt;   2   11  Survived  Age</span></span>
+<span><span class="co">#&gt;   2   12  Survived  Age</span></span>
+<span><span class="co">#&gt;   2   13  Survived  Age</span></span>
+<span><span class="co">#&gt;   2   14  Survived  Age</span></span>
+<span><span class="co">#&gt;   2   15  Survived  Age</span></span>
+<span><span class="co">#&gt;   2   16  Survived  Age</span></span>
+<span><span class="co">#&gt;   2   17  Survived  Age</span></span>
+<span><span class="co">#&gt;   2   18  Survived  Age</span></span>
+<span><span class="co">#&gt;   2   19  Survived  Age</span></span>
+<span><span class="co">#&gt;   2   20  Survived  Age</span></span>
+<span><span class="co">#&gt;   3   1  Survived  Age</span></span>
+<span><span class="co">#&gt;   3   2  Survived  Age</span></span>
+<span><span class="co">#&gt;   3   3  Survived  Age</span></span>
+<span><span class="co">#&gt;   3   4  Survived  Age</span></span>
+<span><span class="co">#&gt;   3   5  Survived  Age</span></span>
+<span><span class="co">#&gt;   3   6  Survived  Age</span></span>
+<span><span class="co">#&gt;   3   7  Survived  Age</span></span>
+<span><span class="co">#&gt;   3   8  Survived  Age</span></span>
+<span><span class="co">#&gt;   3   9  Survived  Age</span></span>
+<span><span class="co">#&gt;   3   10  Survived  Age</span></span>
+<span><span class="co">#&gt;   3   11  Survived  Age</span></span>
+<span><span class="co">#&gt;   3   12  Survived  Age</span></span>
+<span><span class="co">#&gt;   3   13  Survived  Age</span></span>
+<span><span class="co">#&gt;   3   14  Survived  Age</span></span>
+<span><span class="co">#&gt;   3   15  Survived  Age</span></span>
+<span><span class="co">#&gt;   3   16  Survived  Age</span></span>
+<span><span class="co">#&gt;   3   17  Survived  Age</span></span>
+<span><span class="co">#&gt;   3   18  Survived  Age</span></span>
+<span><span class="co">#&gt;   3   19  Survived  Age</span></span>
+<span><span class="co">#&gt;   3   20  Survived  Age</span></span>
+<span><span class="co">#&gt;   4   1  Survived  Age</span></span>
+<span><span class="co">#&gt;   4   2  Survived  Age</span></span>
+<span><span class="co">#&gt;   4   3  Survived  Age</span></span>
+<span><span class="co">#&gt;   4   4  Survived  Age</span></span>
+<span><span class="co">#&gt;   4   5  Survived  Age</span></span>
+<span><span class="co">#&gt;   4   6  Survived  Age</span></span>
+<span><span class="co">#&gt;   4   7  Survived  Age</span></span>
+<span><span class="co">#&gt;   4   8  Survived  Age</span></span>
+<span><span class="co">#&gt;   4   9  Survived  Age</span></span>
+<span><span class="co">#&gt;   4   10  Survived  Age</span></span>
+<span><span class="co">#&gt;   4   11  Survived  Age</span></span>
+<span><span class="co">#&gt;   4   12  Survived  Age</span></span>
+<span><span class="co">#&gt;   4   13  Survived  Age</span></span>
+<span><span class="co">#&gt;   4   14  Survived  Age</span></span>
+<span><span class="co">#&gt;   4   15  Survived  Age</span></span>
+<span><span class="co">#&gt;   4   16  Survived  Age</span></span>
+<span><span class="co">#&gt;   4   17  Survived  Age</span></span>
+<span><span class="co">#&gt;   4   18  Survived  Age</span></span>
+<span><span class="co">#&gt;   4   19  Survived  Age</span></span>
+<span><span class="co">#&gt;   4   20  Survived  Age</span></span>
+<span><span class="co">#&gt;   5   1  Survived  Age</span></span>
+<span><span class="co">#&gt;   5   2  Survived  Age</span></span>
+<span><span class="co">#&gt;   5   3  Survived  Age</span></span>
+<span><span class="co">#&gt;   5   4  Survived  Age</span></span>
+<span><span class="co">#&gt;   5   5  Survived  Age</span></span>
+<span><span class="co">#&gt;   5   6  Survived  Age</span></span>
+<span><span class="co">#&gt;   5   7  Survived  Age</span></span>
+<span><span class="co">#&gt;   5   8  Survived  Age</span></span>
+<span><span class="co">#&gt;   5   9  Survived  Age</span></span>
+<span><span class="co">#&gt;   5   10  Survived  Age</span></span>
+<span><span class="co">#&gt;   5   11  Survived  Age</span></span>
+<span><span class="co">#&gt;   5   12  Survived  Age</span></span>
+<span><span class="co">#&gt;   5   13  Survived  Age</span></span>
+<span><span class="co">#&gt;   5   14  Survived  Age</span></span>
+<span><span class="co">#&gt;   5   15  Survived  Age</span></span>
+<span><span class="co">#&gt;   5   16  Survived  Age</span></span>
+<span><span class="co">#&gt;   5   17  Survived  Age</span></span>
+<span><span class="co">#&gt;   5   18  Survived  Age</span></span>
+<span><span class="co">#&gt;   5   19  Survived  Age</span></span>
+<span><span class="co">#&gt;   5   20  Survived  Age</span></span>
 <span></span>
 <span><span class="va">COEF</span> <span class="op">&lt;-</span> <span class="cn">NULL</span> <span class="co"># Matrix with estimated coefficients for each imputation</span></span>
 <span><span class="va">BOOT</span> <span class="op">&lt;-</span> <span class="cn">NULL</span> <span class="co"># Matrix with all the bootstraps from all imputations</span></span>
@@ -198,8 +314,28 @@ the <code>mice</code> package, but other packages can be used as well
 <span>  <span class="va">BOOT</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://amices.org/mice/reference/cbind.html" class="external-link">rbind</a></span><span class="op">(</span><span class="va">BOOT</span>, <span class="fu"><a href="../reference/boot.html">boot</a></span><span class="op">(</span><span class="va">fit.i</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
 <span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/apply.html" class="external-link">apply</a></span><span class="op">(</span><span class="va">COEF</span>, MARGIN <span class="op">=</span> <span class="fl">2</span>, FUN <span class="op">=</span> <span class="va">mean</span><span class="op">)</span> <span class="co"># Mean estimate across imputations</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/apply.html" class="external-link">apply</a></span><span class="op">(</span><span class="va">BOOT</span>, MARGIN <span class="op">=</span> <span class="fl">2</span>, FUN <span class="op">=</span> <span class="va">sd</span><span class="op">)</span>   <span class="co"># Standard errors</span></span></code></pre></div>
+<span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/apply.html" class="external-link">apply</a></span><span class="op">(</span><span class="va">COEF</span>, MARGIN <span class="op">=</span> <span class="fl">2</span>, FUN <span class="op">=</span> <span class="va">mean</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span> <span class="co"># Mean estimate across imputations</span></span>
+<span><span class="co">#&gt;     Survived&lt;~Survived               Age&lt;~Age         Female&lt;~Female </span></span>
+<span><span class="co">#&gt;                  1.000                  1.000                  1.000 </span></span>
+<span><span class="co">#&gt;           Survived~Age        Survived~Female    Survived~Age:Female </span></span>
+<span><span class="co">#&gt;                 -0.075                  0.675                  0.214 </span></span>
+<span><span class="co">#&gt;     Survived~~Survived               Age~~Age            Age~~Female </span></span>
+<span><span class="co">#&gt;                  0.465                  1.000                 -0.058 </span></span>
+<span><span class="co">#&gt;        Age~~Age:Female         Female~~Female     Female~~Age:Female </span></span>
+<span><span class="co">#&gt;                  0.004                  1.000                 -0.003 </span></span>
+<span><span class="co">#&gt; Age:Female~~Age:Female            Survived|t1 </span></span>
+<span><span class="co">#&gt;                  1.000                  0.238</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/apply.html" class="external-link">apply</a></span><span class="op">(</span><span class="va">BOOT</span>, MARGIN <span class="op">=</span> <span class="fl">2</span>, FUN <span class="op">=</span> <span class="va">sd</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span>   <span class="co"># Standard errors</span></span>
+<span><span class="co">#&gt;     Survived&lt;~Survived               Age&lt;~Age         Female&lt;~Female </span></span>
+<span><span class="co">#&gt;                  0.000                  0.000                  0.000 </span></span>
+<span><span class="co">#&gt;           Survived~Age        Survived~Female    Survived~Age:Female </span></span>
+<span><span class="co">#&gt;                  0.052                  0.074                  0.056 </span></span>
+<span><span class="co">#&gt;     Survived~~Survived               Age~~Age            Age~~Female </span></span>
+<span><span class="co">#&gt;                  0.072                  0.040                  0.045 </span></span>
+<span><span class="co">#&gt;        Age~~Age:Female         Female~~Female     Female~~Age:Female </span></span>
+<span><span class="co">#&gt;                  0.068                  0.016                  0.038 </span></span>
+<span><span class="co">#&gt; Age:Female~~Age:Female            Survived|t1 </span></span>
+<span><span class="co">#&gt;                  0.056                  0.107</span></span></code></pre></div>
 </div>
   </div>
 

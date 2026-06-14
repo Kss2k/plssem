@@ -30,8 +30,17 @@
 <url><loc>/reference/parameter_estimates.plssem.html</loc></url>
 <url><loc>/reference/pls.html</loc></url>
 <url><loc>/reference/plsUnstandardizedEstimates.html</loc></url>
+<url><loc>/reference/pls_boot.html</loc></url>
+<url><loc>/reference/pls_chisq.html</loc></url>
+<url><loc>/reference/pls_chisq_df.html</loc></url>
 <url><loc>/reference/pls_construct_scores.html</loc></url>
+<url><loc>/reference/pls_implied_construct_corr.html</loc></url>
+<url><loc>/reference/pls_implied_indicator_corr.html</loc></url>
+<url><loc>/reference/pls_implied_joint_corr.html</loc></url>
+<url><loc>/reference/pls_inspect.html</loc></url>
 <url><loc>/reference/pls_predict.html</loc></url>
+<url><loc>/reference/pls_rmsea.html</loc></url>
+<url><loc>/reference/pls_srmr.html</loc></url>
 <url><loc>/reference/predict-PlsModel-method.html</loc></url>
 <url><loc>/reference/print.PlsSemPredict.html</loc></url>
 <url><loc>/reference/print.SummaryPlsSem.html</loc></url>

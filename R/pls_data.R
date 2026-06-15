@@ -17,7 +17,7 @@ getPLS_Data <- function(data,
   pls_stopif(any(varIsMissing),
              "Missing variables: ", paste0(vars[varIsMissing], collapse = ", "))
 
-  data <- as.data.frame(data)[vars]
+  data <- asDataFrame(data)[vars]
 
   if (!is.null(cluster)) {
     clusterMissing <- !stats::complete.cases(data[, cluster, drop = FALSE])
@@ -100,7 +100,7 @@ getPLS_Data <- function(data,
 
 
 checkAndFixDTypesPLS_Data <- function(X, check = colnames(X)) {
-  if (!is.data.frame(X)) X <- as.data.frame(X)
+  if (!is.data.frame(X)) X <- asDataFrame(X)
 
   varIsMissing <- !check %in% colnames(X)
   pls_stopif(any(varIsMissing),
@@ -192,7 +192,7 @@ getPearsonCorr <- function(data) {
 
 
 getPolyCorr <- function(data, ordered = NULL) {
-  data <- as.data.frame(data)
+  data <- asDataFrame(data)
   lavaan::lavCor(data, ordered = ordered)
 }
 
@@ -201,4 +201,17 @@ tetracor <- function(x, y) {
   # x is continous, y is ordinal
   X <- data.frame(x, y)
   lavaan::lavCor(X, ordered = "y")[1, 2]
+}
+
+
+asDataFrame <- function(data) {
+  tryCatch(
+    data <- as.data.frame(data),
+    error = function(e) {
+      pls_msg_stop(
+        "Could not convert `data` to a `data.frame`!",
+        "Message:", conditionMessage(e)
+      )
+    }
+  )
 }

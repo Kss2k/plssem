@@ -23,7 +23,7 @@ removeTempMimicSuffix <- function(x) {
 
 
 hasTempOvPrefix <- function(x) {
-  startsWith(x, prefix = TEMP_OV_PREFIX)
+  grepl(TEMP_OV_PREFIX_PATTERN, x)
 }
 
 

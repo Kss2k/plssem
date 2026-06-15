@@ -210,7 +210,7 @@ pls <- function(syntax,
     boot.R <- sample
   }
 
-  data <- as.data.frame(data)
+  data <- asDataFrame(data)
 
   model <- specifyModel(
     syntax              = syntax,

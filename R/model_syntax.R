@@ -5,14 +5,30 @@ parseModelArguments <- function(parTable,
                                 mcpls = FALSE,
                                 mc.fast.lmer = NULL,
                                 consistent = TRUE,
-                                is.lower.order = FALSE) {
-  data <- as.data.frame(data)
+                                is.lower.order = FALSE,
+                                strict = TRUE) {
+  # make sure we're working with a data.frame
+  data <- asDataFrame(data)
+
+  if (strict) {
+    # check if we have any user-supplied names which use reserved patterns
+    nm <- union(parTable$lhs, parTable$rhs)
+    hasTmp <- hasTempAffixes(nm)
+
+    pls_stopif(any(hasTmp),
+      "Some variables have reserved keywords/patterns!",
+      "Variables:", paste0(nm[hasTmp], collapse = ", ")
+    )
+  }
 
   # Check for interation terms
   checkLhsIntTerms(parTable) # make sure they are all independent
+
   intTermNames <- getIntTerms(parTable)
-  intTermElems <- stringr::str_split(intTermNames, pattern = ":")
-  names(intTermElems)  <- intTermNames
+  intTermElems <- stats::setNames(
+    stringr::str_split(intTermNames, pattern = ":"), nm = intTermNames
+  )
+
   is.nlin <- length(intTermElems) > 0L
 
   # Check for MIMIC blocks

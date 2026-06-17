@@ -66,8 +66,9 @@ parseModelArguments <- function(parTable,
   iscov <- parTable$op == "~~"
 
   indicators <- parTable[isind, "rhs"]
-  covvars    <- unique(c(parTable[iscov, "lhs"], parTable[iscov, "rhs"]))
-  structvars <- unique(c(parTable[isstr, "rhs"], covvars))
+  covvars    <- union(parTable[iscov, "lhs"], parTable[iscov, "rhs"])
+  covvars    <- setdiff(covvars, indicators)
+  structvars <- union(parTable[isstr, "rhs"], covvars)
 
   # A duplicated indicator can occur under two circumstances:
   #   1. It's an indicator which is part of two constructs

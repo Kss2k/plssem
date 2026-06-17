@@ -1,10 +1,23 @@
 GlsPathModel <- function(parTable = NULL, data.cov = NULL) {
   if (!NROW(parTable))
-    return(method::new("GlsPathModel"))
+    return(methods::new("GlsPathModel"))
+
+  # Measurement
+  inds <- union(
+    parTable[parTable$op == "<~", "rhs"],
+    parTable[parTable$op == "=~", "rhs"]
+  )
+ 
+  # Structural (possibly with a few indicators)
+  vars <- unique(c(
+    parTable[parTable$op %in% c("=~", "<~"), "lhs"],
+    parTable[parTable$op %in% c("~",  "~~"), "lhs"],
+    parTable[parTable$op %in% c("~",  "~~"), "rhs"]
+  ))
 
   reg  <- parTable[parTable$op == "~", , drop = FALSE]
-  etas <- union(reg$lhs, reg$rhs)
-  xis  <- setdiff(reg$rhs, reg$lhs) # purely exogenous variables
+  etas <- setdiff(vars, inds)    # all structural variables
+  xis  <- setdiff(etas, reg$lhs) # purely exogenous variables
   k    <- length(etas)
 
   # covariances

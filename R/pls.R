@@ -124,6 +124,14 @@ USE_NON_LINEAR_PROBIT_CORR_MAT <- FALSE
 #' @param reliabilities Optional named numeric vector of user-supplied reliabilities
 #'   used for the PLSc consistency correction.
 #'
+#' @param default.path.estimator Character string selecting the estimator used for
+#'   the structural (path) model when the model does not require Generalized Least
+#'   Squares (GLS). The default \code{"ols"} uses Ordinary Least Squares whenever
+#'   possible, falling back to GLS automatically when the model contains residual
+#'   covariances. Setting \code{default.path.estimator = "gls"}
+#'   forces GLS estimation of the structural model even when OLS would otherwise be
+#'   used.
+#'
 #' @param ... Internal arguments. For advanced users only.
 #'
 #' @return A \code{Plssem} object containing the estimated parameters, fit measures,
@@ -195,10 +203,12 @@ pls <- function(syntax,
                   reuse.p.start   = TRUE
                 ),
                 reliabilities = NULL,
+                default.path.estimator = c("ols", "gls"),
                 ...) {
 
   missing       <- match.arg(tolower(missing), c("listwise", "mean", "knn"))
   boot.parallel <- match.arg(tolower(boot.parallel), c("no", "multicore", "multisession", "snow"))
+  default.path.estimator <- match.arg(tolower(default.path.estimator), c("ols", "gls"))
 
   if (!is.null(boot.ncpus)) {
     pls_msg_warn("The `boot.ncpus` argument is deprecated; please use `boot.ncores` instead.")
@@ -213,37 +223,38 @@ pls <- function(syntax,
   data <- asDataFrame(data)
 
   model <- specifyModel(
-    syntax              = syntax,
-    data                = data,
-    consistent          = consistent,
-    missing             = missing,
-    standardize         = standardize,
-    ordered             = ordered,
-    probit              = probit,
-    mcpls               = mcpls,
-    mc.fast.lmer        = mc.fast.lmer,
-    tolerance           = tolerance,
-    max.iter.0_5        = max.iter.0_5,
-    mc.min.iter         = mc.min.iter,
-    mc.max.iter         = mc.max.iter,
-    mc.reps             = mc.reps,
-    mc.tol              = mc.tol,
-    mc.fixed.seed       = mc.fixed.seed,
-    mc.polyak.juditsky  = mc.polyak.juditsky,
-    mc.pj.extrapolate   = mc.pj.extrapolate,
-    mc.delta.se         = mc.delta.se,
-    mc.delta.jacobian.k = mc.delta.jacobian.k,
-    mc.fn.args          = mc.fn.args,
-    verbose             = verbose,
-    bootstrap           = bootstrap,
-    boot.ncores         = boot.ncores,
-    boot.parallel       = boot.parallel,
-    boot.R              = boot.R,
-    boot.iseed          = boot.iseed,
-    boot.optimize       = boot.optimize,
-    mc.boot.control     = mc.boot.control,
-    knn.k               = knn.k,
-    reliabilities       = reliabilities,
+    syntax                 = syntax,
+    data                   = data,
+    consistent             = consistent,
+    missing                = missing,
+    standardize            = standardize,
+    ordered                = ordered,
+    probit                 = probit,
+    mcpls                  = mcpls,
+    mc.fast.lmer           = mc.fast.lmer,
+    tolerance              = tolerance,
+    max.iter.0_5           = max.iter.0_5,
+    mc.min.iter            = mc.min.iter,
+    mc.max.iter            = mc.max.iter,
+    mc.reps                = mc.reps,
+    mc.tol                 = mc.tol,
+    mc.fixed.seed          = mc.fixed.seed,
+    mc.polyak.juditsky     = mc.polyak.juditsky,
+    mc.pj.extrapolate      = mc.pj.extrapolate,
+    mc.delta.se            = mc.delta.se,
+    mc.delta.jacobian.k    = mc.delta.jacobian.k,
+    mc.fn.args             = mc.fn.args,
+    verbose                = verbose,
+    bootstrap              = bootstrap,
+    boot.ncores            = boot.ncores,
+    boot.parallel          = boot.parallel,
+    boot.R                 = boot.R,
+    boot.iseed             = boot.iseed,
+    boot.optimize          = boot.optimize,
+    mc.boot.control        = mc.boot.control,
+    knn.k                  = knn.k,
+    reliabilities          = reliabilities,
+    default.path.estimator = default.path.estimator,
     ...
   )
 

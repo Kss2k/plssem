@@ -47,37 +47,38 @@ specifyModelParTable <- function(parTable, data, higherOrderLVs = NULL, ...) {
 
 specifySubModel <- function(parTable,
                             data,
-                            is.lower.order      = FALSE,
-                            consistent          = TRUE,
-                            missing             = "listwise",
-                            standardize         = TRUE,
-                            ordered             = NULL,
-                            probit              = NULL,
-                            mcpls               = NULL,
-                            mc.fast.lmer        = NULL,
-                            tolerance           = 1e-5,
-                            max.iter.0_5        = 100,
-                            mc.max.iter         = 250,
-                            mc.min.iter         = 5,
-                            mc.reps             = 20000,
-                            mc.tol              = 0.0005,
-                            mc.fixed.seed       = FALSE,
-                            mc.polyak.juditsky  = FALSE,
-                            mc.pj.extrapolate   = TRUE,
-                            mc.delta.se         = TRUE,
-                            mc.delta.jacobian.k = NULL,
-                            mc.fn.args          = list(),
-                            verbose             = interactive(),
-                            bootstrap           = FALSE,
-                            boot.ncores         = 1L,
-                            boot.parallel       = "no",
-                            boot.R              = 50L,
-                            boot.iseed          = NULL,
-                            boot.optimize       = FALSE,
-                            mc.boot.control     = list(),
-                            knn.k               = 5,
-                            reliabilities       = NULL,
-                            higherOrderLVs      = NULL) {
+                            is.lower.order         = FALSE,
+                            consistent             = TRUE,
+                            missing                = "listwise",
+                            standardize            = TRUE,
+                            ordered                = NULL,
+                            probit                 = NULL,
+                            mcpls                  = NULL,
+                            mc.fast.lmer           = NULL,
+                            tolerance              = 1e-5,
+                            max.iter.0_5           = 100,
+                            mc.max.iter            = 250,
+                            mc.min.iter            = 5,
+                            mc.reps                = 20000,
+                            mc.tol                 = 0.0005,
+                            mc.fixed.seed          = FALSE,
+                            mc.polyak.juditsky     = FALSE,
+                            mc.pj.extrapolate      = TRUE,
+                            mc.delta.se            = TRUE,
+                            mc.delta.jacobian.k    = NULL,
+                            mc.fn.args             = list(),
+                            verbose                = interactive(),
+                            bootstrap              = FALSE,
+                            boot.ncores            = 1L,
+                            boot.parallel          = "no",
+                            boot.R                 = 50L,
+                            boot.iseed             = NULL,
+                            boot.optimize          = FALSE,
+                            mc.boot.control        = list(),
+                            knn.k                  = 5,
+                            reliabilities          = NULL,
+                            default.path.estimator = "ols",
+                            higherOrderLVs         = NULL) {
   if (is.null(parTable))
     return(NULL)
       
@@ -158,7 +159,12 @@ specifySubModel <- function(parTable,
     ordered = ordered
   )
 
-  if (hasResidualCovariances(parTable)) {
+  # GLS is used automatically whenever the model contains residual covariances
+  # (which the OLS path estimator cannot handle). The user may also force GLS via
+  # `default.path.estimator = "gls"`, even when OLS would otherwise suffice.
+  gls.default <- tolower(default.path.estimator) == "gls"
+
+  if (gls.default || hasResidualCovariances(parTable)) {
     info$path.estimator <- "gls"
     glsPathModel <- GlsPathModel(
       parTable = parTable,

@@ -167,7 +167,7 @@ specifySubModel <- function(parTable,
   if (gls.default || hasResidualCovariances(parTable)) {
     info$path.estimator <- "gls"
     glsPathModel <- GlsPathModel(
-      parTable = parTable,
+      parTable = pt,
       data.cov = NULL
     )
   } else {

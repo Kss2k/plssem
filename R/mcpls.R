@@ -24,7 +24,7 @@ mcpls <- function(
   ordered   <- fit0@info$ordered
   is.hi.ord <- isTRUE(fit0.combined@info$is.high.ord)
   thresholdStruct0 <- fit0.combined@thresholdStruct
-  estimator <- fit0.base@info$path.estimator
+  estimator <- fit0.combined@info$path.estimator
 
   # GLS is not implemented correctly (yet)
   pls_warnif(estimator == "gls",

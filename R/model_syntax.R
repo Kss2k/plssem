@@ -1,3 +1,6 @@
+PLS_IGNORE_INDCOV <- FALSE
+
+
 parseModelArguments <- function(parTable,
                                 data,
                                 ordered = NULL,
@@ -67,8 +70,14 @@ parseModelArguments <- function(parTable,
 
   indicators <- parTable[isind, "rhs"]
   covvars    <- union(parTable[iscov, "lhs"], parTable[iscov, "rhs"])
-  covvars    <- setdiff(covvars, indicators)
-  structvars <- union(parTable[isstr, "rhs"], covvars)
+
+  # Currently we treat any variable with a "~~" as a structural variable
+  # This makes sense as we don't allow the user to specify the covariance
+  # structure of the measurement model. If this ever changes we will have to
+  # to things differently, particularly for higher order models.
+  if (PLS_IGNORE_INDCOV) covvars <- setdiff(covvars, indicators)
+
+  structvars <- unique(c(parTable[isstr, "rhs"], covvars))
 
   # A duplicated indicator can occur under two circumstances:
   #   1. It's an indicator which is part of two constructs

@@ -72,8 +72,29 @@ getFitPLSModel <- function(model, consistent = TRUE) {
     gls = {
       gmod <- model@glsPathModel
 
-      glsModelCovMatrix(gmod) <- C # update input
-      gfit <- glsEstimateParameters(gmod) # fit model
+      success <- TRUE
+      tryCatch({
+        glsModelCovMatrix(gmod) <- C # update input
+        gfit <- glsEstimateParameters(gmod) # fit model
+
+      }, error = function(e) {
+        success <<- FALSE
+        pls_msg_warn(
+          "Estimation of the structural model using GLS failed!",
+          "Attempting to use OLS instead!",
+          "Message:", conditionMessage(e)
+        )
+      })
+
+      if (!success) {
+        # switch to ols and mark as inadmissible
+        model@info$path.estimator <- "ols"
+        model@status$admissible <- FALSE
+
+        return( # this is not computationally efficient, but it's simple
+          getFitPLSModel(model = model, consistent = consistent)
+        )
+      }
 
       # paths
       gamma <- gfit@matrices$gamma

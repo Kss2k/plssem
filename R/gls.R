@@ -15,8 +15,14 @@ GlsPathModel <- function(parTable = NULL, data.cov = NULL) {
     parTable[parTable$op %in% c("~",  "~~"), "rhs"]
   ))
 
+  # Currently we treat any variable with a "~~" as a structural variable
+  # This makes sense as we don't allow the user to specify the covariance
+  # structure of the measurement model. If this ever changes we will have to
+  # to things differently, particularly for higher order models.
+  if (PLS_IGNORE_INDCOV) etas <- setdiff(vars, inds) # all structural variables
+  else                   etas <- vars
+
   reg  <- parTable[parTable$op == "~", , drop = FALSE]
-  etas <- setdiff(vars, inds)    # all structural variables
   xis  <- setdiff(etas, reg$lhs) # purely exogenous variables
   k    <- length(etas)
 

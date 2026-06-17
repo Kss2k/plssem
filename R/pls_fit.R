@@ -145,13 +145,14 @@ getFitPLSModel <- function(model, consistent = TRUE) {
 
   list(
     fitMeasurement = plssemMatrix(fitMeasurement),
-    fitStructural  = plssemMatrix(fitStructural),
-    fitCov         = plssemMatrix(fitCov, symmetric = TRUE),
-    fitTheta       = plssemMatrix(fitTheta, symmetric = TRUE),
-    fitWeights     = plssemMatrix(fitWeights),
-    fitLambda      = plssemMatrix(fitLambda),
-    fitC           = plssemMatrix(C),
-    Q              = plssemVector(Q)
+    fitStructural     = plssemMatrix(fitStructural),
+    fitCov            = plssemMatrix(fitCov, symmetric = TRUE),
+    fitTheta          = plssemMatrix(fitTheta, symmetric = TRUE),
+    fitWeights        = plssemMatrix(fitWeights),
+    fitLambda         = plssemMatrix(fitLambda),
+    fitC              = plssemMatrix(C),
+    Q                 = plssemVector(Q),
+    status.admissible = model@status$is.admissible
   )
 }
 
@@ -174,7 +175,8 @@ modelFitIsAdmissible <- function(fit) {
     isPositiveDefinite(fit$fitC) &&
     all(diag(fit$fitTheta) >= 0) &&
     all(diag(fit$fitCov) >= 0)   &&
-    Q.admissible
+    Q.admissible                 &&
+    fit$status.admissible # check flag from the input model
   )
 }
 

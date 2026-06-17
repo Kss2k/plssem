@@ -1,20 +1,21 @@
 getFitPLSModel <- function(model, consistent = TRUE) {
-  lambda  <- model@matrices$lambda
-  gamma   <- model@matrices$gamma
-  preds   <- model@matrices$preds
-  etas    <- model@info$etas
-  xis     <- model@info$xis
-  lvs     <- model@info$lvs
-  lvs.lin <- model@info$lvs.linear
-  inds    <- model@info$allInds
-  inds.a  <- model@info$inds.a
-  inds.b  <- model@info$inds.b
-  indsLvs <- model@info$indsLvs
-  modes   <- model@info$modes
-  mode.a  <- model@info$mode.a
-  mode.b  <- model@info$mode.b
-  ptl     <- model@parTableInput
-  SC      <- model@matrices$SC
+  lambda    <- model@matrices$lambda
+  gamma     <- model@matrices$gamma
+  preds     <- model@matrices$preds
+  etas      <- model@info$etas
+  xis       <- model@info$xis
+  lvs       <- model@info$lvs
+  lvs.lin   <- model@info$lvs.linear
+  inds      <- model@info$allInds
+  inds.a    <- model@info$inds.a
+  inds.b    <- model@info$inds.b
+  indsLvs   <- model@info$indsLvs
+  modes     <- model@info$modes
+  mode.a    <- model@info$mode.a
+  mode.b    <- model@info$mode.b
+  ptl       <- model@parTableInput
+  SC        <- model@matrices$SC
+  estimator <- model@info$path.estimator
 
   fitMeasurement <- fitLambda <- fitWeights <- lambda
   fitMeasurement[TRUE] <- fitLambda[TRUE] <- fitWeights[TRUE] <- 0
@@ -48,17 +49,50 @@ getFitPLSModel <- function(model, consistent = TRUE) {
 
   fitStructural       <- gamma
   fitStructural[TRUE] <- 0
-  for (lv in lvs) {
-    predsLv <- lvs[preds[, lv, drop = TRUE]]
-    if (length(predsLv))
-      fitStructural[predsLv, lv] <- getPathCoefs(lv, predsLv, C)
-  }
 
-  fitCov     <- C
-  fitCovProj <- t(fitStructural) %*% C %*% fitStructural
-  fitCovRes  <- diag2(fitCov) - diag2(fitCovProj)
-  fitCov[etas, etas]  <- fitCovRes[etas, etas]
-  fitCov[etas, xis]   <- fitCov[xis, etas] <- 0
+  switch(estimator,
+    ols = {
+
+      # paths
+      for (lv in lvs) {
+        predsLv <- lvs[preds[, lv, drop = TRUE]]
+
+        if (length(predsLv))
+          fitStructural[predsLv, lv] <- getOlsPathCoefs(lv, predsLv, C)
+      }
+
+      # (residual) covariances
+      fitCov     <- C
+      fitCovProj <- t(fitStructural) %*% C %*% fitStructural
+      fitCovRes  <- diag2(fitCov) - diag2(fitCovProj)
+      fitCov[etas, etas]  <- fitCovRes[etas, etas]
+      fitCov[etas, xis]   <- fitCov[xis, etas] <- 0
+    },
+
+    gls = {
+      gmod <- model@glsPathModel
+
+      glsModelCovMatrix(gmod) <- C # update input
+      gfit <- glsEstimateParameters(gmod) # fit model
+
+      # paths
+      gamma <- gfit@matrices$gamma
+
+      for (lv in lvs) {
+        predsLv <- lvs[preds[, lv, drop = TRUE]]
+
+        if (length(predsLv))
+          fitStructural[predsLv, lv] <- gamma[lv, predsLv]
+      }
+
+      fitCov <- gfit@matrices$psi[rownames(C), colnames(C)]
+    },
+
+    # Shouldn't happen
+    pls_msg_stop(
+      "Unrecognized path estimator! Estimator:", estimators
+    )
+  )
 
   k        <- length(inds)
   fitTheta <- matrix(0, nrow = k, ncol = k, dimnames = list(inds, inds))

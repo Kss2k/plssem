@@ -198,3 +198,14 @@ getParTableFromParNames <- function(parnames) {
   split <- splitParameterNames(parnames)
   data.frame(lhs = split$lhs, op = split$op, rhs = split$rhs, stringsAsFactors = FALSE)
 }
+
+
+hasResidualCovariances <- function(parTable) {
+  etas <- unique(parTable[parTable$op == "~", "lhs"])
+
+  any(
+    parTable$op == "~~" &
+    (parTable$rhs %in% etas | parTable$lhs %in% etas) &
+    parTable$lhs != parTable$rhs
+  )
+}

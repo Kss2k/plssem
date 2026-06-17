@@ -158,6 +158,17 @@ specifySubModel <- function(parTable,
     ordered = ordered
   )
 
+  if (hasResidualCovariances(parTable)) {
+    info$path.estimator <- "gls"
+    glsPathModel <- GlsPathModel(
+      parTable = parTable,
+      data.cov = NULL
+    )
+  } else {
+    info$path.estimator <- "ols"
+    glsPathModel <- GlsPathModel()
+  }
+
   if (info$is.mlm && !info$is.mcpls) {
     pls_msg_note(
       "Multilevel/Mixed-Effects PLSc models are currently under development!\n",
@@ -173,6 +184,7 @@ specifySubModel <- function(parTable,
     matrices         = matrices,
     data             = preppedData$X,
     thresholdStruct  = thresholdStruct,
+    glsPathModel     = glsPathModel,
     info             = info,
     status           = initModelStatus(
       tolerance      = tolerance,
@@ -276,14 +288,33 @@ initMatrices <- function(pt, higherOrderLVs = NULL) {
   preds.cfa[, is.nlin]   <- FALSE
   succs.cfa              <- t(preds.cfa)
 
-  # Covariance xis ---------------------------------------------------------
-  xis       <- lvs[!lvs %in% pt[pt$op == "~", "lhs"]]
-  selectCov <- matrix(FALSE, nrow = length(lvs), ncol = length(lvs),
-                      dimnames = list(lvs, lvs))
+  # Covariances (lvs) ----------------------------------------------------------
+  xis <- lvs[!lvs %in% pt[pt$op == "~", "lhs"]]
+  selectCov <- matrix(
+    FALSE, nrow = length(lvs), ncol = length(lvs),
+    dimnames = list(lvs, lvs)
+  )
+
+  # defaults
   diag(selectCov) <- TRUE
   selectCov[xis, xis][lower.tri(selectCov[xis, xis])] <- TRUE
 
-  # Residual covariances ---------------------------------------------------
+  # additional (residual) covariances
+  rescov <- pt[
+    pt$op == "~~" & pt$lhs != pt$rhs & pt$lhs %in% lvs & pt$rhs %in% lvs
+    , , drop = FALSE
+  ]
+
+  for (i in seq_len(NROW(rescov))) {
+    lhs <- rescov[i, "lhs"]
+    rhs <- rescov[i, "rhs"]
+    selectCov[lhs, rhs] <- selectCov[rhs, lhs] <- TRUE
+  }
+
+  # make sure upper diagonal is not selected
+  selectCov[upper.tri(selectCov)] <- FALSE
+
+  # Residual covariances (inds) ------------------------------------------------
   k           <- length(allInds)
   selectTheta <- matrix(
     FALSE, nrow = k, ncol = k,

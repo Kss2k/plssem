@@ -3,7 +3,7 @@ getNonZeroElems <- function(x) {
 }
 
 
-getPathCoefs <- function(y, X, C) {
+getOlsPathCoefs <- function(y, X, C) {
   # y: dependent factor
   # X: independent factors
   # C: correlation matrix

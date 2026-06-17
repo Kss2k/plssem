@@ -1,35 +1,7 @@
-setClass(
-  "GlsPathModel",
-  slots     = c(
-    matrices  = "list",
-    info      = "list",
-    parTable  = "data.frame"
-  ),
-  prototype = list(
-    matrices  = list(
-      psi         = NULL,
-      gamma       = NULL,
-      psi.free    = NULL,
-      gamma.free  = NULL,
-      I           = NULL,
-      S           = NULL,
-      S.inv       = NULL
-    ),
-    info = list(
-      start     = numeric(0L),
-      npar      = 0,
-      idx.psi   = integer(0L),
-      idx.gamma = integer(0L),
-      k         = 0,
-      etas      = character(0L),
-      xis       = character(0L)
-    ),
-    parTable = data.frame()
-  )
-)
+GlsPathModel <- function(parTable = NULL, data.cov = NULL) {
+  if (!NROW(parTable))
+    return(method::new("GlsPathModel"))
 
-
-createGlsModel <- function(parTable, data.cov = NULL) {
   reg  <- parTable[parTable$op == "~", , drop = FALSE]
   etas <- union(reg$lhs, reg$rhs)
   xis  <- setdiff(reg$rhs, reg$lhs) # purely exogenous variables
@@ -56,8 +28,8 @@ createGlsModel <- function(parTable, data.cov = NULL) {
 
   # covariances
   for (i in seq_len(NROW(cov))) {
-    lhs <- reg[i, "lhs"]
-    rhs <- reg[i, "rhs"]
+    lhs <- cov[i, "lhs"]
+    rhs <- cov[i, "rhs"]
     psi[lhs, rhs] <- psi[rhs, lhs] <- NA
   }
 
@@ -160,28 +132,12 @@ glsCalcSigmaHat <- function(model) {
   psi   <- M$psi
   I     <- M$I
 
-  # eta = gamma * eta + zeta
-  # eta - gamma * eta = zeta
-  # (I - gamma) * eta = zeta
-  # B * eta = zeta
-  # eta = B^1 * zeta
-  # E[eta*eta'] = E[(B^1 * zeta)*(B^1 * zeta)']
-  # E[eta*eta'] = E[(B^1 * zeta)*(zeta' * B^1']
-  # E[eta*eta'] = B^1 * E[zeta*zeta'] * B^1'
-  # E[eta*eta'] = B^1 * Psi * B^1'
-
   binv <- solve(I - gamma)
   binv %*% psi %*% t(binv)
 }
 
 
 glsObjective <- function(model) {
-  # Full equation
-  # Sigma.hat = inv(I - gamma) * Psi * inv(I - gamma)'
-  # tmp = inv(S) * (S - Sigma.hat)
-  # tmp = inv(S) * (S - inv(I - gamma) * Psi * inv(I - gamma)')
-  # objective = 0.5 * sum(tmp * tmp')
-  # objective = 0.5 * sum((inv(S) * (S - inv(I - gamma) * Psi * inv(I - gamma)')) .* (inv(S) * (S - inv(I - gamma) * Psi * inv(I - gamma)'))')
   sigma.hat <- glsCalcSigmaHat(model)
   S <- model@matrices$S
   S.inv <- model@matrices$S.inv
@@ -243,7 +199,9 @@ glsGradient <- function(model) {
 }
 
 
-glsEstimateModel <- function(model, data.cov = NULL, ...) {
+glsEstimateParameters <- function(model, data.cov = NULL,
+                                  control = list(eval.max = 1500, iter.max = 1000),
+                                  ...) {
   if (!is.null(data.cov)) # update sample covariance matrix?
     glsModelCovMatrix(model) <- data.cov 
 
@@ -255,9 +213,9 @@ glsEstimateModel <- function(model, data.cov = NULL, ...) {
     start = model@info$start,
     objective = fn,
     gradient = gr,
+    control = control,
     ...
   )
 
   glsFillModel(model, opt$par)
 }
-

@@ -1,25 +1,49 @@
 devtools::load_all()
 library(modsem)
+library(lavaan)
 
 m <- '
   int1 ~ att1 + sn1 + pbc1
-  b1 ~ int1 + pbc1
+  b1 ~ att1 + sn1 + pbc1
+  int1 ~~ b1
 '
 
-mod <- createGlsModel(
+mod <- GlsPathModel(
   modsemify(m),
   data.cov = NULL #cov(TPB)
 )
 
-glsModelCovMatrix(mod) <- cov(TPB)
-fn <- \(x) glsObjective(glsFillModel(mod, x))
-gr <- \(x) glsGradient(glsFillModel(mod, x))
 
-glsEstimateModel(mod, cov(TPB))
-opt <- nlminb(
-  start = mod@info$start,
-  objective = fn,
-  gradient = gr
-)
+# Compare with gls estimator in lavaan
+addRevCov <- function(pt) {
+  cov <- pt[pt$op == "~~" & pt$lhs != pt$rhs, ,drop=FALSE]
+  rev <- cov
+  rev$lhs <- cov$rhs
+  rev$rhs <- cov$lhs
+  rbind(pt, rev)
+}
 
-glsFillModel(mod, opt$par)
+ppls <- addRevCov(glsEstimateParameters(mod, cov(TPB))@parTable)
+plav <- addRevCov(lavaan::parameterEstimates(lavaan::sem(m, TPB)))
+
+testthat::expect_equal(nrow(ppls), nrow(plav))
+pall <- merge(ppls, plav, by = c("lhs", "op", "rhs"))
+testthat::expect_equal(pall$est.x, pall$est.y, tol = 6e-4)
+
+tpb <- '
+# Outer Model (Based on Hagger et al., 2007)
+  ATT =~ att1 + att2 + att3 + att4 + att5
+  SN =~ sn1 + sn2
+  PBC =~ pbc1 + pbc2 + pbc3
+  INT =~ int1 + int2 + int3
+  BEH =~ b1 + b2
+
+# Inner Model (Based on Steinmetz et al., 2011)
+  INT ~ ATT + SN + PBC
+  BEH ~ ATT + SN + PBC
+
+  BEH ~~ INT
+'
+
+fit <- pls(tpb, TPB, mcpls=TRUE)
+summary(fit)

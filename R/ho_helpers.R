@@ -227,6 +227,11 @@ computeCombinedModel <- function(model, lowerOrderAsEta = FALSE) {
     (isTRUE(info1$is.probit) || isTRUE(info2$is.probit)) && !is.mcpls
   )
 
+  # if any are GLS we select the GLS estimator, as it is more general than OLS
+  p.est.1 <- info1$path.estimator
+  p.est.2 <- info2$path.estimator
+  path.estimator <- if (p.est.1 == "gls" || p.est.2 == "gls") "gls" else p.est.2
+
   combined@info <- list(
     lvs.linear   = union(info1$lvs.linear, info2$lvs.linear),
     lvs          = union(info1$lvs, info2$lvs),
@@ -268,6 +273,7 @@ computeCombinedModel <- function(model, lowerOrderAsEta = FALSE) {
     consistent     = info1$consistent,
     reliabilities  = info1$reliabilities,
     rng.seed       = info1$rng.seed,
+    path.estimator = path.estimator,
     is.lower.order = FALSE
   )
 

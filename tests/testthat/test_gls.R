@@ -8,14 +8,18 @@ m <- '
 
 mod <- createGlsModel(
   modsemify(m),
-  data.cov = cov(TPB)
+  data.cov = NULL #cov(TPB)
 )
 
-glsCalcSigmaHat(glsFillModel(mod, mod$info$start))
+glsModelCovMatrix(mod) <- cov(TPB)
 fn <- \(x) glsObjective(glsFillModel(mod, x))
+gr <- \(x) glsGradient(glsFillModel(mod, x))
 
-nlminb(
-  start = mod$info$start,
+glsEstimateModel(mod, cov(TPB))
+opt <- nlminb(
+  start = mod@info$start,
   objective = fn,
-  control = list(iter.max = 4)
+  gradient = gr
 )
+
+glsFillModel(mod, opt$par)

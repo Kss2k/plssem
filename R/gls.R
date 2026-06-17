@@ -138,16 +138,7 @@ glsGetSampleInformation <- function(data.cov, etas) {
   )
 
   S <- data.cov[etas, etas]
-
-  tryCatch(
-    S.inv <- MASS::ginv(S),
-    error = function(e) {
-      pls_msg_stop(
-        "Could not invert sample covariance matrix!",
-        "Message:", condtionMessage(e)
-      )
-    }
-  )
+  S.inv <- glsComputeInvCov(S)
 
   list(S = S, S.inv = S.inv)
 }
@@ -199,7 +190,9 @@ glsObjective <- function(model) {
   S <- model@matrices$S
   S.inv <- model@matrices$S.inv
   tmp <- S.inv %*% (S - sigma.hat)
-  0.5 * sum(tmp * t(tmp))
+  fx <- 0.5 * sum(tmp * t(tmp))
+
+  if (fx < 0) NaN else fx
 }
 
 
@@ -266,13 +259,39 @@ glsEstimateParameters <- function(model, data.cov = NULL,
   fn <- \(x) glsObjective(glsFillModel(model, x))
   gr <- \(x) glsGradient(glsFillModel(model, x))
 
-  opt <- nlminb(
-    start = model@info$start,
-    objective = fn,
-    gradient = gr,
-    control = control,
-    ...
-  )
+  suppressWarnings({
+    opt <- nlminb(
+      start = model@info$start,
+      objective = fn,
+      gradient = gr,
+      control = control,
+      ...
+    )
+  })
 
   glsFillModel(model, opt$par)
+}
+
+
+glsComputeInvCov <- function(S) {
+  tryCatch(
+    solve(S),
+    error = function(e) {
+      # issue a warning to the user
+      pls_msg_warn(
+        "Construct covariance matrix is not positive-definite!"
+      )
+
+      # try a generalized inverse
+      tryCatch(
+        MASS::ginv(S),
+        error = function(e) {
+          pls_msg_stop(
+            "Could not invert construct covariance matrix!",
+            "Message:", conditionMessage(e)
+          )
+        }
+      )
+    }
+  )
 }

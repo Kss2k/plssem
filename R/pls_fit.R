@@ -111,7 +111,7 @@ getFitPLSModel <- function(model, consistent = TRUE) {
 
     # Shouldn't happen
     pls_msg_stop(
-      "Unrecognized path estimator! Estimator:", estimators
+      "Unrecognized path estimator! Estimator:", estimator
     )
   )
 

@@ -7,7 +7,7 @@ GlsPathModel <- function(parTable = NULL, data.cov = NULL) {
     parTable[parTable$op == "<~", "rhs"],
     parTable[parTable$op == "=~", "rhs"]
   )
- 
+
   # Structural (possibly with a few indicators)
   vars <- unique(c(
     parTable[parTable$op %in% c("=~", "<~"), "lhs"],
@@ -32,7 +32,7 @@ GlsPathModel <- function(parTable = NULL, data.cov = NULL) {
     dimnames = list(etas, etas)
   )
 
-  # paths 
+  # paths
   for (i in seq_len(NROW(reg))) {
     lhs <- reg[i, "lhs"]
     rhs <- reg[i, "rhs"]
@@ -51,12 +51,18 @@ GlsPathModel <- function(parTable = NULL, data.cov = NULL) {
   psi[upper.tri(psi)] <- 0
 
   if (!is.null(data.cov)) {
-    S <- data.cov[etas, etas]
-    S.inv <- MASS::ginv(S)
+    pair <- glsGetSampleInformation(
+      data.cov = data.cov, etas = etas
+    )
+
+    S     <- pair$S
+    S.inv <- pair$S.inv
+
   } else {
     S <- psi
     S[] <- NA
     S.inv <- S
+
   }
 
   # starting values
@@ -74,7 +80,7 @@ GlsPathModel <- function(parTable = NULL, data.cov = NULL) {
     if (!is.na(gamma[i,j])) next
     pgamma[i, j] <- paste0(i, "~", j)
   }
-  
+
   ppsi <- psi
   ppsi[] <- ""
   for (i in etas) for (j in etas) {
@@ -110,12 +116,44 @@ GlsPathModel <- function(parTable = NULL, data.cov = NULL) {
 }
 
 
-`glsModelCovMatrix<-` <- function(model, value) {
-  etas <- model@info$etas
-  S    <- value[etas, etas]
+glsGetSampleInformation <- function(data.cov, etas) {
+  pls_stopif(!is.matrix(data.cov),
+    "`data.cov` must be a matrix!"
+  )
 
-  model@matrices$S <- S
-  model@matrices$S.inv <- MASS::ginv(S)
+  rm <- setdiff(etas, rownames(data.cov))
+  pls_stopif(length(rm),
+    "Missing rownames in `data.cov`:", paste0(rm, collapse = ", ")
+  )
+
+  cm <- setdiff(etas, colnames(data.cov))
+  pls_stopif(length(cm),
+    "Missing rownames in `data.cov`:", paste0(cm, collapse = ", ")
+  )
+
+  S <- data.cov[etas, etas]
+
+  tryCatch(
+    S.inv <- MASS::ginv(S),
+    error = function(e) {
+      pls_msg_stop(
+        "Could not invert sample covariance matrix!",
+        "Message:", condtionMessage(e)
+      )
+    }
+  )
+
+  list(S = S, S.inv = S.inv)
+}
+
+
+`glsModelCovMatrix<-` <- function(model, value) {
+  pair <- glsGetSampleInformation(
+    data.cov = value, etas = model@info$etas
+  )
+
+  model@matrices$S <- pair$S
+  model@matrices$S.inv <- pair$S.inv
 
   model
 }
@@ -216,7 +254,7 @@ glsEstimateParameters <- function(model, data.cov = NULL,
                                   control = list(eval.max = 1500, iter.max = 1000),
                                   ...) {
   if (!is.null(data.cov)) # update sample covariance matrix?
-    glsModelCovMatrix(model) <- data.cov 
+    glsModelCovMatrix(model) <- data.cov
 
   # objective and gradient
   fn <- \(x) glsObjective(glsFillModel(model, x))

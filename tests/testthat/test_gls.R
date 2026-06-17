@@ -4,7 +4,7 @@ library(lavaan)
 
 m <- '
   int1 ~ att1 + sn1 + pbc1
-  b1 ~ att1 + sn1 + pbc1
+  b1 ~ att1 + sn1 + pbc1 + pbc1:sn1
   int1 ~~ b1
 '
 
@@ -23,7 +23,10 @@ addRevCov <- function(pt) {
   rbind(pt, rev)
 }
 
-ppls <- addRevCov(glsEstimateParameters(mod, cov(TPB))@parTable)
+X <- TPB
+X$`pbc1:sn1` <- X$pbc1 * X$sn1
+
+ppls <- addRevCov(glsEstimateParameters(mod, cov(X))@parTable)
 plav <- addRevCov(lavaan::parameterEstimates(lavaan::sem(m, TPB)))
 
 testthat::expect_equal(nrow(ppls), nrow(plav))
@@ -40,10 +43,10 @@ tpb <- '
 
 # Inner Model (Based on Steinmetz et al., 2011)
   INT ~ ATT + SN + PBC
-  BEH ~ ATT + SN + PBC
+  BEH ~ ATT + SN + PBC + PBC:SN
 
   BEH ~~ INT
 '
 
-fit <- pls(tpb, TPB, mcpls=TRUE)
+fit <- pls(tpb, TPB)
 summary(fit)

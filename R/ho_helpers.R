@@ -19,8 +19,20 @@ splitHigherOrderParTable <- function(parTable) {
     ]
     parStrO2  <- parTable[parTable$op == "~", , drop = FALSE]
 
-    parTableO2 <- rbind(parMsrO2, parStrO2)
-    parTableO1 <- rbind(parMsrO1, parStrO1)
+    # Route user-specified residual covariances (`~~` rows with distinct lhs/rhs)
+    # to the sub-model that owns both endpoints. The structural model lives in the
+    # higher-order (O2) table, so covariances between higher-order constructs must
+    # travel with it -- otherwise the GLS path estimator never sees them and the
+    # requested covariance is silently dropped from the combined parameter table.
+    varsO2  <- unique(c(parMsrO2$lhs, parMsrO2$rhs, parStrO2$lhs, parStrO2$rhs))
+    isCov   <- parTable$op == "~~" & parTable$lhs != parTable$rhs
+    isCovO2 <- isCov & parTable$lhs %in% varsO2 & parTable$rhs %in% varsO2
+
+    parCovO2 <- parTable[isCovO2, , drop = FALSE]
+    parCovO1 <- parTable[isCov & !isCovO2, , drop = FALSE]
+
+    parTableO2 <- rbind(parMsrO2, parStrO2, parCovO2)
+    parTableO1 <- rbind(parMsrO1, parStrO1, parCovO1)
 
   } else {
     parTableO2 <- NULL

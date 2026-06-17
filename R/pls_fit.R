@@ -88,8 +88,8 @@ getFitPLSModel <- function(model, consistent = TRUE) {
 
       if (!success) {
         # switch to ols and mark as inadmissible
-        model@info$path.estimator <- "ols"
-        model@status$admissible <- FALSE
+        model@info$path.estimator  <- "ols"
+        model@status$is.admissible <- FALSE
 
         return( # this is not computationally efficient, but it's simple
           getFitPLSModel(model = model, consistent = consistent)

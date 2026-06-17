@@ -260,7 +260,7 @@ glsEstimateParameters <- function(model, data.cov = NULL,
   gr <- \(x) glsGradient(glsFillModel(model, x))
 
   suppressWarnings({
-    opt <- nlminb(
+    opt <- stats::nlminb(
       start = model@info$start,
       objective = fn,
       gradient = gr,

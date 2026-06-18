@@ -24,6 +24,13 @@ mcpls <- function(
   ordered   <- fit0@info$ordered
   is.hi.ord <- isTRUE(fit0.combined@info$is.high.ord)
   thresholdStruct0 <- fit0.combined@thresholdStruct
+  estimator <- fit0.combined@info$path.estimator
+
+  # GLS is not implemented correctly (yet)
+  pls_warnif(estimator == "gls",
+    "MC-PLS is not implemented for the GLS estimator!",
+    "Residual covariances in the structural model will be ignored!"
+  )
 
   par0 <- getFreeParamsTable(fit0.combined)
   par1 <- par0[c("lhs", "op", "rhs", "est", "is.free")]
@@ -333,7 +340,11 @@ getFreeParamsTable <- function(model) {
   op  <- parTable$op
   rhs <- parTable$rhs
 
-  inds.b <- rhs[parTable$op == "<~"]
+  inds.b <- rhs[op == "<~"]
+  etas <- lhs[op == "~"]
+  is.rescov <- (
+    (lhs %in% etas | rhs %in% etas) & lhs != rhs & op == "~~"
+  )
 
   cond1 <- !(lhs == rhs & op == "~~" & !grepl("~", rhs))
   cond2 <- !((isIntTermVariable(lhs) | isIntTermVariable(rhs)) & op == "~~")
@@ -345,7 +356,7 @@ getFreeParamsTable <- function(model) {
   out <- parTable[cond, , drop = FALSE]
   attr(out, "cond") <- cond
 
-  out$is.free <- out$op != "<~"
+  out$is.free <- (op != "<~" & !is.rescov)[cond]
   out
 }
 

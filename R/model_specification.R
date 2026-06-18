@@ -47,37 +47,38 @@ specifyModelParTable <- function(parTable, data, higherOrderLVs = NULL, ...) {
 
 specifySubModel <- function(parTable,
                             data,
-                            is.lower.order      = FALSE,
-                            consistent          = TRUE,
-                            missing             = "listwise",
-                            standardize         = TRUE,
-                            ordered             = NULL,
-                            probit              = NULL,
-                            mcpls               = NULL,
-                            mc.fast.lmer        = NULL,
-                            tolerance           = 1e-5,
-                            max.iter.0_5        = 100,
-                            mc.max.iter         = 250,
-                            mc.min.iter         = 5,
-                            mc.reps             = 20000,
-                            mc.tol              = 0.0005,
-                            mc.fixed.seed       = FALSE,
-                            mc.polyak.juditsky  = FALSE,
-                            mc.pj.extrapolate   = TRUE,
-                            mc.delta.se         = TRUE,
-                            mc.delta.jacobian.k = NULL,
-                            mc.fn.args          = list(),
-                            verbose             = interactive(),
-                            bootstrap           = FALSE,
-                            boot.ncores         = 1L,
-                            boot.parallel       = "no",
-                            boot.R              = 50L,
-                            boot.iseed          = NULL,
-                            boot.optimize       = FALSE,
-                            mc.boot.control     = list(),
-                            knn.k               = 5,
-                            reliabilities       = NULL,
-                            higherOrderLVs      = NULL) {
+                            is.lower.order         = FALSE,
+                            consistent             = TRUE,
+                            missing                = "listwise",
+                            standardize            = TRUE,
+                            ordered                = NULL,
+                            probit                 = NULL,
+                            mcpls                  = NULL,
+                            mc.fast.lmer           = NULL,
+                            tolerance              = 1e-5,
+                            max.iter.0_5           = 100,
+                            mc.max.iter            = 250,
+                            mc.min.iter            = 5,
+                            mc.reps                = 20000,
+                            mc.tol                 = 0.0005,
+                            mc.fixed.seed          = FALSE,
+                            mc.polyak.juditsky     = FALSE,
+                            mc.pj.extrapolate      = TRUE,
+                            mc.delta.se            = TRUE,
+                            mc.delta.jacobian.k    = NULL,
+                            mc.fn.args             = list(),
+                            verbose                = interactive(),
+                            bootstrap              = FALSE,
+                            boot.ncores            = 1L,
+                            boot.parallel          = "no",
+                            boot.R                 = 50L,
+                            boot.iseed             = NULL,
+                            boot.optimize          = FALSE,
+                            mc.boot.control        = list(),
+                            knn.k                  = 5,
+                            reliabilities          = NULL,
+                            default.path.estimator = "ols",
+                            higherOrderLVs         = NULL) {
   if (is.null(parTable))
     return(NULL)
       
@@ -158,6 +159,22 @@ specifySubModel <- function(parTable,
     ordered = ordered
   )
 
+  # GLS is used automatically whenever the model contains residual covariances
+  # (which the OLS path estimator cannot handle). The user may also force GLS via
+  # `default.path.estimator = "gls"`, even when OLS would otherwise suffice.
+  gls.default <- tolower(default.path.estimator) == "gls"
+
+  if (gls.default || hasResidualCovariances(parTable)) {
+    info$path.estimator <- "gls"
+    glsPathModel <- GlsPathModel(
+      parTable = pt,
+      data.cov = NULL
+    )
+  } else {
+    info$path.estimator <- "ols"
+    glsPathModel <- GlsPathModel()
+  }
+
   if (info$is.mlm && !info$is.mcpls) {
     pls_msg_note(
       "Multilevel/Mixed-Effects PLSc models are currently under development!\n",
@@ -173,6 +190,7 @@ specifySubModel <- function(parTable,
     matrices         = matrices,
     data             = preppedData$X,
     thresholdStruct  = thresholdStruct,
+    glsPathModel     = glsPathModel,
     info             = info,
     status           = initModelStatus(
       tolerance      = tolerance,
@@ -276,14 +294,33 @@ initMatrices <- function(pt, higherOrderLVs = NULL) {
   preds.cfa[, is.nlin]   <- FALSE
   succs.cfa              <- t(preds.cfa)
 
-  # Covariance xis ---------------------------------------------------------
-  xis       <- lvs[!lvs %in% pt[pt$op == "~", "lhs"]]
-  selectCov <- matrix(FALSE, nrow = length(lvs), ncol = length(lvs),
-                      dimnames = list(lvs, lvs))
+  # Covariances (lvs) ----------------------------------------------------------
+  xis <- lvs[!lvs %in% pt[pt$op == "~", "lhs"]]
+  selectCov <- matrix(
+    FALSE, nrow = length(lvs), ncol = length(lvs),
+    dimnames = list(lvs, lvs)
+  )
+
+  # defaults
   diag(selectCov) <- TRUE
   selectCov[xis, xis][lower.tri(selectCov[xis, xis])] <- TRUE
 
-  # Residual covariances ---------------------------------------------------
+  # additional (residual) covariances
+  rescov <- pt[
+    pt$op == "~~" & pt$lhs != pt$rhs & pt$lhs %in% lvs & pt$rhs %in% lvs
+    , , drop = FALSE
+  ]
+
+  for (i in seq_len(NROW(rescov))) {
+    lhs <- rescov[i, "lhs"]
+    rhs <- rescov[i, "rhs"]
+    selectCov[lhs, rhs] <- selectCov[rhs, lhs] <- TRUE
+  }
+
+  # make sure upper diagonal is not selected
+  selectCov[upper.tri(selectCov)] <- FALSE
+
+  # Residual covariances (inds) ------------------------------------------------
   k           <- length(allInds)
   selectTheta <- matrix(
     FALSE, nrow = k, ncol = k,

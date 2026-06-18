@@ -19,8 +19,20 @@ splitHigherOrderParTable <- function(parTable) {
     ]
     parStrO2  <- parTable[parTable$op == "~", , drop = FALSE]
 
-    parTableO2 <- rbind(parMsrO2, parStrO2)
-    parTableO1 <- rbind(parMsrO1, parStrO1)
+    # Route user-specified residual covariances (`~~` rows with distinct lhs/rhs)
+    # to the sub-model that owns at least one endpoint. The structural model lives
+    # in the higher-order (O2) table, so any covariance touching an O2 variable
+    # must travel with it. Otherwise a cross-order covariance can be stranded in
+    # the lower-order table, where the O2 construct never appears as a model node.
+    varsO2  <- unique(c(parMsrO2$lhs, parMsrO2$rhs, parStrO2$lhs, parStrO2$rhs))
+    isCov   <- parTable$op == "~~" & parTable$lhs != parTable$rhs
+    isCovO2 <- isCov & (parTable$lhs %in% varsO2 | parTable$rhs %in% varsO2)
+
+    parCovO2 <- parTable[isCovO2, , drop = FALSE]
+    parCovO1 <- parTable[isCov & !isCovO2, , drop = FALSE]
+
+    parTableO2 <- rbind(parMsrO2, parStrO2, parCovO2)
+    parTableO1 <- rbind(parMsrO1, parStrO1, parCovO1)
 
   } else {
     parTableO2 <- NULL
@@ -227,6 +239,11 @@ computeCombinedModel <- function(model, lowerOrderAsEta = FALSE) {
     (isTRUE(info1$is.probit) || isTRUE(info2$is.probit)) && !is.mcpls
   )
 
+  # if any are GLS we select the GLS estimator, as it is more general than OLS
+  p.est.1 <- info1$path.estimator
+  p.est.2 <- info2$path.estimator
+  path.estimator <- if (p.est.1 == "gls" || p.est.2 == "gls") "gls" else p.est.2
+
   combined@info <- list(
     lvs.linear   = union(info1$lvs.linear, info2$lvs.linear),
     lvs          = union(info1$lvs, info2$lvs),
@@ -268,6 +285,7 @@ computeCombinedModel <- function(model, lowerOrderAsEta = FALSE) {
     consistent     = info1$consistent,
     reliabilities  = info1$reliabilities,
     rng.seed       = info1$rng.seed,
+    path.estimator = path.estimator,
     is.lower.order = FALSE
   )
 

@@ -151,7 +151,7 @@ getWeightsModeA <- function(lv, lambda, SC, inds) {
 
 
 getWeightsModeB <- function(lv, lambda, SC, inds) {
-  getPathCoefs(y = lv, X = inds, C = SC)
+  getOlsPathCoefs(y = lv, X = inds, C = SC)
 }
 
 

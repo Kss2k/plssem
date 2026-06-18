@@ -131,6 +131,7 @@ factor scores, and supports multilevel specifications expressed with
 <span>    <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">floor</a></span><span class="op">(</span><span class="fl">0.5</span> <span class="op">*</span> <span class="va">mc.reps</span><span class="op">)</span>, tol <span class="op">=</span> <span class="va">mc.tol</span>, polyak.juditsky <span class="op">=</span> <span class="va">mc.polyak.juditsky</span>,</span>
 <span>    pj.extrapolate <span class="op">=</span> <span class="cn">FALSE</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span>, fixed.seed <span class="op">=</span> <span class="cn">TRUE</span>, reuse.p.start <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
 <span>  reliabilities <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  default.path.estimator <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"ols"</span>, <span class="st">"gls"</span><span class="op">)</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -318,6 +319,16 @@ inside each bootstrap replicate when <code>boot.optimize = TRUE</code>.</p></dd>
 <dt id="arg-reliabilities">reliabilities<a class="anchor" aria-label="anchor" href="#arg-reliabilities"></a></dt>
 <dd><p>Optional named numeric vector of user-supplied reliabilities
 used for the PLSc consistency correction.</p></dd>
+
+
+<dt id="arg-default-path-estimator">default.path.estimator<a class="anchor" aria-label="anchor" href="#arg-default-path-estimator"></a></dt>
+<dd><p>Character string selecting the estimator used for
+the structural (path) model when the model does not require Generalized Least
+Squares (GLS). The default <code>"ols"</code> uses Ordinary Least Squares whenever
+possible, falling back to GLS automatically when the model contains residual
+covariances. Setting <code>default.path.estimator = "gls"</code>
+forces GLS estimation of the structural model even when OLS would otherwise be
+used.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>

@@ -179,65 +179,16 @@ glsCalcSigmaHat <- function(model) {
 
 glsObjective <- function(model) {
   sigma.hat <- glsCalcSigmaHat(model)
-  S <- model@matrices$S
+
+  S     <- model@matrices$S
   S.inv <- model@matrices$S.inv
+
   tmp <- S.inv %*% (S - sigma.hat)
+
+  # equivalent to: 0.5 * tr(tmp %*% tmp))
   fx <- 0.5 * sum(tmp * t(tmp))
 
   if (fx < 0) NaN else fx
-}
-
-
-glsGradientPsi <- function(matrices) {
-  I <- matrices$I
-  S <- matrices$S
-  gamma <- matrices$gamma
-  psi   <- matrices$psi
-
-  binv <- solve(I-gamma)
-  sinv <- matrices$S.inv
-  tbsinv <- t(binv) %*% sinv
-  eps <- S - binv %*% psi %*% t(binv)
-  dv <- diag(rep(0.5, NCOL(S)))
-
-  tmp <- -0.5 * (
-    t(sinv %*% binv) %*% (t(S)-binv %*% t(psi) %*% t(binv)) %*% dv %*% t(sinv) %*% binv +
-    tbsinv %*% eps %*% sinv %*% dv %*% binv +
-    tbsinv %*% dv %*% eps %*% sinv %*% binv +
-    t(binv) %*% dv %*% sinv %*% eps %*% t(sinv) %*% binv
-  )
-
-  (2 * tmp - diag(diag(tmp)))
-}
-
-
-glsGradientGamma <- function(matrices) {
-  I <- matrices$I
-  S <- matrices$S
-  gamma <- matrices$gamma
-  psi   <- matrices$psi
-
-  binv <- solve(I-gamma)
-  sinv <- matrices$S.inv
-  eps <- S - binv %*% psi %*% t(binv)
-  dv <- diag(rep(0.5, NCOL(sinv)))
-
-  -(
-    2 * t(binv) %*% sinv %*% dv %*% eps %*% sinv %*% binv %*% psi %*% t(binv) +
-    t(binv) %*% dv %*% t(sinv) %*% (t(S)-binv %*% t(psi) %*% t(binv)) %*% sinv %*% binv %*% psi %*% t(binv)+
-    t(binv) %*% dv %*% sinv %*% eps %*% t(sinv) %*% binv %*% t(psi) %*% t(binv)
-  )
-}
-
-
-glsGradient <- function(model) {
-  M <- model@matrices
-
-  ggamma <- glsGradientGamma(M)
-  gpsi   <- glsGradientPsi(M)
-
-  grad <- numeric(model@info$npar)
-  c(gpsi[M$psi.free], ggamma[M$gamma.free])
 }
 
 
@@ -286,4 +237,30 @@ glsComputeInvCov <- function(S) {
       )
     }
   )
+}
+
+
+glsGradient <- function(model) {
+  # solved using matrixcalculus.org
+  M <- model@matrices
+
+  # matrices
+  gamma  <- M$gamma
+  psi    <- M$psi
+  I      <- M$I
+  S      <- M$S
+  S.inv  <- M$S.inv
+
+  # intermediate expressions
+  B.inv <- solve(I - gamma)
+  eps   <- S - B.inv %*% psi %*% t(B.inv)
+  G     <- S.inv %*% eps %*% t(S.inv)
+  BtGB  <- t(B.inv) %*% G %*% B.inv
+
+  # gamma
+  ggamma <- -2 * BtGB %*% psi %*% t(B.inv)
+  gpsi   <- gradSymMat(-BtGB)
+
+  # free params
+  c(gpsi[M$psi.free], ggamma[M$gamma.free])
 }

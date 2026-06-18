@@ -1,13 +1,41 @@
 OPERATORS <- c("<~", "~~", "=~", "~1", "~", "|")
 MOPS      <- c("<~", "=~")
+# Operator used to declare a structural variable that has no regression paths,
+# e.g. `x ~ 1`. We never model the mean structure ourselves, so the `~1`
+# operator is free to repurpose for this. It decouples "is a structural node"
+# from the `~~` operator: `~~` now *only* frees a (co)variance among
+# already-declared structural nodes, which (among other things) lets us specify
+# covariances within the measurement model without accidentally promoting
+# indicators to structural variables.
+ADDITIONAL_STRUCT_VAR_OP <- "~1"
 MAT_STRUCT <- matrix(0, nrow = 0, ncol = 0)
 DF_STRUCT  <- data.frame(NULL)
 VEC_STRUCT <- numeric(0)
 
 
-specifyModel <- function(syntax, data, ...) {
+specifyModel <- function(syntax, data, ..., strict = TRUE) {
   parTable <- modsem::modsemify(syntax, parentheses.as.string = TRUE)
-  hiOrd    <- getHigherOrderLVs(parTable)
+
+  if (strict) {
+    # check if we have any user-supplied names which use reserved patterns
+    nm <- union(parTable$lhs, parTable$rhs)
+    hasTmp <- hasTempAffixes(nm)
+
+    pls_stopif(any(hasTmp),
+      "Some variables have reserved keywords/patterns!",
+      "Variables:", paste0(nm[hasTmp], collapse = ", ")
+    )
+
+    # check if we have user specified intercepts (which aren't allowed)
+    hasIntr <- parTable$op == "~1"
+    intrPar <- paste0(parTable$lhs[hasIntr], parTable$op[hasIntr])
+    pls_stopif(any(hasIntr),
+      "Estimation of intercepts is not available!",
+      "Intercepts:", paste0(intrPar, collapse = ", ")
+    )
+  }
+
+  hiOrd <- getHigherOrderLVs(parTable)
   specifyModelParTable(parTable = parTable, data = data, higherOrderLVs = hiOrd, ...)
 }
 

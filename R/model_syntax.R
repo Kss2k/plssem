@@ -1,6 +1,3 @@
-PLS_IGNORE_INDCOV <- FALSE
-
-
 parseModelArguments <- function(parTable,
                                 data,
                                 ordered = NULL,
@@ -12,17 +9,6 @@ parseModelArguments <- function(parTable,
                                 strict = TRUE) {
   # make sure we're working with a data.frame
   data <- asDataFrame(data)
-
-  if (strict) {
-    # check if we have any user-supplied names which use reserved patterns
-    nm <- union(parTable$lhs, parTable$rhs)
-    hasTmp <- hasTempAffixes(nm)
-
-    pls_stopif(any(hasTmp),
-      "Some variables have reserved keywords/patterns!",
-      "Variables:", paste0(nm[hasTmp], collapse = ", ")
-    )
-  }
 
   # Check for interation terms
   checkLhsIntTerms(parTable) # make sure they are all independent
@@ -66,18 +52,16 @@ parseModelArguments <- function(parTable,
   # Check for dupliacted indicators
   isind <- parTable$op %in% MOPS
   isstr <- parTable$op == "~"
-  iscov <- parTable$op == "~~"
 
   indicators <- parTable[isind, "rhs"]
-  covvars    <- union(parTable[iscov, "lhs"], parTable[iscov, "rhs"])
 
-  # Currently we treat any variable with a "~~" as a structural variable
-  # This makes sense as we don't allow the user to specify the covariance
-  # structure of the measurement model. If this ever changes we will have to
-  # to things differently, particularly for higher order models.
-  if (PLS_IGNORE_INDCOV) covvars <- setdiff(covvars, indicators)
-
-  structvars <- unique(c(parTable[isstr, "rhs"], covvars))
+  # A variable is structural if it is connected by a regression path (`~`) or
+  # explicitly declared as a path-less structural node (e.g. `x ~ 1`). A `~~`
+  # no longer promotes a variable to a structural variable; it only frees a
+  # (co)variance among existing nodes. This means covariances may be specified
+  # within the measurement model without renaming the indicators involved.
+  declvars   <- getDeclaredStructVars(parTable)
+  structvars <- unique(c(parTable[isstr, "rhs"], declvars))
 
   # A duplicated indicator can occur under two circumstances:
   #   1. It's an indicator which is part of two constructs
@@ -145,6 +129,13 @@ parseModelArguments <- function(parTable,
       data.frame(lhs = ov, op = "<~", rhs = tmp.ov, mod = "")
     )
   }
+
+  # `ADDITIONAL_STRUCT_VAR_OP` (`~1`) rows only *declare* structural nodes; they
+  # are not estimable equations. The structural side (GLS) reads them straight
+  # off the raw parTable, and observed declarations have, by now, been turned
+  # into measurement equations above, so drop them before the PLS measurement
+  # model.
+  parTable <- parTable[parTable$op != ADDITIONAL_STRUCT_VAR_OP, , drop = FALSE]
 
   # Recompile syntax
   syntax <- parTableToSyntax(parTable)

@@ -2,25 +2,17 @@ GlsPathModel <- function(parTable = NULL, data.cov = NULL) {
   if (!NROW(parTable))
     return(methods::new("GlsPathModel"))
 
-  # Measurement
-  inds <- union(
-    parTable[parTable$op == "<~", "rhs"],
-    parTable[parTable$op == "=~", "rhs"]
-  )
-
-  # Structural (possibly with a few indicators)
-  vars <- unique(c(
+  # Structural nodes: every latent variable, every variable connected by a
+  # regression path (`~`), and every variable explicitly declared as a path-less
+  # structural node via `ADDITIONAL_STRUCT_VAR_OP` (e.g. `x ~ 1`). A `~~` does
+  # not introduce a node -- it only frees a covariance between two existing
+  # nodes (see the `cov` block below, which keeps only such rows).
+  etas <- unique(c(
     parTable[parTable$op %in% c("=~", "<~"), "lhs"],
-    parTable[parTable$op %in% c("~",  "~~"), "lhs"],
-    parTable[parTable$op %in% c("~",  "~~"), "rhs"]
+    parTable[parTable$op == "~", "lhs"],
+    parTable[parTable$op == "~", "rhs"],
+    getDeclaredStructVars(parTable)
   ))
-
-  # Currently we treat any variable with a "~~" as a structural variable
-  # This makes sense as we don't allow the user to specify the covariance
-  # structure of the measurement model. If this ever changes we will have to
-  # to things differently, particularly for higher order models.
-  if (PLS_IGNORE_INDCOV) etas <- setdiff(vars, inds) # all structural variables
-  else                   etas <- vars
 
   reg  <- parTable[parTable$op == "~", , drop = FALSE]
   xis  <- setdiff(etas, reg$lhs) # purely exogenous variables

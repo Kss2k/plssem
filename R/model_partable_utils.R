@@ -48,10 +48,17 @@ getReflectiveIndicators <- function(..., op = "=~") {
 }
 
 
+# Variables explicitly declared as path-less structural nodes (e.g. `x ~ 1`).
+getDeclaredStructVars <- function(parTable) {
+  unique(parTable[parTable$op == ADDITIONAL_STRUCT_VAR_OP, "lhs"])
+}
+
+
 getOVs <- function(parTable) {
   lVs    <- getLVs(parTable)
   select <- parTable$op %in% c("=~", "~", "~~", "<~")
-  vars   <- unique(c(parTable$lhs[select], parTable$rhs[select]))
+  vars   <- unique(c(parTable$lhs[select], parTable$rhs[select],
+                     getDeclaredStructVars(parTable)))
 
   vars[!vars %in% lVs & !grepl(":", vars)]
 }
@@ -59,26 +66,12 @@ getOVs <- function(parTable) {
 
 getStructVars <- function(parTable) {
   struct <- parTable[parTable$op == "~", , drop = FALSE]
-  unique(c(struct$lhs, struct$rhs))
-}
-
-
-getCovOnlyVars <- function(parTable) {
-  covRows <- parTable[parTable$op == "~~", , drop = FALSE]
-  if (!NROW(covRows)) return(NULL)
-
-  covVars <- unique(c(covRows$lhs, covRows$rhs))
-  inds    <- getIndicators(parTable)
-
-  setdiff(covVars, inds)
+  unique(c(struct$lhs, struct$rhs, getDeclaredStructVars(parTable)))
 }
 
 
 getStructOVs <- function(parTable) {
-  struct <- getStructVars(parTable)
-  cov    <- getCovOnlyVars(parTable)
-
-  intersect(union(struct, cov), getOVs(parTable))
+  intersect(getStructVars(parTable), getOVs(parTable))
 }
 
 

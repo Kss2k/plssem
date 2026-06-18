@@ -26,13 +26,33 @@ mcpls <- function(
   thresholdStruct0 <- fit0.combined@thresholdStruct
   estimator <- fit0.combined@info$path.estimator
 
-  # GLS is not implemented correctly (yet)
-  pls_warnif(estimator == "gls",
-    "MC-PLS is not implemented for the GLS estimator!",
-    "Residual covariances in the structural model will be ignored!"
+  # Residual-covariance handling:
+  #   reduced: Residual covariances are treated as constrained parameters
+  #   full:    Residual covariances are treated as free parameters
+  mc.rescov <- fit0.base@info$mc.args$rescov
+
+  use.full.rescov <- switch(mc.rescov,
+    full    = TRUE,
+    reduced = FALSE,
+    auto    = estimator == "gls",
+    pls_msg_stop("Unrecognized value for `mc.rescov` argument:", mc.rescov)
   )
 
   par0 <- getFreeParamsTable(fit0.combined)
+
+  if (use.full.rescov) {
+    etas      <- par0$lhs[par0$op == "~"]
+    is.rescov <- (par0$lhs %in% etas | par0$rhs %in% etas) &
+                 par0$lhs != par0$rhs & par0$op == "~~"
+    par0$is.free[is.rescov] <- TRUE
+
+  } else {
+    pls_warnif(estimator == "gls",
+      "Residual covariances are not bias-corrected in `reduced` mode.",
+      "Pass `mc.rescov = \"full\"` to estimate them as free parameters."
+    )
+  }
+
   par1 <- par0[c("lhs", "op", "rhs", "est", "is.free")]
 
   if (fixed.seed && is.null(rng.seed)) {
@@ -64,7 +84,8 @@ mcpls <- function(
       check.hi.ord = is.hi.ord,
       clusterSizes = clusterSizes,
       clusterName  = clusterName,
-      standardize  = standardize
+      standardize  = standardize,
+      full         = use.full.rescov
     )
   }
 
@@ -78,7 +99,8 @@ mcpls <- function(
         seed         = rng.seed,
         check.hi.ord = is.hi.ord,
         clusterSizes = clusterSizes,
-        clusterName  = clusterName
+        clusterName  = clusterName,
+        full         = use.full.rescov
       )
     }
 
@@ -117,7 +139,8 @@ mcpls <- function(
       clusterSizes     = clusterSizes,
       clusterName      = clusterName,
       sim              = sim,
-      params.only      = TRUE
+      params.only      = TRUE,
+      full             = use.full.rescov
     )
 
     fit@params$values
@@ -220,7 +243,8 @@ mcpls <- function(
     ordered         = ordered,
     seed            = rng.seed,
     clusterSizes    = clusterSizes,
-    clusterName     = clusterName
+    clusterName     = clusterName,
+    full            = use.full.rescov
   )
 
   if (delta.jacobian) {
@@ -377,7 +401,8 @@ updateModelFromFreeParTableMC <- function(parTable,
                                           clusterSizes = NULL,
                                           clusterName = NULL,
                                           sim = NULL,
-                                          params.only = FALSE) {
+                                          params.only = FALSE,
+                                          full = FALSE) {
   if (is.null(sim)) {
     sim <- simulateDataParTable(
       parTable     = parTable,
@@ -386,7 +411,8 @@ updateModelFromFreeParTableMC <- function(parTable,
       check.hi.ord = model@info$is.high.ord,
       clusterSizes = clusterSizes,
       clusterName  = clusterName,
-      standardize  = TRUE
+      standardize  = TRUE,
+      full         = full
     )
   }
 
@@ -526,7 +552,8 @@ updateModelFromFreeParTableMC <- function(parTable,
     seed            = seed,
     clusterSizes    = clusterSizes,
     clusterName     = clusterName,
-    params.only     = params.only
+    params.only     = params.only,
+    full            = full
   )
 
   model@thresholdStruct <- updateThresholds(

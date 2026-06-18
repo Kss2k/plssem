@@ -112,6 +112,16 @@ USE_NON_LINEAR_PROBIT_CORR_MAT <- FALSE
 #' @param mc.fn.args Additional arguments to MC-PLS algorithm, mainly for controlling
 #'   the step size.
 #'
+#' @param mc.rescov How residual covariances are treated in MC-PLS. One of
+#'   \code{"auto"} (the default), \code{"reduced"}, or \code{"full"}. In
+#'   \code{"reduced"} mode residual covariances are not treated as free
+#'   parameters; they are identified from the rest of the structural model and
+#'   the disturbances are simulated independently. In \code{"full"} mode the
+#'   endogenous residual covariances (\code{eta ~~ eta} and \code{xi ~~ eta})
+#'   are free parameters, explicitly simulated. \code{"auto"} uses \code{"full"}
+#'   when the structural model is estimated by GLS (i.e. the model contains
+#'   residual covariances) and \code{"reduced"} otherwise.
+#'
 #' @param verbose Should verbose output be printed?
 #'
 #' @param boot.optimize Logical; if \code{TRUE} and \code{bootstrap = TRUE}, applies
@@ -189,6 +199,7 @@ pls <- function(syntax,
                 mc.delta.se = TRUE,
                 mc.delta.jacobian.k = max(floor(boot.R / 100L), 1),
                 mc.fn.args = list(),
+                mc.rescov = c("auto", "reduced", "full"),
                 verbose = interactive(),
                 boot.optimize = TRUE,
                 mc.boot.control = list(
@@ -244,6 +255,7 @@ pls <- function(syntax,
     mc.delta.se            = mc.delta.se,
     mc.delta.jacobian.k    = mc.delta.jacobian.k,
     mc.fn.args             = mc.fn.args,
+    mc.rescov              = match.arg(mc.rescov, c("auto", "reduced", "full")),
     verbose                = verbose,
     bootstrap              = bootstrap,
     boot.ncores            = boot.ncores,

@@ -125,6 +125,7 @@ factor scores, and supports multilevel specifications expressed with
 <span>  mc.delta.se <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  mc.delta.jacobian.k <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">floor</a></span><span class="op">(</span><span class="va">boot.R</span><span class="op">/</span><span class="fl">100L</span><span class="op">)</span>, <span class="fl">1</span><span class="op">)</span>,</span>
 <span>  mc.fn.args <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  mc.rescov <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"auto"</span>, <span class="st">"reduced"</span>, <span class="st">"full"</span><span class="op">)</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/interactive.html" class="external-link">interactive</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  boot.optimize <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  mc.boot.control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>min.iter <span class="op">=</span> <span class="va">mc.min.iter</span>, max.iter <span class="op">=</span> <span class="va">mc.max.iter</span>, mc.reps <span class="op">=</span></span>
@@ -299,6 +300,18 @@ one per 100 bootstrap resamples, with a minimum of 1.</p></dd>
 <dt id="arg-mc-fn-args">mc.fn.args<a class="anchor" aria-label="anchor" href="#arg-mc-fn-args"></a></dt>
 <dd><p>Additional arguments to MC-PLS algorithm, mainly for controlling
 the step size.</p></dd>
+
+
+<dt id="arg-mc-rescov">mc.rescov<a class="anchor" aria-label="anchor" href="#arg-mc-rescov"></a></dt>
+<dd><p>How residual covariances are treated in MC-PLS. One of
+<code>"auto"</code> (the default), <code>"reduced"</code>, or <code>"full"</code>. In
+<code>"reduced"</code> mode residual covariances are not treated as free
+parameters; they are identified from the rest of the structural model and
+the disturbances are simulated independently. In <code>"full"</code> mode the
+endogenous residual covariances (<code>eta ~~ eta</code> and <code>xi ~~ eta</code>)
+are free parameters, explicitly simulated. <code>"auto"</code> uses <code>"full"</code>
+when the structural model is estimated by GLS (i.e. the model contains
+residual covariances) and <code>"reduced"</code> otherwise.</p></dd>
 
 
 <dt id="arg-verbose">verbose<a class="anchor" aria-label="anchor" href="#arg-verbose"></a></dt>

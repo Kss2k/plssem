@@ -224,8 +224,12 @@ simulateDataParTable <- function(parTable,
     # `full` mode it is drawn conditional on the prior disturbances so that its
     # covariance with each prior node equals the specified residual covariance:
     # with target cross-covariances `a` and realised noise covariance `M`, the
-    # regression `beta = M^-1 a` gives realised Cov(zeta, noise) = a exactly;
-    # the conditional variance `resvar - a' beta` carries the fresh part.
+    # regression `beta = M^-1 a` gives realised Cov(zeta, noise) = a exactly.
+    # The fresh part is then sized so that `vals + zeta` has unit variance --
+    # `Var(fresh) = 1 - Var(vals + cmean)` -- which keeps the latent variable
+    # standardized even when the residual covaries with one of its own
+    # predictors (then `cmean` is correlated with `vals`). When it does not,
+    # this reduces to `resvar - a' beta`.
     if (full) a <- vapply(dnames, FUN.VALUE = numeric(1L), FUN = \(v) rescov(v, eta))
     else      a <- 0
 
@@ -234,12 +238,13 @@ simulateDataParTable <- function(parTable,
       beta <- tryCatch(as.vector(solve(M, a)), error = \(...) numeric(length(a)))
 
       cmean   <- as.vector(disturbances %*% beta)
-      condvar <- checkFixVar(resvar - sum(a * beta))
+      condvar <- checkFixVar(1 - stats::var(vals + cmean))
 
       if (!attr(condvar, "ok")) {
         # The requested residual covariances exceed what the variances allow
         # (the conditional variance went negative). Penalise the offending rows
-        # back toward zero.
+        # back toward zero by the amount `condvar` was clamped from, i.e.
+        # `Var(vals + cmean) - 1`.
         idx <- which(
           parTable$op == "~~" &
           parTable$lhs != parTable$rhs &
@@ -247,7 +252,7 @@ simulateDataParTable <- function(parTable,
         )
 
         parTable[idx, "penalty"] <- parTable[idx, "penalty"] +
-          sign(parTable[idx, "est"]) * (sum(a * beta) - resvar)
+          sign(parTable[idx, "est"]) * (stats::var(vals + cmean) - 1)
       }
 
       zeta <- cmean + Rfast::Rnorm(N, m = 0, s = sqrt(condvar), seed = rfast.seed())

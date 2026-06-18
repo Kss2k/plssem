@@ -54,6 +54,17 @@ getDeclaredStructVars <- function(parTable) {
 }
 
 
+# Internal label for the residual *correlation* of an endogenous covariance.
+# In MC-PLS the matched/free parameter is the residual correlation,
+# `std(eta_i~~eta_j)`, while the *reported* parameter is the covariance,
+# `eta_i~~eta_j`. The wrapper keeps the two distinct in the parameter vector,
+# Jacobian, and bootstrap, and is stripped from all user-facing output (see
+# getParTableEstimates). It is treated as a reserved pattern, so users cannot
+# supply a variable that aliases it.
+stdLabel   <- function(lhs, rhs) sprintf("std(%s~~%s)", lhs, rhs)
+isStdLabel <- function(x) grepl("^std\\(", x)
+
+
 getOVs <- function(parTable) {
   lVs    <- getLVs(parTable)
   select <- parTable$op %in% c("=~", "~", "~~", "<~")

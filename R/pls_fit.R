@@ -179,6 +179,37 @@ modelFitIsAdmissible <- function(fit) {
 }
 
 
+# Endogenous off-diagonal residual covariances selected in the model. Returns
+# the (lhs, rhs) pair and the internal std() label for each, using the same
+# `col~~row` convention as the psi names so the std() label aligns with the
+# reported covariance. Used by both getParamVecNames (labels) and extractCoefs
+# (values) so the appended std() entries stay aligned.
+residualCorrSpec <- function(model) {
+  selectCov <- model@matrices$select$cov
+  if (is.null(selectCov) || !length(selectCov)) return(NULL)
+
+  etas  <- model@info$etas
+  nm    <- rownames(selectCov)
+  isEta <- nm %in% etas
+
+  # Off-diagonal covariances involving at least one endogenous construct
+  # (eta~~eta or xi~~eta); exogenous xi~~xi covariances are left as-is.
+  mask <- selectCov & outer(isEta, isEta, `|`)
+  diag(mask) <- FALSE
+  if (!any(mask)) return(NULL)
+
+  idx <- which(mask, arr.ind = TRUE)
+  row <- nm[idx[, "row"]]
+  col <- nm[idx[, "col"]]
+
+  data.frame(
+    lhs   = col, rhs = row,
+    label = stdLabel(col, row),
+    stringsAsFactors = FALSE
+  )
+}
+
+
 getParamVecNames <- function(model) {
   selectLambda <- model@matrices$select$lambda
   modes        <- model@info$modes
@@ -208,8 +239,12 @@ getParamVecNames <- function(model) {
 
   thresholds <- model@thresholdStruct@thresholds
 
+  # Append internal residual-correlation labels (kept distinct from the
+  # reported covariances). `spec$label` is NULL when there are none.
+  spec <- residualCorrSpec(model)
+
   c(lambda[selectLambda], gamma[selectGamma], psi[selectCov], theta[selectTheta],
-    names(thresholds))
+    names(thresholds), spec$label)
 }
 
 
@@ -238,7 +273,21 @@ extractCoefs <- function(model) {
   )
 
   names(pars) <- model@params$names[seq_along(pars)]
-  plssemVector(c(pars, thr))
+
+  # Residual correlations: rho_ij = psi_ij / sqrt(psi_ii psi_jj), appended under
+  # the internal std() label so they ride alongside the reported covariances
+  # (psi) in fitCov[selectCov] above. These are the matched MC parameters; the
+  # covariance is derived for output.
+  spec <- residualCorrSpec(model)
+  stdpars <- if (is.null(spec)) numeric(0) else stats::setNames(
+    mapply(
+      function(a, b) fitCov[a, b] / sqrt(fitCov[a, a] * fitCov[b, b]),
+      spec$lhs, spec$rhs
+    ),
+    spec$label
+  )
+
+  plssemVector(c(pars, thr, stdpars))
 }
 
 

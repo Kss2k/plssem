@@ -191,7 +191,9 @@ print.SummaryPlsSem <- function(x, ...) {
 #' @export
 setMethod("coef", "PlsModel", function(object, ...) {
   combined <- combinedModel(object)
-  plssemVector(combined@params$values, is.public = TRUE)
+  vals     <- combined@params$values
+  vals     <- vals[!isStdLabel(names(vals))] # hide internal residual correlations
+  plssemVector(vals, is.public = TRUE)
 })
 
 
@@ -212,7 +214,15 @@ setMethod("coefficients", "PlsModel", function(object, ...) {
 #' @export
 setMethod("vcov", "PlsModel", function(object, ...) {
   combined <- combinedModel(object)
-  plssemMatrix(combined@params$vcov, is.public = TRUE)
+  V        <- combined@params$vcov
+
+  # hide internal residual correlations (`std(...)`)
+  if (!is.null(V) && length(V) && !is.null(rownames(V))) {
+    keep <- !isStdLabel(rownames(V))
+    V    <- V[keep, keep, drop = FALSE]
+  }
+
+  plssemMatrix(V, is.public = TRUE)
 })
 
 

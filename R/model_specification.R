@@ -26,6 +26,13 @@ specifyModel <- function(syntax, data, ..., strict = TRUE) {
       "Variables:", paste0(nm[hasTmp], collapse = ", ")
     )
 
+    # `std(...)` is reserved for internal residual-correlation parameters.
+    hasStd <- isStdLabel(nm)
+    pls_stopif(any(hasStd),
+      "Some variables use a reserved internal pattern (`std(...)`)!",
+      "Variables:", paste0(nm[hasStd], collapse = ", ")
+    )
+
     # check if we have user specified intercepts (which aren't allowed)
     hasIntr <- parTable$op == "~1"
     intrPar <- paste0(parTable$lhs[hasIntr], parTable$op[hasIntr])

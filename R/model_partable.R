@@ -4,10 +4,21 @@ CI_QUANTILE <- qnorm(0.975)
 getParTableEstimates <- function(model,
                                  rm.tmp.ov = TRUE,
                                  clean.tmp.ind = TRUE,
-                                 clean.tmp.mimic = TRUE) {
+                                 clean.tmp.mimic = TRUE,
+                                 keep.internal = FALSE) {
   est    <- model@params$values
   se     <- model@params$se
   names  <- names(est)
+
+  # Internal residual-correlation parameters (`std(eta_i~~eta_j)`) are not
+  # user-facing and would be mangled by splitParameterNames (the `~~` inside the
+  # wrapper). Drop them unless a caller explicitly needs them.
+  if (!keep.internal && length(names)) {
+    keep  <- !isStdLabel(names)
+    est   <- est[keep]
+    se    <- se[keep]
+    names <- names[keep]
+  }
 
   split    <- splitParameterNames(names)
   lhs      <- split$lhs

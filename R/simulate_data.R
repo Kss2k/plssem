@@ -99,17 +99,35 @@ simulateDataParTable <- function(parTable,
 
   }
 
-  res <- buildCovMat(
-    vars          = xis,
+  # Draw the exogenous variables and the endogenous structural disturbances from
+  # a single joint distribution, in correlation space. This reproduces residual
+  # covariances among etas *and* between an exogenous variable and an endogenous
+  # disturbance (`xi ~~ eta`), both of which the GLS estimator supports. All
+  # `~~` rows among the structural nodes are read as correlations (unit
+  # variances) via `buildCovMat(unitVariances = TRUE)`; each eta's disturbance
+  # is rescaled by sqrt(resvar) in the loop below. With no residual-covariance
+  # rows the cross/eta blocks are the identity, i.e. independent disturbances as
+  # before.
+  #
+  # NB: assumes the disturbances are uncorrelated with the predictors of their
+  # own equation (recursive / exogeneity). A residual correlation between an eta
+  # and a predictor of that eta would break the unit-variance accounting and is
+  # an endogeneity misspecification.
+  nodes <- c(xis, etas)
+  res   <- buildCovMat(
+    vars          = nodes,
     parTable      = parTable,
     .cortol       = .cortol,
     penalty.cfg   = penalty.cfg,
     unitVariances = TRUE
   )
-
   parTable <- res$parTable
-  Xi <- as.data.frame(Rfast::standardise(rmvnSafe(N, res$mat)))
-  colnames(Xi) <- xis
+
+  draw <- Rfast::standardise(rmvnSafe(N, res$mat))
+  colnames(draw) <- nodes
+
+  Xi   <- as.data.frame(draw[, xis, drop = FALSE])
+  Zeta <- if (length(etas)) as.data.frame(draw[, etas, drop = FALSE]) else NULL
 
   undefIntTerms <- getIntTerms(parTable)
   elemsIntTerms <- stringr::str_split(undefIntTerms, pattern = ":")
@@ -195,8 +213,9 @@ simulateDataParTable <- function(parTable,
       parTable[cond, "penalty"] <- parTable[cond, "penalty"] + (beta.x - beta.y)
     }
 
-    vals <- vals + Rfast::Rnorm(N, m = 0, s = sqrt(resvar), seed = rfast.seed())
-    # vals <- vals + rnorm(N, mean = 0, sd = sqrt(resvar))
+    # Correlated disturbance: sqrt(resvar) * unit-variance draw, where the
+    # cross-eta correlations live in `Zeta` (see the joint draw above).
+    vals <- vals + sqrt(resvar) * Zeta[[eta]]
 
     if (standardize)
       vals <- (vals - mean(vals)) / stats::sd(vals)
@@ -308,6 +327,7 @@ buildCovMat <- function(vars, parTable, .cortol, penalty.cfg, unitVariances = FA
 
       denom <- sqrt(mat[i,i] * mat[j,j])
       p.ij  <- parTable[cond, "est"][1] # cov
+      if (is.na(p.ij)) p.ij <- 0        # no `~~` row specified -> uncorrelated
       r.ij  <- p.ij / denom             # cor
 
       if (r.ij <= -.cortol || r.ij >= .cortol) {

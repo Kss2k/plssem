@@ -26,14 +26,8 @@ mcpls <- function(
   thresholdStruct0 <- fit0.combined@thresholdStruct
   estimator <- fit0.base@info$path.estimator
 
-  # GLS is not implemented correctly (yet)
-  pls_warnif(estimator == "gls",
-    "MC-PLS is not implemented for the GLS estimator!",
-    "Residual covariances in the structural model will be ignored!"
-  )
-
   par0 <- getFreeParamsTable(fit0.combined)
-  par1 <- par0[c("lhs", "op", "rhs", "est", "is.free")]
+  par1 <- par0[c("lhs", "op", "rhs", "est", "is.free", "is.std")]
 
   if (fixed.seed && is.null(rng.seed)) {
     rng.seed <- floor(stats::runif(1L, min = 0, max = 9999999))
@@ -239,6 +233,7 @@ mcpls <- function(
 
     probs0 <- thresholdStruct0@proportions
     nm <- paste0(par1$lhs, par1$op, par1$rhs)
+    nm[par1$is.std] <- stdLabel(par1$lhs[par1$is.std], par1$rhs[par1$is.std])
     p0 <- stats::setNames(mcfit$root, nm[par1$is.free])
     p1 <- fit1.combined@params$values
 
@@ -339,12 +334,26 @@ getFreeParamsTable <- function(model) {
   lhs <- parTable$lhs
   op  <- parTable$op
   rhs <- parTable$rhs
+  est <- parTable$est
 
   inds.b <- rhs[op == "<~"]
   etas <- lhs[op == "~"]
-  is.rescov <- (
-    (lhs %in% etas | rhs %in% etas) & lhs != rhs & op == "~~"
-  )
+
+  # Node variances: 1 for a standardized exogenous variable, the residual
+  # variance for an eta. The residual variances are determined (not free); we
+  # keep them only to convert residual covariances to correlations.
+  is.var  <- lhs == rhs & op == "~~"
+  nodevar <- stats::setNames(est[is.var], lhs[is.var])
+
+  # Residual covariances involving at least one endogenous construct -- i.e.
+  # eta~~eta and xi~~eta, both supported by the GLS estimator -- are matched in
+  # *correlation* scale (clean bounds; the variances stay determined). Exogenous
+  # xi~~xi covariances are already correlations (unit variance) and remain plain
+  # free covariances.
+  is.rescov <- (lhs %in% etas | rhs %in% etas) & lhs != rhs & op == "~~"
+
+  denom <- sqrt(nodevar[lhs] * nodevar[rhs])
+  est[is.rescov] <- est[is.rescov] / denom[is.rescov] # cov -> cor
 
   cond1 <- !(lhs == rhs & op == "~~" & !grepl("~", rhs))
   cond2 <- !((isIntTermVariable(lhs) | isIntTermVariable(rhs)) & op == "~~")
@@ -353,10 +362,15 @@ getFreeParamsTable <- function(model) {
   cond5 <- op != "|"
   cond  <- cond1 & cond2 & cond3 & cond4 & cond5
 
+  parTable$est    <- est
+  parTable$is.std <- is.rescov
+
   out <- parTable[cond, , drop = FALSE]
   attr(out, "cond") <- cond
 
-  out$is.free <- (op != "<~" & !is.rescov)[cond]
+  # Loadings (<~) stay fixed; everything else surviving the filter is free
+  # (residual covariances are now matched, in correlation scale).
+  out$is.free <- (op != "<~")[cond]
   out
 }
 
@@ -426,6 +440,7 @@ updateModelFromFreeParTableMC <- function(parTable,
   vlhs <- parTable$lhs
   vop  <- parTable$op
   vrhs <- parTable$rhs
+  etas <- unique(vlhs[vop == "~"]) # endogenous constructs
 
   getpar <- function(lhs, op, rhs) {
     cond <- vlhs == lhs & vop == op & vrhs == rhs
@@ -500,7 +515,14 @@ updateModelFromFreeParTableMC <- function(parTable,
     if (!selectCov[lhs, rhs]) next
 
     par <- getpar(lhs = lhs, op = "~~", rhs = rhs)
-    if (is.na(par)) par <- tryCatchNA(C[lhs, rhs])
+    if (is.na(par)) {
+      par <- tryCatchNA(C[lhs, rhs])
+    } else if (lhs != rhs && (lhs %in% etas || rhs %in% etas)) {
+      # residual covariance (eta~~eta or xi~~eta) is matched as a correlation ->
+      # rescale to a covariance using the variances (the adjusted diagonal of C;
+      # an exogenous variable contributes variance 1).
+      par <- par * sqrt(C[lhs, lhs] * C[rhs, rhs])
+    }
     fitCov[i, j] <- fitCov[j, i] <- par
   }
 
@@ -726,6 +748,7 @@ getMcLowerBounds <- function(par, tol = 1e-3) {
 
   lower[parf$op == "=~"]                        <- tol - 1
   lower[parf$op == "~~" & parf$lhs == parf$rhs] <- tol
+  lower[which(parf$is.std)]                     <- tol - 1 # residual correlation
 
   lower
 }
@@ -735,7 +758,8 @@ getMcUpperBounds <- function(par, tol = 1e-3) {
   parf  <- par[par$is.free, , drop = FALSE]
   upper <- rep(Inf, NROW(parf))
 
-  upper[parf$op == "=~"] <- 1 - tol
+  upper[parf$op == "=~"]    <- 1 - tol
+  upper[which(parf$is.std)] <- 1 - tol # residual correlation
 
   upper
 }

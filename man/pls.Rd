@@ -34,6 +34,7 @@ pls(
   mc.delta.se = TRUE,
   mc.delta.jacobian.k = max(floor(boot.R/100L), 1),
   mc.fn.args = list(),
+  mc.rescov = c("auto", "reduced", "full"),
   verbose = interactive(),
   boot.optimize = TRUE,
   mc.boot.control = list(min.iter = mc.min.iter, max.iter = mc.max.iter, mc.reps =
@@ -147,6 +148,16 @@ one per 100 bootstrap resamples, with a minimum of 1.}
 
 \item{mc.fn.args}{Additional arguments to MC-PLS algorithm, mainly for controlling
 the step size.}
+
+\item{mc.rescov}{How residual covariances are treated in MC-PLS. One of
+\code{"auto"} (the default), \code{"reduced"}, or \code{"full"}. In
+\code{"reduced"} mode residual covariances are not treated as free
+parameters; they are identified from the rest of the structural model and
+the disturbances are simulated independently. In \code{"full"} mode the
+endogenous residual covariances (\code{eta ~~ eta} and \code{xi ~~ eta})
+are free parameters, explicitly simulated. \code{"auto"} uses \code{"full"}
+when the structural model is estimated by GLS (i.e. the model contains
+residual covariances) and \code{"reduced"} otherwise.}
 
 \item{verbose}{Should verbose output be printed?}
 

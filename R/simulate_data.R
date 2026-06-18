@@ -5,7 +5,8 @@ simulateDataParTable <- function(parTable,
                                  check.hi.ord = FALSE,
                                  clusterSizes = NULL,
                                  clusterName  = NULL,
-                                 standardize  = FALSE) {
+                                 standardize  = FALSE,
+                                 full         = FALSE) {
   if (!is.null(seed) && exists(".Random.seed")) .Random.seed.orig <- .Random.seed
   else                                          .Random.seed.orig <- NULL
 
@@ -111,6 +112,29 @@ simulateDataParTable <- function(parTable,
   Xi <- as.data.frame(Rfast::standardise(rmvnSafe(N, res$mat)))
   colnames(Xi) <- xis
 
+  # Full mode: track the realised disturbances (including exogenous lvs) and,
+  # as they are drawn, so each disturbance can be drawn conditional on the
+  # prior noise with the specified residual covariances (eta~~eta and xi~~eta).
+  # `rescov(v, w)` returns the residual covariance between two nodes
+  if (full) {
+    disturbances <- as.matrix(Xi[, xis, drop = FALSE])
+    dnames <- xis
+
+    rescovRows <- parTable[
+      parTable$op == "~~" &
+      parTable$lhs != parTable$rhs, , drop = FALSE
+    ]
+
+    rescov <- function(v, w) {
+      idx <- (
+        (rescovRows$lhs == v & rescovRows$rhs == w) |
+        (rescovRows$lhs == w & rescovRows$rhs == v)
+      )
+
+      if (any(idx)) rescovRows$est[which(idx)[1L]] else 0
+    }
+  }
+
   undefIntTerms <- getIntTerms(parTable)
   elemsIntTerms <- stringr::str_split(undefIntTerms, pattern = ":")
   names(elemsIntTerms) <- undefIntTerms
@@ -195,8 +219,49 @@ simulateDataParTable <- function(parTable,
       parTable[cond, "penalty"] <- parTable[cond, "penalty"] + (beta.x - beta.y)
     }
 
-    vals <- vals + Rfast::Rnorm(N, m = 0, s = sqrt(resvar), seed = rfast.seed())
-    # vals <- vals + rnorm(N, mean = 0, sd = sqrt(resvar))
+    # Disturbance. In `reduced` mode (or when this eta has no residual
+    # covariance) the disturbance is independent with variance `resvar`. In
+    # `full` mode it is drawn conditional on the prior disturbances so that its
+    # covariance with each prior node equals the specified residual covariance:
+    # with target cross-covariances `a` and realised noise covariance `M`, the
+    # regression `beta = M^-1 a` gives realised Cov(zeta, noise) = a exactly;
+    # the conditional variance `resvar - a' beta` carries the fresh part.
+    if (full) a <- vapply(dnames, FUN.VALUE = numeric(1L), FUN = \(v) rescov(v, eta))
+    else      a <- 0
+
+    if (full && any(a != 0)) {
+      M    <- Rfast::cova(disturbances)
+      beta <- tryCatch(as.vector(solve(M, a)), error = \(...) numeric(length(a)))
+
+      cmean   <- as.vector(disturbances %*% beta)
+      condvar <- checkFixVar(resvar - sum(a * beta))
+
+      if (!attr(condvar, "ok")) {
+        # The requested residual covariances exceed what the variances allow
+        # (the conditional variance went negative). Penalise the offending rows
+        # back toward zero.
+        idx <- which(
+          parTable$op == "~~" &
+          parTable$lhs != parTable$rhs &
+          (parTable$lhs == eta | parTable$rhs == eta)
+        )
+
+        parTable[idx, "penalty"] <- parTable[idx, "penalty"] +
+          sign(parTable[idx, "est"]) * (sum(a * beta) - resvar)
+      }
+
+      zeta <- cmean + Rfast::Rnorm(N, m = 0, s = sqrt(condvar), seed = rfast.seed())
+
+    } else {
+      zeta <- Rfast::Rnorm(N, m = 0, s = sqrt(resvar), seed = rfast.seed())
+    }
+
+    vals <- vals + zeta
+
+    if (full) {
+      disturbances <- cbind(disturbances, zeta)
+      dnames       <- c(dnames, eta)
+    }
 
     if (standardize)
       vals <- (vals - mean(vals)) / stats::sd(vals)
@@ -308,6 +373,7 @@ buildCovMat <- function(vars, parTable, .cortol, penalty.cfg, unitVariances = FA
 
       denom <- sqrt(mat[i,i] * mat[j,j])
       p.ij  <- parTable[cond, "est"][1] # cov
+      if (is.na(p.ij)) p.ij <- 0        # no `~~` row specified -> uncorrelated
       r.ij  <- p.ij / denom             # cor
 
       if (r.ij <= -.cortol || r.ij >= .cortol) {

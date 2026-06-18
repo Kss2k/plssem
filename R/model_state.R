@@ -66,7 +66,8 @@ initModelMcArgs <- function(min.iter,
                             pj.extrapolate,
                             delta.se,
                             delta.jacobian.k,
-                            fn.args) {
+                            fn.args,
+                            rescov = "reduced") {
   list(
     min.iter         = min.iter,
     max.iter         = max.iter,
@@ -78,6 +79,7 @@ initModelMcArgs <- function(min.iter,
     delta.se         = delta.se,
     delta.jacobian.k = delta.jacobian.k,
     fn.args          = fn.args,
+    rescov           = rescov,
     rng.seed         = NULL,
     p.start          = NULL
   )

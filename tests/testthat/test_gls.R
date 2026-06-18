@@ -48,5 +48,10 @@ tpb <- '
   BEH ~~ INT
 '
 
-fit <- pls(tpb, TPB)
-summary(fit)
+testthat::expect_no_error({
+  fit <- pls(tpb, TPB)
+  summary(fit)
+
+  fit <- pls(tpb, TPB, mcpls=TRUE, bootstrap=TRUE)
+  summary(fit)
+})

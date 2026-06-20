@@ -71,10 +71,13 @@ SimDesign.RobbinsMonro <- function(f, p, ...,
     }
 
     if (verbose) {
-      if (Polyak_Juditsky)
-        messagef("\rItertion: %i; Max change in E(\u03b8) = %.3f", i, change)
-      else
-        messagef("\rIteration: %i; Max change in \u03b8 = %.3f", i, change)
+      if (Polyak_Juditsky) {
+        msg <- MSG_STRINGS$strings$SimDesign.RobbinsMonro0
+        messagef(msg, i, change)
+      } else {
+        msg <- MSG_STRINGS$strings$SimDesign.RobbinsMonro1
+        messagef(msg, i, change)
+      }
     }
 
     if (i > miniter && all(change < tol)) {

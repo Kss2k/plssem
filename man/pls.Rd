@@ -37,6 +37,7 @@ pls(
   mc.rescov = c("auto", "reduced", "full"),
   verbose = interactive(),
   boot.optimize = TRUE,
+  boot.drop.inadmissible = FALSE,
   mc.boot.control = list(min.iter = mc.min.iter, max.iter = mc.max.iter, mc.reps =
     floor(0.5 * mc.reps), tol = mc.tol, polyak.juditsky = mc.polyak.juditsky,
     pj.extrapolate = FALSE, verbose = FALSE, fixed.seed = TRUE, reuse.p.start = TRUE),
@@ -164,6 +165,15 @@ residual covariances) and \code{"reduced"} otherwise.}
 \item{boot.optimize}{Logical; if \code{TRUE} and \code{bootstrap = TRUE}, applies
 the settings in \code{mc.boot.control} inside each bootstrap replicate (MC-PLS only).
 In general it will lead to slightly larger and less accurate standard errors.}
+
+\item{boot.drop.inadmissible}{Logical; if \code{TRUE} and \code{bootstrap = TRUE},
+bootstrap replicates that yield an inadmissible solution (e.g. a Heywood case
+such as a reliability outside the unit interval) are discarded before computing
+standard errors, just like replicates that fail to converge. Defaults to
+\code{FALSE}, which keeps inadmissible replicates. In either case the number of
+inadmissible replicates is reported. Note that dropping inadmissible solutions
+conditions the bootstrap distribution on well-behaved resamples and may bias the
+standard errors downward.}
 
 \item{mc.boot.control}{List of control parameters passed to the MC-PLS algorithm
 inside each bootstrap replicate when \code{boot.optimize = TRUE}.}

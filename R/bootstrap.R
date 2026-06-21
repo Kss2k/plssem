@@ -4,7 +4,8 @@ bootstrap <- function(model,
                       parallel = model@info$boot$parallel,
                       ncores   = model@info$boot$ncores,
                       R        = model@info$boot$R,
-                      iseed    = model@info$boot$iseed) {
+                      iseed    = model@info$boot$iseed,
+                      drop.inadmissible = isTRUE(model@info$boot$drop.inadmissible)) {
 
   if (is.null(parallel)) parallel <- "no"
   parallel <- match.arg(parallel, c("no", "multicore", "multisession", "snow"))
@@ -115,8 +116,18 @@ bootstrap <- function(model,
         par <- par + stats::rnorm(k, mean = 0, sd = low.tol.penalty)
       }
 
-      out <- c(par, probs)
+      inadmissible <- !isAdmissible(model.b)
+
+      if (inadmissible && drop.inadmissible) {
+        # drop the replicate by treating it like a failed fit; the all-NA row
+        # is excluded from the (co-)variances via `use = "complete.obs"` below
+        out <- c(parTemplate, probsTemplate + NA_real_)
+      } else {
+        out <- c(par, probs)
+      }
+
       attr(out, "id") <- i
+      attr(out, "inadmissible") <- inadmissible
       out
 
     }, error = \(e) {
@@ -126,6 +137,7 @@ bootstrap <- function(model,
 
       out <- c(parTemplate, probsTemplate + NA_real_)
       attr(out, "id") <- i
+      attr(out, "inadmissible") <- NA # errored before admissibility is known
       out
     })
   }
@@ -243,6 +255,25 @@ bootstrap <- function(model,
   }
 
   ids <- vapply(results, FUN.VALUE = integer(1L), FUN = \(x) attr(x, "id"))
+
+  inadmissible <- vapply(
+    results, FUN.VALUE = logical(1L),
+    FUN = \(x) isTRUE(attr(x, "inadmissible"))
+  )
+  n.inadmissible <- sum(inadmissible)
+
+  if (n.inadmissible) {
+    verb <- if (drop.inadmissible) "Dropped" else "Kept"
+    pls_msg_warn(sprintf(
+      "%s %d of %d bootstrap replicate(s) with inadmissible solutions.",
+      verb, n.inadmissible, R
+    ))
+  }
+
+  pls_warnif(drop.inadmissible && (R - n.inadmissible) < 2L,
+    "Fewer than 2 admissible bootstrap replicates remain after dropping",
+    "inadmissible solutions; standard errors cannot be estimated reliably."
+  )
 
   resultsMat <- do.call(rbind, results)
   rownames(resultsMat) <- ids

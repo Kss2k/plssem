@@ -92,15 +92,17 @@ initModelBootInfo <- function(bootstrap,
                               R,
                               iseed,
                               optimize,
+                              drop.inadmissible,
                               mc.boot.control) {
   list(
-    bootstrap       = bootstrap,
-    ncores          = ncores,
-    parallel        = parallel,
-    R               = R,
-    iseed           = iseed,
-    optimize        = optimize,
-    mc.boot.control = mc.boot.control
+    bootstrap         = bootstrap,
+    ncores            = ncores,
+    parallel          = parallel,
+    R                 = R,
+    iseed             = iseed,
+    optimize          = optimize,
+    drop.inadmissible = drop.inadmissible,
+    mc.boot.control   = mc.boot.control
   )
 }
 

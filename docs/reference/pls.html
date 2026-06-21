@@ -128,6 +128,7 @@ factor scores, and supports multilevel specifications expressed with
 <span>  mc.rescov <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"auto"</span>, <span class="st">"reduced"</span>, <span class="st">"full"</span><span class="op">)</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/interactive.html" class="external-link">interactive</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  boot.optimize <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  boot.drop.inadmissible <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  mc.boot.control <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>min.iter <span class="op">=</span> <span class="va">mc.min.iter</span>, max.iter <span class="op">=</span> <span class="va">mc.max.iter</span>, mc.reps <span class="op">=</span></span>
 <span>    <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">floor</a></span><span class="op">(</span><span class="fl">0.5</span> <span class="op">*</span> <span class="va">mc.reps</span><span class="op">)</span>, tol <span class="op">=</span> <span class="va">mc.tol</span>, polyak.juditsky <span class="op">=</span> <span class="va">mc.polyak.juditsky</span>,</span>
 <span>    pj.extrapolate <span class="op">=</span> <span class="cn">FALSE</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span>, fixed.seed <span class="op">=</span> <span class="cn">TRUE</span>, reuse.p.start <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
@@ -322,6 +323,17 @@ residual covariances) and <code>"reduced"</code> otherwise.</p></dd>
 <dd><p>Logical; if <code>TRUE</code> and <code>bootstrap = TRUE</code>, applies
 the settings in <code>mc.boot.control</code> inside each bootstrap replicate (MC-PLS only).
 In general it will lead to slightly larger and less accurate standard errors.</p></dd>
+
+
+<dt id="arg-boot-drop-inadmissible">boot.drop.inadmissible<a class="anchor" aria-label="anchor" href="#arg-boot-drop-inadmissible"></a></dt>
+<dd><p>Logical; if <code>TRUE</code> and <code>bootstrap = TRUE</code>,
+bootstrap replicates that yield an inadmissible solution (e.g. a Heywood case
+such as a reliability outside the unit interval) are discarded before computing
+standard errors, just like replicates that fail to converge. Defaults to
+<code>FALSE</code>, which keeps inadmissible replicates. In either case the number of
+inadmissible replicates is reported. Note that dropping inadmissible solutions
+conditions the bootstrap distribution on well-behaved resamples and may bias the
+standard errors downward.</p></dd>
 
 
 <dt id="arg-mc-boot-control">mc.boot.control<a class="anchor" aria-label="anchor" href="#arg-mc-boot-control"></a></dt>

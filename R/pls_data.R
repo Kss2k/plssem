@@ -170,10 +170,8 @@ cov2cor <- function(vcov) {
 
   sd <- sqrt(abs(diag(vcov))) # use `abs()`, in case some variances are negative
 
-  if (length(sd) == 1L) D <- matrix(1 / sd, nrow = 1L, ncol = 1L)
-  else                  D <- diag(1 / sd)
-
-  structure(D %*% vcov %*% D, dimnames = dimnames(vcov))
+  # equivalent to diag(1/sd) %*% vcov %*% diag(1/sd), but O(p^2) instead of O(p^3)
+  structure(vcov / tcrossprod(sd), dimnames = dimnames(vcov))
 }
 
 
@@ -183,11 +181,38 @@ getCorrMat <- function(data, probit = FALSE, ordered = NULL) {
 }
 
 
-getPearsonCorr <- function(data) {
+getPearsonCorr <- function(data, zero.tol = 1e-8) {
   if (!is.matrix(data))
     data <- as.matrix(data)
 
-  Rfast::cora(data)
+  pls_stopif(!NROW(data) || !NCOL(data), "data has zero rows/columns!")
+
+  # Get (co-)variances, so that we can check for NA/zero variances
+  S <- Rfast::cova(data)
+  v <- diag(S)
+
+  # Flag NA or (near-)constant columns. The threshold is relative to each
+  # variable's own mean-square (`data` need not be standardized, so an
+  # absolute cut-off is not scale-robust). Since `v <= mean(x^2)`, the ratio
+  # `v / msq` lies in [0, 1] and is 0 exactly for a constant colu"mn.
+  msq     <- colMeans(data^2)
+  zerovar <- is.na(v) | v <= zero.tol * msq
+
+  # Any NA/zero variances?
+  if (any(zerovar)) {
+    nm <- colnames(data)
+
+    if (!length(nm)) # what if we have no colnames?
+      nm <- paste0("x", seq_len(NCOL(S)))
+
+    pls_msg_stop(
+      "Some variables have zero or NA variances!",
+      paste0(paste0(nm[zerovar], "=", v[zerovar]), collapse = ", ")
+    )
+  }
+
+  # Return correlations
+  cov2cor(S)
 }
 
 

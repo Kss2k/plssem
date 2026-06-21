@@ -103,6 +103,7 @@ specifySubModel <- function(parTable,
                             boot.R                 = 50L,
                             boot.iseed             = NULL,
                             boot.optimize          = FALSE,
+                            boot.drop.inadmissible = FALSE,
                             mc.boot.control        = list(),
                             knn.k                  = 5,
                             reliabilities          = NULL,
@@ -165,8 +166,9 @@ specifySubModel <- function(parTable,
     parallel        = boot.parallel,
     R               = boot.R,
     iseed           = boot.iseed,
-    optimize        = boot.optimize,
-    mc.boot.control = mc.boot.control
+    optimize          = boot.optimize,
+    drop.inadmissible = boot.drop.inadmissible,
+    mc.boot.control   = mc.boot.control
   )
 
   info <- initModelInfo(

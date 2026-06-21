@@ -19,6 +19,12 @@ mcpls <- function(
   fit0.base <- fit0
   fit0.combined <- combinedModel(fit0.base)
 
+  # Is the base fit admissible?
+  pls_warnif(!is_admissible(fit0.combined),
+    "Base fit is inadmissible!",
+    "The MC-PLS algorithm might not converge to a proper solution!"
+  )
+
   data      <- fit0.base@data
   vars      <- colnames(data)
   ordered   <- fit0@info$ordered

@@ -213,8 +213,21 @@ isAdmissible <- function(object) {
 }
 
 
-`isAdmissible<-` <- function(object, value) {
+`isAdmissible<-` <- function(object, recursive = FALSE, value) {
   object@status$is.admissible <- value
+
+  if (recursive) {
+
+    # Higher order
+    if (hasHigherOrderModel(object))
+      isAdmissible(object@higherOrderModel, recursive = TRUE) <- value
+
+    # Combined model
+    if (hasCombinedModel(object))
+      isAdmissible(object@combinedModel, recursive = TRUE) <- value
+
+  }
+
   object
 }
 

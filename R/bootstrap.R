@@ -39,6 +39,10 @@ bootstrap <- function(model,
     isMCPLS(baseModel, recursive = TRUE) <- FALSE
   }
 
+  # The base fit may itself be inadmissible. Reset the admissibility status on
+  # the template such that the bootstraps don't inherit the inadmissibility flag
+  isAdmissible(baseModel, recursive = TRUE) <- TRUE
+
   boot.optimize <- isTRUE(model@info$boot$optimize)
   mc.boot.control <- prepMCBootControl(
     boot.control  = model@info$boot$mc.boot.control,

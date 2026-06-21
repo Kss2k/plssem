@@ -5,14 +5,22 @@ PKG_INFO <- rlang::env(
 
 
 UNICODE_MSG_STRINGS <- list(
+  # SimDesign.RobbinsMonro()
   SimDesign.RobbinsMonro0 = "\rItertion: %i; Max change in E(\u03b8) = %.3f",
-  SimDesign.RobbinsMonro1 = "\rIteration: %i; Max change in \u03b8 = %.3f"
+  SimDesign.RobbinsMonro1 = "\rIteration: %i; Max change in \u03b8 = %.3f",
+  # limitQ()
+  limitQ0 = "Reliability for %s is larger than 1! Q\u00B2(%s) = %.2f",
+  limitQ1 = "Reliability for %s is close to or smaller than zero! Q\u00B2(%s) = %.2g"
 )
 
 
 ASCII_MSG_STRINGS <- list(
+  # SimDesign.RobbinsMonro()
   SimDesign.RobbinsMonro0 = "\rItertion: %i; Max change in E(p) = %.3f",
-  SimDesign.RobbinsMonro1 = "\rIteration: %i; Max change in p = %.3f"
+  SimDesign.RobbinsMonro1 = "\rIteration: %i; Max change in p = %.3f",
+  # limitQ()
+  limitQ0 = "Reliability for %s is larger than 1! Q^2(%s) = %.2f",
+  limitQ1 = "Reliability for %s is close to or smaller than zero! Q^2(%s) = %.2g"
 )
 
 

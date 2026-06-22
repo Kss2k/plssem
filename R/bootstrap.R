@@ -269,7 +269,7 @@ bootstrap <- function(model,
   if (n.inadmissible) {
     verb <- if (drop.inadmissible) "Dropped" else "Kept"
     pls_msg_warn(sprintf(
-      "%s %d of %d bootstrap replicate(s) with inadmissible solutions.",
+      "%s %d (out of %d) bootstrap replicate(s) with inadmissible solutions.",
       verb, n.inadmissible, R
     ))
   }

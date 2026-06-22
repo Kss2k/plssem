@@ -21,7 +21,7 @@ pls(
   boot.ncores = 1L,
   boot.ncpus = NULL,
   boot.parallel = c("no", "multicore", "multisession", "snow"),
-  boot.R = 50L,
+  boot.R = 500L,
   boot.iseed = NULL,
   sample = NULL,
   mc.min.iter = 50L,

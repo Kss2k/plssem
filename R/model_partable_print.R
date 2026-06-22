@@ -43,12 +43,6 @@ plsGetWidthPrintedParTable <- function(parTable,
                                        scientific  = FALSE,
                                        ci          = FALSE,
                                        digits      = 3,
-                                       loadings    = TRUE,
-                                       regressions = TRUE,
-                                       covariances = TRUE,
-                                       intercepts  = TRUE,
-                                       variances   = TRUE,
-                                       thresholds  = TRUE,
                                        ...) {
 
   if (!"label" %in% colnames(parTable))
@@ -58,12 +52,6 @@ plsGetWidthPrintedParTable <- function(parTable,
     parTable    = parTable,
     scientific  = scientific,
     ci          = ci,
-    digits      = digits,
-    loadings    = loadings,
-    regressions = regressions,
-    covariances = covariances,
-    intercepts  = intercepts,
-    variances   = variances,
-    thresholds  = thresholds
+    digits      = digits
   )
 }

@@ -135,7 +135,10 @@ model are removed. Here we can see an example.</p>
 <code class="sourceCode R"><span><span class="va">model</span> <span class="op">&lt;-</span> <span class="st">"Survived ~ Age + Female + Age:Female"</span></span>
 <span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pls.html">pls</a></span><span class="op">(</span><span class="va">model</span>, data <span class="op">=</span> <span class="va">titanic</span>, missing <span class="op">=</span> <span class="st">"listwise"</span>, ordered <span class="op">=</span> <span class="st">"Survived"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; plssem-&gt;getPLS_Data():  </span></span>
-<span><span class="co">#&gt;    Removing missing data using listwise deletion...</span></span></code></pre></div>
+<span><span class="co">#&gt;    Removing missing data using listwise deletion...</span></span>
+<span><span class="co">#&gt; Warning: plssem-&gt;mcpls():  </span></span>
+<span><span class="co">#&gt;    Base fit is inadmissible! The MC-PLS algorithm might not converge to a </span></span>
+<span><span class="co">#&gt;    proper solution!</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="mean-imputation">Mean Imputation<a class="anchor" aria-label="anchor" href="#mean-imputation"></a>
@@ -313,6 +316,73 @@ the <code>mice</code> package, but other packages can be used as well
 <span>  <span class="va">COEF</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://amices.org/mice/reference/cbind.html" class="external-link">rbind</a></span><span class="op">(</span><span class="va">COEF</span>, <span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">fit.i</span><span class="op">)</span><span class="op">)</span></span>
 <span>  <span class="va">BOOT</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://amices.org/mice/reference/cbind.html" class="external-link">rbind</a></span><span class="op">(</span><span class="va">BOOT</span>, <span class="fu"><a href="../reference/boot.html">boot</a></span><span class="op">(</span><span class="va">fit.i</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
+<span><span class="co">#&gt; Warning: plssem-&gt;mcpls():  </span></span>
+<span><span class="co">#&gt;    Base fit is inadmissible! The MC-PLS algorithm might not converge to a </span></span>
+<span><span class="co">#&gt;    proper solution!</span></span>
+<span><span class="co">#&gt; Warning: plssem-&gt;bootstrap():  </span></span>
+<span><span class="co">#&gt;    Kept 23 (out of 100) bootstrap replicate(s) with inadmissible solutions.</span></span>
+<span><span class="co">#&gt; Warning: plssem-&gt;mcpls():  </span></span>
+<span><span class="co">#&gt;    Base fit is inadmissible! The MC-PLS algorithm might not converge to a </span></span>
+<span><span class="co">#&gt;    proper solution!</span></span>
+<span><span class="co">#&gt; Warning: plssem-&gt;bootstrap():  </span></span>
+<span><span class="co">#&gt;    Kept 22 (out of 100) bootstrap replicate(s) with inadmissible solutions.</span></span>
+<span><span class="co">#&gt; Warning: plssem-&gt;bootstrap():  </span></span>
+<span><span class="co">#&gt;    Kept 14 (out of 100) bootstrap replicate(s) with inadmissible solutions.</span></span>
+<span><span class="co">#&gt; Warning: plssem-&gt;bootstrap():  </span></span>
+<span><span class="co">#&gt;    Kept 22 (out of 100) bootstrap replicate(s) with inadmissible solutions.</span></span>
+<span><span class="co">#&gt; Warning: plssem-&gt;mcpls():  </span></span>
+<span><span class="co">#&gt;    Base fit is inadmissible! The MC-PLS algorithm might not converge to a </span></span>
+<span><span class="co">#&gt;    proper solution!</span></span>
+<span><span class="co">#&gt; Warning: plssem-&gt;bootstrap():  </span></span>
+<span><span class="co">#&gt;    Kept 31 (out of 100) bootstrap replicate(s) with inadmissible solutions.</span></span>
+<span><span class="co">#&gt; Warning: plssem-&gt;bootstrap():  </span></span>
+<span><span class="co">#&gt;    Kept 20 (out of 100) bootstrap replicate(s) with inadmissible solutions.</span></span>
+<span><span class="co">#&gt; Warning: plssem-&gt;bootstrap():  </span></span>
+<span><span class="co">#&gt;    Kept 11 (out of 100) bootstrap replicate(s) with inadmissible solutions.</span></span>
+<span><span class="co">#&gt; Warning: plssem-&gt;bootstrap():  </span></span>
+<span><span class="co">#&gt;    Kept 25 (out of 100) bootstrap replicate(s) with inadmissible solutions.</span></span>
+<span><span class="co">#&gt; Warning: plssem-&gt;mcpls():  </span></span>
+<span><span class="co">#&gt;    Base fit is inadmissible! The MC-PLS algorithm might not converge to a </span></span>
+<span><span class="co">#&gt;    proper solution!</span></span>
+<span><span class="co">#&gt; Warning: plssem-&gt;bootstrap():  </span></span>
+<span><span class="co">#&gt;    Kept 18 (out of 100) bootstrap replicate(s) with inadmissible solutions.</span></span>
+<span><span class="co">#&gt; Warning: plssem-&gt;bootstrap():  </span></span>
+<span><span class="co">#&gt;    Kept 24 (out of 100) bootstrap replicate(s) with inadmissible solutions.</span></span>
+<span><span class="co">#&gt; Warning: plssem-&gt;mcpls():  </span></span>
+<span><span class="co">#&gt;    Base fit is inadmissible! The MC-PLS algorithm might not converge to a </span></span>
+<span><span class="co">#&gt;    proper solution!</span></span>
+<span><span class="co">#&gt; Warning: plssem-&gt;bootstrap():  </span></span>
+<span><span class="co">#&gt;    Kept 26 (out of 100) bootstrap replicate(s) with inadmissible solutions.</span></span>
+<span><span class="co">#&gt; Warning: plssem-&gt;mcpls():  </span></span>
+<span><span class="co">#&gt;    Base fit is inadmissible! The MC-PLS algorithm might not converge to a </span></span>
+<span><span class="co">#&gt;    proper solution!</span></span>
+<span><span class="co">#&gt; Warning: plssem-&gt;bootstrap():  </span></span>
+<span><span class="co">#&gt;    Kept 27 (out of 100) bootstrap replicate(s) with inadmissible solutions.</span></span>
+<span><span class="co">#&gt; Warning: plssem-&gt;bootstrap():  </span></span>
+<span><span class="co">#&gt;    Kept 18 (out of 100) bootstrap replicate(s) with inadmissible solutions.</span></span>
+<span><span class="co">#&gt; Warning: plssem-&gt;mcpls():  </span></span>
+<span><span class="co">#&gt;    Base fit is inadmissible! The MC-PLS algorithm might not converge to a </span></span>
+<span><span class="co">#&gt;    proper solution!</span></span>
+<span><span class="co">#&gt; Warning: plssem-&gt;bootstrap():  </span></span>
+<span><span class="co">#&gt;    Kept 11 (out of 100) bootstrap replicate(s) with inadmissible solutions.</span></span>
+<span><span class="co">#&gt; Warning: plssem-&gt;mcpls():  </span></span>
+<span><span class="co">#&gt;    Base fit is inadmissible! The MC-PLS algorithm might not converge to a </span></span>
+<span><span class="co">#&gt;    proper solution!</span></span>
+<span><span class="co">#&gt; Warning: plssem-&gt;bootstrap():  </span></span>
+<span><span class="co">#&gt;    Kept 34 (out of 100) bootstrap replicate(s) with inadmissible solutions.</span></span>
+<span><span class="co">#&gt; Warning: plssem-&gt;bootstrap():  </span></span>
+<span><span class="co">#&gt;    Kept 23 (out of 100) bootstrap replicate(s) with inadmissible solutions.</span></span>
+<span><span class="co">#&gt; Warning: plssem-&gt;bootstrap():  </span></span>
+<span><span class="co">#&gt;    Kept 8 (out of 100) bootstrap replicate(s) with inadmissible solutions.</span></span>
+<span><span class="co">#&gt; Warning: plssem-&gt;mcpls():  </span></span>
+<span><span class="co">#&gt;    Base fit is inadmissible! The MC-PLS algorithm might not converge to a </span></span>
+<span><span class="co">#&gt;    proper solution!</span></span>
+<span><span class="co">#&gt; Warning: plssem-&gt;bootstrap():  </span></span>
+<span><span class="co">#&gt;    Kept 23 (out of 100) bootstrap replicate(s) with inadmissible solutions.</span></span>
+<span><span class="co">#&gt; Warning: plssem-&gt;bootstrap():  </span></span>
+<span><span class="co">#&gt;    Kept 27 (out of 100) bootstrap replicate(s) with inadmissible solutions.</span></span>
+<span><span class="co">#&gt; Warning: plssem-&gt;bootstrap():  </span></span>
+<span><span class="co">#&gt;    Kept 22 (out of 100) bootstrap replicate(s) with inadmissible solutions.</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/apply.html" class="external-link">apply</a></span><span class="op">(</span><span class="va">COEF</span>, MARGIN <span class="op">=</span> <span class="fl">2</span>, FUN <span class="op">=</span> <span class="va">mean</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span> <span class="co"># Mean estimate across imputations</span></span>
 <span><span class="co">#&gt;     Survived&lt;~Survived               Age&lt;~Age         Female&lt;~Female </span></span>

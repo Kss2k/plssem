@@ -55,8 +55,17 @@ simulateDataParTable <- function(parTable,
       scale = 0.02,
       tol   = sqrt(.Machine$double.eps),
       max_penalty = 1
+    ),
+    projvar = list( # shouldn't be necessary, as we used bounded optimization
+      limit = 1,
+      guard = 0.05,
+      beta  = 3,
+      scale = 1,
+      max_penalty = 2
     )
   )
+
+  projbound <- penalty.cfg$projvar$limit - penalty.cfg$projvar$guard
 
   if (check.hi.ord)
     parTable <- highOrdMeasrAsStructParTable(parTable)
@@ -201,9 +210,31 @@ simulateDataParTable <- function(parTable,
         vals <- vals + U.expanded[,par] * Xi[[pred]]
     }
 
-    resvar <- checkFixVar(1 - stats::var(vals))
+    projvar <- stats::var(vals)
+    resvar  <- checkFixVar(1 - projvar)
+
+    if (projvar > projbound) {
+      # kicks in after projvar > 1 - guard
+      beta.x <- parTable[cond, "est"]
+
+      projv.penalty <- smoothBoundaryPenalty(
+        projvar,
+        limit = penalty.cfg$projvar$limit,
+        guard = penalty.cfg$projvar$guard,
+        beta  = penalty.cfg$projvar$beta,
+        scale = penalty.cfg$projvar$scale,
+        penalty.max = penalty.cfg$projvar$max_penalty
+      )
+
+      # penalty that should lower the absolute magnitude of the coefficients
+      parTable[cond, "penalty"] <- (
+        parTable[cond, "penalty"] + projv.penalty * sign(beta.x)
+      )
+    }
 
     if (!attr(resvar, "ok")) {
+      # kicks in after projvar > 1
+
       # Recalc coefficients and penalize
       formulaString <- paste(
         eta, "~",
@@ -216,7 +247,11 @@ simulateDataParTable <- function(parTable,
       beta.y <- beta.hat[parTable[cond, "rhs"]]
       beta.x <- parTable[cond, "est"]
 
-      parTable[cond, "penalty"] <- parTable[cond, "penalty"] + (beta.x - beta.y)
+      # penalty that should lower the absolute magnitude of the coefficients
+      parTable[cond, "penalty"] <- (
+        parTable[cond, "penalty"] +
+        penalty.cfg$projvar$scale * abs(beta.x - beta.y) * sign(beta.x)
+      )
     }
 
     # Disturbance. In `reduced` mode (or when this eta has no residual

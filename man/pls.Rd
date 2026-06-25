@@ -25,7 +25,7 @@ pls(
   boot.iseed = NULL,
   sample = NULL,
   mc.min.iter = 50L,
-  mc.max.iter = 500L,
+  mc.max.iter = 1000L,
   mc.reps = 20000L,
   mc.fixed.seed = FALSE,
   mc.polyak.juditsky = TRUE,

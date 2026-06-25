@@ -144,7 +144,7 @@ getFitPLSModel <- function(model, consistent = TRUE) {
   }
 
   list(
-    fitMeasurement = plssemMatrix(fitMeasurement),
+    fitMeasurement    = plssemMatrix(fitMeasurement),
     fitStructural     = plssemMatrix(fitStructural),
     fitCov            = plssemMatrix(fitCov, symmetric = TRUE),
     fitTheta          = plssemMatrix(fitTheta, symmetric = TRUE),
@@ -166,16 +166,17 @@ modelFitIsAdmissible <- function(fit) {
   )
 
   (
-    !anyNA(fit$fitWeights)       &&
-    !anyNA(fit$fitLambda)        &&
-    !anyNA(fit$fitStructural)    &&
-    !anyNA(fit$fitTheta)         &&
-    !anyNA(fit$fitCov)           &&
-    !anyNA(fit$fitC)             &&
-    isPositiveDefinite(fit$fitC) &&
-    all(diag(fit$fitTheta) >= 0) &&
-    all(diag(fit$fitCov) >= 0)   &&
-    Q.admissible                 &&
+    !anyNA(fit$fitWeights)                          &&
+    !anyNA(fit$fitLambda)                           &&
+    !anyNA(fit$fitStructural)                       &&
+    !anyNA(fit$fitTheta)                            &&
+    !anyNA(fit$fitCov)                              &&
+    !anyNA(fit$fitC)                                &&
+    isPositiveDefinite(fit$fitC)                    &&
+    all(diag(fit$fitTheta) >= 0)                    &&
+    all(diag(fit$fitCov) >= 0)                      &&
+    all(fit$fitLambda  >= -1 & fit$fitLambda  <= 1) && # weights can exceed +/- 1, but not loadings
+    Q.admissible                                    &&
     fit$status.admissible # check flag from the input model
   )
 }

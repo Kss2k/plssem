@@ -34,5 +34,5 @@ sim.ord <- as.data.frame(lapply(sim.cont, \(x) as.integer(x > 0)))
 fit.start.low <- pls(m.start.low, data = sim.ord, ordered = colnames(sim.ord))
 fit.start.high <- pls(m.start.high, data = sim.ord, ordered = colnames(sim.ord))
 
-mcplsLoglik(fit.start.low)
-mcplsLoglik(fit.start.high)
+mcpls_loglik(fit.start.low)
+mcpls_loglik(fit.start.high)

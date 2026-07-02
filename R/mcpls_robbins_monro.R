@@ -23,7 +23,9 @@ robbinsMonro1951 <- function(p, f, tol, min.iter, max.iter, verbose,
 
   if (polyak.juditsky && pj.extrapolate) {
     mcfit$root <- getConvergencePoints(
-      history = mcfit$history, lower = lower, upper = upper
+      history = mcfit$history,
+      lower   = mcfit$lower,
+      upper   = mcfit$upper
     )
   }
 
@@ -57,9 +59,17 @@ SimDesign.RobbinsMonro <- function(f, p, ...,
     fp <- f(p)
     p <- p - a * fp
 
+    # Does f() return (dynamic) bounduaries?
+    lower.fp <- attr(fp, "lower")
+    upper.fp <- attr(fp, "upper")
+
+    # Combine bounds
+    lower.i <- if (!is.null(lower.fp)) pmax(lower, lower.fp) else lower
+    upper.i <- if (!is.null(upper.fp)) pmin(upper, upper.fp) else upper
+
     # clamp
-    p[p < lower] <- lower[p < lower]
-    p[p > upper] <- upper[p > upper]
+    p[p < lower.i] <- lower.i[p < lower.i]
+    p[p > upper.i] <- upper.i[p > upper.i]
 
     history[i + 1L, ] <- p
     change <- max(abs(history[i,]-p))
@@ -88,9 +98,17 @@ SimDesign.RobbinsMonro <- function(f, p, ...,
 
   converged <- i < maxiter
   history <- history[0L:i + 1L, , drop=FALSE]
-  ret <- list(iter=i, root=if(Polyak_Juditsky) pbar else p,
-              terminated_early=converged,
-              history=history, Polyak_Juditsky=Polyak_Juditsky)
+
+  ret <- list(
+    iter             = i,
+    root             = if (Polyak_Juditsky) pbar else p,
+    history          = history,
+    lower            = lower.i,
+    upper            = upper.i,
+    terminated_early = converged,
+    Polyak_Juditsky  = Polyak_Juditsky
+  )
+
   class(ret) <- 'RM'
   ret
 }

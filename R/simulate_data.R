@@ -2,6 +2,7 @@ simulateDataParTable <- function(parTable,
                                  N            = 1e5,
                                  seed         = NULL,
                                  .cortol      = .95,
+                                 tol          = 1e-4,
                                  check.hi.ord = FALSE,
                                  clusterSizes = NULL,
                                  clusterName  = NULL,
@@ -38,39 +39,14 @@ simulateDataParTable <- function(parTable,
     v
   }
 
-  parTable$penalty <- 0 # parameter penalties for inadmissible solutions
-
-  penalty.cfg <- list(
-    corr = list(
-      limit = abs(.cortol),
-      guard = 0,
-      beta  = 10,
-      scale = 1,
-      max_penalty = 2
-    ),
-    loading = list( # shouldn't be necessary, as we used bounded optimization
-      limit = 1,
-      guard = 0.000005,
-      clamp = 0.000001,
-      beta  = 3,
-      scale = 0.02,
-      tol   = sqrt(.Machine$double.eps),
-      max_penalty = 1
-    ),
-    projvar = list( # shouldn't be necessary, as we used bounded optimization
-      limit = 1,
-      guard = 0.05,
-      beta  = 3,
-      scale = 1,
-      max_penalty = 2
-    )
-  )
-
-  projbound <- penalty.cfg$projvar$limit - penalty.cfg$projvar$guard
-
   if (check.hi.ord)
     parTable <- highOrdMeasrAsStructParTable(parTable)
 
+  # bounds
+  parTable$lower <- -Inf
+  parTable$upper <- +Inf
+
+  # info
   xis     <- getXis(parTable, isLV = !check.hi.ord)
   etas    <- getSortedEtas(parTable)
   mode.a  <- getReflectiveLVs(parTable)
@@ -114,7 +90,6 @@ simulateDataParTable <- function(parTable,
     vars          = xis,
     parTable      = parTable,
     .cortol       = .cortol,
-    penalty.cfg   = penalty.cfg,
     unitVariances = TRUE
   )
 
@@ -152,8 +127,9 @@ simulateDataParTable <- function(parTable,
   for (eta in etas) {
 
     # forward declare
-    U          <- NULL
-    U.expanded <- NULL
+    U           <- NULL
+    U.expanded  <- NULL
+    randeff.eta <- character(0L)
 
     if (mixed) {
       randeff.eta <- randeff[startsWith(randeff, paste0(eta, "~"))]
@@ -164,7 +140,6 @@ simulateDataParTable <- function(parTable,
           vars          = randeff.eta,
           parTable      = parTable,
           .cortol       = .cortol,
-          penalty.cfg   = penalty.cfg,
           unitVariances = FALSE
         )
 
@@ -190,12 +165,13 @@ simulateDataParTable <- function(parTable,
     cond <- parTable$lhs == eta & parTable$op == "~"
     predRows <- parTable[cond, , drop = FALSE]
 
-    vals <- numeric(N)
+    vals.fixed <- numeric(N)
+    vals.random <- numeric(N)
 
     # Random Intercept
     par <- paste0(eta, "~1")
     if (par %in% colnames(U))
-      vals <- vals + U.expanded[,par]
+      vals.random <- vals.random + U.expanded[,par]
 
     for (i in seq_len(NROW(predRows))) {
       row  <- predRows[i, ]
@@ -203,57 +179,64 @@ simulateDataParTable <- function(parTable,
       pred <- row$rhs
 
       # Fixed effect
-      vals <- vals + beta * Xi[[pred]]
+      vals.fixed <- vals.fixed + beta * Xi[[pred]]
 
       # Random Effect
       par <- paste0(eta, "~", pred)
       if (par %in% colnames(U))
-        vals <- vals + U.expanded[,par] * Xi[[pred]]
+        vals.random <- vals.random + U.expanded[,par] * Xi[[pred]]
     }
 
+    vals <- vals.fixed + vals.random
     projvar <- stats::var(vals)
     resvar  <- checkFixVar(1 - projvar)
 
-    if (projvar > projbound) {
-      # kicks in after projvar > 1 - guard
-      beta.x <- parTable[cond, "est"]
+    if (is.finite(projvar) && projvar > 1 - tol) {
+      # Get bounds for (fixed) beta (i.e., resvar=0)
+      beta.x <- predRows[,"est"]
+      beta.y <- beta.x / sqrt(max(projvar, tol))
 
-      projv.penalty <- smoothBoundaryPenalty(
-        projvar,
-        limit = penalty.cfg$projvar$limit,
-        guard = penalty.cfg$projvar$guard,
-        beta  = penalty.cfg$projvar$beta,
-        scale = penalty.cfg$projvar$scale,
-        penalty.max = penalty.cfg$projvar$max_penalty
-      )
-
-      # penalty that should lower the absolute magnitude of the coefficients
-      parTable[cond, "penalty"] <- (
-        parTable[cond, "penalty"] + projv.penalty * sign(beta.x)
-      )
+      parTable[cond, "lower"] <- pmin(-abs(beta.y) + tol, -tol)
+      parTable[cond, "upper"] <- pmax(+abs(beta.y) - tol, +tol)
     }
 
-    if (!attr(resvar, "ok")) {
-      # kicks in after projvar > 1
+    if (is.finite(projvar) && projvar > 1 - tol && length(randeff.eta)) {
+      v0 <- stats::var(vals.fixed)
+      v1 <- stats::var(vals.random)
+      vc <- stats::cov(vals.fixed, vals.random)
 
-      # Recalc coefficients and penalize
-      formulaString <- paste(
-        eta, "~",
-        paste0(predRows$rhs, collapse = " + ")
-      )
+      if (is.finite(v1) && v1 > 0) {
+        limit <- 1 - tol
+        roots <- polyroot(c(v0 - limit, 2 * vc, v1))
+        roots <- Re(roots[abs(Im(roots)) < 1e-7])
+        roots <- roots[is.finite(roots) & roots >= 0 & roots <= 1]
+        scale <- if (length(roots)) max(roots) else 0
+        scale2 <- scale^2
 
-      Xi[[eta]] <- standardizeAtomic(vals)
-      beta.hat <- betacoef(formulaString, data = Xi)
+        re.rows <- which(
+          parTable$op == "~~" &
+          parTable$lhs %in% randeff.eta &
+          parTable$rhs %in% randeff.eta
+        )
 
-      beta.y <- beta.hat[parTable[cond, "rhs"]]
-      beta.x <- parTable[cond, "est"]
+        for (row in re.rows) {
+          est <- parTable[row, "est"]
+          if (!is.finite(est)) next
 
-      # penalty that should lower the absolute magnitude of the coefficients
-      parTable[cond, "penalty"] <- (
-        parTable[cond, "penalty"] +
-        penalty.cfg$projvar$scale * abs(beta.x - beta.y) * sign(beta.x)
-      )
+          if (parTable$lhs[[row]] == parTable$rhs[[row]]) {
+            lim <- max(.Machine$double.eps, abs(est) * scale2 - tol)
+            parTable[row, "lower"] <- pmax(parTable[row, "lower"], .Machine$double.eps)
+            parTable[row, "upper"] <- pmin(parTable[row, "upper"], lim)
+
+          } else {
+            lim <- max(0, abs(est) * scale2 - tol)
+            parTable[row, "lower"] <- pmax(parTable[row, "lower"], -lim)
+            parTable[row, "upper"] <- pmin(parTable[row, "upper"],  lim)
+          }
+        }
+      }
     }
+
 
     # Disturbance. In `reduced` mode (or when this eta has no residual
     # covariance) the disturbance is independent with variance `resvar`. In
@@ -274,21 +257,31 @@ simulateDataParTable <- function(parTable,
       beta <- tryCatch(as.vector(solve(M, a)), error = \(...) numeric(length(a)))
 
       cmean   <- as.vector(disturbances %*% beta)
-      condvar <- checkFixVar(1 - stats::var(vals + cmean))
+      vcmean  <- stats::var(vals + cmean)
+      condvar <- checkFixVar(1 - vcmean)
 
-      if (!attr(condvar, "ok")) {
-        # The requested residual covariances exceed what the variances allow
-        # (the conditional variance went negative). Penalise the offending rows
-        # back toward zero by the amount `condvar` was clamped from, i.e.
-        # `Var(vals + cmean) - 1`.
-        idx <- which(
-          parTable$op == "~~" &
-          parTable$lhs != parTable$rhs &
-          (parTable$lhs == eta | parTable$rhs == eta)
-        )
+      if (is.finite(vcmean) && vcmean > 1 - tol) {
+        scale <- sqrt(max(0, (1 - tol) / vcmean))
+        a.bound <- abs(a) * scale
 
-        parTable[idx, "penalty"] <- parTable[idx, "penalty"] +
-          sign(parTable[idx, "est"]) * (stats::var(vals + cmean) - 1)
+        for (v in names(a.bound)) {
+          if (!is.finite(a.bound[[v]]) || a.bound[[v]] == 0) next
+
+          lim <- max(0, a.bound[[v]] - tol)
+          idx <- which(
+            parTable$op == "~~" &
+            parTable$lhs != parTable$rhs &
+            (
+              (parTable$lhs == eta & parTable$rhs == v) |
+              (parTable$lhs == v   & parTable$rhs == eta)
+            )
+          )
+
+          if (!length(idx)) next
+
+          parTable[idx, "lower"] <- pmax(parTable[idx, "lower"], -lim)
+          parTable[idx, "upper"] <- pmin(parTable[idx, "upper"],  lim)
+        }
       }
 
       zeta <- cmean + Rfast::Rnorm(N, m = 0, s = sqrt(condvar), seed = rfast.seed())
@@ -320,26 +313,11 @@ simulateDataParTable <- function(parTable,
         parTable$rhs == ind
       )
 
-      lambda.raw <- parTable[cond, "est"]
-
-      lambda.penalty <- smoothBoundaryPenalty(
-        lambda.raw,
-        limit = penalty.cfg$loading$limit,
-        guard = penalty.cfg$loading$guard,
-        beta  = penalty.cfg$loading$beta,
-        scale = penalty.cfg$loading$scale,
-        penalty.max = penalty.cfg$loading$max_penalty
-      )
-
-      if (lambda.penalty != 0) {
-        parTable[cond, "penalty"] <- parTable[cond, "penalty"] + lambda.penalty
-        is.admissible <- FALSE
-      }
-
-      clamp.margin <- max(penalty.cfg$loading$clamp, penalty.cfg$loading$tol)
-      clamp.limit <- max(0, penalty.cfg$loading$limit - clamp.margin)
-      lambda <- clampAbs(lambda.raw, clamp.limit)
+      lambda <- parTable[cond, "est"]
       epsilon <- checkFixVar(1 - lambda^2)
+
+      parTable[cond, "lower"] <- -1 + tol
+      parTable[cond, "upper"] <-  1 - tol
 
       # vals <- lambda * Xi[[lv]] + rnorm(N, mean = 0, sd = sqrt(epsilon))
       vals <- lambda * Xi[[lv]] + Rfast::Rnorm(N, m = 0, s = sqrt(epsilon), seed = rfast.seed())
@@ -389,14 +367,15 @@ simulateDataParTable <- function(parTable,
     ov            = Ov,
     lv            = Lv,
     is.admissible = is.admissible,
-    penalty       = parTable$penalty,
+    lower         = parTable$lower,
+    upper         = parTable$upper,
     parTable      = parTable,
     cluster       = clusterMat
   )
 }
 
 
-buildCovMat <- function(vars, parTable, .cortol, penalty.cfg, unitVariances = FALSE) {
+buildCovMat <- function(vars, parTable, .cortol, unitVariances = FALSE) {
   mat <- diag(if (unitVariances) 1 else 0, length(vars))
   dimnames(mat) <- list(vars, vars)
 
@@ -404,19 +383,11 @@ buildCovMat <- function(vars, parTable, .cortol, penalty.cfg, unitVariances = FA
     cond.v <- parTable$rhs == v & parTable$lhs == v & parTable$op == "~~"
     v.i    <- parTable[cond.v, "est"]
 
-    if (v.i <= 0) {
-      penalty <- smoothBoundaryPenalty(
-        -v.i,
-        limit       = 0,
-        guard       = 0,
-        beta        = penalty.cfg$corr$beta,
-        scale       = penalty.cfg$corr$scale,
-        penalty.max = penalty.cfg$corr$max_penalty
-      )
-      if (penalty != 0)
-        parTable[cond.v, "penalty"] <- parTable[cond.v, "penalty"] + penalty
+    if (v.i <= 0)
       v.i <- .Machine$double.eps
-    }
+    
+    parTable[cond.v, "lower"] <- .Machine$double.eps
+    parTable[cond.v, "upper"] <- Inf
 
     mat[v, v] <- v.i
   }
@@ -437,24 +408,11 @@ buildCovMat <- function(vars, parTable, .cortol, penalty.cfg, unitVariances = FA
       if (is.na(p.ij)) p.ij <- 0        # no `~~` row specified -> uncorrelated
       r.ij  <- p.ij / denom             # cor
 
-      if (r.ij <= -.cortol || r.ij >= .cortol) {
+      if (r.ij <= -.cortol || r.ij >= .cortol)
+        p.ij <- denom * sign(p.ij) * abs(.cortol)
 
-        # Get standardized penalty
-        penalty.r <- smoothBoundaryPenalty(
-          r.ij,
-          limit       = penalty.cfg$corr$limit,
-          guard       = penalty.cfg$corr$guard,
-          beta        = penalty.cfg$corr$beta,
-          scale       = penalty.cfg$corr$scale,
-          penalty.max = penalty.cfg$corr$max_penalty
-        )
-
-        penalty <- denom * penalty.r
-        p.ij    <- denom * sign(p.ij) * abs(.cortol)
-
-        if (penalty != 0)
-          parTable[cond, "penalty"] <- parTable[cond, "penalty"] + penalty
-      }
+      parTable[cond, "upper"] <-  abs(.cortol) * denom
+      parTable[cond, "lower"] <- -abs(.cortol) * denom
 
       mat[i, j] <- mat[j, i] <- p.ij
     }

@@ -130,8 +130,14 @@ mcpls <- function(
     fit2 <- estimatePLS_Inner(fit.sim)
     par2 <- getFreeParamsTable(combinedModel(fit2))
 
-    eps <- par2$est - par0$est + sim$penalty
-    eps[par0$is.free]
+    eps <- par2$est - par0$est
+    free <- par0$is.free
+
+    out <- eps[free]
+    attr(out, "lower") <- sim$lower[free]
+    attr(out, "upper") <- sim$upper[free]
+
+    out
   }
 
   .g <- function(p, thresholdStruct = thresholdStruct0, sim = NULL) {

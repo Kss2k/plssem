@@ -196,8 +196,8 @@ simulateDataParTable <- function(parTable,
       beta.x <- predRows[,"est"]
       beta.y <- beta.x / sqrt(max(projvar, tol))
 
-      parTable[cond, "lower"] <- -abs(beta.y) + tol
-      parTable[cond, "upper"] <-  abs(beta.y) - tol
+      parTable[cond, "lower"] <- pmin(-abs(beta.y) + tol, -tol)
+      parTable[cond, "upper"] <- pmax(+abs(beta.y) - tol, +tol)
     }
 
     if (is.finite(projvar) && projvar > 1 - tol && length(randeff.eta)) {

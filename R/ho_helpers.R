@@ -14,7 +14,8 @@ splitHigherOrderParTable <- function(parTable) {
       # nodes (`ADDITIONAL_STRUCT_VAR_OP`) rather than as self-covariances; the
       # latter no longer marks a variable as structural.
       parStrO1 <- data.frame(
-        lhs = structOVs, op = ADDITIONAL_STRUCT_VAR_OP, rhs = "", mod = ""
+        lhs = structOVs, op = ADDITIONAL_STRUCT_VAR_OP,
+        rhs = "", mod = "", start = NA
       )
     } else {
       parStrO1 <- NULL
@@ -57,7 +58,7 @@ splitHigherOrderModel <- function(syntax) {
   pls_stopif(length(syntax) > 1L || !is.character(syntax),
              "`syntax` must be a string of length 1!")
 
-  parTable <- modsem::modsemify(syntax, parentheses.as.string = TRUE)
+  parTable <- plsParseModelSyntax(syntax)
   splitHigherOrderParTable(parTable)
 }
 
@@ -166,6 +167,11 @@ combineModelResultsFirstSecondOrder <- function(model) {
     firstOrder  = fo@matrices,
     secondOrder = so@matrices,
     select      = select
+  )
+
+  model@parTableInput <- rbind(
+    fo@parTableInput,
+    so@parTableInput
   )
 
   model@data     <- fo@data

@@ -193,6 +193,11 @@ getParTableFromParNames <- function(parnames) {
 }
 
 
+getParNamesFromParTable <- function(parTable) {
+  paste0(parTable$lhs, parTable$op, parTable$rhs)
+}
+
+
 hasResidualCovariances <- function(parTable) {
   etas <- unique(parTable[parTable$op == "~", "lhs"])
 
@@ -201,4 +206,22 @@ hasResidualCovariances <- function(parTable) {
     (parTable$rhs %in% etas | parTable$lhs %in% etas) &
     parTable$lhs != parTable$rhs
   )
+}
+
+
+addReverseCovariancesToParTable <- function(parTable) {
+  # The covariance x~~y can be specified as y~~x. If the user supplies
+  # important information to one of these (e.g., y ~~ start(0.1) * x)
+  # there is a risk that we internally represent the covariance as the opposite
+  # (e.g., x~~y). To address this, we can add both directions to the parTable
+  is.cov <- parTable$op == "~~" & parTable$lhs != parTable$rhs
+
+  if (!any(is.cov))
+    return(parTable)
+
+  parTableCov <- parTable[is.cov, , drop = FALSE]
+  parTableCov$lhs <- parTable[is.cov, "rhs"]
+  parTableCov$rhs <- parTable[is.cov, "lhs"]
+
+  rbind(parTable, parTableCov)
 }

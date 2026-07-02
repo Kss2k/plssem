@@ -160,8 +160,28 @@ mcpls <- function(
          g = .g(p, thresholdStruct = thresholdStruct, sim = sim))
   }
 
+  # Starting parameters
   ok.start <- !is.null(p.start) && length(p.start) == sum(par1$is.free)
   p        <- if (ok.start) p.start else par1[par1$is.free, "est"]
+  names(p) <- getParNamesFromParTable(par1)[par1$is.free]
+
+  # If p.start was not supplied, check if any parameters were specified
+  # in the model syntax/parameter table. We add the reversed covariances
+  # to the partable, in case the user has specified starting values for the
+  # covariances
+  parTableInput <- addReverseCovariancesToParTable(
+    fit0.combined@parTableInput
+  )
+
+  if (!ok.start && any(!is.na(parTableInput$start))) {
+    idx <- which(!is.na(parTableInput$start))
+
+    start <- parTableInput[idx, "start"]
+    names(start) <- getParNamesFromParTable(parTableInput)[idx]
+
+    update <- intersect(names(start), names(p))
+    p[update] <- start[update]
+  }
 
   lower <- getMcLowerBounds(par1)
   upper <- getMcUpperBounds(par1)

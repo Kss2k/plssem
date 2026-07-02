@@ -423,9 +423,10 @@ mcplsLoglik <- function(object, boot.R = 500, verbose = interactive()) {
 
   }
 
-  complete <- stats::complete.cases(X)
-  ncomplete <- sum(complete)
-  nparams <- NROW(free0)
+  complete   <- stats::complete.cases(X)
+  X.complete <- X[complete, , drop = FALSE]
+  ncomplete  <- sum(complete)
+  nparams    <- NROW(free0)
 
   pls_stopif(ncomplete <= nparams,
     "Unable to compute `mcpls_loglik()` with a stable covariance matrix.",
@@ -437,8 +438,8 @@ mcplsLoglik <- function(object, boot.R = 500, verbose = interactive()) {
   )
 
   observed <- stats::setNames(free0$est, nm = nm0)
-  expected <- colMeans(X, na.rm = TRUE)
-  sigma    <- cov(X, use = "complete.obs")
+  expected <- colMeans(X.complete)
+  sigma    <- cov(X.complete)
 
   loglik <- tryCatch(
     mvnfast::dmvn(

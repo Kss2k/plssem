@@ -57,7 +57,7 @@ splitHigherOrderModel <- function(syntax) {
   pls_stopif(length(syntax) > 1L || !is.character(syntax),
              "`syntax` must be a string of length 1!")
 
-  parTable <- modsem::modsemify(syntax, parentheses.as.string = TRUE)
+  parTable <- plsParseModelSyntax(syntax)
   splitHigherOrderParTable(parTable)
 }
 
@@ -166,6 +166,11 @@ combineModelResultsFirstSecondOrder <- function(model) {
     firstOrder  = fo@matrices,
     secondOrder = so@matrices,
     select      = select
+  )
+
+  model@parTableInput <- rbind(
+    fo@parTableInput,
+    so@parTableInput
   )
 
   model@data     <- fo@data

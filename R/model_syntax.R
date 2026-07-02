@@ -1,3 +1,10 @@
+plsParseModelSyntax <- function(syntax) {
+  parTable <- modsem::modsemify(syntax, parentheses.as.string = TRUE)
+  parTable$start <- parseStartModifiers(parTable$mod)
+  parTable
+}
+
+
 parseModelArguments <- function(parTable,
                                 data,
                                 ordered = NULL,
@@ -126,7 +133,7 @@ parseModelArguments <- function(parTable,
     # Add measurment equation
     parTable <- rbind(
       parTable,
-      data.frame(lhs = ov, op = "<~", rhs = tmp.ov, mod = "")
+      data.frame(lhs = ov, op = "<~", rhs = tmp.ov, mod = "", start = NA)
     )
   }
 
@@ -199,4 +206,27 @@ getClusterFromMultilevelStrings <- function(strings) {
     stringr::str_split_fixed(pattern = "\\|", n = 2L)
 
   unique(unlist(stringr::str_split(split[,2L], pattern = "\\+")))
+}
+
+
+parseStartModifiers <- function(mod) {
+  pattern <- "^start\\((.*)\\)$"
+
+  idx   <- which(grepl(pattern, mod))
+  start <- rep(NA_real_, length(mod))
+
+  vals <- stringr::str_extract(mod[idx], pattern = pattern, group = 1L)
+  vals <- suppressWarnings(as.numeric(vals))
+
+  if (anyNA(vals)) {
+    bad <- mod[idx][is.na(vals)]
+
+    pls_msg_warn(
+      "Could not parse start values for some `start()` modifiers!",
+      "Failed to parse:", paste0(bad, collapse = ", ")
+    )
+  }
+
+  start[idx] <- vals
+  start
 }

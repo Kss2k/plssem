@@ -193,6 +193,11 @@ getParTableFromParNames <- function(parnames) {
 }
 
 
+getParNamesFromParTable <- function(parTable) {
+  paste0(parTable$lhs, parTable$op, parTable$rhs)
+}
+
+
 hasResidualCovariances <- function(parTable) {
   etas <- unique(parTable[parTable$op == "~", "lhs"])
 

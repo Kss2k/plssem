@@ -14,7 +14,7 @@ VEC_STRUCT <- numeric(0)
 
 
 specifyModel <- function(syntax, data, ..., strict = TRUE) {
-  parTable <- modsem::modsemify(syntax, parentheses.as.string = TRUE)
+  parTable <- plsParseModelSyntax(syntax)
 
   if (strict) {
     # check if we have any user-supplied names which use reserved patterns
@@ -213,6 +213,11 @@ specifySubModel <- function(parTable,
       "Consider passing `mcpls=TRUE` to yield more consistent results."
     )
   }
+
+  pls_warnif(!info$is.mcpls && any(!is.na(pt$start)),
+    "`start()` modifiers are only relevant when `mcpls=TRUE`,",
+    "otherwise they are ignored."
+  )
 
   matrices$S  <- preppedData$S
   matrices$SC <- diagPartitioned(matrices$S, matrices$C)

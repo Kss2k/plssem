@@ -14,7 +14,8 @@ splitHigherOrderParTable <- function(parTable) {
       # nodes (`ADDITIONAL_STRUCT_VAR_OP`) rather than as self-covariances; the
       # latter no longer marks a variable as structural.
       parStrO1 <- data.frame(
-        lhs = structOVs, op = ADDITIONAL_STRUCT_VAR_OP, rhs = "", mod = ""
+        lhs = structOVs, op = ADDITIONAL_STRUCT_VAR_OP,
+        rhs = "", mod = "", start = NA
       )
     } else {
       parStrO1 <- NULL

@@ -11,14 +11,14 @@ syntax <- "
 
 testthat::expect_no_error({
   fit.c <- pls(syntax, data = randomSlopes,
-             consistent = TRUE, bootstrap = TRUE)
+               consistent = TRUE, bootstrap = TRUE, boot.R = 50)
   summary(fit.c)
   unstandardized_estimates(fit.c)
 })
 
 testthat::expect_no_error({
   fit.mc <- pls(syntax, data = randomSlopes,
-                consistent = FALSE, mcpls = TRUE)
+                consistent = FALSE, mcpls = TRUE, boot.R = 50)
   summary(fit.mc)
 })
 
@@ -33,7 +33,7 @@ syntax <- "
 
 testthat::expect_no_error({
   fit.o <- pls(syntax, data = randomSlopesOrdered,
-             consistent = TRUE, bootstrap = TRUE, mcpls = TRUE)
+               consistent = TRUE, bootstrap = TRUE, mcpls = TRUE, boot.R = 50)
   summary(fit.o)
 })
 
@@ -50,6 +50,6 @@ syntax <- "
 
 testthat::expect_no_error({
   fit.c <- pls(syntax, data = randomSlopes,
-               consistent = TRUE, bootstrap = FALSE)
+               consistent = TRUE, bootstrap = FALSE, boot.R = 50)
   summary(fit.c)
 })

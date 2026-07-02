@@ -6,7 +6,7 @@ syntax <- '
 '
 
 testthat::expect_no_error({
-  fit <- pls(syntax, data = randomIntercepts, bootstrap = FALSE)
+  fit <- pls(syntax, data = randomIntercepts, bootstrap = FALSE, boot.R = 50)
   summary(fit)
 })
 
@@ -17,6 +17,6 @@ syntax <- '
 '
 
 testthat::expect_no_error({
-  fit <- pls(syntax, data = randomInterceptsOrdered, bootstrap = TRUE)
+  fit <- pls(syntax, data = randomInterceptsOrdered, bootstrap = TRUE, boot.R = 50)
   summary(fit)
 })

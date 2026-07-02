@@ -6,7 +6,8 @@ simulateDataParTable <- function(parTable,
                                  clusterSizes = NULL,
                                  clusterName  = NULL,
                                  standardize  = FALSE,
-                                 full         = FALSE) {
+                                 full         = FALSE,
+                                 cut          = FALSE) {
   if (!is.null(seed) && exists(".Random.seed")) .Random.seed.orig <- .Random.seed
   else                                          .Random.seed.orig <- NULL
 
@@ -360,8 +361,28 @@ simulateDataParTable <- function(parTable,
 
   Inds <- as.data.frame(Inds)
   All  <- cbind(Xi, Inds)
-  Lv   <- All[lvs]
-  Ov   <- All[ovs]
+
+  if (cut) {
+    # Create ordinal variables from thresholds. This is set to FALSE in the
+    # MC-PLS estimation, as we cut by the observed proportions instead.
+    # This is however useful in other circumstances (e.g., mcpls_loglik())
+
+    thrvars <- unique(parTable[parTable$op == "|", "lhs"])
+    for (thrvar in thrvars) {
+      # get thresholds
+      tau <- parTable[parTable$op == "|" & parTable$lhs == thrvar, "est"]
+
+      # cut
+      cont <- All[[thrvar]]
+      ord  <- cut(cont, breaks = c(-Inf, sort(tau), Inf), labels = FALSE)
+
+      # replace continous values with ordinal categories
+      All[[thrvar]] <- ord
+    }
+  }
+
+  Lv <- All[lvs]
+  Ov <- All[ovs]
 
   list(
     all           = All,

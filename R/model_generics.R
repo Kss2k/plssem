@@ -643,3 +643,27 @@ setGeneric(
 setMethod("pls_chisq_df", "PlsModel", function(object, saturated = FALSE, mc.reps = 1e6, ...) {
   fitMeasures(object, saturated = saturated, mc.reps = mc.reps)$chisq.df
 })
+
+
+#' Loglikelihood of MC-PLS parameters
+#'
+#' Compute Loglikelihood statistics for an MC-PLS model.
+#'
+#' @param object A fitted [PlsModel] object, using MC-PLS.
+#' @param boot.R Integer; Number of bootstrap replicates.
+#' @param verbose Logical; Should a progressbar be displayed?
+#' @param ... Reserved for future extensions.
+#' @return List with loglikelihood value, expected and observed auxiliary parameters,
+#'   and variance covariance matrix of the expected auxiliary parameters.
+#' @export
+setGeneric(
+  "mcpls_loglik",
+  function(object, boot.R = 500, verbose = interactive(), ...) standardGeneric("mcpls_loglik")
+)
+
+
+#' @rdname mcpls_loglik
+#' @export
+setMethod("mcpls_loglik", "PlsModel", function(object, boot.R = 500, verbose = interactive(), ...) {
+  mcplsLoglik(object, boot.R = boot.R, verbose = verbose)
+})

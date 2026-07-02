@@ -342,6 +342,9 @@ mcpls <- function(
     fit1.combined@params$JacobianProbs1 <- Gp
   }
 
+  fit1.combined@params$mcpls.history <- plssemMatrix(mcfit$history)
+  fit1.combined@status$par0 <- par0
+  fit1.combined@status$fit0 <- fit0.base
 
   fit1.combined@status$iterations    <- mcfit$iter
   fit1.combined@info$mc.args$p.start <- as.vector(mcfit$root)
@@ -455,9 +458,9 @@ updateModelFromFreeParTableMC <- function(parTable,
     model@matrices$sim.ov.ord     <- sim.ord
   }
 
-  model@matrices$S              <- SC[ovs,  ovs,  drop = FALSE]
-  model@matrices$C              <- SC[lvsc, lvsc, drop = FALSE]
-  model@matrices$SC             <- SC[c(ovs, lvsc), c(ovs, lvsc), drop = FALSE]
+  model@matrices$S  <- SC[ovs,  ovs,  drop = FALSE]
+  model@matrices$C  <- SC[lvsc, lvsc, drop = FALSE]
+  model@matrices$SC <- SC[c(ovs, lvsc), c(ovs, lvsc), drop = FALSE]
 
   fit            <- model@fit
   fitMeasurement <- fit$fitMeasurement

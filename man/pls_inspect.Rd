@@ -26,6 +26,7 @@ parentheses. One of:
   \item{\code{"coef"} (alias \code{"coefficients"})}{The model coefficients.}
   \item{\code{"par"} (alias \code{"partable"})}{The parameter table.}
   \item{\code{"fit"}}{Fit measures.}
+  \item{\code{"mcpls.history"} (alias \code{"history"})}{The history of the MC-PLS estimates.}
   \item{\code{"chisq"}}{The model chi-square statistic.}
   \item{\code{"chisq.df"} (alias \code{"df"})}{The chi-square degrees of
     freedom.}

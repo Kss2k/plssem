@@ -6,6 +6,8 @@
 \title{randomSlopes}
 \description{
 A simulated dataset.
+}
+\examples{
 
 \donttest{
 syntax <- "

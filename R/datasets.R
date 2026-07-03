@@ -3,6 +3,7 @@
 #' @name randomSlopes
 #' @docType data
 #' @description A simulated dataset.
+#' @examples
 #'
 #' \donttest{
 #' syntax <- "

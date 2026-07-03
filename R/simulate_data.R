@@ -1,8 +1,9 @@
 simulateDataParTable <- function(parTable,
                                  N            = 1e5,
                                  seed         = NULL,
+                                 tol          = 1e-3,
                                  .cortol      = .95,
-                                 tol          = 1e-4,
+                                 .varguard       = 5 * tol,
                                  check.hi.ord = FALSE,
                                  clusterSizes = NULL,
                                  clusterName  = NULL,
@@ -191,16 +192,16 @@ simulateDataParTable <- function(parTable,
     projvar <- stats::var(vals)
     resvar  <- checkFixVar(1 - projvar)
 
-    if (is.finite(projvar) && projvar > 1 - tol) {
+    if (is.finite(projvar) && projvar >= 1 - .varguard) {
       # Get bounds for (fixed) beta (i.e., resvar=0)
       beta.x <- predRows[,"est"]
-      beta.y <- beta.x / sqrt(max(projvar, tol))
+      beta.y <- beta.x / sqrt(pmax(projvar + .varguard, .varguard))
 
       parTable[cond, "lower"] <- pmin(-abs(beta.y) + tol, -tol)
       parTable[cond, "upper"] <- pmax(+abs(beta.y) - tol, +tol)
     }
 
-    if (is.finite(projvar) && projvar > 1 - tol && length(randeff.eta)) {
+    if (is.finite(projvar) && projvar > 1 - .varguard && length(randeff.eta)) {
       v0 <- stats::var(vals.fixed)
       v1 <- stats::var(vals.random)
       vc <- stats::cov(vals.fixed, vals.random)

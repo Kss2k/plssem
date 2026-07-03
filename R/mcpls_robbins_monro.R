@@ -1,62 +1,41 @@
-robbinsMonro1951 <- function(p, f, tol, min.iter, max.iter, verbose,
-                             polyak.juditsky = FALSE, pj.extrapolate = TRUE,
-                             fn.args, lower = NULL, upper = NULL, ...) {
-  # Wrapper for SimDesign::RobbinsMonro/SimDesign.RobbinsMonro
-
-  args.required <- list(
-      p               = p,
-      f               = f,
-      tol             = tol,
-      miniter         = min.iter,
-      maxiter         = max.iter,
-      verbose         = verbose,
-      Polyak_Juditsky = polyak.juditsky,
-      lower           = lower,
-      upper           = upper
-  )
-
-  args <- c(args.required, fn.args, list(...))
-
-  # mcfit <- do.call(SimDesign::RobbinsMonro, args)
-  mcfit <- do.call(SimDesign.RobbinsMonro, args)
-  if (verbose) messagef("\n")
-
-  if (polyak.juditsky && pj.extrapolate) {
-    mcfit$root <- getConvergencePoints(
-      history = mcfit$history,
-      lower   = mcfit$lower,
-      upper   = mcfit$upper
-    )
-  }
-
-  mcfit
-}
-
-
 # The code below is adapted from the `SimDesign` package
 # https://github.com/philchalmers/SimDesign/blob/main/R/RobbinsMonro.R
 # The SimDesign package depends on the `qs2` package, which currently
 # 04.25.2026 has some installation issues on r-release-macos-x86_64
 # We only use the RobbinsMonro function, which does not depend on the
 # `qs2` package. In the future we might revert back to `SimDesign::RobbinsMonro`.
-SimDesign.RobbinsMonro <- function(f, p, ...,
-                                   Polyak_Juditsky = FALSE,
-                                   maxiter = 500L, miniter = 100L, k = 3L,
-                                   tol = .00001, verbose = interactive(),
-                                   fn.a = \(iter, a = 1, b = 1/2, c = 0, ...) a / (iter + c)^b,
-                                   lower = NULL,
-                                   upper = NULL) {
-  if (maxiter < miniter) maxiter <- miniter
-  history <- rbind(p, matrix(NA, nrow=maxiter, ncol=length(p)))
+
+
+robbinsMonro1951 <- function(p,
+                             f,
+                             ...,
+                             k = 3,
+                             tol = 0.00001,
+                             min.iter = 100L,
+                             max.iter = 500L,
+                             lower = NULL,
+                             upper = NULL,
+                             verbose = interactive(),
+                             polyak.juditsky = FALSE,
+                             pj.extrapolate = TRUE,
+                             fn.a = \(iter, a = 1, b = 1/2, c = 0, ...) a / (iter + c)^b,
+                             fn.args = list(),
+                             k.dyn.bound = 5) {
+
+  if (max.iter < min.iter)
+    max.iter <- min.iter
+
+  history <- rbind(p, matrix(NA, nrow=max.iter, ncol=length(p)))
   k.succ <- 0
-  pbar_last <- pbar <- p
+  pbar.last <- pbar <- p
 
   if (is.null(lower)) lower <- rep(-Inf, length(p))
   if (is.null(upper)) upper <- rep( Inf, length(p))
 
-  for (i in seq_len(maxiter)) {
-    a <- fn.a(iter=i, ...)
-    fp <- f(p)
+  for (i in seq_len(max.iter)) {
+    a  <- do.call(fn.a, c(list(iter = i), fn.args))
+    fp <- f(p, ...)
+
     p <- p - a * fp
 
     # Does f() return (dynamic) bounduaries?
@@ -74,14 +53,14 @@ SimDesign.RobbinsMonro <- function(f, p, ...,
     history[i + 1L, ] <- p
     change <- max(abs(history[i,]-p))
 
-    if (Polyak_Juditsky) {
-      pbar_last <- pbar
-      pbar <- PK_average(history)
-      change <- max(abs(pbar_last - pbar))
+    if (polyak.juditsky) {
+      pbar.last <- pbar
+      pbar <- pjRunningAverage(history)
+      change <- max(abs(pbar.last - pbar))
     }
 
     if (verbose) {
-      if (Polyak_Juditsky) {
+      if (polyak.juditsky) {
         msg <- MSG_STRINGS$strings$SimDesign.RobbinsMonro0
         messagef(msg, i, change)
       } else {
@@ -90,33 +69,72 @@ SimDesign.RobbinsMonro <- function(f, p, ...,
       }
     }
 
-    if (i > miniter && all(change < tol)) {
+    if (i > min.iter && all(change < tol)) {
       k.succ <- k.succ + 1L
       if (k.succ == k) break
     } else k.succ <- 0L
   }
 
-  converged <- i < maxiter
+  converged <- i < max.iter
   history <- history[0L:i + 1L, , drop=FALSE]
+
+  if (verbose) messagef("\n")
+
+  if (polyak.juditsky) {
+
+    # Get approximation, irrespective of the dynamic bounds
+    if (pj.extrapolate) {
+      pbar <- pbar0 <- getConvergencePoints(
+        history = history, lower = lower, upper = upper
+      )
+    } else {
+      pbar0 <- pbar
+    }
+
+    # Check dynamic bounds
+    has.dyn.bound <- !is.null(lower.fp) || !is.null(upper.fp)
+
+    if (has.dyn.bound) for (.i in seq_len(k.dyn.bound)) {
+      fp <- f(pbar, ...)
+
+      # Get dynamic bounds
+      lower.fp <- attr(fp, "lower")
+      upper.fp <- attr(fp, "upper")
+
+      # Combine bounds
+      lower.i <- if (!is.null(lower.fp)) pmax(lower, lower.fp) else lower
+      upper.i <- if (!is.null(upper.fp)) pmin(upper, upper.fp) else upper
+
+      if (all(pbar >= lower.i & pbar <= upper.i))
+        break # nothing needs to be done
+
+      # see if any previously discarded values in pbar0 are
+      # within the current bounds
+      inside0 <- pbar0 >= lower.i & pbar0 <= upper.i
+      pbar[inside0] <- pbar0[inside0]
+
+      # clamp and try again
+      pbar[pbar < lower.i] <- lower.i[pbar < lower.i]
+      pbar[pbar > upper.i] <- upper.i[pbar > upper.i]
+    }
+  }
 
   ret <- list(
     iter             = i,
-    root             = if (Polyak_Juditsky) pbar else p,
+    root             = if (polyak.juditsky) pbar else p,
     history          = history,
     lower            = lower.i,
     upper            = upper.i,
-    terminated_early = converged,
-    Polyak_Juditsky  = Polyak_Juditsky
+    converged        = converged,
+    polyak.juditsky  = polyak.juditsky
   )
 
-  class(ret) <- 'RM'
   ret
 }
 
 
-PK_average <- function(history) {
-  ret <- colMeans(history, na.rm=TRUE)
-  matrix(ret, ncol=ncol(history))
+pjRunningAverage <- function(history) {
+  colMeans(history, na.rm=TRUE)
 }
 
 

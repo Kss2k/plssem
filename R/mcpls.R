@@ -276,7 +276,8 @@ mcpls <- function(
     seed            = rng.seed,
     clusterSizes    = clusterSizes,
     clusterName     = clusterName,
-    full            = use.full.rescov
+    full            = use.full.rescov,
+    retry           = TRUE
   )
 
   if (delta.jacobian) {
@@ -437,7 +438,9 @@ updateModelFromFreeParTableMC <- function(parTable,
                                           clusterName = NULL,
                                           sim = NULL,
                                           params.only = FALSE,
-                                          full = FALSE) {
+                                          full = FALSE,
+                                          retry = FALSE,
+                                          n.retry = 5) {
   if (is.null(sim)) {
     sim <- simulateDataParTable(
       parTable     = parTable,
@@ -449,6 +452,35 @@ updateModelFromFreeParTableMC <- function(parTable,
       standardize  = TRUE,
       full         = full
     )
+
+    if (retry && !sim$is.admissible) {
+      sim0 <- sim
+
+      for (i in seq_len(n.retry)) {
+        if (is.null(seed)) seed.i <- NULL
+        else               seed.i <- seed + i
+
+        sim.i <- simulateDataParTable(
+          parTable     = parTable,
+          N            = mc.reps,
+          seed         = seed.i,
+          check.hi.ord = model@info$is.high.ord,
+          clusterSizes = clusterSizes,
+          clusterName  = clusterName,
+          standardize  = TRUE,
+          full         = full
+        )
+
+        if (sim.i$is.admissible) {
+          sim <- sim.i
+          break
+        }
+      }
+
+      # if we failed, revert to the original
+      if (!sim$is.admissible)
+        sim <- sim0
+    }
   }
 
   SC     <- Rfast::cova(as.matrix(sim$all))
@@ -588,7 +620,8 @@ updateModelFromFreeParTableMC <- function(parTable,
     clusterSizes    = clusterSizes,
     clusterName     = clusterName,
     params.only     = params.only,
-    full            = full
+    full            = full,
+    retry           = retry
   )
 
   model@thresholdStruct <- updateThresholds(

@@ -263,7 +263,7 @@ automatically switches to the Monte-Carlo ordinal PLSc estimator.</p>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit_int</span><span class="op">)</span></span>
-<span><span class="co">#&gt; plssem (0.1.3) did NOT END NORMALLY after 101 iterations</span></span>
+<span><span class="co">#&gt; plssem (0.1.3) ended normally after 101 iterations</span></span>
 <span><span class="co">#&gt;   Estimator                                  MCOrdPLSc</span></span>
 <span><span class="co">#&gt;   Link                                          PROBIT</span></span>
 <span><span class="co">#&gt;                                                       </span></span>
@@ -273,39 +273,39 @@ automatically switches to the Monte-Carlo ordinal PLSc estimator.</p>
 <span><span class="co">#&gt;   Number of observed variables                       3</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Fit Measures:</span></span>
-<span><span class="co">#&gt;   Chi-Square                                     0.058</span></span>
+<span><span class="co">#&gt;   Chi-Square                                     0.050</span></span>
 <span><span class="co">#&gt;   Degrees of Freedom                                 0</span></span>
 <span><span class="co">#&gt;   SRMR                                           0.002</span></span>
 <span><span class="co">#&gt;   RMSEA                                            Inf</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; R-squared (latents):</span></span>
-<span><span class="co">#&gt;   Survived                                       0.563</span></span>
+<span><span class="co">#&gt;   Survived                                       0.564</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Regressions:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   Survived ~    </span></span>
-<span><span class="co">#&gt;     Age            -0.073      0.041   -1.772    0.076</span></span>
-<span><span class="co">#&gt;     Female          0.697      0.041   16.939    0.000</span></span>
-<span><span class="co">#&gt;     Age:Female      0.250      0.060    4.171    0.000</span></span>
+<span><span class="co">#&gt;     Age            -0.073      0.057   -1.292    0.197</span></span>
+<span><span class="co">#&gt;     Female          0.697      0.030   23.177    0.000</span></span>
+<span><span class="co">#&gt;     Age:Female      0.250      0.056    4.451    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Covariances:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   Age ~~        </span></span>
-<span><span class="co">#&gt;     Female         -0.092      0.041   -2.267    0.023</span></span>
-<span><span class="co">#&gt;     Age:Female     -0.006                             </span></span>
+<span><span class="co">#&gt;     Female         -0.092      0.036   -2.548    0.011</span></span>
+<span><span class="co">#&gt;     Age:Female     -0.004                             </span></span>
 <span><span class="co">#&gt;   Female ~~     </span></span>
-<span><span class="co">#&gt;     Age:Female     -0.002                             </span></span>
+<span><span class="co">#&gt;     Age:Female      0.000                             </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Thresholds:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;     Survivd|t1      0.256      0.051    5.006    0.000</span></span>
+<span><span class="co">#&gt;     Survivd|t1      0.254      0.043    5.926    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Variances:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;    .Survived        0.437      0.084    5.232    0.000</span></span>
+<span><span class="co">#&gt;    .Survived        0.436      0.068    6.442    0.000</span></span>
 <span><span class="co">#&gt;     Age             1.000                             </span></span>
 <span><span class="co">#&gt;     Female          1.000                             </span></span>
-<span><span class="co">#&gt;     Age:Female      1.004</span></span></code></pre></div>
+<span><span class="co">#&gt;     Age:Female      1.014</span></span></code></pre></div>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/pls_predict.html">pls_predict</a></span><span class="op">(</span><span class="va">fit_int</span>, benchmark <span class="op">=</span> <span class="st">"acc"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; PlsSemPredict object</span></span>

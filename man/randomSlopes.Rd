@@ -6,6 +6,8 @@
 \title{randomSlopes}
 \description{
 A simulated dataset.
+
+\donttest{
 syntax <- "
   X =~ x1 + x2 + x3
   Z =~ z1 + z2 + z3
@@ -17,4 +19,5 @@ syntax <- "
 
 fit <- pls(syntax, data = randomSlopes)
 fit
+}
 }

@@ -345,7 +345,8 @@ mcplsLoglik <- function(object, boot.R = 500, verbose = interactive()) {
   }
 
   estimator <- combined@info$path.estimator
-  use.full.rescov <- switch(object@info$mc.args$rescov,
+  mc.rescov <- object@info$mc.args$rescov
+  use.full.rescov <- switch(mc.rescov,
     full    = TRUE,
     reduced = FALSE,
     auto    = estimator == "gls",
@@ -439,7 +440,7 @@ mcplsLoglik <- function(object, boot.R = 500, verbose = interactive()) {
 
   observed <- stats::setNames(free0$est, nm = nm0)
   expected <- colMeans(X.complete)
-  sigma    <- cov(X.complete)
+  sigma    <- stats::cov(X.complete)
 
   loglik <- tryCatch(
     mvnfast::dmvn(

@@ -230,8 +230,9 @@ getParamVecLabels <- function(model) {
 
   nm <- getParNamesFromParTable(parTable)
   lab <- parTable$label
+  keep <- lab != ""
 
-  stats::setNames(lab, nm = nm)
+  stats::setNames(lab[keep], nm = nm[keep])
 }
 
 

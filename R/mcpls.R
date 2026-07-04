@@ -408,10 +408,9 @@ getFreeParamsTable <- function(model) {
 
   cond1 <- !(lhs == rhs & op == "~~" & !grepl("~", rhs))
   cond2 <- !((isIntTermVariable(lhs) | isIntTermVariable(rhs)) & op == "~~")
-  cond3 <- op != "~1"
+  cond3 <- !op %in% c("~1", "|", ":=")
   cond4 <- !(lhs %in% inds.b & op == "~~") & !(rhs %in% inds.b & op == "~~")
-  cond5 <- op != "|"
-  cond  <- cond1 & cond2 & cond3 & cond4 & cond5
+  cond  <- cond1 & cond2 & cond3 & cond4
 
   out <- parTable[cond, , drop = FALSE]
   attr(out, "cond") <- cond

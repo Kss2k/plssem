@@ -78,3 +78,9 @@ rename <- function(.X, ...) {
 
   .X
 }
+
+
+fillna <- function(x, value) {
+  x[is.na(x)] <- value
+  x
+}

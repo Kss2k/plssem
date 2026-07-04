@@ -1,6 +1,14 @@
 plsParseModelSyntax <- function(syntax) {
   parTable <- modsem::modsemify(syntax, parentheses.as.string = TRUE)
+
+  # additional columns
   parTable$start <- parseStartModifiers(parTable$mod)
+  parTable$label <- parseLabelModifiers(parTable$mod)
+
+  # custom parameters?
+  custom <- parTable$op == ":="
+  parTable[custom, "label"] <- parTable[custom, "lhs"]
+
   parTable
 }
 
@@ -133,7 +141,7 @@ parseModelArguments <- function(parTable,
     # Add measurment equation
     parTable <- rbind(
       parTable,
-      data.frame(lhs = ov, op = "<~", rhs = tmp.ov, mod = "", start = NA)
+      parTableInputRows(lhs = ov, op = "<~", rhs = tmp.ov)
     )
   }
 
@@ -175,6 +183,13 @@ parseModelArguments <- function(parTable,
 
   has.ord            <- length(ordered) > 0L
   is.mlm             <- length(lme4.syntax) > 0L
+  has.custom         <- any(parTable$op == ":=")
+
+  pls_stopif(is.mlm && has.custom,
+    "Custom parameters (`:=`) are not supported for",
+    "multilevel/mixed-effects models (yet)."
+  )
+
   use.mcpls.default  <- (has.ord && (is.nlin || is.lower.order)) || is.mlm
   is.mcpls           <- COALLESCE(mcpls, use.mcpls.default)
   is.probit          <- COALLESCE(probit, has.ord && !is.mcpls)
@@ -195,8 +210,7 @@ parseModelArguments <- function(parTable,
     is.mcpls     = is.mcpls,
     is.mlm       = is.mlm,
     mc.fast.lmer = mc.fast.lmer,
-    consistent   = consistent && (!is.mcpls || is.mlm) # Don't use consistency correction
-                                                       # for single-level MC-PLS models
+    consistent   = consistent && !is.mcpls # Don't use consistency correction with MC-PLS
   )
 }
 
@@ -229,4 +243,10 @@ parseStartModifiers <- function(mod) {
 
   start[idx] <- vals
   start
+}
+
+
+parseLabelModifiers <- function(mod) {
+  is.lab <- make.names(mod) == mod
+  ifelse(is.lab, yes = mod, no = "")
 }

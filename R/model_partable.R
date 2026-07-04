@@ -7,17 +7,20 @@ getParTableEstimates <- function(model,
                                  clean.tmp.mimic = TRUE) {
   est    <- model@params$values
   se     <- model@params$se
+  labels <- model@params$labels
   names  <- names(est)
 
   split    <- splitParameterNames(names)
   lhs      <- split$lhs
   op       <- split$op
   rhs      <- split$rhs
+  label    <- fillna(labels[names], "")
 
   parTable <- addZStatsParTable(data.frame(
     lhs      = lhs,
     op       = op,
     rhs      = rhs,
+    label    = label,
     est      = est,
     se       = se
   ))
@@ -185,6 +188,7 @@ addZStatsParTable <- function(parTable) {
   rhs      <- parTable$rhs
   est      <- parTable$est
   se       <- parTable$se
+  label    <- parTable$label
 
   z        <- est / se
   pvalue   <- 2 * stats::pnorm(-abs(z))
@@ -195,6 +199,7 @@ addZStatsParTable <- function(parTable) {
     lhs      = lhs,
     op       = op,
     rhs      = rhs,
+    label    = label,
     est      = est,
     se       = se,
     z        = z,

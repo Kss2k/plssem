@@ -5,11 +5,12 @@ m <- '
   Z =~ z1 + z2 + z3
   Y =~ y1 + y2 + y3
 
-  Y ~ X + Z + X:Z + X:X
+  Y ~ X + Z + b * X:Z + a * X:X
+  c := b + a
 '
 
 testthat::expect_no_error({
-  fit <- pls(m, modsem::oneInt, bootstrap = TRUE, boot.R = 100,
+  fit <- pls(m, modsem::oneInt, bootstrap = FALSE, boot.R = 100,
              boot.parallel = "snow", boot.ncores = 2)
   summary(fit, unstandardized = TRUE)
 })

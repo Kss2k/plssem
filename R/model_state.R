@@ -40,10 +40,12 @@ updateModelInfo <- function(model, ...) {
 
 initModelParams <- function(model) {
   parnames <- getParamVecNames(model)
+  labels   <- getParamVecLabels(model)
   k <- length(parnames)
 
   model@params <- list(
     names          = parnames,
+    labels         = labels,
     values         = rep(NA_real_, k),
     se             = rep(NA_real_, k),
     vcov           = NULL,

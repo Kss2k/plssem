@@ -5,12 +5,14 @@
 \alias{coefficients,PlsModel-method}
 \title{Extract coefficients from a \code{PlsModel} model}
 \usage{
-\S4method{coef}{PlsModel}(object, ...)
+\S4method{coef}{PlsModel}(object, use.labels = TRUE, ...)
 
 \S4method{coefficients}{PlsModel}(object, ...)
 }
 \arguments{
 \item{object}{A \code{PlsModel} object.}
+
+\item{use.labels}{Logical; Should parameter labels be used as names?}
 
 \item{...}{Currently unused.}
 }

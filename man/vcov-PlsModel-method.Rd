@@ -4,10 +4,12 @@
 \alias{vcov,PlsModel-method}
 \title{Extract the variance-covariance matrix from a \code{PlsModel} model}
 \usage{
-\S4method{vcov}{PlsModel}(object, ...)
+\S4method{vcov}{PlsModel}(object, use.labels = TRUE, ...)
 }
 \arguments{
 \item{object}{A \code{PlsModel} object.}
+
+\item{use.labels}{Logical; Should parameter labels be used as names?}
 
 \item{...}{Currently unused.}
 }

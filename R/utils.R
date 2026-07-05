@@ -84,3 +84,10 @@ fillna <- function(x, value) {
   x[is.na(x)] <- value
   x
 }
+
+
+paramsToLabels <- function(params, labels) {
+  replace <- params %in% names(labels)
+  params[replace] <- labels[params[replace]]
+  params
+}

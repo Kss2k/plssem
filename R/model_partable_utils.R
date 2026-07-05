@@ -225,3 +225,16 @@ addReverseCovariancesToParTable <- function(parTable) {
 
   rbind(parTable, parTableCov)
 }
+
+
+parTableInputRows <- function(lhs = "", op = "", rhs = "", mod = "",
+                              label = "", start = NA_real_) {
+  data.frame(
+    lhs   = lhs,
+    op    = op,
+    rhs   = rhs,
+    mod   = mod,
+    label = label,
+    start = start
+  )
+}

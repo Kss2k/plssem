@@ -185,13 +185,22 @@ print.SummaryPlsSem <- function(x, ...) {
 #' Extract coefficients from a \code{PlsModel} model
 #'
 #' @param object A \code{PlsModel} object.
+#' @param use.labels Logical; Should parameter labels be used as names?
 #' @param ... Currently unused.
 #' @return A named \code{PlsSemVector} of parameter estimates.
 #' @importFrom stats coef
 #' @export
-setMethod("coef", "PlsModel", function(object, ...) {
+setMethod("coef", "PlsModel", function(object, use.labels = TRUE, ...) {
   combined <- combinedModel(object)
-  plssemVector(combined@params$values, is.public = TRUE)
+  out <- combined@params$values
+
+  if (use.labels && length(out)) {
+    params <- names(out)
+    labels <- combined@params$labels
+    names(out) <- paramsToLabels(params, labels)
+  }
+
+  plssemVector(out, is.public = TRUE)
 })
 
 
@@ -206,13 +215,25 @@ setMethod("coefficients", "PlsModel", function(object, ...) {
 #' Extract the variance-covariance matrix from a \code{PlsModel} model
 #'
 #' @param object A \code{PlsModel} object.
+#' @param use.labels Logical; Should parameter labels be used as names?
 #' @param ... Currently unused.
 #' @return A \code{PlsSemMatrix} (bootstrap-based vcov, or \code{NULL}).
 #' @importFrom stats vcov
 #' @export
-setMethod("vcov", "PlsModel", function(object, ...) {
+setMethod("vcov", "PlsModel", function(object, use.labels = TRUE, ...) {
   combined <- combinedModel(object)
-  plssemMatrix(combined@params$vcov, is.public = TRUE)
+  out <- combined@params$vcov
+
+  if (use.labels && NROW(out) && NCOL(out)) {
+    labels <- combined@params$labels
+    cnames <- colnames(out)
+    rnames <- rownames(out)
+
+    rownames(out) <- paramsToLabels(rnames, labels)
+    colnames(out) <- paramsToLabels(cnames, labels)
+  }
+
+  plssemMatrix(out, is.public = TRUE)
 })
 
 

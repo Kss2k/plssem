@@ -381,5 +381,27 @@ unstandardizedEstimatesInternal <- function(parTable,
     }
   }
 
+  # Custom parameters?
+  custom <- parTable$op == ":="
+
+  if (any(custom)) {
+    idx <- which(custom)
+    has.lab <- parTable$label != ""
+
+    # create environment
+    envir <- customExpressionEnv(stats::setNames(
+      parTable[has.lab, "est"], nm = parTable[has.lab, "label"]
+    ))
+
+    for (i in idx) {
+      lab <- parTable[i, "label"]
+      val <- eval(parse(text=parTable[i, "rhs"]), envir = envir)
+
+      # Remember to update both the parameter table, and environment
+      assign(unname(lab), val, envir = envir)
+      parTable[i, "est"] <- val
+    }
+  }
+
   parTable
 }

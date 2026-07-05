@@ -13,9 +13,8 @@ splitHigherOrderParTable <- function(parTable) {
       # so it produces their scores. We declare them as path-less structural
       # nodes (`ADDITIONAL_STRUCT_VAR_OP`) rather than as self-covariances; the
       # latter no longer marks a variable as structural.
-      parStrO1 <- data.frame(
-        lhs = structOVs, op = ADDITIONAL_STRUCT_VAR_OP,
-        rhs = "", mod = "", start = NA
+      parStrO1 <- parTableInputRows(
+        lhs = structOVs, op = ADDITIONAL_STRUCT_VAR_OP, rhs = ""
       )
     } else {
       parStrO1 <- NULL
@@ -37,8 +36,9 @@ splitHigherOrderParTable <- function(parTable) {
 
     parCovO2 <- parTable[isCovO2, , drop = FALSE]
     parCovO1 <- parTable[isCov & !isCovO2, , drop = FALSE]
+    parDef   <- parTable[parTable$op == ":=", , drop = FALSE]
 
-    parTableO2 <- rbind(parMsrO2, parStrO2, parCovO2)
+    parTableO2 <- rbind(parMsrO2, parStrO2, parCovO2, parDef)
     parTableO1 <- rbind(parMsrO1, parStrO1, parCovO1)
 
   } else {
@@ -160,19 +160,22 @@ combineModelResultsFirstSecondOrder <- function(model) {
     mcpls.update.args = NULL
   )
 
+  parTableInput <- rbind(
+    fo@parTableInput,
+    so@parTableInput
+  )
+
   model@matrices <- list(
     S           = S,
     C           = C,
     SC          = SC,
     firstOrder  = fo@matrices,
     secondOrder = so@matrices,
-    select      = select
+    select      = select,
+    customExpressions = getCustomExpressions(parTableInput)
   )
 
-  model@parTableInput <- rbind(
-    fo@parTableInput,
-    so@parTableInput
-  )
+  model@parTableInput <- parTableInput
 
   model@data     <- fo@data
   model@status   <- status

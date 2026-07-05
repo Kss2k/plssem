@@ -1,4 +1,4 @@
-OPERATORS <- c("<~", "~~", "=~", "~1", "~", "|")
+OPERATORS <- c("<~", "~~", "=~", "~1", "~", "|", ":=")
 MOPS      <- c("<~", "=~")
 # Operator used to declare a structural variable that has no regression paths,
 # e.g. `x ~ 1`. We never model the mean structure ourselves, so the `~1`
@@ -411,7 +411,8 @@ initMatrices <- function(pt, higherOrderLVs = NULL) {
       cov      = selectCov,
       theta    = selectTheta,
       nlinFrom = nlinSelectFrom
-    )
+    ),
+    customExpressions = getCustomExpressions(pt)
   )
 
   info <- list(

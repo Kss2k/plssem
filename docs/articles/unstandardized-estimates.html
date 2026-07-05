@@ -32,7 +32,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">plssem</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.1.3</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.1.4</span>
       </span>
     </div>
 
@@ -130,7 +130,7 @@ function. Here is an example using <code><a href="https://rdrr.io/r/base/summary
 <span></span>
 <span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pls.html">pls</a></span><span class="op">(</span><span class="va">m</span>, <span class="fu">modsem</span><span class="fu">::</span><span class="va"><a href="https://modsem.org/reference/oneInt.html" class="external-link">oneInt</a></span>, bootstrap <span class="op">=</span> <span class="cn">TRUE</span>, boot.R <span class="op">=</span> <span class="fl">100</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit</span>, unstandardized <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="co">#&gt; plssem (0.1.3) ended normally after 3 iterations</span></span>
+<span><span class="co">#&gt; plssem (0.1.4) ended normally after 3 iterations</span></span>
 <span><span class="co">#&gt;   Estimator                                       PLSc</span></span>
 <span><span class="co">#&gt;   Link                                          LINEAR</span></span>
 <span><span class="co">#&gt;                                                       </span></span>
@@ -214,40 +214,40 @@ function. Here is an example using <code><a href="https://rdrr.io/r/base/summary
 the <code><a href="../reference/unstandardized_estimates.html">unstandardized_estimates()</a></code> function directly.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/unstandardized_estimates.html">unstandardized_estimates</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span>
-<span><span class="co">#&gt;    lhs op rhs    est    se      z pvalue ci.lower ci.upper</span></span>
-<span><span class="co">#&gt; 1    X =~  x1  1.000    NA     NA     NA       NA       NA</span></span>
-<span><span class="co">#&gt; 2    X =~  x2  0.814 0.020 41.424  0.000    0.776    0.853</span></span>
-<span><span class="co">#&gt; 3    X =~  x3  0.900 0.022 41.468  0.000    0.857    0.943</span></span>
-<span><span class="co">#&gt; 4    Z =~  z1  1.000    NA     NA     NA       NA       NA</span></span>
-<span><span class="co">#&gt; 5    Z =~  z2  0.835 0.020 42.562  0.000    0.796    0.873</span></span>
-<span><span class="co">#&gt; 6    Z =~  z3  0.902 0.019 46.359  0.000    0.864    0.940</span></span>
-<span><span class="co">#&gt; 7    Y =~  y1  1.000    NA     NA     NA       NA       NA</span></span>
-<span><span class="co">#&gt; 8    Y =~  y2  0.804 0.009 87.075  0.000    0.786    0.822</span></span>
-<span><span class="co">#&gt; 9    Y =~  y3  0.901 0.010 94.096  0.000    0.882    0.920</span></span>
-<span><span class="co">#&gt; 10   Y  ~   X  0.670 0.031 21.953  0.000    0.610    0.730</span></span>
-<span><span class="co">#&gt; 11   Y  ~   Z  0.572 0.028 20.429  0.000    0.517    0.627</span></span>
-<span><span class="co">#&gt; 12   Y  ~ X:Z  0.726 0.037 19.778  0.000    0.654    0.798</span></span>
-<span><span class="co">#&gt; 13   Y  ~ X:X -0.008 0.029 -0.293  0.769   -0.064    0.048</span></span>
-<span><span class="co">#&gt; 14   X ~~   X  0.985 0.038 25.710  0.000    0.910    1.060</span></span>
-<span><span class="co">#&gt; 15   X ~~   Z  0.197 0.024  8.222  0.000    0.150    0.244</span></span>
-<span><span class="co">#&gt; 16   X ~~ X:Z  0.018 0.037  0.480  0.632   -0.054    0.090</span></span>
-<span><span class="co">#&gt; 17   X ~~ X:X  0.029 0.073  0.400  0.689   -0.113    0.172</span></span>
-<span><span class="co">#&gt; 18   Z ~~   Z  0.983 0.044 22.401  0.000    0.897    1.069</span></span>
-<span><span class="co">#&gt; 19   Z ~~ X:Z  0.059 0.045  1.306  0.192   -0.029    0.147</span></span>
-<span><span class="co">#&gt; 20   Z ~~ X:X  0.018 0.037  0.480  0.632   -0.054    0.090</span></span>
-<span><span class="co">#&gt; 21   Y ~~   Y  0.980 0.042 23.131  0.000    0.897    1.063</span></span>
-<span><span class="co">#&gt; 22 X:Z ~~ X:Z  0.980 0.075 13.040  0.000    0.833    1.128</span></span>
-<span><span class="co">#&gt; 23 X:Z ~~ X:X  0.360 0.063  5.765  0.000    0.238    0.483</span></span>
-<span><span class="co">#&gt; 24 X:X ~~ X:X  1.687 0.193  8.754  0.000    1.309    2.065</span></span>
-<span><span class="co">#&gt; 25  x1 ~~  x1  0.157 0.026  5.969  0.000    0.105    0.208</span></span>
-<span><span class="co">#&gt; 26  x2 ~~  x2  0.144 0.020  7.120  0.000    0.105    0.184</span></span>
-<span><span class="co">#&gt; 27  x3 ~~  x3  0.188 0.025  7.432  0.000    0.139    0.238</span></span>
-<span><span class="co">#&gt; 28  z1 ~~  z1  0.202 0.024  8.313  0.000    0.154    0.250</span></span>
-<span><span class="co">#&gt; 29  z2 ~~  z2  0.143 0.022  6.535  0.000    0.100    0.186</span></span>
-<span><span class="co">#&gt; 30  z3 ~~  z3  0.149 0.023  6.564  0.000    0.105    0.194</span></span>
-<span><span class="co">#&gt; 31  y1 ~~  y1  0.175 0.030  5.829  0.000    0.116    0.234</span></span>
-<span><span class="co">#&gt; 32  y2 ~~  y2  0.141 0.025  5.677  0.000    0.092    0.190</span></span>
-<span><span class="co">#&gt; 33  y3 ~~  y3  0.168 0.028  5.999  0.000    0.113    0.223</span></span></code></pre></div>
+<span><span class="co">#&gt;    lhs op rhs label    est    se      z pvalue ci.lower ci.upper</span></span>
+<span><span class="co">#&gt; 1    X =~  x1        1.000    NA     NA     NA       NA       NA</span></span>
+<span><span class="co">#&gt; 2    X =~  x2        0.814 0.020 41.424  0.000    0.776    0.853</span></span>
+<span><span class="co">#&gt; 3    X =~  x3        0.900 0.022 41.468  0.000    0.857    0.943</span></span>
+<span><span class="co">#&gt; 4    Z =~  z1        1.000    NA     NA     NA       NA       NA</span></span>
+<span><span class="co">#&gt; 5    Z =~  z2        0.835 0.020 42.562  0.000    0.796    0.873</span></span>
+<span><span class="co">#&gt; 6    Z =~  z3        0.902 0.019 46.359  0.000    0.864    0.940</span></span>
+<span><span class="co">#&gt; 7    Y =~  y1        1.000    NA     NA     NA       NA       NA</span></span>
+<span><span class="co">#&gt; 8    Y =~  y2        0.804 0.009 87.075  0.000    0.786    0.822</span></span>
+<span><span class="co">#&gt; 9    Y =~  y3        0.901 0.010 94.096  0.000    0.882    0.920</span></span>
+<span><span class="co">#&gt; 10   Y  ~   X        0.670 0.031 21.953  0.000    0.610    0.730</span></span>
+<span><span class="co">#&gt; 11   Y  ~   Z        0.572 0.028 20.429  0.000    0.517    0.627</span></span>
+<span><span class="co">#&gt; 12   Y  ~ X:Z        0.726 0.037 19.778  0.000    0.654    0.798</span></span>
+<span><span class="co">#&gt; 13   Y  ~ X:X       -0.008 0.029 -0.293  0.769   -0.064    0.048</span></span>
+<span><span class="co">#&gt; 14   X ~~   X        0.985 0.038 25.710  0.000    0.910    1.060</span></span>
+<span><span class="co">#&gt; 15   X ~~   Z        0.197 0.024  8.222  0.000    0.150    0.244</span></span>
+<span><span class="co">#&gt; 16   X ~~ X:Z        0.018 0.037  0.480  0.632   -0.054    0.090</span></span>
+<span><span class="co">#&gt; 17   X ~~ X:X        0.029 0.073  0.400  0.689   -0.113    0.172</span></span>
+<span><span class="co">#&gt; 18   Z ~~   Z        0.983 0.044 22.401  0.000    0.897    1.069</span></span>
+<span><span class="co">#&gt; 19   Z ~~ X:Z        0.059 0.045  1.306  0.192   -0.029    0.147</span></span>
+<span><span class="co">#&gt; 20   Z ~~ X:X        0.018 0.037  0.480  0.632   -0.054    0.090</span></span>
+<span><span class="co">#&gt; 21   Y ~~   Y        0.980 0.042 23.131  0.000    0.897    1.063</span></span>
+<span><span class="co">#&gt; 22 X:Z ~~ X:Z        0.980 0.075 13.040  0.000    0.833    1.128</span></span>
+<span><span class="co">#&gt; 23 X:Z ~~ X:X        0.360 0.063  5.765  0.000    0.238    0.483</span></span>
+<span><span class="co">#&gt; 24 X:X ~~ X:X        1.687 0.193  8.754  0.000    1.309    2.065</span></span>
+<span><span class="co">#&gt; 25  x1 ~~  x1        0.157 0.026  5.969  0.000    0.105    0.208</span></span>
+<span><span class="co">#&gt; 26  x2 ~~  x2        0.144 0.020  7.120  0.000    0.105    0.184</span></span>
+<span><span class="co">#&gt; 27  x3 ~~  x3        0.188 0.025  7.432  0.000    0.139    0.238</span></span>
+<span><span class="co">#&gt; 28  z1 ~~  z1        0.202 0.024  8.313  0.000    0.154    0.250</span></span>
+<span><span class="co">#&gt; 29  z2 ~~  z2        0.143 0.022  6.535  0.000    0.100    0.186</span></span>
+<span><span class="co">#&gt; 30  z3 ~~  z3        0.149 0.023  6.564  0.000    0.105    0.194</span></span>
+<span><span class="co">#&gt; 31  y1 ~~  y1        0.175 0.030  5.829  0.000    0.116    0.234</span></span>
+<span><span class="co">#&gt; 32  y2 ~~  y2        0.141 0.025  5.677  0.000    0.092    0.190</span></span>
+<span><span class="co">#&gt; 33  y3 ~~  y3        0.168 0.028  5.999  0.000    0.113    0.223</span></span></code></pre></div>
 <p>It is also possible to pass a vector of variable names, detailing
 which variables should be unstandardized. The rules for different
 variables are as follows:</p>
@@ -281,30 +281,30 @@ not unstandardize <code>x1</code> when unstandardizing
 <span>  <span class="fu"><a href="../reference/unstandardized_estimates.html">unstandardized_estimates</a></span><span class="op">(</span><span class="va">fit</span>, unstandardized <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"x1"</span>, <span class="st">"X"</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  <span class="va">lhs</span> <span class="op">==</span> <span class="st">"X"</span> <span class="op">|</span> <span class="va">rhs</span> <span class="op">==</span> <span class="st">"X"</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt;    lhs op rhs   est    se      z pvalue ci.lower ci.upper</span></span>
-<span><span class="co">#&gt; 1    X =~  x1 1.000    NA     NA     NA       NA       NA</span></span>
-<span><span class="co">#&gt; 2    X =~  x2 0.912 0.022 41.424  0.000    0.869    0.955</span></span>
-<span><span class="co">#&gt; 3    X =~  x3 0.906 0.022 41.468  0.000    0.864    0.949</span></span>
-<span><span class="co">#&gt; 10   Y  ~   X 0.426 0.019 22.104  0.000    0.388    0.464</span></span>
-<span><span class="co">#&gt; 14   X ~~   X 0.985 0.038 25.710  0.000    0.910    1.060</span></span>
-<span><span class="co">#&gt; 15   X ~~   Z 0.199 0.024  8.297  0.000    0.152    0.246</span></span>
-<span><span class="co">#&gt; 16   X ~~ X:Z 0.018 0.037  0.480  0.632   -0.055    0.090</span></span>
-<span><span class="co">#&gt; 17   X ~~ X:X 0.029 0.073  0.400  0.689   -0.113    0.172</span></span>
+<span><span class="co">#&gt;    lhs op rhs label   est    se      z pvalue ci.lower ci.upper</span></span>
+<span><span class="co">#&gt; 1    X =~  x1       1.000    NA     NA     NA       NA       NA</span></span>
+<span><span class="co">#&gt; 2    X =~  x2       0.912 0.022 41.424  0.000    0.869    0.955</span></span>
+<span><span class="co">#&gt; 3    X =~  x3       0.906 0.022 41.468  0.000    0.864    0.949</span></span>
+<span><span class="co">#&gt; 10   Y  ~   X       0.426 0.019 22.104  0.000    0.388    0.464</span></span>
+<span><span class="co">#&gt; 14   X ~~   X       0.985 0.038 25.710  0.000    0.910    1.060</span></span>
+<span><span class="co">#&gt; 15   X ~~   Z       0.199 0.024  8.297  0.000    0.152    0.246</span></span>
+<span><span class="co">#&gt; 16   X ~~ X:Z       0.018 0.037  0.480  0.632   -0.055    0.090</span></span>
+<span><span class="co">#&gt; 17   X ~~ X:X       0.029 0.073  0.400  0.689   -0.113    0.172</span></span>
 <span></span>
 <span><span class="co"># x1 is standardized</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/subset.html" class="external-link">subset</a></span><span class="op">(</span></span>
 <span>  <span class="fu"><a href="../reference/unstandardized_estimates.html">unstandardized_estimates</a></span><span class="op">(</span><span class="va">fit</span>, unstandardized <span class="op">=</span> <span class="st">"X"</span><span class="op">)</span>,</span>
 <span>  <span class="va">lhs</span> <span class="op">==</span> <span class="st">"X"</span> <span class="op">|</span> <span class="va">rhs</span> <span class="op">==</span> <span class="st">"X"</span></span>
 <span><span class="op">)</span></span>
-<span><span class="co">#&gt;    lhs op rhs   est    se      z pvalue ci.lower ci.upper</span></span>
-<span><span class="co">#&gt; 1    X =~  x1 1.000    NA     NA     NA       NA       NA</span></span>
-<span><span class="co">#&gt; 2    X =~  x2 0.974 0.024 41.424  0.000    0.928    1.020</span></span>
-<span><span class="co">#&gt; 3    X =~  x3 0.968 0.023 41.468  0.000    0.923    1.014</span></span>
-<span><span class="co">#&gt; 10   Y  ~   X 0.455 0.021 22.104  0.000    0.415    0.495</span></span>
-<span><span class="co">#&gt; 14   X ~~   X 0.863 0.034 25.710  0.000    0.797    0.928</span></span>
-<span><span class="co">#&gt; 15   X ~~   Z 0.186 0.022  8.297  0.000    0.142    0.230</span></span>
-<span><span class="co">#&gt; 16   X ~~ X:Z 0.016 0.032  0.480  0.632   -0.048    0.079</span></span>
-<span><span class="co">#&gt; 17   X ~~ X:X 0.024 0.060  0.400  0.689   -0.093    0.141</span></span></code></pre></div>
+<span><span class="co">#&gt;    lhs op rhs label   est    se      z pvalue ci.lower ci.upper</span></span>
+<span><span class="co">#&gt; 1    X =~  x1       1.000    NA     NA     NA       NA       NA</span></span>
+<span><span class="co">#&gt; 2    X =~  x2       0.974 0.024 41.424  0.000    0.928    1.020</span></span>
+<span><span class="co">#&gt; 3    X =~  x3       0.968 0.023 41.468  0.000    0.923    1.014</span></span>
+<span><span class="co">#&gt; 10   Y  ~   X       0.455 0.021 22.104  0.000    0.415    0.495</span></span>
+<span><span class="co">#&gt; 14   X ~~   X       0.863 0.034 25.710  0.000    0.797    0.928</span></span>
+<span><span class="co">#&gt; 15   X ~~   Z       0.186 0.022  8.297  0.000    0.142    0.230</span></span>
+<span><span class="co">#&gt; 16   X ~~ X:Z       0.016 0.032  0.480  0.632   -0.048    0.079</span></span>
+<span><span class="co">#&gt; 17   X ~~ X:X       0.024 0.060  0.400  0.689   -0.093    0.141</span></span></code></pre></div>
   </div>
 
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">

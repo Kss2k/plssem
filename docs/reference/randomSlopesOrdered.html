@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">plssem</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.1.3</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.1.4</span>
       </span>
     </div>
 
@@ -103,306 +103,306 @@
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="pls.html">pls</a></span><span class="op">(</span><span class="va">syntax</span>, data <span class="op">=</span> <span class="va">randomSlopesOrdered</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">fit</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> plssem (0.1.3) ended normally after 96 iterations</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     lhs op rhs    est se  z pvalue ci.lower ci.upper</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1     X =~  x1  0.932 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2     X =~  x2  0.820 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3     X =~  x3  0.887 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4     Z =~  z1  0.919 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5     Z =~  z2  0.847 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6     Z =~  z3  0.869 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 7     Y =~  y1  0.919 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 8     Y =~  y2  0.844 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 9     Y =~  y3  0.869 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 10    W =~  w1  0.917 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 11    W =~  w2  0.824 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 12    W =~  w3  0.886 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 13    Y  ~   X  0.289 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 14    Y  ~   Z  0.448 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 15    W  ~   X  0.392 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 16    W  ~   Z  0.247 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 17    X ~~   X  1.000 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 18    X ~~   Z  0.168 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 19    Z ~~   Z  1.000 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 20    Y ~~   Y  0.675 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 21    W ~~   W  0.755 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 22   x1 ~~  x1  0.131 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 23   x2 ~~  x2  0.327 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 24   x3 ~~  x3  0.213 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 25   z1 ~~  z1  0.156 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 26   z2 ~~  z2  0.283 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 27   z3 ~~  z3  0.245 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 28   y1 ~~  y1  0.155 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 29   y2 ~~  y2  0.288 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 30   y3 ~~  y3  0.245 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 31   w1 ~~  w1  0.159 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 32   w2 ~~  w2  0.322 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 33   w3 ~~  w3  0.215 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 34   x1  |  t1 -2.841 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 35   x1  |  t2 -1.997 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 36   x1  |  t3 -0.944 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 37   x1  |  t4  0.135 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 38   x1  |  t5  1.092 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 39   x1  |  t6  2.176 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 40   x2  |  t1 -1.945 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 41   x2  |  t2 -0.974 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 42   x2  |  t3  0.273 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 43   x2  |  t4  0.974 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 44   x2  |  t5  2.253 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 45   x2  |  t6  2.894 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 46   x3  |  t1 -2.012 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 47   x3  |  t2 -1.141 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 48   x3  |  t3 -0.188 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 49   x3  |  t4  0.672 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 50   x3  |  t5  1.836 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 51   x3  |  t6  2.788 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 52   z1  |  t1 -2.140 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 53   z1  |  t2 -1.335 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 54   z1  |  t3 -0.217 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 55   z1  |  t4  0.851 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 56   z1  |  t5  1.881 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 57   z1  |  t6  2.558 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 58   z2  |  t1 -2.435 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 59   z2  |  t2 -1.442 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 60   z2  |  t3 -0.276 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 61   z2  |  t4  0.812 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 62   z2  |  t5  1.515 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 63   z2  |  t6  2.612 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 64   z3  |  t1 -2.674 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 65   z3  |  t2 -2.100 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 66   z3  |  t3 -1.162 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 67   z3  |  t4  0.099 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 68   z3  |  t5  0.985 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 69   z3  |  t6  1.980 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 70   y1  |  t1 -2.684 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 71   y1  |  t2 -1.778 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 72   y1  |  t3 -0.640 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 73   y1  |  t4  0.394 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 74   y1  |  t5  1.444 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 75   y1  |  t6  2.410 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 76   y2  |  t1 -2.493 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 77   y2  |  t2 -1.691 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 78   y2  |  t3 -0.561 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 79   y2  |  t4  0.228 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 80   y2  |  t5  1.397 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 81   y2  |  t6  2.433 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 82   y3  |  t1 -1.901 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 83   y3  |  t2 -0.933 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 84   y3  |  t3 -0.106 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 85   y3  |  t4  1.099 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 86   y3  |  t5  1.979 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 87   y3  |  t6  3.339 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 88   w1  |  t1 -2.810 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 89   w1  |  t2 -1.672 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 90   w1  |  t3 -0.762 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 91   w1  |  t4  0.259 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 92   w1  |  t5  1.059 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 93   w1  |  t6  2.357 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 94   w2  |  t1 -2.454 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 95   w2  |  t2 -1.634 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 96   w2  |  t3 -0.610 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 97   w2  |  t4  0.572 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 98   w2  |  t5  1.406 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 99   w2  |  t6  2.443 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 100  w3  |  t1 -2.417 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 101  w3  |  t2 -1.399 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 102  w3  |  t3 -0.712 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 103  w3  |  t4  0.573 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 104  w3  |  t5  1.507 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 105  w3  |  t6  2.283 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 106 Y~1 ~~ Y~1  0.085 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 107 Y~X ~~ Y~1 -0.007 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 108 Y~Z ~~ Y~1 -0.025 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 109 Y~X ~~ Y~X  0.019 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 110 Y~Z ~~ Y~X  0.011 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 111 Y~Z ~~ Y~Z  0.104 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 112 W~1 ~~ W~1  0.058 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 113 W~X ~~ W~1  0.004 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 114 W~Z ~~ W~1  0.012 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 115 W~X ~~ W~X  0.102 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 116 W~Z ~~ W~X  0.013 NA NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 117 W~Z ~~ W~Z  0.149 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> plssem (0.1.4) ended normally after 76 iterations</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     lhs op rhs label    est se  z pvalue ci.lower ci.upper</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1     X =~  x1        0.916 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2     X =~  x2        0.846 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3     X =~  x3        0.879 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4     Z =~  z1        0.917 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5     Z =~  z2        0.839 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6     Z =~  z3        0.879 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 7     Y =~  y1        0.916 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 8     Y =~  y2        0.842 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 9     Y =~  y3        0.876 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 10    W =~  w1        0.905 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 11    W =~  w2        0.835 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 12    W =~  w3        0.888 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 13    Y  ~   X        0.291 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 14    Y  ~   Z        0.447 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 15    W  ~   X        0.393 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 16    W  ~   Z        0.235 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 17    X ~~   X        1.000 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 18    X ~~   Z        0.170 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 19    Z ~~   Z        1.000 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 20    Y ~~   Y        0.670 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 21    W ~~   W        0.758 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 22   x1 ~~  x1        0.161 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 23   x2 ~~  x2        0.285 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 24   x3 ~~  x3        0.227 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 25   z1 ~~  z1        0.159 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 26   z2 ~~  z2        0.296 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 27   z3 ~~  z3        0.228 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 28   y1 ~~  y1        0.161 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 29   y2 ~~  y2        0.290 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 30   y3 ~~  y3        0.233 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 31   w1 ~~  w1        0.180 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 32   w2 ~~  w2        0.303 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 33   w3 ~~  w3        0.212 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 34   x1  |  t1       -2.800 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 35   x1  |  t2       -1.973 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 36   x1  |  t3       -0.949 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 37   x1  |  t4        0.126 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 38   x1  |  t5        1.090 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 39   x1  |  t6        2.163 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 40   x2  |  t1       -1.921 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 41   x2  |  t2       -0.978 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 42   x2  |  t3        0.271 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 43   x2  |  t4        0.965 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 44   x2  |  t5        2.277 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 45   x2  |  t6        3.074 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 46   x3  |  t1       -2.016 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 47   x3  |  t2       -1.147 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 48   x3  |  t3       -0.180 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 49   x3  |  t4        0.670 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 50   x3  |  t5        1.854 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 51   x3  |  t6        2.742 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 52   z1  |  t1       -2.155 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 53   z1  |  t2       -1.331 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 54   z1  |  t3       -0.210 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 55   z1  |  t4        0.849 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 56   z1  |  t5        1.863 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 57   z1  |  t6        2.621 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 58   z2  |  t1       -2.460 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 59   z2  |  t2       -1.441 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 60   z2  |  t3       -0.290 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 61   z2  |  t4        0.814 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 62   z2  |  t5        1.537 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 63   z2  |  t6        2.564 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 64   z3  |  t1       -2.730 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 65   z3  |  t2       -2.080 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 66   z3  |  t3       -1.161 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 67   z3  |  t4        0.099 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 68   z3  |  t5        0.988 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 69   z3  |  t6        1.972 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 70   y1  |  t1       -2.685 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 71   y1  |  t2       -1.787 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 72   y1  |  t3       -0.652 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 73   y1  |  t4        0.408 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 74   y1  |  t5        1.436 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 75   y1  |  t6        2.381 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 76   y2  |  t1       -2.525 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 77   y2  |  t2       -1.692 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 78   y2  |  t3       -0.560 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 79   y2  |  t4        0.231 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 80   y2  |  t5        1.387 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 81   y2  |  t6        2.380 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 82   y3  |  t1       -1.908 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 83   y3  |  t2       -0.935 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 84   y3  |  t3       -0.094 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 85   y3  |  t4        1.104 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 86   y3  |  t5        1.957 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 87   y3  |  t6        3.179 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 88   w1  |  t1       -2.793 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 89   w1  |  t2       -1.642 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 90   w1  |  t3       -0.766 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 91   w1  |  t4        0.270 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 92   w1  |  t5        1.079 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 93   w1  |  t6        2.333 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 94   w2  |  t1       -2.456 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 95   w2  |  t2       -1.636 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 96   w2  |  t3       -0.609 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 97   w2  |  t4        0.566 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 98   w2  |  t5        1.413 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 99   w2  |  t6        2.438 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 100  w3  |  t1       -2.407 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 101  w3  |  t2       -1.402 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 102  w3  |  t3       -0.709 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 103  w3  |  t4        0.582 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 104  w3  |  t5        1.505 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 105  w3  |  t6        2.251 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 106 Y~1 ~~ Y~1        0.086 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 107 Y~X ~~ Y~1       -0.006 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 108 Y~Z ~~ Y~1       -0.026 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 109 Y~X ~~ Y~X        0.018 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 110 Y~Z ~~ Y~X        0.011 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 111 Y~Z ~~ Y~Z        0.105 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 112 W~1 ~~ W~1        0.059 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 113 W~X ~~ W~1        0.003 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 114 W~Z ~~ W~1        0.014 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 115 W~X ~~ W~X        0.100 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 116 W~Z ~~ W~X        0.012 NA NA     NA       NA       NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 117 W~Z ~~ W~Z        0.150 NA NA     NA       NA       NA</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> plssem-&gt;fitMeasures():  </span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span>    Fit measures for MC-PLSc models are under development! Traditional fit </span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span>    criteria will likely be too strict.</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> plssem-&gt;fitMeasures():  </span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span>    Resampling MC-PLSc Model (R = 1000000)...</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> plssem (0.1.3) ended normally after 96 iterations</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> plssem (0.1.4) ended normally after 76 iterations</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Estimator                              MCOrdPLSc-MLM</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Link                                          PROBIT</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                                                       </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Number of observations                          5000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Number of iterations                              96</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Number of iterations                              76</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Number of latent variables                         4</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Number of observed variables                      18</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Fit Measures:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Chi-Square                                   146.468</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Chi-Square                                    69.544</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Degrees of Freedom                                49</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   SRMR                                           0.011</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   RMSEA                                          0.020</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   SRMR                                           0.009</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   RMSEA                                          0.009</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> R-squared (indicators):</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   x1                                             0.869</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   x2                                             0.673</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   x3                                             0.787</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   z1                                             0.844</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   z2                                             0.717</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   z3                                             0.755</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   y1                                             0.845</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   y2                                             0.712</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   y3                                             0.755</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   w1                                             0.841</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   w2                                             0.678</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   w3                                             0.785</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   x1                                             0.839</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   x2                                             0.715</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   x3                                             0.773</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   z1                                             0.841</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   z2                                             0.704</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   z3                                             0.772</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   y1                                             0.839</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   y2                                             0.710</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   y3                                             0.767</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   w1                                             0.820</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   w2                                             0.697</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   w3                                             0.788</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> R-squared (latents):</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   Y                                              0.325</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   W                                              0.245</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Y                                              0.330</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   W                                              0.242</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Latent Variables:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                  Estimate  Std.Error  z.value  P(&gt;|z|)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   X =~          </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     x1              0.932                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     x2              0.820                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     x3              0.887                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     x1              0.916                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     x2              0.846                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     x3              0.879                             </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Z =~          </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     z1              0.919                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     z2              0.847                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     z3              0.869                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     z1              0.917                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     z2              0.839                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     z3              0.879                             </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Y =~          </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     y1              0.919                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     y2              0.844                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     y3              0.869                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     y1              0.916                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     y2              0.842                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     y3              0.876                             </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   W =~          </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     w1              0.917                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     w2              0.824                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     w3              0.886                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     w1              0.905                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     w2              0.835                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     w3              0.888                             </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Regressions:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                  Estimate  Std.Error  z.value  P(&gt;|z|)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Y ~           </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     X               0.289                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     Z               0.448                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     X               0.291                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     Z               0.447                             </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   W ~           </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     X               0.392                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     Z               0.247                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     X               0.393                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     Z               0.235                             </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Covariances:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                  Estimate  Std.Error  z.value  P(&gt;|z|)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   X ~~          </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     Z               0.168                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     Z               0.170                             </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Y~X ~~        </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     Y~1            -0.007                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     Y~1            -0.006                             </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Y~Z ~~        </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     Y~1            -0.025                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     Y~1            -0.026                             </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     Y~X             0.011                             </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   W~X ~~        </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     W~1             0.004                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     W~1             0.003                             </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   W~Z ~~        </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     W~1             0.012                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     W~X             0.013                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     W~1             0.014                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     W~X             0.012                             </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Thresholds:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                  Estimate  Std.Error  z.value  P(&gt;|z|)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     x1|t1          -2.841                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     x1|t2          -1.997                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     x1|t3          -0.944                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     x1|t4           0.135                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     x1|t5           1.092                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     x1|t6           2.176                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     x2|t1          -1.945                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     x2|t2          -0.974                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     x2|t3           0.273                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     x2|t4           0.974                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     x2|t5           2.253                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     x2|t6           2.894                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     x3|t1          -2.012                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     x3|t2          -1.141                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     x3|t3          -0.188                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     x3|t4           0.672                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     x3|t5           1.836                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     x3|t6           2.788                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     z1|t1          -2.140                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     z1|t2          -1.335                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     z1|t3          -0.217                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     z1|t4           0.851                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     z1|t5           1.881                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     z1|t6           2.558                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     z2|t1          -2.435                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     z2|t2          -1.442                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     z2|t3          -0.276                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     z2|t4           0.812                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     z2|t5           1.515                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     z2|t6           2.612                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     z3|t1          -2.674                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     z3|t2          -2.100                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     z3|t3          -1.162                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     x1|t1          -2.800                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     x1|t2          -1.973                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     x1|t3          -0.949                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     x1|t4           0.126                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     x1|t5           1.090                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     x1|t6           2.163                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     x2|t1          -1.921                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     x2|t2          -0.978                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     x2|t3           0.271                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     x2|t4           0.965                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     x2|t5           2.277                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     x2|t6           3.074                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     x3|t1          -2.016                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     x3|t2          -1.147                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     x3|t3          -0.180                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     x3|t4           0.670                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     x3|t5           1.854                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     x3|t6           2.742                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     z1|t1          -2.155                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     z1|t2          -1.331                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     z1|t3          -0.210                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     z1|t4           0.849                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     z1|t5           1.863                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     z1|t6           2.621                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     z2|t1          -2.460                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     z2|t2          -1.441                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     z2|t3          -0.290                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     z2|t4           0.814                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     z2|t5           1.537                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     z2|t6           2.564                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     z3|t1          -2.730                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     z3|t2          -2.080                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     z3|t3          -1.161                             </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     z3|t4           0.099                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     z3|t5           0.985                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     z3|t6           1.980                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     y1|t1          -2.684                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     y1|t2          -1.778                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     y1|t3          -0.640                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     y1|t4           0.394                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     y1|t5           1.444                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     y1|t6           2.410                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     y2|t1          -2.493                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     y2|t2          -1.691                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     y2|t3          -0.561                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     y2|t4           0.228                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     y2|t5           1.397                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     y2|t6           2.433                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     y3|t1          -1.901                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     y3|t2          -0.933                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     y3|t3          -0.106                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     y3|t4           1.099                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     y3|t5           1.979                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     y3|t6           3.339                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     w1|t1          -2.810                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     w1|t2          -1.672                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     w1|t3          -0.762                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     w1|t4           0.259                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     w1|t5           1.059                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     w1|t6           2.357                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     w2|t1          -2.454                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     w2|t2          -1.634                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     w2|t3          -0.610                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     w2|t4           0.572                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     w2|t5           1.406                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     w2|t6           2.443                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     w3|t1          -2.417                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     w3|t2          -1.399                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     w3|t3          -0.712                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     w3|t4           0.573                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     w3|t5           1.507                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     w3|t6           2.283                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     z3|t5           0.988                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     z3|t6           1.972                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     y1|t1          -2.685                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     y1|t2          -1.787                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     y1|t3          -0.652                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     y1|t4           0.408                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     y1|t5           1.436                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     y1|t6           2.381                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     y2|t1          -2.525                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     y2|t2          -1.692                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     y2|t3          -0.560                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     y2|t4           0.231                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     y2|t5           1.387                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     y2|t6           2.380                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     y3|t1          -1.908                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     y3|t2          -0.935                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     y3|t3          -0.094                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     y3|t4           1.104                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     y3|t5           1.957                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     y3|t6           3.179                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     w1|t1          -2.793                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     w1|t2          -1.642                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     w1|t3          -0.766                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     w1|t4           0.270                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     w1|t5           1.079                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     w1|t6           2.333                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     w2|t1          -2.456                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     w2|t2          -1.636                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     w2|t3          -0.609                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     w2|t4           0.566                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     w2|t5           1.413                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     w2|t6           2.438                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     w3|t1          -2.407                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     w3|t2          -1.402                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     w3|t3          -0.709                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     w3|t4           0.582                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     w3|t5           1.505                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     w3|t6           2.251                             </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Variances:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                  Estimate  Std.Error  z.value  P(&gt;|z|)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     X               1.000                             </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>     Z               1.000                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .Y               0.675                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .W               0.755                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .x1              0.131                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .x2              0.327                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .x3              0.213                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .z1              0.156                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .z2              0.283                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .z3              0.245                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .y1              0.155                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .y2              0.288                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .y3              0.245                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .w1              0.159                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .w2              0.322                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    .w3              0.215                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     Y~1             0.085                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     Y~X             0.019                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     Y~Z             0.104                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     W~1             0.058                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     W~X             0.102                             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     W~Z             0.149                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .Y               0.670                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .W               0.758                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .x1              0.161                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .x2              0.285                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .x3              0.227                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .z1              0.159                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .z2              0.296                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .z3              0.228                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .y1              0.161                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .y2              0.290                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .y3              0.233                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .w1              0.180                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .w2              0.303                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    .w3              0.212                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     Y~1             0.086                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     Y~X             0.018                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     Y~Z             0.105                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     W~1             0.059                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     W~X             0.100                             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     W~Z             0.150                             </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-in"><span><span class="co"># }</span></span></span>
 </code></pre></div>

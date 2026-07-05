@@ -19,7 +19,7 @@ testthat::expect_no_error({
 testthat::expect_no_error({
   fit <- pls(m, oneIntOrdered, bootstrap = TRUE, boot.R = 500,
              boot.parallel = "multicore", boot.ncores = 4)
-  summary(fit)
+  summary(fit, unstandardized = TRUE)
 })
 
 pls_predict(fit, approach = "earliest")

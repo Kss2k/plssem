@@ -33,12 +33,17 @@ estimatePLS_Step0_5 <- function(model) {
 estimatePLS_Step0 <- function(model) {
   force(model)
 
-  lambda <- model@matrices$lambda
+  lvs     <- model@info$lvs.linear
+  indsLvs <- model@info$indsLvs
+  lambda  <- model@matrices$lambda
+  SC      <- model@matrices$SC
 
-  for (i in seq_len(ncol(lambda))) {
-    Li <- sum(lambda[, i])
-    if (Li <= 0) next
-    lambda[, i] <- lambda[, i] / Li
+  for (lv in lvs) {
+    inds <- indsLvs[[lv]]
+    wj   <- rep(1, length(inds))
+    Sjj  <- SC[inds, inds]
+    wj   <- wj / c(sqrt(t(wj) %*% Sjj %*% wj))
+    lambda[inds, lv] <- wj
   }
 
   partLambda <- cbind(model@matrices$Ip, lambda)

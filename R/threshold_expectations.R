@@ -2,9 +2,9 @@ plsMapOrderedToExpectations <- function(z) {
   x <- as.integer(as.ordered(z))
 
   freq <- table(x)
-  pct  <- freq[-length(freq)] / sum(freq)
+  pct  <- cumsum(freq) / sum(freq)
+  tau  <- c(-Inf, qnorm(pct[-length(pct)]), Inf)
   k    <- length(freq)
-  tau  <- c(-Inf, qnorm(pct), Inf)
 
   y <- numeric(length(z))
 

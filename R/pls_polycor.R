@@ -48,14 +48,8 @@ plsPolychor <- function(x, y,
 
   row.cuts <- c(-Inf, rc, Inf)
   col.cuts <- c(-Inf, cc, Inf)
-
-  ridx <- matrix(seq_len(r), nrow = r, ncol = c, byrow = FALSE)
-  cidx <- matrix(seq_len(c), nrow = r, ncol = c, byrow = TRUE)
-  keep <- which(tab > 0)
-
-  t <- tab[keep]
-  i <- ridx[keep]
-  j <- cidx[keep]
+  upper_x <- row.cuts[-1L]
+  upper_y <- col.cuts[-1L]
 
   cache_rho <- NA_real_
   cache_P <- NULL
@@ -66,23 +60,27 @@ plsPolychor <- function(x, y,
       return(list(P = cache_P, G = cache_G))
     }
 
-    lower_x <- row.cuts[i]
-    lower_y <- col.cuts[j]
-    upper_x <- row.cuts[i + 1L]
-    upper_y <- col.cuts[j + 1L]
-
-    P <- pbinorm(
-      lower_x = lower_x, lower_y = lower_y,
-      upper_x = upper_x, upper_y = upper_y,
+    corner_P <- pbinorm(
+      upper_x = rep(upper_x, times = length(upper_y)),
+      upper_y = rep(upper_y, each = length(upper_x)),
       rho = rho
     )
+    dim(corner_P) <- c(length(upper_x), length(upper_y))
+    P <- corner_P[-1L, -1L] - corner_P[-1L, -ncol(corner_P)] -
+      corner_P[-nrow(corner_P), -1L] + corner_P[-nrow(corner_P), -ncol(corner_P)]
 
-    G <- (
-      dbinorm(upper_x, upper_y, rho = rho, force_zero = TRUE) -
-      dbinorm(lower_x, upper_y, rho = rho, force_zero = TRUE) -
-      dbinorm(upper_x, lower_y, rho = rho, force_zero = TRUE) +
-      dbinorm(lower_x, lower_y, rho = rho, force_zero = TRUE)
+    corner_G <- matrix(
+      dbinorm(
+        u = rep(upper_x, times = length(upper_y)),
+        v = rep(upper_y, each = length(upper_x)),
+        rho = rho,
+        force_zero = TRUE
+      ),
+      nrow = length(upper_x),
+      ncol = length(upper_y)
     )
+    G <- corner_G[-1L, -1L] - corner_G[-1L, -ncol(corner_G)] -
+      corner_G[-nrow(corner_G), -1L] + corner_G[-nrow(corner_G), -ncol(corner_G)]
 
     cache_rho <<- rho
     cache_P <<- P
@@ -93,12 +91,12 @@ plsPolychor <- function(x, y,
 
   objective <- function(rho) {
     vals <- compute(rho)
-    -sum(t * log(vals$P))
+    -sum(tab * log(vals$P))
   }
 
   gradient <- function(rho) {
     vals <- compute(rho)
-    -sum(t * vals$G / vals$P)
+    -sum(tab * vals$G / vals$P)
   }
 
   opt <- suppressWarnings(nlminb(
@@ -115,21 +113,16 @@ plsPolychor <- function(x, y,
 binBvn <- function(rho, rc, cc) {  
   row.cuts <- c(-Inf, rc, Inf)
   col.cuts <- c(-Inf, cc, Inf)
-
-  r <- length(row.cuts) - 1
-  c <- length(col.cuts) - 1
-
-  idx <- expand.grid(seq_len(r), seq_len(c))
-  i <- idx[[1L]]
-  j <- idx[[2L]]
-
-  p <- pbinorm(
-    lower_x = row.cuts[i], lower_y = col.cuts[j],
-    upper_x = row.cuts[i+1], upper_y = col.cuts[j+1],
+  upper_x <- row.cuts[-1L]
+  upper_y <- col.cuts[-1L]
+  corner_P <- pbinorm(
+    upper_x = rep(upper_x, times = length(upper_y)),
+    upper_y = rep(upper_y, each = length(upper_x)),
     rho = rho
   )
-
-  matrix(p, nrow = r, ncol = c)
+  dim(corner_P) <- c(length(upper_x), length(upper_y))
+  corner_P[-1L, -1L] - corner_P[-1L, -ncol(corner_P)] -
+    corner_P[-nrow(corner_P), -1L] + corner_P[-nrow(corner_P), -ncol(corner_P)]
 }
 
 
@@ -137,27 +130,20 @@ gradBinvBvn <- function(rho, rc, cc) {
   # gradient with respect to rho
   row.cuts <- c(-Inf, rc, Inf)
   col.cuts <- c(-Inf, cc, Inf)
-
-  r <- length(row.cuts) - 1
-  c <- length(col.cuts) - 1
-
-  idx <- expand.grid(seq_len(r), seq_len(c))
-  i <- idx[[1L]]
-  j <- idx[[2L]]
-
-  lower_x <- row.cuts[i]
-  lower_y <- col.cuts[j]
-  upper_x <- row.cuts[i+1]
-  upper_y <- col.cuts[j+1]
-
-  g <- (
-    dbinorm(upper_x, upper_y, rho = rho, force_zero = TRUE) -
-    dbinorm(lower_x, upper_y, rho = rho, force_zero = TRUE) -
-    dbinorm(upper_x, lower_y, rho = rho, force_zero = TRUE) +
-    dbinorm(lower_x, lower_y, rho = rho, force_zero = TRUE)
+  upper_x <- row.cuts[-1L]
+  upper_y <- col.cuts[-1L]
+  corner_G <- matrix(
+    dbinorm(
+      u = rep(upper_x, times = length(upper_y)),
+      v = rep(upper_y, each = length(upper_x)),
+      rho = rho,
+      force_zero = TRUE
+    ),
+    nrow = length(upper_x),
+    ncol = length(upper_y)
   )
-
-  matrix(g, nrow = r, ncol = c)
+  corner_G[-1L, -1L] - corner_G[-1L, -ncol(corner_G)] -
+    corner_G[-nrow(corner_G), -1L] + corner_G[-nrow(corner_G), -ncol(corner_G)]
 }
 
 

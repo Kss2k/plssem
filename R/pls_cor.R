@@ -30,8 +30,10 @@ plsCor <- function(data, ordered = NULL) {
         rho <- cor(x, y)
       } else if (ord.i && ord.j) {
         rho <- plsPolychor(x, y)
-      } else {
-        pls_msg_stop("Not implemented yet!")
+      } else if (ord.i && !ord.j) {
+        rho <- plsPolyserial(y, x) 
+      } else { # !ord.i && ord.j
+        rho <- plsPolyserial(x, y) 
       }
 
       S[i, j] <- S[j, i] <- rho

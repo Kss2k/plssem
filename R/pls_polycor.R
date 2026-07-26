@@ -1,9 +1,7 @@
 plsPolychor <- function(x, y,
                         control = list(),
                         maxrho =.999,
-                        start = rawcor(x, y),
-                        minf = -exp(10), # pbivnorm doesn't handle +/-Inf well
-                        pinf = -exp(10)) { # pbivnorm doesn't handle +/-Inf well
+                        start = rawcor(x, y)) {
   freq <- fastIntTab(x, y)
   zerorows <- rowSums(freq) == 0
   zerocols <- colSums(freq) == 0
@@ -130,14 +128,31 @@ plsPolychor <- function(x, y,
     -sum(t * cache$G / cache$P, na.rm = TRUE)
   }
   
-  opt <- suppressWarnings(nlminb(
+  # try 1
+  optim <- suppressWarnings(nlminb(
     objective = plsPolycorObjective,
     gradient = plsPolycorGradient,
-    start = start,
+    start = start, control = control,
     lower = -abs(maxrho), upper = abs(maxrho)
   ))
 
-  opt$par
+  # try 2
+  if (optim$convergence != 0L) {
+    # try again, with different starting value
+    optim <- suppressWarnings(nlminb(
+      objective = plsPolycorObjective,
+      gradient = plsPolycorGradient,
+      start = 0.0, control = control,
+      lower = -abs(maxrho), upper = abs(maxrho)
+    ))
+  }
+
+  # check convergence
+  pls_warnif(optim$convergence != 0L,
+    "estimation of polychoric correlation did not converge!"
+  )
+
+  optim$par
 }
 
 
@@ -170,7 +185,15 @@ rawcor <- function(x, y) {
 }
 
 
-fastIntTab <- function(x, y) {
+fastIntTab <- function(x, y = NULL) {
+  if (is.null(y)) {
+    ok <- !is.na(x)
+    x <- as.integer(x[ok])
+
+    nr <- max(x)
+    return(tabulate(x, nbins = nr))
+  }
+
   ok <- !is.na(x) & !is.na(y)
   x <- as.integer(x[ok])
   y <- as.integer(y[ok])

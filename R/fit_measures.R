@@ -354,6 +354,7 @@ mcplsLoglik <- function(object, boot.R = 500, verbose = interactive()) {
   )
 
   is.probit <- isTRUE(combined@info$is.probit)
+  ordered   <- combined@info$ordered
   is.hi.ord <- isTRUE(combined@info$is.high.ord)
 
   .f <- function(i = 0, pb = NULL) {

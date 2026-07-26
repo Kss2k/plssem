@@ -95,7 +95,7 @@ plsPolyserial <- function(x, y,
 
   # check convergence
   pls_warnif(optim$convergence != 0L,
-    "estimation of polychoric correlation did not converge!"
+    "estimation of polyserial correlation did not converge!"
   )
 
   optim$par

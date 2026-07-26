@@ -1,5 +1,4 @@
 plsCor <- function(data, ordered = NULL) {
-  
   vars <- colnames(data)
   ord  <- vars %in% ordered
   k    <- length(vars)
@@ -14,7 +13,7 @@ plsCor <- function(data, ordered = NULL) {
     x <- data[,i, drop = TRUE]
 
     if (ord[[i]]) y <- as.integer(as.ordered(x))
-    else          y <- as.numeric(y)
+    else          y <- as.numeric(x)
 
     data[,i] <- y
   }
@@ -30,7 +29,7 @@ plsCor <- function(data, ordered = NULL) {
       if (!ord.i && !ord.j) {
         rho <- cor(x, y)
       } else if (ord.i && ord.j) {
-        rho <- tryCatch(plsPolychor(x, y), error  = \(e) NA)
+        rho <- plsPolychor(x, y)
       } else {
         pls_msg_stop("Not implemented yet!")
       }

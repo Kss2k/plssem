@@ -1,17 +1,12 @@
-rawcor <- function(x, y) {
-  if (!is.numeric(x)) x <- as.numeric(x)
-  if (!is.numeric(y)) y <- as.numeric(y)
-  cor(x, y)
-}
-
-
 plsPolychor <- function(x, y,
                         control = list(),
                         maxrho =.999,
-                        start = rawcor(x, y)) {
-  tab <- table(x, y)
-  zerorows <- apply(tab, 1, \(x) all(x == 0))
-  zerocols <- apply(tab, 2, \(x) all(x == 0))
+                        start = rawcor(x, y),
+                        minf = -exp(10), # pbivnorm doesn't handle +/-Inf well
+                        pinf = -exp(10)) { # pbivnorm doesn't handle +/-Inf well
+  freq <- fastIntTab(x, y)
+  zerorows <- rowSums(freq) == 0
+  zerocols <- colSums(freq) == 0
 
   zr <- sum(zerorows)
   zc <- sum(zerocols)
@@ -26,82 +21,118 @@ plsPolychor <- function(x, y,
     " with zero marginal", suffix, " removed"
   ))
 
-  tab <- tab[!zerorows, ,drop=FALSE]  
-  tab <- tab[, !zerocols, drop=FALSE] 
+  freq <- freq[!zerorows, ,drop=FALSE]  
+  freq <- freq[, !zerocols, drop=FALSE] 
 
-  r <- nrow(tab)
-  c <- ncol(tab)
+  r <- nrow(freq)
+  c <- ncol(freq)
 
   if (r < 2) {
-    pls_msg_warn("the table has fewer than 2 rows")
+    pls_msg_warn("the cross table has fewer than 2 rows")
     return(NA)
   }
 
   if (c < 2) {
-    pls_msg_warn("the table has fewer than 2 columns")
+    pls_msg_warn("the cross table has fewer than 2 columns")
     return(NA)
   }
 
-  n <- sum(tab)
-  rc <- qnorm(cumsum(rowSums(tab))/n)[-r]
-  cc <- qnorm(cumsum(colSums(tab))/n)[-c]
+  n <- sum(freq)
+  rc <- qnorm(cumsum(rowSums(freq))/n)[-r]
+  cc <- qnorm(cumsum(colSums(freq))/n)[-c]
+  kx <- length(rc)
+  ky <- length(cc)
 
-  row.cuts <- c(-Inf, rc, Inf)
-  col.cuts <- c(-Inf, cc, Inf)
-  upper_x <- row.cuts[-1L]
-  upper_y <- col.cuts[-1L]
+  # We can ignore computing a corner probability if none of the four
+  # adjacent cells is nonzero.
+  nzero <- freq > 0 & !is.na(freq)
+  nz00  <- rbind(cbind(nzero, FALSE), FALSE)   # top-left corner of each nonzero cell
+  nz10  <- rbind(cbind(FALSE, nzero), FALSE)   # top-right corner of each nonzero cell
+  nz01  <- rbind(FALSE, cbind(nzero, FALSE))   # bottom-left corner of each nonzero cell
+  nz11  <- rbind(FALSE, cbind(FALSE, nzero))   # bottom-right corner of each nonzero cell
+  keep  <- nz11 | nz10 | nz01 | nz00
 
-  cache_rho <- NA_real_
-  cache_P <- NULL
-  cache_G <- NULL
+  # Keep only interior corners between finite thresholds.
+  innerCorners <- keep[seq_len(kx) + 1, seq_len(ky) + 1]
+  outerCorners <- unname(rbind(
+    FALSE, cbind(FALSE, innerCorners, FALSE), FALSE
+  ))
 
-  compute <- function(rho) {
-    if (!is.na(cache_rho) && identical(rho, cache_rho)) {
-      return(list(P = cache_P, G = cache_G))
-    }
+  keep.inner.idx <- which(innerCorners)
+  keep.outer.idx <- which(outerCorners)
+  keep.freq.idx  <- which(nzero)
 
-    corner_P <- pbinorm(
-      upper_x = rep(upper_x, times = length(upper_y)),
-      upper_y = rep(upper_y, each = length(upper_x)),
+  pcorners <- unname(rbind(
+    0,
+    cbind(0, matrix(NA, nrow = kx, ncol = ky), pnorm(rc)),
+    c(0, pnorm(cc), 1)
+  ))
+
+  gcorners <- unname(rbind(
+    0, cbind(0, matrix(NA, nrow = kx, ncol = ky), 0), 0)
+  )
+    
+  cache.rho  <- NA_real_ # for now
+  P          <- NULL
+  G          <- NULL
+  t          <- freq[keep.freq.idx]
+  upper.x    <- rep(rc, times = length(cc))[keep.inner.idx]
+  upper.y    <- rep(cc, each = length(rc))[keep.inner.idx]
+  nr         <- nrow(pcorners)
+
+  freq.row <- ((keep.freq.idx - 1L) %% r) + 1L
+  freq.col <- ((keep.freq.idx - 1L) %/% r) + 1L
+
+  # Precompute corners for each nonzero frequency cell.
+  idx11 <- freq.row + 1L + freq.col * nr
+  idx10 <- freq.row + 1L + (freq.col - 1L) * nr
+  idx01 <- freq.row + freq.col * nr
+  idx00 <- freq.row + (freq.col - 1L) * nr
+  
+  updateCache <- function(rho) {
+    if (!is.na(cache.rho) && identical(rho, cache.rho))
+      return(list(P = P, G = G))
+  
+    cache.rho <<- rho
+  
+    # Get probabilities for corners
+    pcorners[keep.outer.idx] <- pbivnorm::pbivnorm(
+      x   = upper.x,
+      y   = upper.y,
       rho = rho
     )
-    dim(corner_P) <- c(length(upper_x), length(upper_y))
-    P <- corner_P[-1L, -1L] - corner_P[-1L, -ncol(corner_P)] -
-      corner_P[-nrow(corner_P), -1L] + corner_P[-nrow(corner_P), -ncol(corner_P)]
 
-    corner_G <- matrix(
-      dbinorm(
-        u = rep(upper_x, times = length(upper_y)),
-        v = rep(upper_y, each = length(upper_x)),
-        rho = rho,
-        force_zero = TRUE
-      ),
-      nrow = length(upper_x),
-      ncol = length(upper_y)
+    P <<- pcorners[idx11] - pcorners[idx10] -
+      pcorners[idx01] + pcorners[idx00]
+
+    # Get densities for corners
+    gcorners[keep.outer.idx] <- dbinorm(
+      u   = upper.x,
+      v   = upper.y,
+      rho = rho,
+      force.zero = TRUE # numerical stability
     )
-    G <- corner_G[-1L, -1L] - corner_G[-1L, -ncol(corner_G)] -
-      corner_G[-nrow(corner_G), -1L] + corner_G[-nrow(corner_G), -ncol(corner_G)]
+    
+    # Get (truncated) densites from corners (for gradient)
+    G <<- gcorners[idx11] - gcorners[idx10] -
+      gcorners[idx01] + gcorners[idx00]
 
-    cache_rho <<- rho
-    cache_P <<- P
-    cache_G <<- G
-
-    list(P = P, G = G)
+    list(G = G, P = P)
   }
 
-  objective <- function(rho) {
-    vals <- compute(rho)
-    -sum(tab * log(vals$P))
+  plsPolycorObjective <- function(rho) {
+    cache <- updateCache(rho = rho)
+    -sum(t * log(cache$P), na.rm = TRUE)
   }
 
-  gradient <- function(rho) {
-    vals <- compute(rho)
-    -sum(tab * vals$G / vals$P)
+  plsPolycorGradient <- function(rho) {
+    cache <- updateCache(rho = rho)
+    -sum(t * cache$G / cache$P, na.rm = TRUE)
   }
-
+  
   opt <- suppressWarnings(nlminb(
-    objective = objective,
-    gradient = gradient,
+    objective = plsPolycorObjective,
+    gradient = plsPolycorGradient,
     start = start,
     lower = -abs(maxrho), upper = abs(maxrho)
   ))
@@ -110,93 +141,13 @@ plsPolychor <- function(x, y,
 }
 
 
-binBvn <- function(rho, rc, cc) {  
-  row.cuts <- c(-Inf, rc, Inf)
-  col.cuts <- c(-Inf, cc, Inf)
-  upper_x <- row.cuts[-1L]
-  upper_y <- col.cuts[-1L]
-  corner_P <- pbinorm(
-    upper_x = rep(upper_x, times = length(upper_y)),
-    upper_y = rep(upper_y, each = length(upper_x)),
-    rho = rho
-  )
-  dim(corner_P) <- c(length(upper_x), length(upper_y))
-  corner_P[-1L, -1L] - corner_P[-1L, -ncol(corner_P)] -
-    corner_P[-nrow(corner_P), -1L] + corner_P[-nrow(corner_P), -ncol(corner_P)]
-}
-
-
-gradBinvBvn <- function(rho, rc, cc) {
-  # gradient with respect to rho
-  row.cuts <- c(-Inf, rc, Inf)
-  col.cuts <- c(-Inf, cc, Inf)
-  upper_x <- row.cuts[-1L]
-  upper_y <- col.cuts[-1L]
-  corner_G <- matrix(
-    dbinorm(
-      u = rep(upper_x, times = length(upper_y)),
-      v = rep(upper_y, each = length(upper_x)),
-      rho = rho,
-      force_zero = TRUE
-    ),
-    nrow = length(upper_x),
-    ncol = length(upper_y)
-  )
-  corner_G[-1L, -1L] - corner_G[-1L, -ncol(corner_G)] -
-    corner_G[-nrow(corner_G), -1L] + corner_G[-nrow(corner_G), -ncol(corner_G)]
-}
-
-
-pbinorm <- function(upper_x = NULL, upper_y = NULL, rho = 0.0,
-                    lower_x = -Inf, lower_y = -Inf, check = FALSE) {
-
-  n <- length(upper_x)
-  stopifnot(length(upper_y) == n)
-  if (n > 1L) {
-    if (length(rho) == 1L) {
-      rho <- rep(rho, n)
-    }
-    if (length(lower_x) == 1L) {
-      lower_x <- rep(lower_x, n)
-    }
-    if (length(lower_y) == 1L) {
-      lower_y <- rep(lower_y, n)
-    }
-  }
-
-  upper_only <- all(lower_x == -Inf & lower_y == -Inf)
-  if (upper_only) {
-    # pbivnorm::pbivnorm does not handle +/-Inf well...
-    upper_x[upper_x == +Inf] <- exp(10)
-    upper_y[upper_y == +Inf] <- exp(10)
-    upper_x[upper_x == -Inf] <- -exp(10)
-    upper_y[upper_y == -Inf] <- -exp(10)
-    res <- pbivnorm::pbivnorm(upper_x, upper_y, rho = rho)
-  } else {
-    # pbivnorm::pbivnorm does not handle +/-Inf well...
-    upper_x[upper_x == +Inf] <- exp(10) # better pnorm?
-    upper_y[upper_y == +Inf] <- exp(10)
-    lower_x[lower_x == -Inf] <- -exp(10)
-    lower_y[lower_y == -Inf] <- -exp(10)
-    res <- pbivnorm::pbivnorm(upper_x, upper_y, rho = rho) -
-      pbivnorm::pbivnorm(lower_x, upper_y, rho = rho) -
-      pbivnorm::pbivnorm(upper_x, lower_y, rho = rho) +
-      pbivnorm::pbivnorm(lower_x, lower_y, rho = rho)
-  }
-
-  res
-}
-
-
-dbinorm <- function(u, v, rho, force_zero = FALSE) {
+dbinorm <- function(u, v, rho, force.zero = FALSE, rho.lim = 0.9999) {
   # dirty hack to handle extreme large values for rho
   # note that u, v, and rho are vectorized!
-  rho_limit <- 0.9999
-  abs_rho <- abs(rho)
-  idx <- which(abs_rho > rho_limit)
-  if (length(idx) > 0L) {
-    rho[idx] <- sign(rho[idx]) * rho_limit
-  }
+  abs.rho <- abs(rho)
+  idx <- which(abs.rho > rho.lim)
+  if (length(idx) > 0L)
+    rho[idx] <- sign(rho[idx]) * rho.lim
 
   r <- 1 - rho * rho
   out <- 1 / (2 * pi * sqrt(r)) *
@@ -205,9 +156,31 @@ dbinorm <- function(u, v, rho, force_zero = FALSE) {
   # if abs(u) or abs(v) are very large (say, >10), set result equal
   # to exactly zero
   idx <- which(abs(u) > 10 | abs(v) > 10)
-  if (length(idx) > 0L && force_zero) {
+  if (length(idx) > 0L && force.zero)
     out[idx] <- 0
-  }
 
   out
+}
+
+
+rawcor <- function(x, y) {
+  if (!is.numeric(x)) x <- as.numeric(x)
+  if (!is.numeric(y)) y <- as.numeric(y)
+  cor(x, y)
+}
+
+
+fastIntTab <- function(x, y) {
+  ok <- !is.na(x) & !is.na(y)
+  x <- as.integer(x[ok])
+  y <- as.integer(y[ok])
+
+  nr <- max(x)
+  nc <- max(y)
+
+  matrix(
+    tabulate(x + (y - 1L) * nr, nbins = nr * nc),
+    nrow = nr,
+    ncol = nc
+  )
 }

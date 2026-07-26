@@ -218,7 +218,7 @@ getPearsonCorr <- function(data, zero.tol = 1e-8) {
 
 getPolyCorr <- function(data, ordered = NULL) {
   data <- asDataFrame(data)
-  lavaan::lavCor(data, ordered = ordered)
+  plsCor(data, ordered = ordered)
 }
 
 

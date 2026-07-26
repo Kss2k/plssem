@@ -51,7 +51,7 @@ plsPolychor <- function(x, y,
   keep  <- nz11 | nz10 | nz01 | nz00
 
   # Keep only interior corners between finite thresholds.
-  innerCorners <- keep[seq_len(kx) + 1, seq_len(ky) + 1]
+  innerCorners <- keep[seq_len(kx) + 1, seq_len(ky) + 1, drop = FALSE]
   outerCorners <- unname(rbind(
     FALSE, cbind(FALSE, innerCorners, FALSE), FALSE
   ))

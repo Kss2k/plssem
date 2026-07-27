@@ -2,6 +2,11 @@ plsPolychor <- function(x, y,
                         control = list(),
                         maxrho = .999,
                         start = NULL) {
+  if (!is.integer(x))
+    x <- as.integer(as.ordered(x))
+  if (!is.integer(y))
+    y <- as.integer(as.ordered(y))
+
   freq <- fastIntTab(x, y)
   zerorows <- rowSums(freq) == 0
   zerocols <- colSums(freq) == 0

@@ -3,7 +3,7 @@ plsPolyserial <- function(x, y,
                           maxrho =.999,
                           start = NULL) {
   if (!is.integer(y))
-    y <- as.integer(y)
+    y <- as.integer(as.ordered(y))
   if (!is.numeric(x))
     x <- as.numeric(x)
 

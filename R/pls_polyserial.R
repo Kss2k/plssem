@@ -1,7 +1,7 @@
 plsPolyserial <- function(x, y,
                           control = list(),
                           maxrho =.999,
-                          start = rawcor(x, y)) {
+                          start = NULL) {
   if (!is.integer(y))
     y <- as.integer(y)
   if (!is.numeric(x))
@@ -13,9 +13,10 @@ plsPolyserial <- function(x, y,
     "Ordinal variable must have at least two (observed) categories!"
   )
   stopifnot(length(x) == length(y))
-  
+
   n <- length(y)
-  thr <- c(-Inf, qnorm(cumsum(freq)/n)[-length(freq)], Inf)
+  thr.inner <- qnorm(cumsum(freq)/n)[-length(freq)]
+  thr <- c(-Inf, thr.inner, Inf)
   tau0 <- thr[y]
   tau1 <- thr[y+1]
   finite.lower <- is.finite(tau0)
@@ -36,7 +37,7 @@ plsPolyserial <- function(x, y,
   updateCache <- function(rho) {
     if (!is.na(cache.rho) && identical(rho, cache.rho))
       return(invisible(NULL))
-  
+
     cache.rho <<- rho
     ey    <- z * rho
     var   <- 1 - rho * rho
@@ -58,11 +59,17 @@ plsPolyserial <- function(x, y,
   }
 
   plsPolyserialObjective <- function(rho) {
+    if (!is.finite(rho))
+      return(NaN)
+
     updateCache(rho)
     -sum(logy)
   }
 
   plsPolyserialGradient <- function(rho) {
+    if (!is.finite(rho))
+      return(NaN)
+
     updateCache(rho)
 
     lowerTerm <- dnorm(lower, 0, sigma) * zrlower
@@ -73,7 +80,20 @@ plsPolyserial <- function(x, y,
 
     -sum((lowerTerm - upperTerm) / prob)
   }
-  
+
+  if (is.null(start)) {
+    # Starting values from Olsson 1982 eq 38
+    cor.xy <- cor(x, y)
+    sd.y   <- sd(y) * sqrt((n - 1) / n)
+    start  <- cor.xy * sd.y / sum(dnorm(thr.inner))
+
+    if (!is.finite(start) || abs(start) > maxrho)
+      start <- cor.xy
+  }
+
+  if (!is.finite(start) || abs(start) > maxrho)
+    start <- 0.0
+
   # try 1
   optim <- suppressWarnings(nlminb(
     objective = plsPolyserialObjective,

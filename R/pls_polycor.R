@@ -154,27 +154,28 @@ plsPolychor <- function(x, y,
     start <- 0.0
 
   # try 1
-  optim <- suppressWarnings(nlminb(
+  optim <- .nlminb(
     objective = plsPolycorObjective,
     gradient = plsPolycorGradient,
     start = start, control = control,
     lower = -abs(maxrho), upper = abs(maxrho)
-  ))
+  )
 
   # try 2
   if (optim$convergence != 0L) {
     # try again, with different starting value
-    optim <- suppressWarnings(nlminb(
+    optim <- .nlminb(
       objective = plsPolycorObjective,
       gradient = plsPolycorGradient,
       start = 0.0, control = control,
       lower = -abs(maxrho), upper = abs(maxrho)
-    ))
+    )
   }
 
   # check convergence
   pls_warnif(optim$convergence != 0L,
-    "estimation of polychoric correlation did not converge!"
+    "estimation of polychoric correlation did not converge!",
+    "Message:", optim$message
   )
 
   optim$par

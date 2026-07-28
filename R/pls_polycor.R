@@ -164,12 +164,14 @@ plsPolychor <- function(x, y,
   # try 2
   if (optim$convergence != 0L) {
     # try again, with different starting value
-    optim <- .nlminb(
+    retry <- .nlminb(
       objective = plsPolycorObjective,
       gradient = plsPolycorGradient,
       start = 0.0, control = control,
       lower = -abs(maxrho), upper = abs(maxrho)
     )
+    if (!is.na(retry$par))
+      optim <- retry
   }
 
   # check convergence

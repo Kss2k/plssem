@@ -114,10 +114,15 @@ plsPolyserial <- function(x, y,
   }
 
   # check convergence
-  pls_warnif(optim$convergence != 0L,
-    "estimation of polyserial correlation did not converge!",
-    "Message:", optim$message
-  )
+  if (optim$convergence != 0L) {
+    pls_msg_warn(
+      "estimation of polyserial correlation did not converge!",
+      "Message:", optim$message
+    )
+    rho <- start
+  } else {
+    rho <- optim$par
+  }
 
-  optim$par
+  rho
 }

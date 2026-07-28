@@ -41,8 +41,8 @@ plsPolychor <- function(x, y,
   }
 
   n <- sum(freq)
-  rc <- qnorm(cumsum(rowSums(freq))/n)[-r]
-  cc <- qnorm(cumsum(colSums(freq))/n)[-c]
+  rc <- stats::qnorm(cumsum(rowSums(freq))/n)[-r]
+  cc <- stats::qnorm(cumsum(colSums(freq))/n)[-c]
   kx <- length(rc)
   ky <- length(cc)
 
@@ -67,8 +67,8 @@ plsPolychor <- function(x, y,
 
   pcorners <- unname(rbind(
     0,
-    cbind(0, matrix(NA, nrow = kx, ncol = ky), pnorm(rc)),
-    c(0, pnorm(cc), 1)
+    cbind(0, matrix(NA, nrow = kx, ncol = ky), stats::pnorm(rc)),
+    c(0, stats::pnorm(cc), 1)
   ))
 
   gcorners <- unname(rbind(
@@ -141,10 +141,10 @@ plsPolychor <- function(x, y,
 
   if (is.null(start)) {
     # Starting values based on Olsson 1982 eq 38
-    cor.xy <- cor(x, y)
-    sd.x   <- sd(x) * sqrt((n - 1) / n)
-    sd.y   <- sd(y) * sqrt((n - 1) / n)
-    start <- cor.xy * sd.x * sd.y / (sum(dnorm(rc)) * sum(dnorm(cc)))
+    cor.xy <- stats::cor(x, y)
+    sd.x   <- stats::sd(x) * sqrt((n - 1) / n)
+    sd.y   <- stats::sd(y) * sqrt((n - 1) / n)
+    start <- cor.xy * sd.x * sd.y / (sum(stats::dnorm(rc)) * sum(stats::dnorm(cc)))
 
     if (!is.finite(start) || abs(start) >= maxrho)
       start <- cor.xy
@@ -154,30 +154,33 @@ plsPolychor <- function(x, y,
     start <- 0.0
 
   # try 1
-  optim <- suppressWarnings(nlminb(
+  optim <- .nlminb(
     objective = plsPolycorObjective,
     gradient = plsPolycorGradient,
     start = start, control = control,
     lower = -abs(maxrho), upper = abs(maxrho)
-  ))
+  )
 
   # try 2
   if (optim$convergence != 0L) {
     # try again, with different starting value
-    optim <- suppressWarnings(nlminb(
+    retry <- .nlminb(
       objective = plsPolycorObjective,
       gradient = plsPolycorGradient,
       start = 0.0, control = control,
       lower = -abs(maxrho), upper = abs(maxrho)
-    ))
+    )
+    if (!is.na(retry$par))
+      optim <- retry
   }
 
   # check convergence
   pls_warnif(optim$convergence != 0L,
-    "estimation of polychoric correlation did not converge!"
+    "estimation of polychoric correlation did not converge!",
+    "Message:", optim$message
   )
 
-  optim$par
+  if (is.na(optim$par)) start else optim$par
 }
 
 
@@ -206,7 +209,7 @@ dbinorm <- function(u, v, rho, force.zero = FALSE, rho.lim = 0.9999) {
 rawcor <- function(x, y) {
   if (!is.numeric(x)) x <- as.numeric(x)
   if (!is.numeric(y)) y <- as.numeric(y)
-  cor(x, y)
+  stats::cor(x, y)
 }
 
 

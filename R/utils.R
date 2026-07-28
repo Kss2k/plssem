@@ -91,3 +91,42 @@ paramsToLabels <- function(params, labels) {
   params[replace] <- labels[params[replace]]
   params
 }
+
+
+# safer version of nlminb to avoid hard failures
+.nlminb <- function(start,
+                    objective,
+                    gradient = NULL,
+                    hessian = NULL,
+                    ...,
+                    scale = 1,
+                    control = list(),
+                    lower = -Inf,
+                    upper = Inf,
+                    warn.on.failure = TRUE) {
+  tryCatch({
+    suppressWarnings(stats::nlminb(
+      start     = start,
+      objective = objective,
+      gradient  = gradient,
+      hessian   = hessian,
+      ...,
+      scale     = scale,
+      control   = control,
+      lower     = lower,
+      upper     = upper
+    ))
+  }, error = function(err) {
+    msg <- paste("nlminb() failed! Message:", conditionMessage(err))
+    pls_warnif(warn.on.failure, msg)
+
+    list(
+      par         = NA_real_,
+      objective   = NA_real_,
+      convergence = -1,
+      message     = msg,
+      iterations  = NA_integer_,
+      evaluations = NA_integer_
+    )
+  })
+}

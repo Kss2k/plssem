@@ -1,4 +1,4 @@
-CI_QUANTILE <- qnorm(0.975)
+CI_QUANTILE <- stats::qnorm(0.975)
 
 
 getParTableEstimates <- function(model,

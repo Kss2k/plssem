@@ -121,7 +121,7 @@ paramsToLabels <- function(params, labels) {
     pls_warnif(warn.on.failure, msg)
 
     list(
-      par         = start,
+      par         = NA_real_,
       objective   = NA_real_,
       convergence = -1,
       message     = msg,

@@ -173,17 +173,12 @@ plsPolychor <- function(x, y,
   }
 
   # check convergence
-  if (optim$convergence != 0L) {
-    pls_msg_warn(
-      "estimation of polychoric correlation did not converge!",
-      "Message:", optim$message
-    )
-    rho <- start
-  } else {
-    rho <- optim$par
-  }
+  pls_warnif(optim$convergence != 0L,
+    "estimation of polychoric correlation did not converge!",
+    "Message:", optim$message
+  )
 
-  rho
+  if (is.na(optim$par)) start else optim$par
 }
 
 

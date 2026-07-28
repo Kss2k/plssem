@@ -105,7 +105,7 @@ paramsToLabels <- function(params, labels) {
                     upper = Inf,
                     warn.on.failure = TRUE) {
   tryCatch({
-    suppressWarnings(nlminb(
+    suppressWarnings(stats::nlminb(
       start     = start,
       objective = objective,
       gradient  = gradient,

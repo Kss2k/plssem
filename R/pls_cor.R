@@ -41,7 +41,7 @@ plsCor <- function(data, ordered = NULL) {
   )
 
   polychor   <- trycor(plsPolychor, "polychoric")
-  pearson    <- trycor(cor, "Pearson")
+  pearson    <- trycor(stats::cor, "Pearson")
   polyserial <- trycor(plsPolyserial, "polyserial")
 
   for (i in seq_len(k)) {

@@ -15,7 +15,7 @@ plsPolyserial <- function(x, y,
   stopifnot(length(x) == length(y))
 
   n <- length(y)
-  thr.inner <- qnorm(cumsum(freq)/n)[-length(freq)]
+  thr.inner <- stats::qnorm(cumsum(freq)/n)[-length(freq)]
   thr <- c(-Inf, thr.inner, Inf)
   tau0 <- thr[y]
   tau1 <- thr[y+1]
@@ -23,7 +23,7 @@ plsPolyserial <- function(x, y,
   finite.upper <- is.finite(tau1)
 
   cache.rho  <- NA_real_ # for now
-  z          <- (x - mean(x)) / sd(x)
+  z          <- (x - mean(x)) / stats::sd(x)
   logy       <- NULL
   lower      <- NULL
   upper      <- NULL
@@ -45,8 +45,8 @@ plsPolyserial <- function(x, y,
     lower <<- tau0 - ey
     upper <<- tau1 - ey
 
-    plower <<- pnorm(lower, sd = sigma)
-    pupper <<- pnorm(upper, sd = sigma)
+    plower <<- stats::pnorm(lower, sd = sigma)
+    pupper <<- stats::pnorm(upper, sd = sigma)
     prob   <<- pupper - plower
 
     logy <<- log(prob)
@@ -72,8 +72,8 @@ plsPolyserial <- function(x, y,
 
     updateCache(rho)
 
-    lowerTerm <- dnorm(lower, 0, sigma) * zrlower
-    upperTerm <- dnorm(upper, 0, sigma) * zrupper
+    lowerTerm <- stats::dnorm(lower, 0, sigma) * zrlower
+    upperTerm <- stats::dnorm(upper, 0, sigma) * zrupper
 
     lowerTerm[!finite.lower] <- 0
     upperTerm[!finite.upper] <- 0
@@ -83,9 +83,9 @@ plsPolyserial <- function(x, y,
 
   if (is.null(start)) {
     # Starting values from Olsson 1982 eq 38
-    cor.xy <- cor(x, y)
-    sd.y   <- sd(y) * sqrt((n - 1) / n)
-    start  <- cor.xy * sd.y / sum(dnorm(thr.inner))
+    cor.xy <- stats::cor(x, y)
+    sd.y   <- stats::sd(y) * sqrt((n - 1) / n)
+    start  <- cor.xy * sd.y / sum(stats::dnorm(thr.inner))
 
     if (!is.finite(start) || abs(start) > maxrho)
       start <- cor.xy

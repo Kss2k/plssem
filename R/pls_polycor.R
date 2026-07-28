@@ -1,7 +1,12 @@
 plsPolychor <- function(x, y,
                         control = list(),
-                        maxrho =.999,
-                        start = rawcor(x, y)) {
+                        maxrho = .999,
+                        start = NULL) {
+  if (!is.integer(x))
+    x <- as.integer(as.ordered(x))
+  if (!is.integer(y))
+    y <- as.integer(as.ordered(y))
+
   freq <- fastIntTab(x, y)
   zerorows <- rowSums(freq) == 0
   zerocols <- colSums(freq) == 0
@@ -19,8 +24,8 @@ plsPolychor <- function(x, y,
     " with zero marginal", suffix, " removed"
   ))
 
-  freq <- freq[!zerorows, ,drop=FALSE]  
-  freq <- freq[, !zerocols, drop=FALSE] 
+  freq <- freq[!zerorows, ,drop=FALSE]
+  freq <- freq[, !zerocols, drop=FALSE]
 
   r <- nrow(freq)
   c <- ncol(freq)
@@ -69,7 +74,7 @@ plsPolychor <- function(x, y,
   gcorners <- unname(rbind(
     0, cbind(0, matrix(NA, nrow = kx, ncol = ky), 0), 0)
   )
-    
+
   cache.rho  <- NA_real_ # for now
   P          <- NULL
   G          <- NULL
@@ -86,13 +91,13 @@ plsPolychor <- function(x, y,
   idx10 <- freq.row + 1L + (freq.col - 1L) * nr
   idx01 <- freq.row + freq.col * nr
   idx00 <- freq.row + (freq.col - 1L) * nr
-  
+
   updateCache <- function(rho) {
     if (!is.na(cache.rho) && identical(rho, cache.rho))
       return(list(P = P, G = G))
-  
+
     cache.rho <<- rho
-  
+
     # Get probabilities for corners
     pcorners[keep.outer.idx] <- pbivnorm::pbivnorm(
       x   = upper.x,
@@ -110,7 +115,7 @@ plsPolychor <- function(x, y,
       rho = rho,
       force.zero = TRUE # numerical stability
     )
-    
+
     # Get (truncated) densites from corners (for gradient)
     G <<- gcorners[idx11] - gcorners[idx10] -
       gcorners[idx01] + gcorners[idx00]
@@ -119,15 +124,35 @@ plsPolychor <- function(x, y,
   }
 
   plsPolycorObjective <- function(rho) {
+    if (!is.finite(rho))
+      return(NaN)
+
     cache <- updateCache(rho = rho)
     -sum(t * log(cache$P), na.rm = TRUE)
   }
 
   plsPolycorGradient <- function(rho) {
+    if (!is.finite(rho))
+      return(NaN)
+
     cache <- updateCache(rho = rho)
     -sum(t * cache$G / cache$P, na.rm = TRUE)
   }
-  
+
+  if (is.null(start)) {
+    # Starting values based on Olsson 1982 eq 38
+    cor.xy <- cor(x, y)
+    sd.x   <- sd(x) * sqrt((n - 1) / n)
+    sd.y   <- sd(y) * sqrt((n - 1) / n)
+    start <- cor.xy * sd.x * sd.y / (sum(dnorm(rc)) * sum(dnorm(cc)))
+
+    if (!is.finite(start) || abs(start) >= maxrho)
+      start <- cor.xy
+  }
+
+  if (!is.finite(start) || abs(start) > maxrho)
+    start <- 0.0
+
   # try 1
   optim <- suppressWarnings(nlminb(
     objective = plsPolycorObjective,

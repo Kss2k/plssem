@@ -274,9 +274,17 @@ extractCoefs <- function(model) {
 computeFactorScores <- function(model) {
   W <- model@matrices$lambda
   X <- model@data
+
+  if (model@info$is.probit) {
+    ordered <- model@info$ordered
+
+    for (ord in ordered)
+      X[,ord] <- plsMapOrderedToExpectations(X[,ord])
+  }
+
   F <- X %*% W
 
-  if (!model@info$standardized)
+  if (!model@info$standardized || model@info$is.probit)
     F <- Rfast::standardise(F)
 
   F

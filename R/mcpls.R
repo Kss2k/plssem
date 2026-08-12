@@ -28,6 +28,7 @@ mcpls <- function(
   data      <- fit0.base@data
   vars      <- colnames(data)
   ordered   <- fit0@info$ordered
+  is.probit <- fit0@info$is.probit
   is.hi.ord <- isTRUE(fit0.combined@info$is.high.ord)
   thresholdStruct0 <- fit0.combined@thresholdStruct
   estimator <- fit0.combined@info$path.estimator
@@ -116,7 +117,9 @@ mcpls <- function(
 
     fit.sim <- fit0.base
     X       <- Rfast::standardise(as.matrix(sim.ov[vars]))
-    S       <- Rfast::cova(X)
+
+    if (is.probit) S <- getCorrMat(X, probit = TRUE, ordered = ordered)
+    else           S <- Rfast::cova(X)
 
     if (!is.null(sim$cluster))
       attr(X, "cluster") <- sim$cluster

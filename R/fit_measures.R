@@ -353,6 +353,8 @@ mcplsLoglik <- function(object, boot.R = 500, verbose = interactive()) {
     pls_msg_stop("Unrecognized value for `mc.rescov` argument:", mc.rescov)
   )
 
+  is.probit <- isTRUE(combined@info$is.probit)
+  ordered   <- combined@info$ordered
   is.hi.ord <- isTRUE(combined@info$is.high.ord)
 
   .f <- function(i = 0, pb = NULL) {
@@ -378,7 +380,9 @@ mcplsLoglik <- function(object, boot.R = 500, verbose = interactive()) {
 
     fit.sim <- fit0
     X       <- Rfast::standardise(as.matrix(sim$ov[vars]))
-    S       <- Rfast::cova(X)
+
+    if (is.probit) S <- getCorrMat(X, probit = TRUE, ordered = ordered)
+    else           S <- Rfast::cova(X)
 
     if (!is.null(sim$cluster))
       attr(X, "cluster") <- sim$cluster

@@ -39,7 +39,7 @@ LazyData: true
 Imports:
     methods,
     stats,
-    modsem (>= 1.0.20),
+    modsem (>= 1.0.21),
     lme4,
     lavaan,
     stringr,

@@ -45,7 +45,7 @@ getPLS_Data <- function(data,
     pls_msg_note(paste0("Imputing missing data using k-Nearest Neighbors (kNN), k = ", knn.k, "..."))
 
     # Remove rows where all indicators are missing
-    allMissing <- as.logical(matrixStats::rowProds(
+    allMissing <- as.logical(Rfast::rowprods(
       apply(data[indicators], MARGIN = 2L, FUN = is.na)
     ))
 

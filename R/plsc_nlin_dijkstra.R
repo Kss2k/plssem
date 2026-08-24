@@ -224,7 +224,7 @@ SingleQuadratic <- function(.i, .j, .Q, .H) {
   ij      <- c(i_split, j_split)
 
   ## Calculate M
-  M <- mean(matrixStats::rowProds(.H[, ij]))
+  M <- mean(Rfast::rowprods(.H[, ij]))
 
   ## Calculate denominator (D)
   D <- prod(.Q[ij])
@@ -266,8 +266,8 @@ SingleCubic <- function(.i, .j, .Q, .H) {
 
   ### Calculation --------------------------------------------------------------
   ## Calculate M
-  M1 <- mean(matrixStats::rowProds(.H[, ij]))
-  M2 <- mean(matrixStats::rowProds(.H[, c(i, j_single)]))
+  M1 <- mean(Rfast::rowprods(.H[, ij]))
+  M2 <- mean(Rfast::rowprods(.H[, c(i, j_single)]))
 
   ## Calculate denominator (D)
   D <- prod(.Q[ij])
@@ -296,7 +296,7 @@ SingleTwInter <- function(.i, .j, .Q, .H) {
   ij      <- c(i_split, j_split)
 
   ## Calculate M
-  M <- mean(matrixStats::rowProds(.H[, ij]))
+  M <- mean(Rfast::rowprods(.H[, ij]))
 
   ## Calculate denominator (D)
   D <- prod(.Q[ij])
@@ -338,8 +338,8 @@ SingleThrwInter <- function(.i, .j, .Q, .H) {
 
   ### Calculation --------------------------------------------------------------
   ## Calculate M
-  M1 <- mean(matrixStats::rowProds(.H[, ij]))
-  M2 <- mean(matrixStats::rowProds(.H[, c(setdiff(j_split, ij_match))]))
+  M1 <- mean(Rfast::rowprods(.H[, ij]))
+  M2 <- mean(Rfast::rowprods(.H[, c(setdiff(j_split, ij_match))]))
 
   ## Calculate denominator (D)
   D <- prod(.Q[ij])
@@ -392,8 +392,8 @@ SingleQuadTwInter <- function(.i, .j, .Q, .H) {
 
   ## Calculation ---------------------------------------------------------------
   ## Calculate M
-  M1 <- mean(matrixStats::rowProds(.H[, ij]))
-  M2 <- mean(matrixStats::rowProds(.H[, c(i, j_single)]))
+  M1 <- mean(Rfast::rowprods(.H[, ij]))
+  M2 <- mean(Rfast::rowprods(.H[, c(i, j_single)]))
 
   ## Calculate denominator (D)
   D <- prod(.Q[ij])
@@ -430,7 +430,7 @@ QuadraticQuadratic <- function(.i, .j, .Q, .H) {
   ij       <- c(i_split, j_split)
 
   ## Calculate M
-  M <- mean(matrixStats::rowProds(.H[, ij]))
+  M <- mean(Rfast::rowprods(.H[, ij]))
 
   ## Calculate denominator (D)
   D <- prod(.Q[ij])
@@ -484,9 +484,9 @@ QuadraticCubic <- function(.i, .j, .Q, .H) {
 
   ### Calculation --------------------------------------------------------------
   ## Calculate M
-  M1 <- mean(matrixStats::rowProds(.H[, ij]))
-  M2 <- mean(matrixStats::rowProds(.H[, c(i_split, j_single)]))
-  M3 <- mean(matrixStats::rowProds(.H[, j_split]))
+  M1 <- mean(Rfast::rowprods(.H[, ij]))
+  M2 <- mean(Rfast::rowprods(.H[, c(i_split, j_single)]))
+  M3 <- mean(Rfast::rowprods(.H[, j_split]))
 
   ## Calculate denominator (D)
   D0 <- prod(.Q[j_split])
@@ -541,8 +541,8 @@ QuadraticTwInter <- function(.i, .j, .Q, .H) {
 
   ### Calculation --------------------------------------------------------------
   ## Calculate M
-  M1 <- mean(matrixStats::rowProds(.H[, ij]))
-  M2 <- mean(matrixStats::rowProds(.H[, j_split]))
+  M1 <- mean(Rfast::rowprods(.H[, ij]))
+  M2 <- mean(Rfast::rowprods(.H[, j_split]))
 
   ## Calculate denominator (D)
   D0 <- prod(.Q[j_split])
@@ -596,8 +596,8 @@ QuadraticThrwInter <- function(.i, .j, .Q, .H) {
 
   ### Calculation --------------------------------------------------------------
   ## Calculate M
-  M1 <- mean(matrixStats::rowProds(.H[, ij]))
-  M2 <- mean(matrixStats::rowProds(.H[, j_split]))
+  M1 <- mean(Rfast::rowprods(.H[, ij]))
+  M2 <- mean(Rfast::rowprods(.H[, j_split]))
 
   ## Calculate denominator (D)
   D0 <- prod(.Q[j_split])
@@ -655,9 +655,9 @@ QuadraticQuadTwInter <- function(.i, .j, .Q, .H) {
 
   ### Calculation --------------------------------------------------------------
   ## Calculate M
-  M1 <- mean(matrixStats::rowProds(.H[, ij]))
-  M2 <- mean(matrixStats::rowProds(.H[, j_split]))
-  M3 <- mean(matrixStats::rowProds(.H[, c(i_split, j_single)]))
+  M1 <- mean(Rfast::rowprods(.H[, ij]))
+  M2 <- mean(Rfast::rowprods(.H[, j_split]))
+  M3 <- mean(Rfast::rowprods(.H[, c(i_split, j_single)]))
 
   ## Calculate denominator (D)
   D0 <- prod(.Q[j_split])
@@ -705,13 +705,13 @@ CubicCubic <- function(.i, .j, .Q, .H) {
   ij       <- c(i_split, j_split)
 
   ## Calculate M
-  M0a <- mean(matrixStats::rowProds(.H[, i_split]))
-  M0b <- mean(matrixStats::rowProds(.H[, j_split]))
+  M0a <- mean(Rfast::rowprods(.H[, i_split]))
+  M0b <- mean(Rfast::rowprods(.H[, j_split]))
 
-  M1  <- mean(matrixStats::rowProds(.H[, ij]))
-  M2  <- mean(matrixStats::rowProds(.H[, c(i_split, j_single)]))
-  M3  <- mean(matrixStats::rowProds(.H[, c(j_split, i_single)]))
-  M4  <- mean(matrixStats::rowProds(.H[, c(i_single, j_single)]))
+  M1  <- mean(Rfast::rowprods(.H[, ij]))
+  M2  <- mean(Rfast::rowprods(.H[, c(i_split, j_single)]))
+  M3  <- mean(Rfast::rowprods(.H[, c(j_split, i_single)]))
+  M4  <- mean(Rfast::rowprods(.H[, c(i_single, j_single)]))
 
 
   ## Calculate denominator (D)
@@ -770,10 +770,10 @@ CubicTwInter <- function(.i, .j, .Q, .H) {
 
   ### Calculation --------------------------------------------------------------
   ## Calculate M
-  M0a <- mean(matrixStats::rowProds(.H[, i_split]))
-  M0b <- mean(matrixStats::rowProds(.H[, j_split]))
-  M1  <- mean(matrixStats::rowProds(.H[, ij]))
-  M2  <- mean(matrixStats::rowProds(.H[, c(i_single, j_split)]))
+  M0a <- mean(Rfast::rowprods(.H[, i_split]))
+  M0b <- mean(Rfast::rowprods(.H[, j_split]))
+  M1  <- mean(Rfast::rowprods(.H[, ij]))
+  M2  <- mean(Rfast::rowprods(.H[, c(i_single, j_split)]))
 
   ## Calculate denominator (D)
   D <- prod(.Q[ij])
@@ -829,11 +829,11 @@ CubicThrwInter <- function(.i, .j, .Q, .H) {
 
   ### Prepartion ---------------------------------------------------------------
   ## Calculate M
-  M0a <- mean(matrixStats::rowProds(.H[, i_split]))
-  M0b <- mean(matrixStats::rowProds(.H[, j_split]))
-  M1  <- mean(matrixStats::rowProds(.H[, ij]))
-  M2  <- mean(matrixStats::rowProds(.H[, c(i_single, j_split)]))
-  M3  <- mean(matrixStats::rowProds(.H[, setdiff(j_split, ij_match)]))
+  M0a <- mean(Rfast::rowprods(.H[, i_split]))
+  M0b <- mean(Rfast::rowprods(.H[, j_split]))
+  M1  <- mean(Rfast::rowprods(.H[, ij]))
+  M2  <- mean(Rfast::rowprods(.H[, c(i_single, j_split)]))
+  M3  <- mean(Rfast::rowprods(.H[, setdiff(j_split, ij_match)]))
 
   ## Calculate denominator (D)
   D <- prod(.Q[ij])
@@ -891,12 +891,12 @@ CubicQuadTwInter <- function(.i, .j, .Q, .H) {
 
   ### Prepartion ---------------------------------------------------------------
   ## Calculate M
-  M0a <- mean(matrixStats::rowProds(.H[, i_split]))
-  M0b <- mean(matrixStats::rowProds(.H[, j_split]))
-  M1  <- mean(matrixStats::rowProds(.H[, ij]))
-  M2  <- mean(matrixStats::rowProds(.H[, c(i_single, j_split)]))
-  M3  <- mean(matrixStats::rowProds(.H[, c(i_split, j_single)]))
-  M4  <- mean(matrixStats::rowProds(.H[, c(i_single, j_single)]))
+  M0a <- mean(Rfast::rowprods(.H[, i_split]))
+  M0b <- mean(Rfast::rowprods(.H[, j_split]))
+  M1  <- mean(Rfast::rowprods(.H[, ij]))
+  M2  <- mean(Rfast::rowprods(.H[, c(i_single, j_split)]))
+  M3  <- mean(Rfast::rowprods(.H[, c(i_split, j_single)]))
+  M4  <- mean(Rfast::rowprods(.H[, c(i_single, j_single)]))
 
   ## Calculate denominator (D)
   D <- prod(.Q[ij])
@@ -947,10 +947,10 @@ TwInterTwInter <- function(.i, .j, .Q, .H) {
   ij_match <- intersect(i_split, j_split)
 
   ## Calculate M
-  M0a <- mean(matrixStats::rowProds(.H[, i_single]))
-  M0b <- mean(matrixStats::rowProds(.H[, j_single]))
-  M1  <- mean(matrixStats::rowProds(.H[, ij]))
-  M2  <- mean(matrixStats::rowProds(.H[, ij[!(ij %in% ij_match)]]))
+  M0a <- mean(Rfast::rowprods(.H[, i_single]))
+  M0b <- mean(Rfast::rowprods(.H[, j_single]))
+  M1  <- mean(Rfast::rowprods(.H[, ij]))
+  M2  <- mean(Rfast::rowprods(.H[, ij[!(ij %in% ij_match)]]))
 
   ## Calculate denominator (D)
   D <- prod(.Q[ij])
@@ -990,12 +990,12 @@ TwInterThrwInter <- function(.i, .j, .Q, .H) {
   ij_match <- intersect(i_split, j_split)
 
   ## Calculate M
-  M0a <- mean(matrixStats::rowProds(.H[, i_split]))
-  M0b <- mean(matrixStats::rowProds(.H[, j_split]))
-  M1  <- mean(matrixStats::rowProds(.H[, ij]))
-  M2  <- mean(matrixStats::rowProds(.H[, ij[!(ij %in% ij_match)], drop = FALSE]))
-  M3  <- mean(matrixStats::rowProds(.H[, ij[!(ij %in% ij_match[1])], drop = FALSE]))
-  M4  <- mean(matrixStats::rowProds(.H[, ij[!(ij %in% ij_match[2])], drop = FALSE]))
+  M0a <- mean(Rfast::rowprods(.H[, i_split]))
+  M0b <- mean(Rfast::rowprods(.H[, j_split]))
+  M1  <- mean(Rfast::rowprods(.H[, ij]))
+  M2  <- mean(Rfast::rowprods(.H[, ij[!(ij %in% ij_match)], drop = FALSE]))
+  M3  <- mean(Rfast::rowprods(.H[, ij[!(ij %in% ij_match[1])], drop = FALSE]))
+  M4  <- mean(Rfast::rowprods(.H[, ij[!(ij %in% ij_match[2])], drop = FALSE]))
 
   ## Calculate denominator (D)
   D <- prod(.Q[ij])
@@ -1059,13 +1059,13 @@ TwInterQuadTwInter <- function(.i, .j, .Q, .H) {
 
   ### Calculation --------------------------------------------------------------
   ## Calculate M
-  M0a <- mean(matrixStats::rowProds(.H[, i_split]))
-  M0b <- mean(matrixStats::rowProds(.H[, j_split]))
-  M1 <- mean(matrixStats::rowProds(.H[, ij]))
-  M2 <- mean(matrixStats::rowProds(.H[, ij[!(ij %in% j_quadratic)]]))
-  M3 <- mean(matrixStats::rowProds(.H[, ij[!(ij %in% ij_match)]]))
-  M4 <- mean(matrixStats::rowProds(.H[, c(i_split, j_single)]))
-  M5 <- mean(matrixStats::rowProds(.H[, ij[!(ij %in% j_single)]]))
+  M0a <- mean(Rfast::rowprods(.H[, i_split]))
+  M0b <- mean(Rfast::rowprods(.H[, j_split]))
+  M1 <- mean(Rfast::rowprods(.H[, ij]))
+  M2 <- mean(Rfast::rowprods(.H[, ij[!(ij %in% j_quadratic)]]))
+  M3 <- mean(Rfast::rowprods(.H[, ij[!(ij %in% ij_match)]]))
+  M4 <- mean(Rfast::rowprods(.H[, c(i_split, j_single)]))
+  M5 <- mean(Rfast::rowprods(.H[, ij[!(ij %in% j_single)]]))
 
   ## Calculate denominator (D)
   D <- prod(.Q[ij])
@@ -1117,13 +1117,13 @@ ThrwInterThrwInter <- function(.i, .j, .Q, .H){
   ij_match   <- intersect(i_split, j_split)
 
   ## Calculate M
-  M0a <- mean(matrixStats::rowProds(.H[, i_split]))
-  M0b <- mean(matrixStats::rowProds(.H[, j_split]))
-  M1  <- mean(matrixStats::rowProds(.H[, ij]))
-  M2  <- mean(matrixStats::rowProds(.H[, ij[!(ij %in% ij_match)]]))
-  M3  <- mean(matrixStats::rowProds(.H[, ij[!(ij %in% ij_match[1])]]))
-  M4  <- mean(matrixStats::rowProds(.H[, ij[!(ij %in% ij_match[2])]]))
-  M5  <- mean(matrixStats::rowProds(.H[, ij[!(ij %in% ij_match[3])]]))
+  M0a <- mean(Rfast::rowprods(.H[, i_split]))
+  M0b <- mean(Rfast::rowprods(.H[, j_split]))
+  M1  <- mean(Rfast::rowprods(.H[, ij]))
+  M2  <- mean(Rfast::rowprods(.H[, ij[!(ij %in% ij_match)]]))
+  M3  <- mean(Rfast::rowprods(.H[, ij[!(ij %in% ij_match[1])]]))
+  M4  <- mean(Rfast::rowprods(.H[, ij[!(ij %in% ij_match[2])]]))
+  M5  <- mean(Rfast::rowprods(.H[, ij[!(ij %in% ij_match[3])]]))
 
   ## Calculate denominator
   D <- prod(.Q[ij])
@@ -1197,14 +1197,14 @@ ThrwInterQuadTwInter <- function(.i, .j, .Q, .H){
 
   ### Calculation ---------------------------------
   ## Calculate M
-  M0a <- mean(matrixStats::rowProds(.H[, i_split]))
-  M0b <- mean(matrixStats::rowProds(.H[, j_split]))
-  M1 <- mean(matrixStats::rowProds(.H[, ij]))
-  M2 <- mean(matrixStats::rowProds(.H[, ij[!(ij %in% j_quadratic)]]))
-  M3 <- mean(matrixStats::rowProds(.H[, ij[!(ij %in% j_single)]]))
-  M4 <- mean(matrixStats::rowProds(.H[, ij[!(ij %in% c(j_quadratic, ij_match))]]))
-  M5 <- mean(matrixStats::rowProds(.H[, c(i_split, j_single)]))
-  M6 <- mean(matrixStats::rowProds(.H[, c(ij_nomatch, j_quadratic)]))
+  M0a <- mean(Rfast::rowprods(.H[, i_split]))
+  M0b <- mean(Rfast::rowprods(.H[, j_split]))
+  M1 <- mean(Rfast::rowprods(.H[, ij]))
+  M2 <- mean(Rfast::rowprods(.H[, ij[!(ij %in% j_quadratic)]]))
+  M3 <- mean(Rfast::rowprods(.H[, ij[!(ij %in% j_single)]]))
+  M4 <- mean(Rfast::rowprods(.H[, ij[!(ij %in% c(j_quadratic, ij_match))]]))
+  M5 <- mean(Rfast::rowprods(.H[, c(i_split, j_single)]))
+  M6 <- mean(Rfast::rowprods(.H[, c(ij_nomatch, j_quadratic)]))
 
   ## Calculate denominator
   D <- prod(.Q[ij])
@@ -1269,17 +1269,17 @@ QuadTwInercQuadTwInter <- function(.i, .j, .Q, .H) {
 
   ### Calculation --------------------------------------------------------------
   ## Calculate M
-  M0a <- mean(matrixStats::rowProds(.H[, i_split]))
-  M0b <- mean(matrixStats::rowProds(.H[, j_split]))
-  M1  <- mean(matrixStats::rowProds(.H[, ij]))
-  M2  <- mean(matrixStats::rowProds(.H[, ij[!(ij %in% i_quadratic)]]))
-  M3  <- mean(matrixStats::rowProds(.H[, ij[!(ij %in% j_quadratic)]]))
-  M4  <- mean(matrixStats::rowProds(.H[, ij[!(ij %in% c(i_quadratic, j_quadratic))]]))
-  M5  <- mean(matrixStats::rowProds(.H[, ij[!(ij %in% ij_match)]]))
-  M6  <- mean(matrixStats::rowProds(.H[, c(i_split, j_single)]))
-  M7  <- mean(matrixStats::rowProds(.H[, c(j_split, i_single)]))
-  M8  <- mean(matrixStats::rowProds(.H[, c(i_single, j_single)]))
-  M9  <- mean(matrixStats::rowProds(.H[, ij[ij == i_quadratic]]))
+  M0a <- mean(Rfast::rowprods(.H[, i_split]))
+  M0b <- mean(Rfast::rowprods(.H[, j_split]))
+  M1  <- mean(Rfast::rowprods(.H[, ij]))
+  M2  <- mean(Rfast::rowprods(.H[, ij[!(ij %in% i_quadratic)]]))
+  M3  <- mean(Rfast::rowprods(.H[, ij[!(ij %in% j_quadratic)]]))
+  M4  <- mean(Rfast::rowprods(.H[, ij[!(ij %in% c(i_quadratic, j_quadratic))]]))
+  M5  <- mean(Rfast::rowprods(.H[, ij[!(ij %in% ij_match)]]))
+  M6  <- mean(Rfast::rowprods(.H[, c(i_split, j_single)]))
+  M7  <- mean(Rfast::rowprods(.H[, c(j_split, i_single)]))
+  M8  <- mean(Rfast::rowprods(.H[, c(i_single, j_single)]))
+  M9  <- mean(Rfast::rowprods(.H[, ij[ij == i_quadratic]]))
 
   ## Calculate denominator (D)
   D <- prod(.Q[ij])

@@ -14,6 +14,7 @@ mcpls <- function(
   delta.jacobian   = fit0@info$mc.args$delta.se && fit0@info$boot$bootstrap,
   delta.fixed.seed = TRUE,
   delta.jacobian.k = fit0@info$mc.args$delta.jacobian.k,
+  mc.median.root   = fit0@info$mc.args$median.root,
   ...
 ) {
   fit0.base <- fit0
@@ -114,31 +115,57 @@ mcpls <- function(
     sim.ov  <- ordinalizeDataFrame(
       df = sim$ov, thresholdStruct = thresholdStruct
     )
+    idx <- sample(NROW(sim.ov), NROW(sim.ov))
+    sim.ov <- sim.ov[idx, , drop = FALSE] # shuffle ordering to make code below not
+                                          # sensitive to any cluster ordering in the data
+    sim$cluster <- sim$cluster[idx]
 
-    fit.sim <- fit0.base
-    X       <- Rfast::standardise(as.matrix(sim.ov[vars]))
+    if (mc.median.root) {
+      n <- NROW(modelData(fit0.base))
+      k <- max(floor(mc.reps / n), 1)
+    } else {
+      n <- NROW(sim.ov)
+      k <- 1L
+    }
 
-    if (is.probit) S <- getCorrMat(X, probit = TRUE, ordered = ordered)
-    else           S <- Rfast::cova(X)
+    OUT <- LOWER <- UPPER <- matrix(
+      NA, nrow = k, ncol = sum(par0$is.free)
+    )
 
-    if (!is.null(sim$cluster))
-      attr(X, "cluster") <- sim$cluster
+    for (i in seq_len(k)) {
+      start <- (i - 1) * n + 1
+      end   <- start + n - 1
+      sub <- sim.ov[start:end, , drop = FALSE]
 
-    # Update observed-data (lowest-order) model input
-    modelData(fit.sim)  <- X
-    indCorrMatrix(fit.sim) <- S
+      fit.sim <- fit0.base
+      X       <- Rfast::standardise(as.matrix(sub[vars]))
 
-    # Thresholds are not part of the root equation. Avoid recomputing them on
-    # every Robbins-Monro iteration.
-    fit2 <- estimatePLS_Inner(fit.sim)
-    par2 <- getFreeParamsTable(combinedModel(fit2))
+      if (is.probit) S <- getCorrMat(X, probit = TRUE, ordered = ordered)
+      else           S <- Rfast::cova(X)
 
-    eps <- par2$est - par0$est
-    free <- par0$is.free
+      if (!is.null(sim$cluster))
+        attr(X, "cluster") <- sim$cluster[start:end]
 
-    out <- eps[free]
-    attr(out, "lower") <- sim$lower[free]
-    attr(out, "upper") <- sim$upper[free]
+      # Update observed-data (lowest-order) model input
+      modelData(fit.sim)  <- X
+      indCorrMatrix(fit.sim) <- S
+
+      # Thresholds are not part of the root equation. Avoid recomputing them on
+      # every Robbins-Monro iteration.
+      fit2 <- estimatePLS_Inner(fit.sim)
+      par2 <- getFreeParamsTable(combinedModel(fit2))
+
+      eps <- par2$est - par0$est
+      free <- par0$is.free
+
+      OUT[i,] <- eps[free]
+      LOWER[i,] <- sim$lower[free]
+      UPPER[i,] <- sim$upper[free]
+    }
+
+    out <- apply(OUT, MARGIN = 2L, FUN = median)
+    attr(out, "lower") <- apply(LOWER, MARGIN = 2L, FUN = min)
+    attr(out, "upper") <- apply(UPPER, MARGIN = 2L, FUN = max)
 
     out
   }

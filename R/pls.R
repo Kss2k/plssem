@@ -122,6 +122,11 @@ USE_NON_LINEAR_PROBIT_CORR_MAT <- FALSE
 #'   when the structural model is estimated by GLS (i.e. the model contains
 #'   residual covariances) and \code{"reduced"} otherwise.
 #'
+#' @param mc.median.root Should the binding function of the MC-OrdPLSc function
+#'   use the median aggregate of \code{k} smaller models? \code{k} is calculated
+#'   as \code{floor(mc.reps / n)} where \code{n} is the number of kept observations
+#'   in \code{data}.
+#'
 #' @param verbose Should verbose output be printed?
 #'
 #' @param boot.optimize Logical; if \code{TRUE} and \code{bootstrap = TRUE}, applies
@@ -208,6 +213,7 @@ pls <- function(syntax,
                 mc.delta.jacobian.k = max(floor(boot.R / 100L), 1),
                 mc.fn.args = list(),
                 mc.rescov = c("auto", "reduced", "full"),
+                mc.median.root = FALSE,
                 verbose = interactive(),
                 boot.optimize = TRUE,
                 boot.drop.inadmissible = FALSE,
@@ -265,6 +271,7 @@ pls <- function(syntax,
     mc.delta.jacobian.k    = mc.delta.jacobian.k,
     mc.fn.args             = mc.fn.args,
     mc.rescov              = match.arg(mc.rescov, c("auto", "reduced", "full")),
+    mc.median.root         = mc.median.root,
     verbose                = verbose,
     bootstrap              = bootstrap,
     boot.ncores            = boot.ncores,

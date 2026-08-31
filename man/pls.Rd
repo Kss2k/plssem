@@ -35,6 +35,7 @@ pls(
   mc.delta.jacobian.k = max(floor(boot.R/100L), 1),
   mc.fn.args = list(),
   mc.rescov = c("auto", "reduced", "full"),
+  mc.median.root = FALSE,
   verbose = interactive(),
   boot.optimize = TRUE,
   boot.drop.inadmissible = FALSE,
@@ -159,6 +160,11 @@ endogenous residual covariances (\code{eta ~~ eta} and \code{xi ~~ eta})
 are free parameters, explicitly simulated. \code{"auto"} uses \code{"full"}
 when the structural model is estimated by GLS (i.e. the model contains
 residual covariances) and \code{"reduced"} otherwise.}
+
+\item{mc.median.root}{Should the binding function of the MC-OrdPLSc function
+use the median aggregate of \code{k} smaller models? \code{k} is calculated
+as \code{floor(mc.reps / n)} where \code{n} is the number of kept observations
+in \code{data}.}
 
 \item{verbose}{Should verbose output be printed?}
 

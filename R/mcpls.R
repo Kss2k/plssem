@@ -78,7 +78,7 @@ mcpls <- function(
 
   }
 
-  if (mc.reps < NROW(data)) {
+  if (mc.median.root && mc.reps < NROW(data)) {
     pls_msg_warn(
       "`mc.reps` is lower than the number of observations in `data`.",
       "Increasing `mc.reps` to", paste0(NROW(data), "!")
@@ -158,7 +158,7 @@ mcpls <- function(
       else           S <- Rfast::cova(X)
 
       if (!is.null(sim$cluster))
-        attr(X, "cluster") <- sim$cluster[start:end]
+        attr(X, "cluster") <- sim$cluster[start:end, , drop = FALSE]
 
       # Update observed-data (lowest-order) model input
       modelData(fit.sim)  <- X

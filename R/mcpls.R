@@ -78,6 +78,14 @@ mcpls <- function(
 
   }
 
+  if (mc.reps < NROW(data)) {
+    pls_msg_warn(
+      "`mc.reps` is lower than the number of observations in `data`.",
+      "Increasing `mc.reps` to", paste0(NROW(data), "!")
+    )
+    mc.reps <- NROW(data)
+  }
+
   .parTable <- function(p) {
     parx <- par1
     parx[parx$is.free, "est"] <- p
@@ -115,14 +123,20 @@ mcpls <- function(
     sim.ov  <- ordinalizeDataFrame(
       df = sim$ov, thresholdStruct = thresholdStruct
     )
-    idx <- sample(NROW(sim.ov), NROW(sim.ov))
-    sim.ov <- sim.ov[idx, , drop = FALSE] # shuffle ordering to make code below not
-                                          # sensitive to any cluster ordering in the data
-    sim$cluster <- sim$cluster[idx]
 
     if (mc.median.root) {
+      pls_stopif(!is.null(sim$cluster),
+        "`mc.median.root=TRUE` cannot be paired with",
+        "multilevel/mixed-effects models (yet)!"
+      )
+
+      # For mixed effects models the data is ordered, so we'll have to be
+      # careful in how we slice the data. We would have to re-order it in
+      # cluser chunks, etc.
+
       n <- NROW(modelData(fit0.base))
       k <- max(floor(mc.reps / n), 1)
+
     } else {
       n <- NROW(sim.ov)
       k <- 1L
@@ -163,7 +177,7 @@ mcpls <- function(
       UPPER[i,] <- sim$upper[free]
     }
 
-    out <- apply(OUT, MARGIN = 2L, FUN = median)
+    out <- apply(OUT, MARGIN = 2L, FUN = stats::median)
     attr(out, "lower") <- apply(LOWER, MARGIN = 2L, FUN = min)
     attr(out, "upper") <- apply(UPPER, MARGIN = 2L, FUN = max)
 

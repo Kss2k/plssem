@@ -95,7 +95,11 @@ simulateDataParTable <- function(parTable,
   )
 
   parTable <- res$parTable
-  Xi <- as.data.frame(Rfast::standardise(rmvnSafe(N, res$mat)))
+
+  xiDraw <- rmvnSafe(N, res$mat)
+  is.admissible <- is.admissible && xiDraw$is.admissible
+
+  Xi <- as.data.frame(Rfast::standardise(xiDraw$x))
   colnames(Xi) <- xis
 
   # Full mode: track the realised disturbances (including exogenous lvs) and,
@@ -144,8 +148,12 @@ simulateDataParTable <- function(parTable,
           unitVariances = FALSE
         )
 
-        parTable   <- res$parTable
-        U          <- rmvnSafe(ncluster, res$mat)
+        parTable <- res$parTable
+
+        uDraw <- rmvnSafe(ncluster, res$mat)
+        is.admissible <- is.admissible && uDraw$is.admissible
+
+        U <- uDraw$x
         colnames(U) <- randeff.eta
         U.expanded  <- U[cluster, , drop = FALSE]
       }
@@ -424,14 +432,32 @@ buildCovMat <- function(vars, parTable, .cortol, unitVariances = FALSE) {
 
 
 rmvnSafe <- function(n, mat) {
+  is.admissible <- TRUE
+
   decomp <- tryCatch(
     chol(mat),
-    error = \(e) tryCatch({
-      diag(mat) <- diag(mat) + 0.01
-      chol(mat)
-    }, error = \(e) diag2(mat))
+    error = function(e) {
+      is.admissible <<- FALSE
+
+      tryCatch({
+        # ridge solve?
+        diag(mat) <- diag(mat) + 0.01
+        chol(mat)
+      }, error = \(e) diag2(mat))
+    }
   )
-  mvnfast::rmvn(n = n, mu = rep(0, NCOL(mat)), sigma = decomp, isChol = TRUE)
+
+  x <- mvnfast::rmvn(
+    n  = n,
+    mu = rep(0, NCOL(mat)),
+    sigma = decomp,
+    isChol = TRUE
+  )
+
+  list(
+    x             = x,
+    is.admissible = is.admissible
+  )
 }
 
 

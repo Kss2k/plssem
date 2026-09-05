@@ -247,23 +247,26 @@ simulateDataParTable <- function(parTable,
     }
 
 
-    # Disturbance. In `reduced` mode (or when this eta has no residual
-    # covariance) the disturbance is independent with variance `resvar`. In
-    # `full` mode it is drawn conditional on the prior disturbances so that its
-    # covariance with each prior node equals the specified residual covariance:
-    # with target cross-covariances `a` and realised noise covariance `M`, the
-    # regression `beta = M^-1 a` gives realised Cov(zeta, noise) = a exactly.
-    # The fresh part is then sized so that `vals + zeta` has unit variance --
-    # `Var(fresh) = 1 - Var(vals + cmean)` -- which keeps the latent variable
-    # standardized even when the residual covaries with one of its own
-    # predictors (then `cmean` is correlated with `vals`). When it does not,
-    # this reduces to `resvar - a' beta`.
+    # In `reduced` mode (or when eta has no residual covariance) the residual is
+    # independent with var(eta) = resvar. In full mode it's drawn conditional on
+    # the prior disturbances such that its covariance with each prior node 
+    # equals the specified residual covariance: with target cross-covariances
+    # `a` and realised noise covariance `M`, the regression `beta = M^-1 a`
+    # gives realised Cov(zeta, noise) = a exactly. The fresh part is then sized
+    # so that `vals + zeta` has unit variance (`Var(fresh) = 1 - Var(vals + cmean)`),
+    # which keeps the latent variable standardized even when the residual covaries
+    # with one of its own predictors (then `cmean` is correlated with `vals`).
+    # When it does not, this reduces to `resvar - a' beta`.
     if (full) a <- vapply(dnames, FUN.VALUE = numeric(1L), FUN = \(v) rescov(v, eta))
     else      a <- 0
 
     if (full && any(a != 0)) {
       M    <- Rfast::cova(disturbances)
-      beta <- tryCatch(as.vector(solve(M, a)), error = \(...) numeric(length(a)))
+      beta <- tryCatch(as.vector(solve(M, a)), error = function(...) {
+        # fails, so set it to inadmissible
+        is.admissible <<- FALSE
+        numeric(length(a))
+      })
 
       cmean   <- as.vector(disturbances %*% beta)
       vcmean  <- stats::var(vals + cmean)

@@ -1,11 +1,9 @@
-# The code below is adapted from the `SimDesign` package
+# The code below was originally adapted from the `SimDesign` package
 # https://github.com/philchalmers/SimDesign/blob/main/R/RobbinsMonro.R
 # The SimDesign package depends on the `qs2` package, which currently
 # 04.25.2026 has some installation issues on r-release-macos-x86_64
 # We only use the RobbinsMonro function, which does not depend on the
 # `qs2` package. In the future we might revert back to `SimDesign::RobbinsMonro`.
-
-
 robbinsMonro1951 <- function(p,
                              f,
                              ...,
@@ -20,7 +18,9 @@ robbinsMonro1951 <- function(p,
                              pj.extrapolate = TRUE,
                              fn.a = \(iter, a = 1, b = 1/2, c = 0, ...) a / (iter + c)^b,
                              fn.args = list(),
-                             k.dyn.bound = 5) {
+                             k.dyn.bound = 5,
+                             diverge.factor = 10,
+                             diverge.min.iter = 10L) {
 
   if (max.iter < min.iter)
     max.iter <- min.iter
@@ -28,6 +28,12 @@ robbinsMonro1951 <- function(p,
   history <- rbind(p, matrix(NA, nrow=max.iter, ncol=length(p)))
   k.succ <- 0
   pbar.last <- pbar <- p
+  diverged <- FALSE
+
+  # Track the best (smallest-residual) point seen so far so a run that starts
+  # converging normally but later diverges (e.g. a non-monotone `f()`) can be caught
+  best.p           <- p
+  best.resid.norm  <- Inf
 
   if (is.null(lower)) lower <- rep(-Inf, length(p))
   if (is.null(upper)) upper <- rep( Inf, length(p))
@@ -35,6 +41,12 @@ robbinsMonro1951 <- function(p,
   for (i in seq_len(max.iter)) {
     a  <- do.call(fn.a, c(list(iter = i), fn.args))
     fp <- f(p, ...)
+
+    resid.norm <- sqrt(sum(fp^2))
+    if (resid.norm < best.resid.norm) {
+      best.resid.norm <- resid.norm
+      best.p          <- p
+    }
 
     p <- p - a * fp
 
@@ -73,9 +85,14 @@ robbinsMonro1951 <- function(p,
       k.succ <- k.succ + 1L
       if (k.succ == k) break
     } else k.succ <- 0L
+
+    if (i > diverge.min.iter && resid.norm > diverge.factor * best.resid.norm) {
+      diverged <- TRUE
+      break
+    }
   }
 
-  converged <- i < max.iter
+  converged <- i < max.iter && !diverged
   history <- history[0L:i + 1L, , drop=FALSE]
 
   if (verbose) messagef("\n")
@@ -119,14 +136,21 @@ robbinsMonro1951 <- function(p,
     }
   }
 
+  # if we have a divergent solution, we should set p to best.p
+  # only relevant if polyak.juditsky=FALSE
+  if (diverged)
+    p <- best.p
+
   ret <- list(
-    iter             = i,
-    root             = if (polyak.juditsky) pbar else p,
-    history          = history,
-    lower            = lower.i,
-    upper            = upper.i,
-    converged        = converged,
-    polyak.juditsky  = polyak.juditsky
+    iter            = i,
+    root            = if (polyak.juditsky) pbar else p,
+    history         = history,
+    lower           = lower.i,
+    upper           = upper.i,
+    converged       = converged,
+    polyak.juditsky = polyak.juditsky,
+    diverged        = diverged,
+    resid.norm      = best.resid.norm
   )
 
   ret

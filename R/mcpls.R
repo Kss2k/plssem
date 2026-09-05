@@ -234,11 +234,24 @@ mcpls <- function(
   )
 
   iter <- mcfit$iter
-  if (iter >= max.iter && !polyak.juditsky) {
-    pls_msg_warn(
-      "Maximum number of (initial) iterations reached!\n",
-      sprintf("Attempting to use Polyak Juditsky averaging...")
-    )
+  diverged <- mcfit$diverged
+  if ((iter >= max.iter || diverged) && !polyak.juditsky) {
+
+    if (diverged) {
+      pls_msg_warn(
+        "The root-finding algorithm appears to be diverging!\n",
+        sprintf(
+          "Restarting from the best point found so far (residual norm %.4g) with Polyak Juditsky averaging...",
+          mcfit$resid.norm
+        )
+      )
+
+    } else {
+      pls_msg_warn(
+        "Maximum number of (initial) iterations reached!\n",
+        sprintf("Attempting to use Polyak Juditsky averaging...")
+      )
+    }
 
     mcfit <- robbinsMonro1951(
       p               = as.vector(mcfit$root),
@@ -259,7 +272,15 @@ mcpls <- function(
   }
 
   # Check status of (last) mcfit
-  if (mcfit$iter >= max.iter) {
+  if (mcfit$diverged) {
+    pls_msg_warn(
+      "The root-finding algorithm diverged and did not recover!\n",
+      "Parameter estimates might be unreliable!"
+    )
+
+    modelStatus(fit0.combined)$is.admissible <- FALSE
+
+  } else if (mcfit$iter >= max.iter) {
     pls_msg_warn(
       "Maximum number of iterations reached!\n",
       "Parameter estimates might be unreliable!"

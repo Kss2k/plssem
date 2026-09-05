@@ -258,7 +258,6 @@ simulateDataParTable <- function(parTable,
       }
     }
 
-
     # In `reduced` mode (or when eta has no residual covariance) the residual is
     # independent with var(eta) = resvar. In full mode it's drawn conditional on
     # the prior disturbances such that its covariance with each prior node
@@ -285,8 +284,39 @@ simulateDataParTable <- function(parTable,
       condvar <- checkFixVar(1 - vcmean)
 
       if (is.finite(vcmean) && vcmean > 1 - tol) {
-        scale <- sqrt(max(0, (1 - tol) / vcmean))
-        a.bound <- abs(a) * scale
+        # `Var(vals + cmean(a))` is quadratic in `a`, and - unlike the
+        # `beta` case above - the resulting ellipsoid is centred at `-c`
+        # Projecting `a` under Euclidean distance is the same
+        # `projectBetaOntoConstrainedEllipsoid()` problem applied to the
+        # shifted point `a + c`, then shifted back.
+        Minv <- tryCatch(solve(M), error = \(...) NULL)
+
+        if (is.null(Minv)) {
+          is.admissible <<- FALSE
+          a.bound <- rep(0, length(a))
+
+        } else {
+          cVec  <- as.vector(stats::cov(disturbances, vals))
+          limit <- 1 - tol
+          shiftMaxvar <- limit - stats::var(vals) + c(t(cVec) %*% Minv %*% cVec)
+
+          if (is.finite(shiftMaxvar) && shiftMaxvar > 0) {
+            aShifted.proj <- projectBetaOntoConstrainedEllipsoid(
+              beta   = a + cVec,
+              Sigma  = Minv,
+              maxvar = shiftMaxvar
+            )
+
+            a.bound <- abs(aShifted.proj - cVec)
+
+          } else {
+            # If even `a = 0` (resvar=0) would violate the variance constraint,
+            # we constrain a to 0 going forward.
+            a.bound <- rep(0, length(a))
+          }
+        }
+
+        names(a.bound) <- names(a)
 
         for (v in names(a.bound)) {
           if (!is.finite(a.bound[[v]]) || a.bound[[v]] == 0) next
@@ -294,8 +324,7 @@ simulateDataParTable <- function(parTable,
           lim <- max(0, a.bound[[v]] - tol)
           idx <- which(
             parTable$op == "~~" &
-            parTable$lhs != parTable$rhs &
-            (
+            parTable$lhs != parTable$rhs & (
               (parTable$lhs == eta & parTable$rhs == v) |
               (parTable$lhs == v   & parTable$rhs == eta)
             )

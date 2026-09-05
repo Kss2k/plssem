@@ -200,10 +200,22 @@ simulateDataParTable <- function(parTable,
     projvar <- stats::var(vals)
     resvar  <- checkFixVar(1 - projvar)
 
-    if (is.finite(projvar) && projvar >= 1 - .varguard) {
-      # Get bounds for (fixed) beta (i.e., resvar=0)
-      beta.x <- predRows[,"est"]
-      beta.y <- beta.x / sqrt(pmax(projvar + .varguard, .varguard))
+    if (is.finite(projvar) && projvar >= 1 - .varguard && NROW(predRows) > 0) {
+      # Get bounds for (fixed) beta (i.e., resvar=0).
+      # Project the current coefficients onto the ellipsoid of coefficient values
+      # whose implied variance stays within the maxvar Using the empirical
+      # covariance matrix of the predictors.
+      preds  <- predRows$rhs
+      beta.x <- predRows[, "est"]
+
+      Sigma  <- Rfast::cova(as.matrix(Xi[preds]))
+      maxvar <- max(.varguard, (1 - .varguard) - stats::var(vals.random))
+
+      beta.y <- projectBetaOntoConstrainedEllipsoid(
+        beta = beta.x,
+        Sigma = Sigma,
+        maxvar = maxvar
+      )
 
       parTable[cond, "lower"] <- pmin(-abs(beta.y) + tol, -tol)
       parTable[cond, "upper"] <- pmax(+abs(beta.y) - tol, +tol)
@@ -249,7 +261,7 @@ simulateDataParTable <- function(parTable,
 
     # In `reduced` mode (or when eta has no residual covariance) the residual is
     # independent with var(eta) = resvar. In full mode it's drawn conditional on
-    # the prior disturbances such that its covariance with each prior node 
+    # the prior disturbances such that its covariance with each prior node
     # equals the specified residual covariance: with target cross-covariances
     # `a` and realised noise covariance `M`, the regression `beta = M^-1 a`
     # gives realised Cov(zeta, noise) = a exactly. The fresh part is then sized
@@ -397,7 +409,7 @@ buildCovMat <- function(vars, parTable, .cortol, unitVariances = FALSE) {
 
     if (v.i <= 0)
       v.i <- .Machine$double.eps
-    
+
     parTable[cond.v, "lower"] <- .Machine$double.eps
     parTable[cond.v, "upper"] <- Inf
 
@@ -461,6 +473,35 @@ rmvnSafe <- function(n, mat) {
     x             = x,
     is.admissible = is.admissible
   )
+}
+
+
+projectBetaOntoConstrainedEllipsoid <- function(beta, Sigma, maxvar, tol = 1e-8, max.delta = 1e12) {
+  currentvar <- c(t(beta) %*% Sigma %*% beta)
+  if (currentvar <= maxvar)
+    return(beta)
+
+  eig <- eigen(Sigma, symmetric = TRUE)
+  d   <- pmax(eig$values, 0) # guard against numerical noise below zero
+  y   <- as.vector(t(eig$vectors) %*% beta)
+
+  g <- \(delta) sum(d * y^2 / (1 + delta * d)^2) - maxvar
+
+  delta.high <- 1
+  while (g(delta.high) > 0 && delta.high < max.delta)
+    delta.high <- 10 * delta.high
+
+  # solve for delta
+  solved <- stats::uniroot(
+    f     = g,
+    lower = 0,
+    upper = delta.high,
+    tol = tol
+  )
+
+  delta <- solved$root
+
+  as.vector(eig$vectors %*% (y / (1 + delta * d)))
 }
 
 

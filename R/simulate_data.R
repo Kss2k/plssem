@@ -201,30 +201,36 @@ simulateDataParTable <- function(parTable,
     resvar  <- checkFixVar(1 - projvar)
 
     if (is.finite(projvar) && projvar >= 1 - .varguard && NROW(predRows) > 0) {
-      # Get bounds for the fixed-effect `beta` such that the total variance
-      # (fixed + random) stays within the guard
+      # Get bounds for the fixed-effect `beta` such that its own implied
+      # variance stays within the guard.
       preds  <- predRows$rhs
       beta.x <- predRows[, "est"]
 
-      Sigma     <- Rfast::cova(as.matrix(Xi[preds]))
-      Sigma.inv <- tryCatch(solve(Sigma), error = \(...) NULL)
+      Sigma <- Rfast::cova(as.matrix(Xi[preds]))
 
-      if (is.null(Sigma.inv)) {
-        is.admissible <<- FALSE
+      # Only fall back to `.varguard` when the actual budget isn't positive
+      rawMaxvar <- (1 - .varguard) - stats::var(vals.random)
+      maxvar <- if (is.finite(rawMaxvar) && rawMaxvar > 0) rawMaxvar else .varguard
 
-      } else {
-        d     <- as.vector(stats::cov(as.matrix(Xi[preds]), vals.random))
-        shift <- as.vector(Sigma.inv %*% d)
+      beta.y <- projectBetaOntoConstrainedEllipsoid(
+        beta   = beta.x,
+        Sigma  = Sigma,
+        maxvar = maxvar
+      )
 
-        shiftMaxvar <- max(
-          .varguard,
-          (1 - .varguard) - stats::var(vals.random) + c(t(d) %*% Sigma.inv %*% d)
-        )
+      for (i in seq_along(beta.x)) {
+        if (!is.finite(beta.y[[i]]) || beta.y[[i]] == beta.x[[i]]) next
 
-        extent <- pmax(sqrt(shiftMaxvar * diag(Sigma.inv)) - tol, tol)
+        # Tighten whichever side `beta.x` needs to move toward
+        # to reach the projected boundary point.
+        if (beta.x[[i]] > beta.y[[i]]) {
+          lim <- beta.y[[i]] - tol
+          parTable[cond, "upper"][i] <- min(parTable[cond, "upper"][i], lim)
 
-        parTable[cond, "lower"] <- -extent - shift
-        parTable[cond, "upper"] <-  extent - shift
+        } else {
+          lim <- beta.y[[i]] + tol
+          parTable[cond, "lower"][i] <- max(parTable[cond, "lower"][i], lim)
+        }
       }
     }
 
@@ -304,7 +310,7 @@ simulateDataParTable <- function(parTable,
         force.zero <- FALSE
 
         if (is.null(Minv)) {
-          is.admissible <<- FALSE
+          is.admissible <- FALSE
           force.zero <- TRUE
           a.bound <- rep(0, length(a))
 
@@ -356,9 +362,8 @@ simulateDataParTable <- function(parTable,
 
           if (!is.finite(a.bound[[v]]) || a.bound[[v]] == a[[v]]) next
 
-          # One-sided: which side to tighten is determined by which
-          # direction the *current* value needs to move to reach the
-          # projected boundary.
+          # which side to tighten is determined by which direction the current
+          # value needs to move to reach the projected boundary.
           if (a[[v]] > a.bound[[v]]) {
             lim <- a.bound[[v]] - tol
             parTable[idx, "upper"] <- pmin(parTable[idx, "upper"], lim)

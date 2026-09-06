@@ -21,6 +21,7 @@ robbinsMonro1951 <- function(p,
                              k.dyn.bound = 5,
                              diverge.factor = 10,
                              diverge.min.iter = 10L,
+                             diverge.ema.decay = 0.9,
                              diag.secant = FALSE,
                              ds.eps = 1e-8,
                              ds.clip = 10) {
@@ -37,6 +38,10 @@ robbinsMonro1951 <- function(p,
   # converging normally but later diverges (e.g. a non-monotone `f()`) can be caught
   best.p           <- p
   best.resid.norm  <- Inf
+
+  # Divergence is judged on an EMA-smoothed residual norm.
+  resid.ema      <- NULL
+  best.resid.ema <- Inf
 
   # Diagonal secant method, which can flip a coordinate's step
   # direction automatically when its local relationship is non-monotone.
@@ -55,6 +60,16 @@ robbinsMonro1951 <- function(p,
       best.resid.norm <- resid.norm
       best.p          <- p
     }
+
+    if (is.null(resid.ema)) {
+      resid.ema <- resid.norm
+    } else {
+      resid.ema <- diverge.ema.decay * resid.ema + 
+        (1 - diverge.ema.decay) * resid.norm
+    }
+
+    if (resid.ema < best.resid.ema)
+      best.resid.ema <- resid.ema
 
     if (diag.secant && !is.null(p.prev)) {
       delta.p  <- p - p.prev
@@ -119,7 +134,7 @@ robbinsMonro1951 <- function(p,
       if (k.succ == k) break
     } else k.succ <- 0L
 
-    if (i > diverge.min.iter && resid.norm > diverge.factor * best.resid.norm) {
+    if (i > diverge.min.iter && resid.ema > diverge.factor * best.resid.ema) {
       diverged <- TRUE
       break
     }
@@ -185,7 +200,8 @@ robbinsMonro1951 <- function(p,
     converged       = converged,
     polyak.juditsky = polyak.juditsky,
     diverged        = diverged,
-    resid.norm      = best.resid.norm
+    resid.norm      = best.resid.norm,
+    best.p          = best.p
   )
 
   ret

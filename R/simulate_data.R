@@ -201,24 +201,31 @@ simulateDataParTable <- function(parTable,
     resvar  <- checkFixVar(1 - projvar)
 
     if (is.finite(projvar) && projvar >= 1 - .varguard && NROW(predRows) > 0) {
-      # Get bounds for (fixed) beta (i.e., resvar=0).
-      # Project the current coefficients onto the ellipsoid of coefficient values
-      # whose implied variance stays within the maxvar Using the empirical
-      # covariance matrix of the predictors.
+      # Get bounds for the fixed-effect `beta` such that the total variance
+      # (fixed + random) stays within the guard
       preds  <- predRows$rhs
       beta.x <- predRows[, "est"]
 
-      Sigma  <- Rfast::cova(as.matrix(Xi[preds]))
-      maxvar <- max(.varguard, (1 - .varguard) - stats::var(vals.random))
+      Sigma     <- Rfast::cova(as.matrix(Xi[preds]))
+      Sigma.inv <- tryCatch(solve(Sigma), error = \(...) NULL)
 
-      beta.y <- projectBetaOntoConstrainedEllipsoid(
-        beta = beta.x,
-        Sigma = Sigma,
-        maxvar = maxvar
-      )
+      if (is.null(Sigma.inv)) {
+        is.admissible <<- FALSE
 
-      parTable[cond, "lower"] <- pmin(-abs(beta.y) + tol, -tol)
-      parTable[cond, "upper"] <- pmax(+abs(beta.y) - tol, +tol)
+      } else {
+        d     <- as.vector(stats::cov(as.matrix(Xi[preds]), vals.random))
+        shift <- as.vector(Sigma.inv %*% d)
+
+        shiftMaxvar <- max(
+          .varguard,
+          (1 - .varguard) - stats::var(vals.random) + c(t(d) %*% Sigma.inv %*% d)
+        )
+
+        extent <- pmax(sqrt(shiftMaxvar * diag(Sigma.inv)) - tol, tol)
+
+        parTable[cond, "lower"] <- -extent - shift
+        parTable[cond, "upper"] <-  extent - shift
+      }
     }
 
     if (is.finite(projvar) && projvar > 1 - .varguard && length(randeff.eta)) {
@@ -347,17 +354,17 @@ simulateDataParTable <- function(parTable,
             next
           }
 
-          if (!is.finite(a.bound[[v]]) || a.bound[[v]] == 0) next
+          if (!is.finite(a.bound[[v]]) || a.bound[[v]] == a[[v]]) next
 
-          # One-sided: the boundary point only tells us the constraint binds
-          # on the side it was found on, not that an equally large bound on
-          # the opposite side is also feasible.
-          if (a.bound[[v]] > 0) {
-            lim <- max(0, a.bound[[v]] - tol)
+          # One-sided: which side to tighten is determined by which
+          # direction the *current* value needs to move to reach the
+          # projected boundary.
+          if (a[[v]] > a.bound[[v]]) {
+            lim <- a.bound[[v]] - tol
             parTable[idx, "upper"] <- pmin(parTable[idx, "upper"], lim)
 
           } else {
-            lim <- min(0, a.bound[[v]] + tol)
+            lim <- a.bound[[v]] + tol
             parTable[idx, "lower"] <- pmax(parTable[idx, "lower"], lim)
           }
         }

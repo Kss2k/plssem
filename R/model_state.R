@@ -69,7 +69,8 @@ initModelMcArgs <- function(min.iter,
                             delta.se,
                             delta.jacobian.k,
                             fn.args,
-                            rescov = "reduced") {
+                            rescov = "reduced",
+                            diag.secant = FALSE) {
   list(
     min.iter         = min.iter,
     max.iter         = max.iter,
@@ -82,6 +83,7 @@ initModelMcArgs <- function(min.iter,
     delta.jacobian.k = delta.jacobian.k,
     fn.args          = fn.args,
     rescov           = rescov,
+    diag.secant      = diag.secant,
     rng.seed         = NULL,
     p.start          = NULL
   )

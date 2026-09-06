@@ -35,6 +35,7 @@ pls(
   mc.delta.jacobian.k = max(floor(boot.R/100L), 1),
   mc.fn.args = list(),
   mc.rescov = c("auto", "reduced", "full"),
+  mc.diag.secant = FALSE,
   verbose = interactive(),
   boot.optimize = TRUE,
   boot.drop.inadmissible = FALSE,
@@ -159,6 +160,11 @@ endogenous residual covariances (\code{eta ~~ eta} and \code{xi ~~ eta})
 are free parameters, explicitly simulated. \code{"auto"} uses \code{"full"}
 when the structural model is estimated by GLS (i.e. the model contains
 residual covariances) and \code{"reduced"} otherwise.}
+
+\item{mc.diag.secant}{Logical; if \code{TRUE}, the MC-PLS root-finding algorithm
+uses a per-coordinate diagonal-secant step (estimating each coordinate's local
+slope from consecutive iterates), instead of the standard Robbins-Monro step.
+This might be usefull if the binding funtion is non-monotone.}
 
 \item{verbose}{Should verbose output be printed?}
 

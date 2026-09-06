@@ -59,5 +59,4 @@ URL: https://github.com/kss2k/plssem,
   https://kss2k.github.io/plssem/
 Suggests: knitr, rmarkdown, ggplot2, mice, mvtnorm, pkgload
 VignetteBuilder: knitr
-Config/roxygen2/version: 8.0.0
-RoxygenNote: 7.3.3
+Config/roxygen2/version: 8.1.0

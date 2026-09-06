@@ -95,7 +95,11 @@ simulateDataParTable <- function(parTable,
   )
 
   parTable <- res$parTable
-  Xi <- as.data.frame(Rfast::standardise(rmvnSafe(N, res$mat)))
+
+  xiDraw <- rmvnSafe(N, res$mat)
+  is.admissible <- is.admissible && xiDraw$is.admissible
+
+  Xi <- as.data.frame(Rfast::standardise(xiDraw$x))
   colnames(Xi) <- xis
 
   # Full mode: track the realised disturbances (including exogenous lvs) and,
@@ -144,8 +148,12 @@ simulateDataParTable <- function(parTable,
           unitVariances = FALSE
         )
 
-        parTable   <- res$parTable
-        U          <- rmvnSafe(ncluster, res$mat)
+        parTable <- res$parTable
+
+        uDraw <- rmvnSafe(ncluster, res$mat)
+        is.admissible <- is.admissible && uDraw$is.admissible
+
+        U <- uDraw$x
         colnames(U) <- randeff.eta
         U.expanded  <- U[cluster, , drop = FALSE]
       }
@@ -192,13 +200,38 @@ simulateDataParTable <- function(parTable,
     projvar <- stats::var(vals)
     resvar  <- checkFixVar(1 - projvar)
 
-    if (is.finite(projvar) && projvar >= 1 - .varguard) {
-      # Get bounds for (fixed) beta (i.e., resvar=0)
-      beta.x <- predRows[,"est"]
-      beta.y <- beta.x / sqrt(pmax(projvar + .varguard, .varguard))
+    if (is.finite(projvar) && projvar >= 1 - .varguard && NROW(predRows) > 0) {
+      # Get bounds for the fixed-effect `beta` such that its own implied
+      # variance stays within the guard.
+      preds  <- predRows$rhs
+      beta.x <- predRows[, "est"]
 
-      parTable[cond, "lower"] <- pmin(-abs(beta.y) + tol, -tol)
-      parTable[cond, "upper"] <- pmax(+abs(beta.y) - tol, +tol)
+      Sigma <- Rfast::cova(as.matrix(Xi[preds]))
+
+      # Only fall back to `.varguard` when the actual budget isn't positive
+      rawMaxvar <- (1 - .varguard) - stats::var(vals.random)
+      maxvar <- if (is.finite(rawMaxvar) && rawMaxvar > 0) rawMaxvar else .varguard
+
+      beta.y <- projectBetaOntoConstrainedEllipsoid(
+        beta   = beta.x,
+        Sigma  = Sigma,
+        maxvar = maxvar
+      )
+
+      for (i in seq_along(beta.x)) {
+        if (!is.finite(beta.y[[i]]) || beta.y[[i]] == beta.x[[i]]) next
+
+        # Tighten whichever side `beta.x` needs to move toward
+        # to reach the projected boundary point.
+        if (beta.x[[i]] > beta.y[[i]]) {
+          lim <- beta.y[[i]] - tol
+          parTable[cond, "upper"][i] <- min(parTable[cond, "upper"][i], lim)
+
+        } else {
+          lim <- beta.y[[i]] + tol
+          parTable[cond, "lower"][i] <- max(parTable[cond, "lower"][i], lim)
+        }
+      }
     }
 
     if (is.finite(projvar) && projvar > 1 - .varguard && length(randeff.eta)) {
@@ -238,41 +271,82 @@ simulateDataParTable <- function(parTable,
       }
     }
 
-
-    # Disturbance. In `reduced` mode (or when this eta has no residual
-    # covariance) the disturbance is independent with variance `resvar`. In
-    # `full` mode it is drawn conditional on the prior disturbances so that its
-    # covariance with each prior node equals the specified residual covariance:
-    # with target cross-covariances `a` and realised noise covariance `M`, the
-    # regression `beta = M^-1 a` gives realised Cov(zeta, noise) = a exactly.
-    # The fresh part is then sized so that `vals + zeta` has unit variance --
-    # `Var(fresh) = 1 - Var(vals + cmean)` -- which keeps the latent variable
-    # standardized even when the residual covaries with one of its own
-    # predictors (then `cmean` is correlated with `vals`). When it does not,
-    # this reduces to `resvar - a' beta`.
+    # In `reduced` mode (or when eta has no residual covariance) the residual is
+    # independent with var(eta) = resvar. In full mode it's drawn conditional on
+    # the prior disturbances such that its covariance with each prior node
+    # equals the specified residual covariance: with target cross-covariances
+    # `a` and realised noise covariance `M`, the regression `beta = M^-1 a`
+    # gives realised Cov(zeta, noise) = a exactly. The fresh part is then sized
+    # so that `vals + zeta` has unit variance (`Var(fresh) = 1 - Var(vals + cmean)`),
+    # which keeps the latent variable standardized even when the residual covaries
+    # with one of its own predictors (then `cmean` is correlated with `vals`).
+    # When it does not, this reduces to `resvar - a' beta`.
     if (full) a <- vapply(dnames, FUN.VALUE = numeric(1L), FUN = \(v) rescov(v, eta))
     else      a <- 0
 
     if (full && any(a != 0)) {
       M    <- Rfast::cova(disturbances)
-      beta <- tryCatch(as.vector(solve(M, a)), error = \(...) numeric(length(a)))
+      beta <- tryCatch(as.vector(solve(M, a)), error = function(...) {
+        # fails, so set it to inadmissible
+        is.admissible <<- FALSE
+        numeric(length(a))
+      })
 
       cmean   <- as.vector(disturbances %*% beta)
       vcmean  <- stats::var(vals + cmean)
       condvar <- checkFixVar(1 - vcmean)
 
       if (is.finite(vcmean) && vcmean > 1 - tol) {
-        scale <- sqrt(max(0, (1 - tol) / vcmean))
-        a.bound <- abs(a) * scale
+        # `Var(vals + cmean(a))` is quadratic in `a`, and - unlike the
+        # `beta` case above - the resulting ellipsoid is centred at `-c`
+        # Projecting `a` under Euclidean distance is the same
+        # `projectBetaOntoConstrainedEllipsoid()` problem applied to the
+        # shifted point `a + c`, then shifted back.
+        Minv <- tryCatch(solve(M), error = \(...) NULL)
+
+        # `a.bound == 0` is overloaded below to also mean "no update needed",
+        # so the two cases that deliberately require `a` to be exactly zero
+        # need their own flag rather than relying on the value alone.
+        force.zero <- FALSE
+
+        if (is.null(Minv)) {
+          is.admissible <- FALSE
+          force.zero <- TRUE
+          a.bound <- rep(0, length(a))
+
+        } else {
+          cVec  <- as.vector(stats::cov(disturbances, vals))
+          limit <- 1 - tol
+          shiftMaxvar <- limit - stats::var(vals) + c(t(cVec) %*% Minv %*% cVec)
+
+          if (is.finite(shiftMaxvar) && shiftMaxvar > 0) {
+            aShifted.proj <- projectBetaOntoConstrainedEllipsoid(
+              beta   = a + cVec,
+              Sigma  = Minv,
+              maxvar = shiftMaxvar
+            )
+
+            # Keep the sign: the feasible ellipsoid for `a` is centred at
+            # `-cVec`, not at 0, so this boundary point is generally not
+            # symmetric around zero. Taking `abs()` here would discard that
+            # asymmetry and let the (potentially infeasible) mirror-image
+            # side back in.
+            a.bound <- aShifted.proj - cVec
+
+          } else {
+            # If even `a = 0` (resvar=0) would violate the variance constraint,
+            # we constrain a to 0 going forward.
+            force.zero <- TRUE
+            a.bound <- rep(0, length(a))
+          }
+        }
+
+        names(a.bound) <- names(a)
 
         for (v in names(a.bound)) {
-          if (!is.finite(a.bound[[v]]) || a.bound[[v]] == 0) next
-
-          lim <- max(0, a.bound[[v]] - tol)
           idx <- which(
             parTable$op == "~~" &
-            parTable$lhs != parTable$rhs &
-            (
+            parTable$lhs != parTable$rhs & (
               (parTable$lhs == eta & parTable$rhs == v) |
               (parTable$lhs == v   & parTable$rhs == eta)
             )
@@ -280,8 +354,24 @@ simulateDataParTable <- function(parTable,
 
           if (!length(idx)) next
 
-          parTable[idx, "lower"] <- pmax(parTable[idx, "lower"], -lim)
-          parTable[idx, "upper"] <- pmin(parTable[idx, "upper"],  lim)
+          if (force.zero) {
+            parTable[idx, "lower"] <- 0
+            parTable[idx, "upper"] <- 0
+            next
+          }
+
+          if (!is.finite(a.bound[[v]]) || a.bound[[v]] == a[[v]]) next
+
+          # which side to tighten is determined by which direction the current
+          # value needs to move to reach the projected boundary.
+          if (a[[v]] > a.bound[[v]]) {
+            lim <- a.bound[[v]] - tol
+            parTable[idx, "upper"] <- pmin(parTable[idx, "upper"], lim)
+
+          } else {
+            lim <- a.bound[[v]] + tol
+            parTable[idx, "lower"] <- pmax(parTable[idx, "lower"], lim)
+          }
         }
       }
 
@@ -386,7 +476,7 @@ buildCovMat <- function(vars, parTable, .cortol, unitVariances = FALSE) {
 
     if (v.i <= 0)
       v.i <- .Machine$double.eps
-    
+
     parTable[cond.v, "lower"] <- .Machine$double.eps
     parTable[cond.v, "upper"] <- Inf
 
@@ -424,14 +514,61 @@ buildCovMat <- function(vars, parTable, .cortol, unitVariances = FALSE) {
 
 
 rmvnSafe <- function(n, mat) {
+  is.admissible <- TRUE
+
   decomp <- tryCatch(
     chol(mat),
-    error = \(e) tryCatch({
-      diag(mat) <- diag(mat) + 0.01
-      chol(mat)
-    }, error = \(e) diag2(mat))
+    error = function(e) {
+      is.admissible <<- FALSE
+
+      tryCatch({
+        # ridge solve?
+        diag(mat) <- diag(mat) + 0.01
+        chol(mat)
+      }, error = \(e) diag2(mat))
+    }
   )
-  mvnfast::rmvn(n = n, mu = rep(0, NCOL(mat)), sigma = decomp, isChol = TRUE)
+
+  x <- mvnfast::rmvn(
+    n  = n,
+    mu = rep(0, NCOL(mat)),
+    sigma = decomp,
+    isChol = TRUE
+  )
+
+  list(
+    x             = x,
+    is.admissible = is.admissible
+  )
+}
+
+
+projectBetaOntoConstrainedEllipsoid <- function(beta, Sigma, maxvar, tol = 1e-8, max.delta = 1e12) {
+  currentvar <- c(t(beta) %*% Sigma %*% beta)
+  if (currentvar <= maxvar)
+    return(beta)
+
+  eig <- eigen(Sigma, symmetric = TRUE)
+  d   <- pmax(eig$values, 0) # guard against numerical noise below zero
+  y   <- as.vector(t(eig$vectors) %*% beta)
+
+  g <- \(delta) sum(d * y^2 / (1 + delta * d)^2) - maxvar
+
+  delta.high <- 1
+  while (g(delta.high) > 0 && delta.high < max.delta)
+    delta.high <- 10 * delta.high
+
+  # solve for delta
+  solved <- stats::uniroot(
+    f     = g,
+    lower = 0,
+    upper = delta.high,
+    tol = tol
+  )
+
+  delta <- solved$root
+
+  as.vector(eig$vectors %*% (y / (1 + delta * d)))
 }
 
 

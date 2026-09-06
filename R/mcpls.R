@@ -334,6 +334,27 @@ mcpls <- function(
     p0 <- stats::setNames(mcfit$root, nm[par1$is.free])
     p1 <- fit1.combined@params$values
 
+    # Delta-method SEs assume `p0` is close to the root. Simplest way to check
+    # is by looking at the residual
+    resid.p0 <- .f(as.vector(p0))
+    names(resid.p0) <- names(p0)
+
+    # Use a sufficiently large factor, to avoid false positives
+    resid.tol.mult <- 100
+    bad.resid <- abs(resid.p0) > resid.tol.mult * tol
+    bad.pars <- names(resid.p0)[bad.resid]
+    max.res  <- max(abs(resid.p0))
+
+    pls_warnif(
+      any(bad.resid),
+      "The MC-PLS root residual is not small relative to `tol` for:",
+      paste0(bas.resid, collapse = ", "),
+      sprintf("(largest |residual| = %.4g vs. tol = %.4g).", max.res, tol),
+      "Delta-method standard errors might be unreliable for these parameters.",
+      "Consider decreasing `mc.tol`, increasing `mc.max.iter`, or using",
+      "bootstrap standard errors instead (`mc.delta.se = FALSE`)."
+    )
+
     if (verbose) {
       pb <- utils::txtProgressBar(
         min     = 0,

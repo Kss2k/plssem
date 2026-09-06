@@ -56,10 +56,8 @@ robbinsMonro1951 <- function(p,
     fp <- f(p, ...)
 
     resid.norm <- sqrt(sum(fp^2))
-    if (resid.norm < best.resid.norm) {
+    if (resid.norm < best.resid.norm)
       best.resid.norm <- resid.norm
-      best.p          <- p
-    }
 
     if (is.null(resid.ema)) {
       resid.ema <- resid.norm
@@ -68,16 +66,24 @@ robbinsMonro1951 <- function(p,
         (1 - diverge.ema.decay) * resid.norm
     }
 
-    if (resid.ema < best.resid.ema)
+    if (resid.ema < best.resid.ema) {
       best.resid.ema <- resid.ema
+      best.p <- p
+    }
 
     if (diag.secant && !is.null(p.prev)) {
       delta.p  <- p - p.prev
       delta.fp <- fp - fp.prev
       a.ds     <- delta.p / delta.fp
 
-      # fall back to the standard step if the secant is degenerate
-      bad <- !is.finite(a.ds) | abs(delta.fp) < ds.eps
+      # fall back to the standard step if the secant is degenerate: a
+      # non-finite ratio, a flat response (`delta.fp` near zero), or no
+      # actual movement (`delta.p` near zero, e.g. a coordinate clamped at a
+      # bound for consecutive iterations) - the last case still divides out
+      # to a finite `a.ds == 0` under noisy `fp`, which would otherwise
+      # freeze that coordinate's step at exactly zero indefinitely, even
+      # after the bound stops binding.
+      bad <- !is.finite(a.ds) | abs(delta.fp) < ds.eps | abs(delta.p) < ds.eps
       a.ds[bad] <- a
 
       # keep the secant step from taking a wild jump

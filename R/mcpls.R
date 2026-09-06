@@ -238,7 +238,7 @@ mcpls <- function(
 
   iter <- mcfit$iter
   diverged <- mcfit$diverged
-  if ((iter >= max.iter || diverged) && !polyak.juditsky) {
+  if ((iter >= max.iter && !polyak.juditsky) || diverged) {
 
     if (diverged) {
       # Might signal a non-monotone .f(). Try switching to diag.secant,
@@ -247,11 +247,8 @@ mcpls <- function(
 
       pls_msg_warn(
         "The root-finding algorithm appears to be diverging!\n",
-        sprintf(
-          "Restarting from the best point found so far (residual norm %.4g) with %s...",
-          mcfit$resid.norm,
-          if (retry.ds) "the diagonal-secant step method" else "Polyak Juditsky averaging"
-        )
+        "Restarting from the best point found so far, with",
+        if (retry.ds) "the diagonal-secant step method..." else "Polyak Juditsky averaging..."
       )
 
     } else {
@@ -263,8 +260,9 @@ mcpls <- function(
       )
     }
 
+    start.p <- if (retry.ds) mcfit$best.p else mcfit$root
     mcfit <- robbinsMonro1951(
-      p                = mcfit$root, # keep names - see the warmup retry above
+      p                = start.p, # keep names - see the warmup retry above
       f                = .f,
       tol              = tol,
       min.iter         = min.iter,

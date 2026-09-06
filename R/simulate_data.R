@@ -307,7 +307,12 @@ simulateDataParTable <- function(parTable,
               maxvar = shiftMaxvar
             )
 
-            a.bound <- abs(aShifted.proj - cVec)
+            # Keep the sign: the feasible ellipsoid for `a` is centred at
+            # `-cVec`, not at 0, so this boundary point is generally not
+            # symmetric around zero. Taking `abs()` here would discard that
+            # asymmetry and let the (potentially infeasible) mirror-image
+            # side back in.
+            a.bound <- aShifted.proj - cVec
 
           } else {
             # If even `a = 0` (resvar=0) would violate the variance constraint,
@@ -321,7 +326,6 @@ simulateDataParTable <- function(parTable,
         for (v in names(a.bound)) {
           if (!is.finite(a.bound[[v]]) || a.bound[[v]] == 0) next
 
-          lim <- max(0, a.bound[[v]] - tol)
           idx <- which(
             parTable$op == "~~" &
             parTable$lhs != parTable$rhs & (
@@ -332,8 +336,17 @@ simulateDataParTable <- function(parTable,
 
           if (!length(idx)) next
 
-          parTable[idx, "lower"] <- pmax(parTable[idx, "lower"], -lim)
-          parTable[idx, "upper"] <- pmin(parTable[idx, "upper"],  lim)
+          # One-sided: the boundary point only tells us the constraint binds
+          # on the side it was found on, not that an equally large bound on
+          # the opposite side is also feasible.
+          if (a.bound[[v]] > 0) {
+            lim <- max(0, a.bound[[v]] - tol)
+            parTable[idx, "upper"] <- pmin(parTable[idx, "upper"], lim)
+
+          } else {
+            lim <- min(0, a.bound[[v]] + tol)
+            parTable[idx, "lower"] <- pmax(parTable[idx, "lower"], lim)
+          }
         }
       }
 

@@ -217,7 +217,7 @@ mcpls <- function(
       ...
     )
 
-    p <- as.vector(mcfit$root)
+    p <- mcfit$root # keep names - `robbinsMonro1951()` relies on them for `history.f`
   }
 
   mcfit <- robbinsMonro1951(
@@ -264,7 +264,7 @@ mcpls <- function(
     }
 
     mcfit <- robbinsMonro1951(
-      p                = as.vector(mcfit$root),
+      p                = mcfit$root, # keep names - see the warmup retry above
       f                = .f,
       tol              = tol,
       min.iter         = min.iter,
@@ -340,16 +340,30 @@ mcpls <- function(
     names(resid.p0) <- names(p0)
 
     # Use a sufficiently large factor, to avoid false positives
-    resid.tol.mult <- 100
-    bad.resid <- abs(resid.p0) > resid.tol.mult * tol
+    history.f <- mcfit$history.f[,names(resid.p0), drop = FALSE]
+
+    # Only use the tail (steady-state) half of the trajectory: the early,
+    # far-from-root iterations have their own large, systematic swings on top
+    # of MC noise, which would otherwise inflate `sds` and mask a genuinely
+    # bad residual at `p0`.
+    n.hist   <- NROW(history.f)
+    tail.idx <- ceiling(n.hist / 2):n.hist
+    tail.f   <- history.f[tail.idx, , drop = FALSE]
+
+    sds <- apply(tail.f, MARGIN = 2L, FUN = stats::sd, na.rm = TRUE)
+    sds[NROW(tail.f) < 10 | !is.finite(sds) | sds <= tol] <- Inf # not reliable
+
+    # Bonferroni-adjusted z-score
+    resid.tol <- stats::qnorm(1 - 0.025 / length(p0))
+    bad.resid <- abs(resid.p0) > resid.tol * sds
     bad.pars <- names(resid.p0)[bad.resid]
     max.res  <- max(abs(resid.p0))
 
     pls_warnif(
       any(bad.resid),
-      "The MC-PLS root residual is not small relative to `tol` for:",
-      paste0(bas.resid, collapse = ", "),
-      sprintf("(largest |residual| = %.4g vs. tol = %.4g).", max.res, tol),
+      "The MC-PLS root residual is not small relative to the sampling error for:",
+      paste0(bad.pars, collapse = ", "),
+      sprintf("(largest |residual| = %.4g).", max.res),
       "Delta-method standard errors might be unreliable for these parameters.",
       "Consider decreasing `mc.tol`, increasing `mc.max.iter`, or using",
       "bootstrap standard errors instead (`mc.delta.se = FALSE`)."
@@ -409,7 +423,8 @@ mcpls <- function(
     fit1.combined@params$JacobianProbs1 <- Gp
   }
 
-  fit1.combined@params$mcpls.history <- plssemMatrix(mcfit$history)
+  fit1.combined@params$mcpls.history <- plssemMatrix(mcfit$history.p)
+  fit1.combined@params$mcpls.history.f <- plssemMatrix(mcfit$history.f)
   fit1.combined@status$par0 <- par0
   fit1.combined@status$fit0 <- fit0.base
 

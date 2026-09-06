@@ -28,7 +28,7 @@ robbinsMonro1951 <- function(p,
   if (max.iter < min.iter)
     max.iter <- min.iter
 
-  history <- rbind(p, matrix(NA, nrow=max.iter, ncol=length(p)))
+  history.p <- history.f <- rbind(p, matrix(NA, nrow=max.iter, ncol=length(p)))
   k.succ <- 0
   pbar.last <- pbar <- p
   diverged <- FALSE
@@ -94,12 +94,13 @@ robbinsMonro1951 <- function(p,
     p[p < lower.i] <- lower.i[p < lower.i]
     p[p > upper.i] <- upper.i[p > upper.i]
 
-    history[i + 1L, ] <- p
-    change <- max(abs(history[i,]-p))
+    history.p[i + 1L, ] <- p
+    history.f[i + 1L, ] <- fp
+    change <- max(abs(history.p[i,]-p))
 
     if (polyak.juditsky) {
       pbar.last <- pbar
-      pbar <- pjRunningAverage(history)
+      pbar <- pjRunningAverage(history.p)
       change <- max(abs(pbar.last - pbar))
     }
 
@@ -125,7 +126,8 @@ robbinsMonro1951 <- function(p,
   }
 
   converged <- i < max.iter && !diverged
-  history <- history[0L:i + 1L, , drop=FALSE]
+  history.p <- history.p[0L:i + 1L, , drop=FALSE]
+  history.f <- history.f[0L:i + 1L, , drop=FALSE]
 
   if (verbose) messagef("\n")
 
@@ -134,7 +136,7 @@ robbinsMonro1951 <- function(p,
     # Get approximation, irrespective of the dynamic bounds
     if (pj.extrapolate) {
       pbar <- pbar0 <- getConvergencePoints(
-        history = history, lower = lower, upper = upper
+        history = history.p, lower = lower, upper = upper
       )
     } else {
       pbar0 <- pbar
@@ -176,7 +178,8 @@ robbinsMonro1951 <- function(p,
   ret <- list(
     iter            = i,
     root            = if (polyak.juditsky) pbar else p,
-    history         = history,
+    history.p       = history.p,
+    history.f       = history.f,
     lower           = lower.i,
     upper           = upper.i,
     converged       = converged,

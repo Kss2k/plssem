@@ -112,6 +112,11 @@ USE_NON_LINEAR_PROBIT_CORR_MAT <- FALSE
 #' @param mc.fn.args Additional arguments to MC-PLS algorithm, mainly for controlling
 #'   the step size.
 #'
+#' @param mc.diag.secant Logical; if \code{TRUE}, the MC-PLS root-finding algorithm
+#'   uses a per-coordinate diagonal-secant step (estimating each coordinate's local
+#'   slope from consecutive iterates), instead of the standard Robbins-Monro step.
+#'   This might be usefull if the binding funtion is non-monotone.
+#'
 #' @param mc.rescov How residual covariances are treated in MC-PLS. One of
 #'   \code{"auto"} (the default), \code{"reduced"}, or \code{"full"}. In
 #'   \code{"reduced"} mode residual covariances are not treated as free
@@ -208,6 +213,7 @@ pls <- function(syntax,
                 mc.delta.jacobian.k = max(floor(boot.R / 100L), 1),
                 mc.fn.args = list(),
                 mc.rescov = c("auto", "reduced", "full"),
+                mc.diag.secant = FALSE,
                 verbose = interactive(),
                 boot.optimize = TRUE,
                 boot.drop.inadmissible = FALSE,
@@ -265,6 +271,7 @@ pls <- function(syntax,
     mc.delta.jacobian.k    = mc.delta.jacobian.k,
     mc.fn.args             = mc.fn.args,
     mc.rescov              = match.arg(mc.rescov, c("auto", "reduced", "full")),
+    mc.diag.secant         = mc.diag.secant,
     verbose                = verbose,
     bootstrap              = bootstrap,
     boot.ncores            = boot.ncores,

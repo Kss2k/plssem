@@ -20,7 +20,10 @@ robbinsMonro1951 <- function(p,
                              fn.args = list(),
                              k.dyn.bound = 5,
                              diverge.factor = 10,
-                             diverge.min.iter = 10L) {
+                             diverge.min.iter = 10L,
+                             diag.secant = FALSE,
+                             ds.eps = 1e-8,
+                             ds.clip = 10) {
 
   if (max.iter < min.iter)
     max.iter <- min.iter
@@ -35,6 +38,11 @@ robbinsMonro1951 <- function(p,
   best.p           <- p
   best.resid.norm  <- Inf
 
+  # Diagonal secant method, which can flip a coordinate's step
+  # direction automatically when its local relationship is non-monotone.
+  p.prev  <- NULL
+  fp.prev <- NULL
+
   if (is.null(lower)) lower <- rep(-Inf, length(p))
   if (is.null(upper)) upper <- rep( Inf, length(p))
 
@@ -48,7 +56,31 @@ robbinsMonro1951 <- function(p,
       best.p          <- p
     }
 
-    p <- p - a * fp
+    if (diag.secant && !is.null(p.prev)) {
+      delta.p  <- p - p.prev
+      delta.fp <- fp - fp.prev
+      a.ds     <- delta.p / delta.fp
+
+      # fall back to the standard step if the secant is degenerate
+      bad <- !is.finite(a.ds) | abs(delta.fp) < ds.eps
+      a.ds[bad] <- a
+
+      # keep the secant step from taking a wild jump
+      a.max <- ds.clip * a
+      a.ds  <- pmax(pmin(a.ds, a.max), -a.max)
+
+      step <- a.ds * fp
+
+    } else {
+      step <- a * fp # standard step, or no secant yet on the first iteration
+    }
+
+    if (diag.secant) {
+      p.prev  <- p
+      fp.prev <- fp
+    }
+
+    p <- p - step
 
     # Does f() return (dynamic) bounduaries?
     lower.fp <- attr(fp, "lower")

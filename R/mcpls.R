@@ -14,6 +14,7 @@ mcpls <- function(
   delta.jacobian   = fit0@info$mc.args$delta.se && fit0@info$boot$bootstrap,
   delta.fixed.seed = TRUE,
   delta.jacobian.k = fit0@info$mc.args$delta.jacobian.k,
+  diag.secant      = fit0@info$mc.args$diag.secant,
   ...
 ) {
   fit0.base <- fit0
@@ -202,16 +203,17 @@ mcpls <- function(
     if (verbose) pls_msg_note("Warming up...")
 
     mcfit <- robbinsMonro1951(
-      p               = p,
-      f               = .f,
-      tol             = 10 * tol,
-      min.iter        = 5L,
-      max.iter        = 20L,
-      verbose         = verbose,
-      polyak.juditsky = FALSE,
-      fn.args         = fn.args,
-      lower           = lower,
-      upper           = upper,
+      p                = p,
+      f                = .f,
+      tol              = 10 * tol,
+      min.iter         = 5L,
+      max.iter         = 20L,
+      verbose          = verbose,
+      polyak.juditsky  = FALSE,
+      fn.args          = fn.args,
+      lower            = lower,
+      upper            = upper,
+      diag.secant      = diag.secant,
       ...
     )
 
@@ -219,17 +221,18 @@ mcpls <- function(
   }
 
   mcfit <- robbinsMonro1951(
-    p               = p,
-    f               = .f,
-    tol             = tol,
-    min.iter        = min.iter,
-    max.iter        = max.iter,
-    verbose         = verbose,
-    polyak.juditsky = polyak.juditsky,
-    fn.args         = fn.args,
-    pj.extrapolate  = pj.extrapolate,
-    lower           = lower,
-    upper           = upper,
+    p                = p,
+    f                = .f,
+    tol              = tol,
+    min.iter         = min.iter,
+    max.iter         = max.iter,
+    verbose          = verbose,
+    polyak.juditsky  = polyak.juditsky,
+    fn.args          = fn.args,
+    pj.extrapolate   = pj.extrapolate,
+    lower            = lower,
+    upper            = upper,
+    diag.secant      = diag.secant,
     ...
   )
 
@@ -238,15 +241,22 @@ mcpls <- function(
   if ((iter >= max.iter || diverged) && !polyak.juditsky) {
 
     if (diverged) {
+      # Might signal a non-monotone .f(). Try switching to diag.secant,
+      # which actually can account for a non-monotone .f()
+      retry.ds <- !diag.secant
+
       pls_msg_warn(
         "The root-finding algorithm appears to be diverging!\n",
         sprintf(
-          "Restarting from the best point found so far (residual norm %.4g) with Polyak Juditsky averaging...",
-          mcfit$resid.norm
+          "Restarting from the best point found so far (residual norm %.4g) with %s...",
+          mcfit$resid.norm,
+          if (retry.ds) "the diagonal-secant step method" else "Polyak Juditsky averaging"
         )
       )
 
     } else {
+      retry.ds <- diag.secant
+
       pls_msg_warn(
         "Maximum number of (initial) iterations reached!\n",
         sprintf("Attempting to use Polyak Juditsky averaging...")
@@ -254,17 +264,18 @@ mcpls <- function(
     }
 
     mcfit <- robbinsMonro1951(
-      p               = as.vector(mcfit$root),
-      f               = .f,
-      tol             = tol,
-      min.iter        = min.iter,
-      max.iter        = max.iter,
-      verbose         = verbose,
-      polyak.juditsky = TRUE,
-      fn.args         = fn.args,
-      pj.extrapolate  = pj.extrapolate,
-      lower           = lower,
-      upper           = upper,
+      p                = as.vector(mcfit$root),
+      f                = .f,
+      tol              = tol,
+      min.iter         = min.iter,
+      max.iter         = max.iter,
+      verbose          = verbose,
+      polyak.juditsky  = TRUE,
+      fn.args          = fn.args,
+      pj.extrapolate   = pj.extrapolate,
+      lower            = lower,
+      upper            = upper,
+      diag.secant      = retry.ds,
       ...
     )
 

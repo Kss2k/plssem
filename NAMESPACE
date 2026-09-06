@@ -49,7 +49,9 @@ exportMethods(summary)
 exportMethods(unstandardized_estimates)
 exportMethods(vcov)
 import(methods)
-importFrom(stats,coef)
-importFrom(stats,coefficients)
-importFrom(stats,predict)
-importFrom(stats,vcov)
+importFrom(stats,
+  coef,
+  coefficients,
+  predict,
+  vcov
+)

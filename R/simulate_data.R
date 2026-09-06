@@ -291,8 +291,14 @@ simulateDataParTable <- function(parTable,
         # shifted point `a + c`, then shifted back.
         Minv <- tryCatch(solve(M), error = \(...) NULL)
 
+        # `a.bound == 0` is overloaded below to also mean "no update needed",
+        # so the two cases that deliberately require `a` to be exactly zero
+        # need their own flag rather than relying on the value alone.
+        force.zero <- FALSE
+
         if (is.null(Minv)) {
           is.admissible <<- FALSE
+          force.zero <- TRUE
           a.bound <- rep(0, length(a))
 
         } else {
@@ -317,6 +323,7 @@ simulateDataParTable <- function(parTable,
           } else {
             # If even `a = 0` (resvar=0) would violate the variance constraint,
             # we constrain a to 0 going forward.
+            force.zero <- TRUE
             a.bound <- rep(0, length(a))
           }
         }
@@ -324,8 +331,6 @@ simulateDataParTable <- function(parTable,
         names(a.bound) <- names(a)
 
         for (v in names(a.bound)) {
-          if (!is.finite(a.bound[[v]]) || a.bound[[v]] == 0) next
-
           idx <- which(
             parTable$op == "~~" &
             parTable$lhs != parTable$rhs & (
@@ -335,6 +340,14 @@ simulateDataParTable <- function(parTable,
           )
 
           if (!length(idx)) next
+
+          if (force.zero) {
+            parTable[idx, "lower"] <- 0
+            parTable[idx, "upper"] <- 0
+            next
+          }
+
+          if (!is.finite(a.bound[[v]]) || a.bound[[v]] == 0) next
 
           # One-sided: the boundary point only tells us the constraint binds
           # on the side it was found on, not that an equally large bound on

@@ -459,7 +459,7 @@ ordinalizeDataFrame <- function(df, thresholdStruct) {
 }
 
 
-getFreeParamsTable <- function(model) {
+getFreeParamsTable <- function(model, exclude = c("~1", "|", ":=")) {
   model <- combinedModel(model)
   parTable <- getParTableEstimates(
     model, rm.tmp.ov = FALSE, clean.tmp.ind = FALSE
@@ -477,7 +477,7 @@ getFreeParamsTable <- function(model) {
 
   cond1 <- !(lhs == rhs & op == "~~" & !grepl("~", rhs))
   cond2 <- !((isIntTermVariable(lhs) | isIntTermVariable(rhs)) & op == "~~")
-  cond3 <- !op %in% c("~1", "|", ":=")
+  cond3 <- !op %in% exclude
   cond4 <- !(lhs %in% inds.b & op == "~~") & !(rhs %in% inds.b & op == "~~")
   cond  <- cond1 & cond2 & cond3 & cond4
 

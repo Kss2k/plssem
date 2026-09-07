@@ -144,7 +144,7 @@ mcmc_pls <- function(syntax,
       par <- pars[[i]]
       p[[i]] <- priors[[par]](x[[i]])
     }
-    log(p)
+    sum(log(p))
   }
 
   # for (chain in chains) {
@@ -217,9 +217,9 @@ mcmc_pls <- function(syntax,
       }
     }
 
-    x.star <- x
 
     for (block in seq_along(blocks)) {
+      x.star <- x
       idx <- blocks[[block]]
       d <- length(idx) # dimension
 

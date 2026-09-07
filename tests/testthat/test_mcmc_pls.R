@@ -13,20 +13,22 @@ m <- '
   # b4 :~ dnorm(mean = 0, sd = 0.005)
 '
 
-set.seed(23942)
-fit <- mcmc_pls(m, modsem::oneInt, boot.R = 500, warmup = 2000, iter = 4000, sampler = "Metropolis-Hastings")
-round(apply(fit, MARGIN = 2, FUN = mean), 3)
-round(apply(fit, MARGIN = 2, FUN = sd), 3)
+if (FALSE) { # don't run on GitHub
+  set.seed(23942)
+  fit <- mcmc_pls(m, modsem::oneInt, boot.R = 500, warmup = 2000, iter = 4000, sampler = "Metropolis-Hastings")
+  round(apply(fit, MARGIN = 2, FUN = mean), 3)
+  round(apply(fit, MARGIN = 2, FUN = sd), 3)
 
 
-fit <- mcmc_pls(m, oneIntOrdered, ordered = colnames(oneIntOrdered),
-                boot.R = 500, warmup = 2000, iter = 4000, sampler = "Metropolis-Hastings", sample.thresholds = FALSE)
-round(apply(fit, MARGIN = 2, FUN = mean), 3)
-round(apply(fit, MARGIN = 2, FUN = sd), 3)
+  fit <- mcmc_pls(m, oneIntOrdered, ordered = colnames(oneIntOrdered),
+                  boot.R = 500, warmup = 2000, iter = 4000, sampler = "Metropolis-Hastings", sample.thresholds = FALSE)
+  round(apply(fit, MARGIN = 2, FUN = mean), 3)
+  round(apply(fit, MARGIN = 2, FUN = sd), 3)
 
 # Way way harder to sample, so we need to use a Gibbs sampler...
 # The Gibbs sampler is a lot slower...
-fit <- mcmc_pls(m, oneIntOrdered, ordered = colnames(oneIntOrdered),
-                boot.R = 500, warmup = 2000, iter = 4000, sampler = "Gibbs", sample.thresholds = TRUE)
-round(apply(fit, MARGIN = 2, FUN = mean), 3)
-round(apply(fit, MARGIN = 2, FUN = sd), 3)
+  fit <- mcmc_pls(m, oneIntOrdered, ordered = colnames(oneIntOrdered),
+                  boot.R = 500, warmup = 2000, iter = 4000, sampler = "Gibbs", sample.thresholds = TRUE)
+  round(apply(fit, MARGIN = 2, FUN = mean), 3)
+  round(apply(fit, MARGIN = 2, FUN = sd), 3)
+}

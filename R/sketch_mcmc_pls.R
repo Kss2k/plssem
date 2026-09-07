@@ -51,7 +51,7 @@ mcmc_pls <- function(syntax,
   }
 
   fit0 <- pls(
-    syntax = parTableToSyntax(input),
+    syntax = parTableToSyntax(inputModel),
     data   = data,
     bootstrap = TRUE, # neccessary
     consistent = consistent,

@@ -17,6 +17,7 @@ mcmc_pls <- function(syntax,
                      N = 20000,
                      acceptance.rate = \(d) 0.234 + 0.21 / d, # acceptance ratio by the number of dimensions in a block
                      sampler = c("Metropolis-Hastings", "Gibbs"),
+                     sample.thresholds = FALSE, # currently too difficult to sample...
                      # capture
                      bootstrap = NULL,
                      consistent = FALSE,
@@ -60,10 +61,14 @@ mcmc_pls <- function(syntax,
   )
 
   ordered <- combinedModel(fit0)@info$ordered
+  thresholdStruct0 <- combinedModel(fit0)@thresholdStruct
   data <- modelData(fit0)
   vars <- colnames(data)
 
-  parTable <- getFreeParamsTable(fit0, exclude = c("~1", ":="))
+  if (sample.thresholds) exclude.pars <- c("~1", ":=")
+  else                   exclude.pars <- c("~1", ":=", "|")
+
+  parTable <- getFreeParamsTable(fit0, exclude = exclude.pars)
   parTable$par <- paste0(parTable$lhs, parTable$op, parTable$rhs)
   pars <- parTable[parTable$is.free, "par"]
 
@@ -92,12 +97,25 @@ mcmc_pls <- function(syntax,
     parTablex <- parTable[c("lhs", "op", "rhs", "est", "is.free")]
     parTablex[parTablex$is.free, "est"] <- x
 
-    sim <- simulateDataParTable(parTable = parTablex, N = N, cut = TRUE)
+    sim <- simulateDataParTable(
+      parTable = parTablex,
+      N = N,
+      cut = sample.thresholds
+    )
+   
+    sim.ov <- sim$ov
+
+    if (!sample.thresholds && length(ordered)) {
+      sim.ov  <- ordinalizeDataFrame(
+        df = sim.ov, thresholdStruct = thresholdStruct0
+      )
+    }
+
     lower <<- sim$lower
     upper <<- sim$upper
 
     fit.sim <- fit0
-    Y <- Rfast::standardise(as.matrix(sim$ov[vars]))
+    Y <- Rfast::standardise(as.matrix(sim.ov[vars]))
     S <- Rfast::cova(Y)
 
     if (!is.null(sim$cluster))
@@ -107,7 +125,7 @@ mcmc_pls <- function(syntax,
     modelData(fit.sim)  <- Y
     indCorrMatrix(fit.sim) <- S
 
-    if (any(parTablex$op == "|")) {
+    if (sample.thresholds && any(parTablex$op == "|")) {
       fit.sim@thresholdStruct <- ThresholdStruct(
         data = Y,
         ordered = ordered
@@ -130,10 +148,8 @@ mcmc_pls <- function(syntax,
   }
 
   # for (chain in chains) {
-
   pls_stopif(warmup >= iter, "warmup must be less than iter!")
-  x  <- coef + rnorm(n = length(coef), sd = 0.1)
-  s  <- diag(0.1, length(x)) # sds for proposal distribution
+  x  <- coef
   S0 <- vcov
   S  <- S0
 
@@ -141,16 +157,38 @@ mcmc_pls <- function(syntax,
     blocks <- list(seq_along(x))
 
   } else {
-    split <- splitParameterNames(pars)
+    split <- as.data.frame(splitParameterNames(pars))
     op <- split$op
 
-    blocks <- list(
-      which(op == "=~"),
-      which(op == "~"),
-      which(op == "~~"),
-      which(op == "|")
-    )
+    oblocks <- lapply(ordered, function(ord) {
+      which(split$lhs == ord & op == "|")
+    })
+
+    mblock <- list(which(split$op == "=~"))
+    pblock <- list(which(split$op == "~"))
+    cblock <- list(setdiff( # covariances
+      seq_along(x),
+      c(unlist(oblocks), unlist(mblock), unlist(pblock))
+    ))
+
+    blocks <- c(oblocks, mblock, pblock, cblock)
   }
+
+
+  # One log proposal-SD multiplier per block
+  # If S is already a reasonable estimate of the target covariance,
+  # 2.38 / sqrt(d) is a good starting point.
+  log.scale <- vapply(
+    X = blocks,
+    FUN.VALUE = numeric(1),
+    FUN = function(idx) {
+      d <- length(idx)
+      if (d > 0) log(2.38 / sqrt(d)) else NA_real_
+    }
+  )
+
+  # Number of adaptation steps for each block
+  adapt.n <- integer(length(blocks))
 
   rejections <- numeric(length(blocks))
   acceptances <- numeric(length(blocks))
@@ -159,9 +197,10 @@ mcmc_pls <- function(syntax,
   for (i in seq_len(iter)) {
     mode <- if (i > warmup) "sampling" else "warmup"
     cat(sprintf(
-      "Iter %d/%d, mode: %s, acceptances: %d, rejections: %d, acceptance rate: %.3f...\n",
+      "Iter %d/%d, mode: %s, acceptances: %d, rejections: %d, acceptance rate: %.3f, step = %.2g...\n",
       i, iter, mode, sum(acceptances), sum(rejections),
-      sum(acceptances)/(sum(acceptances)+sum(rejections))
+      sum(acceptances)/(sum(acceptances)+sum(rejections)),
+      suppressWarnings(mean(scale))
     ))
 
     if (i %% 10 == 0) {
@@ -179,7 +218,6 @@ mcmc_pls <- function(syntax,
     }
 
     x.star <- x
-    S.star <- s %*% S %*% t(s)
 
     for (block in seq_along(blocks)) {
       idx <- blocks[[block]]
@@ -189,7 +227,8 @@ mcmc_pls <- function(syntax,
         next # nothing to do
 
       # sample proposal
-      S.star.b <-  S.star[idx, idx, drop = FALSE]
+      scale <- exp(log.scale[[block]])
+      S.star.b <- scale^2 * S[idx, idx, drop = FALSE]
       x.star[idx] <- Q$r(x = x[idx], s = S.star.b)
 
       # Constrain by the last iterations lower and upper bounds
@@ -211,8 +250,13 @@ mcmc_pls <- function(syntax,
       rejections[[block]] <- rejections[[block]] + as.integer(!accept)
       acceptances[[block]] <- acceptances[[block]] + as.integer(accept)
     
-      rate <- acceptances[[block]] / (acceptances[[block]] + rejections[[block]])
-      diag(s)[idx] <- pmax(diag(s)[idx] + pmin(pmax(rate - acceptance.rate(d), -0.1), 0.1), 1e-12)
+      adapt.n[[block]] <- adapt.n[[block]] + 1L
+
+      # Robbins-Monro learning rate
+      eta <- 0.5 / (10 + adapt.n[[block]])^0.6
+
+      target <- acceptance.rate(d)
+      log.scale[[block]] <- log.scale[[block]] + eta * (as.numeric(accept) - target)
 
       if (accept)
         x[idx] <- x.star[idx]

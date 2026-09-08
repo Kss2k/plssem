@@ -436,26 +436,45 @@ mcpls <- function(
 }
 
 
-ordinalize <- function(x, probs) {
+ordinalize <- function(x, probs, tol = 0.001) {
   probs  <- sort(probs[probs < 1])
+  probs[probs<=tol] <- tol
+  probs <- probs / sum(probs)
+
   breaks <- collapse::fquantile(x, probs = probs)
-  findInterval(x, vec = breaks)
+
+  out <- findInterval(x, vec = breaks)
+  attr(out, "tau") <- breaks
+
+  out
 }
 
 
-ordinalizeDataFrame <- function(df, thresholdStruct) {
+ordinalizeDataFrame <- function(df, thresholdStruct, return.thr = FALSE) {
   nm <- colnames(df)
   ordered <- thresholdStruct@ordered
   probs   <- thresholdStruct@proportions
   indices <- thresholdStruct@indices
 
-  quickdf(stats::setNames(
+  out <- quickdf(stats::setNames(
     lapply(nm, FUN = function(v) {
-      if (v %in% ordered) ordinalize(df[[v]], probs = probs[indices[[v]]])
-      else df[[v]]
-    }),
-    nm = nm
+      if (v %in% ordered) {
+        z <- ordinalize(df[[v]], probs = probs[indices[[v]]])
+        thresholdStruct@thresholds[indices[[v]]] <<- attr(z, "tau")
+
+        attr(z, "tau") <- NULL # remove before assigning to df
+        z
+      }
+      else {
+        df[[v]]
+      }
+    }), nm = nm
   ))
+
+  if (return.thr)
+    attr(out, "thresholdStruct") <- thresholdStruct
+
+  out
 }
 
 

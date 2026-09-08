@@ -22,14 +22,7 @@ if (FALSE) { # don't run on GitHub
 
 
   fit <- mcmc_pls(m, oneIntOrdered, ordered = colnames(oneIntOrdered),
-                  boot.R = 500, warmup = 2000, iter = 4000, sampler = "Metropolis-Hastings", sample.thresholds = FALSE)
-  round(apply(fit, MARGIN = 2, FUN = mean), 3)
-  round(apply(fit, MARGIN = 2, FUN = sd), 3)
-
-# Way way harder to sample, so we need to use a Gibbs sampler...
-# The Gibbs sampler is a lot slower...
-  fit <- mcmc_pls(m, oneIntOrdered, ordered = colnames(oneIntOrdered),
-                  boot.R = 500, warmup = 2000, iter = 4000, sampler = "Gibbs", sample.thresholds = TRUE)
-  round(apply(fit, MARGIN = 2, FUN = mean), 3)
-  round(apply(fit, MARGIN = 2, FUN = sd), 3)
+                  boot.R = 500, warmup = 2000, iter = 4000, sampler = "Metropolis-Hastings")
+  round(apply(fit[[1]], MARGIN = 2, FUN = mean), 3)
+  round(apply(fit[[1]], MARGIN = 2, FUN = sd), 3)
 }

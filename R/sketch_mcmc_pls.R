@@ -24,7 +24,6 @@ mcmc_pls <- function(syntax,
 
                      # Advanced stuff
                      N = 20000,
-                     sample.thresholds = FALSE, # currently too difficult to sample...
                      acceptance.rate = \(d) 0.234 + 0.21 / d, # acceptance ratio by the number of dimensions in a block
                      Q = list(
                        r = \(x, s) as.vector(mvtnorm::rmvnorm(n = 1, mean = x, sigma = s)),
@@ -72,13 +71,13 @@ mcmc_pls <- function(syntax,
   data <- modelData(fit0)
   vars <- colnames(data)
 
-  if (sample.thresholds) exclude.pars <- c("~1", ":=")
-  else                   exclude.pars <- c("~1", ":=", "|")
-
-  parTable <- getFreeParamsTable(fit0, exclude = exclude.pars)
+  parTable <- getFreeParamsTable(fit0)
   parTable$par <- paste0(parTable$lhs, parTable$op, parTable$rhs)
-  pars <- parTable[parTable$is.free, "par"]
 
+  pars <- parTable[parTable$is.free, "par"]
+  thr.pars <- parTable[parTable$op == "|", "par"]
+
+  boot.probs <- fit0@boot$boot.probs
   vcov <- vcov(fit0, use.labels = FALSE)[pars, pars, drop = FALSE]
   coef <- coef(fit0, use.labels = FALSE)[pars]
 
@@ -101,27 +100,34 @@ mcmc_pls <- function(syntax,
   upper <- NULL
 
   L <- function(x) {
+    fit.sim <- fit0
+
     parTablex <- parTable[c("lhs", "op", "rhs", "est", "is.free")]
     parTablex[parTablex$is.free, "est"] <- x
 
     sim <- simulateDataParTable(
       parTable = parTablex,
-      N = N,
-      cut = sample.thresholds
+      N = N
     )
    
     sim.ov <- sim$ov
 
-    if (!sample.thresholds && length(ordered)) {
-      sim.ov  <- ordinalizeDataFrame(
-        df = sim.ov, thresholdStruct = thresholdStruct0
+    if (length(ordered)) {
+      thresholdStruct <- thresholdStruct0
+      # probs <- boot.probs[sample(NROW(boot.probs), 1),,drop=TRUE]
+      # thresholdStruct@proportions <- probs
+
+      sim.ov <- ordinalizeDataFrame(
+        df = sim.ov, thresholdStruct = thresholdStruct0,
+        return.thr = TRUE
       )
+
+      fit.sim@thresholdStruct <- attr(sim.ov, "thresholdStruct")
     }
 
     lower <<- sim$lower
     upper <<- sim$upper
 
-    fit.sim <- fit0
     Y <- Rfast::standardise(as.matrix(sim.ov[vars]))
     S <- Rfast::cova(Y)
 
@@ -132,17 +138,15 @@ mcmc_pls <- function(syntax,
     modelData(fit.sim)  <- Y
     indCorrMatrix(fit.sim) <- S
 
-    if (sample.thresholds && any(parTablex$op == "|")) {
-      fit.sim@thresholdStruct <- ThresholdStruct(
-        data = Y,
-        ordered = ordered
-      )
-    }
-
     fit.y <- estimatePLS_Inner(fit.sim)
 
-    y <- coef(fit.y, use.labels=FALSE)[pars]
-    mvtnorm::dmvnorm(matrix(y, nrow = 1), mean = coef, sigma = vcov, log = TRUE)
+    y <- coef(fit.y, use.labels=FALSE)
+    l <- mvtnorm::dmvnorm(matrix(y[pars], nrow = 1), mean = coef, sigma = vcov, log = TRUE)
+
+    if (length(ordered))
+      attr(l, "thresholds") <- y[thr.pars]
+
+    l
   }
 
   P <- function(x) {
@@ -201,7 +205,13 @@ mcmc_pls <- function(syntax,
     rejections <- numeric(length(blocks))
     acceptances <- numeric(length(blocks))
 
-    samples <- matrix(NA, nrow = iter, ncol = length(x), dimnames = list(NULL, pars))
+    samples <- matrix(
+      NA, nrow = iter, ncol = length(x) + length(thr.pars),
+      dimnames = list(NULL, c(pars, thr.pars))
+    )
+
+    Lx <- NULL
+    Px <- NULL
 
     for (i in seq_len(iter)) {
       mode <- if (i > warmup) "sampling" else "warmup"
@@ -258,8 +268,12 @@ mcmc_pls <- function(syntax,
         q.star <- Q$d(x = x[idx], y = x.star[idx], s = S.star.b, log = TRUE)
         q.x    <- Q$d(x = x.star[idx], y = x[idx], s = S.star.b, log = TRUE)
 
+        # if (is.null(Lx)) Lx <- L(x)
+        # if (is.null(Px)) Px <- P(x) # caching works poorly. Due to sampling error?
+
         Lx <- L(x)
         Px <- P(x)
+
         Lx.star <- L(x.star)
         Px.star <- P(x.star)
 
@@ -278,11 +292,19 @@ mcmc_pls <- function(syntax,
         target <- acceptance.rate(d)
         log.scale[[block]] <- log.scale[[block]] + eta * (as.numeric(accept) - target)
 
-        if (accept)
+        if (accept) {
+          thresholds.x <- attr(Lx.star, "thresholds")
           x[idx] <- x.star[idx]
+
+          Px <- Px.star
+          Lx <- Lx.star
+
+        } else {
+          thresholds.x <- attr(Lx, "thresholds")
+        }
       }
 
-      samples[i,] <- x
+      samples[i,] <- c(x, thresholds.x)
     }
 
     samples

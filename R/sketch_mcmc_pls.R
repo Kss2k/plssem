@@ -7,22 +7,29 @@ mcmc_pls <- function(syntax,
                      data,
                      ...,
                      priors = list(),
-                     Q = list(
-                       r = \(x, s) as.vector(mvtnorm::rmvnorm(n = 1, mean = x, sigma = s)),
-                       d = \(x, y, s, log = TRUE) mvtnorm::dmvnorm(matrix(y, nrow = 1), mean = x, sigma = s, log = log)
-                     ),
                      chains = 1L,
                      iter = 2000,
                      warmup = floor(iter / 2),
-                     N = 20000,
-                     acceptance.rate = \(d) 0.234 + 0.21 / d, # acceptance ratio by the number of dimensions in a block
+                     parallel = "no",
+                     ncores = chains,
+                     iseed = runif(1, min = 100000, max = 999999),
                      sampler = c("Metropolis-Hastings", "Gibbs"),
-                     sample.thresholds = FALSE, # currently too difficult to sample...
+                     verbose = interactive(),
+
                      # capture
                      bootstrap = NULL,
                      consistent = FALSE,
                      mcpls = FALSE,
-                     probit = FALSE) {
+                     probit = FALSE,
+
+                     # Advanced stuff
+                     N = 20000,
+                     sample.thresholds = FALSE, # currently too difficult to sample...
+                     acceptance.rate = \(d) 0.234 + 0.21 / d, # acceptance ratio by the number of dimensions in a block
+                     Q = list(
+                       r = \(x, s) as.vector(mvtnorm::rmvnorm(n = 1, mean = x, sigma = s)),
+                       d = \(x, y, s, log = TRUE) mvtnorm::dmvnorm(matrix(y, nrow = 1), mean = x, sigma = s, log = log)
+                     )) {
 
   sampler <- match.arg(
     tolower(sampler), c("metropolis-hastings", "gibbs")
@@ -187,84 +194,166 @@ mcmc_pls <- function(syntax,
     }
   )
 
-  # Number of adaptation steps for each block
-  adapt.n <- integer(length(blocks))
+  runChain <- function(chain, p = printf) {
+    # Number of adaptation steps for each block
+    adapt.n <- integer(length(blocks))
 
-  rejections <- numeric(length(blocks))
-  acceptances <- numeric(length(blocks))
- 
-  SAMPLES <- matrix(NA, nrow = iter, ncol = length(x), dimnames = list(NULL, pars))
-  for (i in seq_len(iter)) {
-    mode <- if (i > warmup) "sampling" else "warmup"
-    cat(sprintf(
-      "Iter %d/%d, mode: %s, acceptances: %d, rejections: %d, acceptance rate: %.3f, step = %.2g...\n",
-      i, iter, mode, sum(acceptances), sum(rejections),
-      sum(acceptances)/(sum(acceptances)+sum(rejections)),
-      suppressWarnings(mean(scale))
-    ))
+    rejections <- numeric(length(blocks))
+    acceptances <- numeric(length(blocks))
 
-    if (i %% 10 == 0) {
-      # Update S
-      wpct <- warmup / iter
-      n    <- iter - warmup
-      n1   <- floor(i * wpct)
-      n0   <- max(0, n - n1)
-      sub  <- tail(SAMPLES[seq_len(i), , drop = FALSE], n = n1)
+    samples <- matrix(NA, nrow = iter, ncol = length(x), dimnames = list(NULL, pars))
 
-      if (NROW(sub) > 10) {
-        S1 <- stats::cov(sub, use = "complete.obs")
-        S <- ((n0 - 1) * S0 + (n1 * 1) * S1) / (n0 + n1 - 2)
+    for (i in seq_len(iter)) {
+      mode <- if (i > warmup) "sampling" else "warmup"
+
+      if (verbose && (i == 1 || i %% max(1, floor(iter / 10)) == 0)) {
+        w <- nchar(as.character(iter))
+        c <- nchar(as.character(chains))
+
+        fstring <- paste0(
+          "Chain: %", c, "d, ",
+          "iter: %", w, "d/%", w, "d, ",
+          "mode: %8s, ",
+          "acceptance rate: %.3f...\n"
+        )
+       
+        arate <- sum(acceptances)/(sum(acceptances)+sum(rejections))
+        p(sprintf(
+          fstring,
+          chain, i, iter, mode, arate
+        ))
       }
+
+      if (i %% 10 == 0) {
+        # Update S
+        wpct <- warmup / iter
+        n    <- iter - warmup
+        n1   <- floor(i * wpct)
+        n0   <- max(0, n - n1)
+        sub  <- tail(samples[seq_len(i), , drop = FALSE], n = n1)
+
+        if (NROW(sub) > 10) {
+          S1 <- stats::cov(sub, use = "complete.obs")
+          S <- ((n0 - 1) * S0 + (n1 * 1) * S1) / (n0 + n1 - 2)
+        }
+      }
+
+      for (block in seq_along(blocks)) {
+        x.star <- x
+        idx <- blocks[[block]]
+        d <- length(idx) # dimension
+
+        if (d <= 0)
+          next # nothing to do
+
+        # sample proposal
+        scale <- exp(log.scale[[block]])
+        S.star.b <- scale^2 * S[idx, idx, drop = FALSE]
+        x.star[idx] <- Q$r(x = x[idx], s = S.star.b)
+
+        # Constrain by the last iterations lower and upper bounds
+        if (!is.null(upper)) x.star[idx] <- pmin(x.star[idx], upper[idx])
+        if (!is.null(lower)) x.star[idx] <- pmax(x.star[idx], lower[idx])
+
+        q.star <- Q$d(x = x[idx], y = x.star[idx], s = S.star.b, log = TRUE)
+        q.x    <- Q$d(x = x.star[idx], y = x[idx], s = S.star.b, log = TRUE)
+
+        Lx <- L(x)
+        Px <- P(x)
+        Lx.star <- L(x.star)
+        Px.star <- P(x.star)
+
+        a <- min(log(1), (q.x - q.star) + (Lx.star + Px.star) - (Lx + Px)) # q.x/q.star = 1 for symmetric distributions
+        k <- log(runif(1, min = 0, max = 1))
+
+        accept <- k<=a && !is.na(k<=a)
+        rejections[[block]] <- rejections[[block]] + as.integer(!accept)
+        acceptances[[block]] <- acceptances[[block]] + as.integer(accept)
+      
+        adapt.n[[block]] <- adapt.n[[block]] + 1L
+
+        # Robbins-Monro learning rate
+        eta <- 0.5 / (10 + adapt.n[[block]])^0.6
+
+        target <- acceptance.rate(d)
+        log.scale[[block]] <- log.scale[[block]] + eta * (as.numeric(accept) - target)
+
+        if (accept)
+          x[idx] <- x.star[idx]
+      }
+
+      samples[i,] <- x
     }
 
-
-    for (block in seq_along(blocks)) {
-      x.star <- x
-      idx <- blocks[[block]]
-      d <- length(idx) # dimension
-
-      if (d <= 0)
-        next # nothing to do
-
-      # sample proposal
-      scale <- exp(log.scale[[block]])
-      S.star.b <- scale^2 * S[idx, idx, drop = FALSE]
-      x.star[idx] <- Q$r(x = x[idx], s = S.star.b)
-
-      # Constrain by the last iterations lower and upper bounds
-      if (!is.null(upper)) x.star[idx] <- pmin(x.star[idx], upper[idx])
-      if (!is.null(lower)) x.star[idx] <- pmax(x.star[idx], lower[idx])
-
-      q.star <- Q$d(x = x[idx], y = x.star[idx], s = S.star.b, log = TRUE)
-      q.x    <- Q$d(x = x.star[idx], y = x[idx], s = S.star.b, log = TRUE)
-
-      Lx <- L(x)
-      Px <- P(x)
-      Lx.star <- L(x.star)
-      Px.star <- P(x.star)
-
-      a <- min(log(1), (q.x - q.star) + (Lx.star + Px.star) - (Lx + Px)) # q.x/q.star = 1 for symmetric distributions
-      k <- log(runif(1, min = 0, max = 1))
-
-      accept <- k<=a && !is.na(k<=a)
-      rejections[[block]] <- rejections[[block]] + as.integer(!accept)
-      acceptances[[block]] <- acceptances[[block]] + as.integer(accept)
-    
-      adapt.n[[block]] <- adapt.n[[block]] + 1L
-
-      # Robbins-Monro learning rate
-      eta <- 0.5 / (10 + adapt.n[[block]])^0.6
-
-      target <- acceptance.rate(d)
-      log.scale[[block]] <- log.scale[[block]] + eta * (as.numeric(accept) - target)
-
-      if (accept)
-        x[idx] <- x.star[idx]
-    }
-
-    SAMPLES[i,] <- x
+    samples
   }
 
-  # }
-  SAMPLES[(warmup+1):iter,,drop=FALSE]
+  workers <- if (parallel == "no") 1L else ncores
+  if (workers <= 1L) {
+    set.seed(iseed)
+    results <- lapply(seq_len(chains), runChain)
+
+  } else {
+    oldPlan <- future::plan()
+    on.exit(future::plan(oldPlan), add = TRUE)
+
+    if (parallel == "multicore" && .Platform$OS.type == "windows") {
+      pls_msg_warn(paste0(
+        "The `boot.parallel = 'multicore'` option is not supported on Windows.\n",
+        "Falling back to `boot.parallel = 'multisession'`."
+      ))
+      parallel <- "multisession"
+    }
+
+    if (parallel == "multicore") {
+      future::plan(future::multicore, workers = workers)
+    } else {
+      future::plan(future::multisession, workers = workers)
+    }
+
+    if (verbose) {
+      livePrint <- progressr::make_progression_handler(
+        name = "mcmc",
+        reporter = list(
+          update = function(config, state, progression, ...) {
+            if (length(state$message) && nzchar(state$message)) {
+              cat(state$message)
+              flush.console()
+            }
+          }
+        )
+      )
+
+
+      results <- progressr::with_progress({
+        report.every <- max(1L, floor(iter / 10))
+
+        report.iter <- which(
+          seq_len(iter) == 1L |
+          seq_len(iter) %% report.every == 0L
+        )
+
+        p <- progressr::progressor(steps = chains * length(report.iter))
+
+        future.apply::future_lapply(
+          X = seq_len(chains),
+          FUN = \(chain) runChain(chain, p = p),
+          future.seed = iseed,
+          future.packages = "plssem"
+        )
+
+      }, handlers = livePrint, enable = TRUE, delay_stdout = FALSE)
+
+    } else {
+
+      results <- future.apply::future_lapply(
+        X = seq_len(chains),
+        FUN = runChain,
+        future.seed = iseed,
+        future.packages = "plssem"
+      )
+    }
+  }
+
+  results
 }

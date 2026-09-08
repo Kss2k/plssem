@@ -71,11 +71,14 @@ mcmc_pls <- function(syntax,
   data <- modelData(fit0)
   vars <- colnames(data)
 
+  parTableAll <- parameter_estimates(fit0)
   parTable <- getFreeParamsTable(fit0)
+
   parTable$par <- paste0(parTable$lhs, parTable$op, parTable$rhs)
+  parTableAll$par <- paste0(parTableAll$lhs, parTableAll$op, parTableAll$rhs)
 
   pars <- parTable[parTable$is.free, "par"]
-  thr.pars <- parTable[parTable$op == "|", "par"]
+  thr.pars <- parTableAll[parTableAll$op == "|", "par"]
 
   boot.probs <- fit0@boot$boot.probs
   vcov <- vcov(fit0, use.labels = FALSE)[pars, pars, drop = FALSE]

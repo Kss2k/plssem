@@ -243,7 +243,7 @@ mcmc_pls <- function(syntax,
         n    <- iter - warmup
         n1   <- floor(i * wpct)
         n0   <- max(0, n - n1)
-        sub  <- tail(samples[seq_len(i), , drop = FALSE], n = n1)
+        sub  <- tail(samples[seq_len(i), pars, drop = FALSE], n = n1)
 
         if (NROW(sub) > 10) {
           S1 <- stats::cov(sub, use = "complete.obs")

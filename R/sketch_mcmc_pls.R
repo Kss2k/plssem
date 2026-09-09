@@ -21,24 +21,42 @@ mcmc_pls <- function(syntax,
                      consistent = FALSE,
                      mcpls = FALSE,
                      probit = FALSE,
+                     correct.vcov.b = 200,
 
                      # Advanced stuff
                      rng.R = 20,
                      rng.s.start = 0.05,
-                     rng.tune.pct   = 0.1, # spend 10% of the warmup tuning rng sampling
-                     rng.tune.times = 10, # tune it 10 times
+                     rng.tune.pct = 0.1,
+                     rng.acceptance.rate = 0.44,
                      N = 20000,
-                     acceptance.rate = \(d) 0.234 + 0.21 / d, # acceptance ratio by the number of dimensions in a block
+                     acceptance.rate = \(d) 0.234 + 0.21 / d,
                      Q = list(
                        r = \(x, s) as.vector(mvtnorm::rmvnorm(n = 1, mean = x, sigma = s)),
                        d = \(x, y, s, log = TRUE) mvtnorm::dmvnorm(matrix(y, nrow = 1), mean = x, sigma = s, log = log)
                      )) {
 
-  sampler <- match.arg(
-    tolower(sampler), c("metropolis-hastings", "gibbs")
+  sampler <- match.arg(tolower(sampler), c("metropolis-hastings", "gibbs"))
+
+  pls_stopif(
+    length(rng.R) != 1L || !is.finite(rng.R) || rng.R < 2,
+    "`rng.R` must be at least 2!"
+  )
+  pls_stopif(
+    length(rng.s.start) != 1L || !is.finite(rng.s.start) || rng.s.start <= 0,
+    "`rng.s.start` must be positive!"
+  )
+  pls_stopif(
+    length(rng.tune.pct) != 1L || !is.finite(rng.tune.pct) ||
+      rng.tune.pct < 0 || rng.tune.pct > 1,
+    "`rng.tune.pct` must be between 0 and 1!"
+  )
+  pls_stopif(
+    length(rng.acceptance.rate) != 1L || !is.finite(rng.acceptance.rate) ||
+      rng.acceptance.rate <= 0 || rng.acceptance.rate >= 1,
+    "`rng.acceptance.rate` must be between 0 and 1!"
   )
 
-  # have priors been specified in the syntax?
+  # Parse priors specified in the model syntax.
   syntax <- stringr::str_replace_all(syntax, stringr::fixed(PRIOR_OP), PRIOR_OP_ALIAS)
   input <- modsem::modsemify(syntax, parentheses.as.string = TRUE)
   input[input$op == PRIOR_OP_ALIAS, "op"] <- PRIOR_OP
@@ -108,7 +126,7 @@ mcmc_pls <- function(syntax,
       priors[[missing]] <- \(...) 1 # flat prior
   }
 
-  L <- function(x, rng = autoCorrelatedRNG(R = rng.R)) {
+  L <- function(x, rng = autoCorrelatedRNG(R = rng.R), W = 0) {
     fit.sim <- fit0
 
     parTablex <- parTable[c("lhs", "op", "rhs", "est", "is.free")]
@@ -117,42 +135,25 @@ mcmc_pls <- function(syntax,
     N1 <- min(max(1, floor(rng$prop * N)), N)
     N0 <- N - N1
 
-    if (N0 > 0) {
-      sim0 <- simulateDataParTable(
-        parTable = parTablex,
-        N = N,
-        seed = rng$rng0
-      )
+    # Both simulations use the same size so their prefixes remain stable as
+    # rng$prop changes. The PLS estimator is run once on the combined sample.
+    sim0 <- simulateDataParTable(parTable = parTablex, N = N, seed = rng$rng0)
+    sim1 <- simulateDataParTable(parTable = parTablex, N = N, seed = rng$rng1)
 
-      sim.ov0 <- sim0$ov[seq_len(N0),,drop=FALSE]
-    } else {
-      sim.ov0 <- NULL
-    }
-    
-    if (N1 > 0) {
-      sim1 <- simulateDataParTable(
-        parTable = parTablex,
-        N = N,
-        seed = rng$rng1
-      )
-
-      sim.ov1 <- sim1$ov[seq_len(N1),,drop=FALSE]
-    } else {
-      sim.ov1 <- NULL
-    }
-
-    sim.ov <- rbind(sim.ov0, sim.ov1)
+    sim.ov <- rbind(
+      sim0$ov[seq_len(N0), , drop = FALSE],
+      sim1$ov[seq_len(N1), , drop = FALSE]
+    )
 
     if (length(ordered)) {
       thresholdStruct <- thresholdStruct0
 
-      idx0 <- withSeed(sample(NROW(boot.probs), 1), seed = rng$rng0)
-      idx1 <- withSeed(sample(NROW(boot.probs), 1), seed = rng$rng1)
+      idx0 <- withSeed(sample(NROW(boot.probs), 1L), seed = rng$rng0)
+      idx1 <- withSeed(sample(NROW(boot.probs), 1L), seed = rng$rng1)
 
-      probs0 <- boot.probs[idx0,,drop=TRUE]
-      probs1 <- boot.probs[idx1,,drop=TRUE]
+      probs0 <- boot.probs[idx0, , drop = TRUE]
+      probs1 <- boot.probs[idx1, , drop = TRUE]
 
-      # mix
       probs <- (1 - rng$prop) * probs0 + rng$prop * probs1
 
       thresholdStruct@proportions <- probs
@@ -174,15 +175,16 @@ mcmc_pls <- function(syntax,
 
     fit.y <- estimatePLS_Inner(fit.sim)
 
-    y <- coef(fit.y, use.labels=FALSE)
-    l <- mvtnorm::dmvnorm(matrix(y[pars], nrow = 1), mean = coef, sigma = vcov, log = TRUE)
+    y <- coef(fit.y, use.labels = FALSE)
+    l <- mvtnorm::dmvnorm(
+      matrix(y[pars], nrow = 1), mean = coef, sigma = vcov - W, log = TRUE
+    )
 
     attr(l, "y") <- y[pars]
     if (length(ordered))
       attr(l, "thresholds") <- y[thr.pars]
 
     if (N1 >= N0) {
-      # inherited from sim with largest N
       attr(l, "lower") <- sim1$lower
       attr(l, "upper") <- sim1$upper
     } else {
@@ -201,8 +203,22 @@ mcmc_pls <- function(syntax,
     }
     sum(log(p))
   }
+  
+  Y <- matrix(NA_real_, correct.vcov.b, length(pars))
 
-  # for (chain in chains) {
+  pls_msg_note("Correcting for sampling error...")
+  for (b in seq_len(correct.vcov.b)) {
+    rng.b <- autoCorrelatedRNG(R = rng.R)
+    lb <- L(coef, rng = rng.b)
+    Y[b,] <- attr(lb, "y")
+  }
+
+  W <- stats::cov(Y)
+  alpha.W <- safeSubtractCovariance(V = vcov, W = W)$fraction
+
+  acceptProposal <- function(log.ratio)
+    !is.na(log.ratio) && log(stats::runif(1L)) <= min(0, log.ratio)
+
   pls_stopif(warmup >= iter, "warmup must be less than iter!")
   x  <- coef
   S0 <- vcov
@@ -213,10 +229,8 @@ mcmc_pls <- function(syntax,
 
   } else {
     split <- as.data.frame(splitParameterNames(pars))
-    op <- split$op
-
     oblocks <- lapply(ordered, function(ord) {
-      which(split$lhs == ord & op == "|")
+      which(split$lhs == ord & split$op == "|")
     })
 
     mblock <- list(which(split$op == "=~"))
@@ -241,22 +255,18 @@ mcmc_pls <- function(syntax,
       if (d > 0) log(2.38 / sqrt(d)) else NA_real_
     }
   )
+  target.acceptance <- vapply(
+    blocks, \(idx) acceptance.rate(length(idx)), numeric(1L)
+  )
+  target.rng.acceptance <- rng.acceptance.rate
 
   runChain <- function(chain, p = printf) {
-    # Tuning settings
-    tune             <- "block"
-    block.tune.times <- rng.tune.times
-    block.tune.pct   <- 1 - rng.tune.pct
-    block.tune.iters <- max(floor(block.tune.pct * warmup / block.tune.times), 1)
-    rng.tune.iters   <- max(floor(rng.tune.pct * warmup / rng.tune.times), 1)
-    tuned.times      <- 0
-
-    # Number of adaptation steps for each block/rng
-    adapt.n           <- integer(length(blocks))
-    adapt.n.rng       <- 0
-    acceptances.rng   <- numeric(0)
-    acceptances.par   <- numeric(0)
-    log.rng.s         <- log(rng.s.start)
+    # Number of adaptation steps for each parameter block and the RNG state.
+    adapt.n <- integer(length(blocks))
+    adapt.n.rng <- 0L
+    acceptances.rng <- logical(0L)
+    acceptances.par <- logical(0L)
+    log.rng.s <- log(rng.s.start)
 
     samples <- matrix(
       NA, nrow = iter, ncol = length(x) + length(thr.pars),
@@ -264,23 +274,14 @@ mcmc_pls <- function(syntax,
     )
 
     rng <- autoCorrelatedRNG(R = rng.R)
-
-    Lx <- NULL
-    Px <- NULL
+    Lx <- L(x, rng = rng, W = alpha.W * W)
+    Px <- P(x)
+    thresholds.x <- attr(Lx, "thresholds")
 
     for (i in seq_len(iter)) {
       mode <- if (i > warmup) "sampling" else "warmup"
-      tuned.times <- tuned.times + 1
-
-      if (i > warmup) {
-        tune <- "block"
-      } else if (i <= warmup && tune == "block" && tuned.times > block.tune.iters) {
-        tune <- "rng"
-        tuned.times <- 0
-      } else if (i <= warmup && tune == "rng" && tuned.times > rng.tune.iters) {
-        tune <- "block"
-        tuned.times <- 0
-      }
+      tune.rng <- i <= warmup &&
+        floor(i * rng.tune.pct) > floor((i - 1L) * rng.tune.pct)
 
       if (verbose && (i == 1 || i %% max(1, floor(iter / 10)) == 0)) {
         w <- nchar(as.character(iter))
@@ -294,8 +295,8 @@ mcmc_pls <- function(syntax,
           "ar(rng): %.3f...\n"
         )
       
-        acc.rate.par <- recentAcceptance(acceptances.par)
-        acc.rate.rng <- recentAcceptance(acceptances.rng)
+        acc.rate.par <- recentAcceptance(acceptances.par, n = 500)
+        acc.rate.rng <- recentAcceptance(acceptances.rng, n = 250)
 
         p(sprintf(
           fstring,
@@ -303,7 +304,7 @@ mcmc_pls <- function(syntax,
         ))
       }
 
-      if (i %% 10 == 0) {
+      if (i <= warmup && i %% 10 == 0) {
         # Update S
         wpct <- warmup / iter
         n    <- iter - warmup
@@ -317,96 +318,92 @@ mcmc_pls <- function(syntax,
         }
       }
 
-      if (tune == "rng") {
+      if (tune.rng) {
         # Symmetric: Q(rng.star|rng)=Q(rng|rng.star)
         rng.star <- updateAutoCorrelatedRNG(
           rng, rho = (rng$rho + rnorm(1L, sd = exp(log.rng.s))) %% rng$R
         )
 
-        if (is.null(Lx)) Lx <- L(x, rng = rng)
-        Lx.star <- L(x, rng = rng.star)
-
-        a <- min(log(1), Lx.star - Lx)
-        k <- log(runif(1, min = 0, max = 1))
-
-        accept <- k<=a && !is.na(k<=a)
+        Lx.star <- L(x, rng = rng.star, W = alpha.W * W)
+        accept <- acceptProposal(Lx.star - Lx)
         acceptances.rng <- c(acceptances.rng, accept)
-      
-        target <- acceptance.rate(1)
         adapt.n.rng <- adapt.n.rng + 1L
 
         # Robbins-Monro learning rate
         eta <- 0.5 / (10 + adapt.n.rng)^0.6
-        log.rng.s <- log.rng.s + eta * (as.numeric(accept) - target)
+        log.rng.s <- log.rng.s +
+          eta * (as.numeric(accept) - target.rng.acceptance)
+        log.rng.s <- min(log(0.5), max(log(1 / N), log.rng.s))
 
         if (accept) {
           rng <- rng.star
           Lx <- Lx.star
         }
 
-      } else for (block in seq_along(blocks)) {
-        x.star <- x
-        idx <- blocks[[block]]
-        d <- length(idx) # dimension
+      } else {
+        for (block in seq_along(blocks)) {
+          x.star <- x
+          idx <- blocks[[block]]
+          d <- length(idx)
 
-        if (d <= 0)
-          next # nothing to do
+          if (d <= 0)
+            next
 
-        # sample proposal
-        scale <- exp(log.scale[[block]])
-        S.star.b <- scale^2 * S[idx, idx, drop = FALSE]
-        x.star[idx] <- Q$r(x = x[idx], s = S.star.b)
+          scale <- exp(log.scale[[block]])
+          S.star.b <- scale^2 * S[idx, idx, drop = FALSE]
+          x.star[idx] <- Q$r(x = x[idx], s = S.star.b)
 
-        # Symmetric: Q(rng.star|rng)=Q(rng|rng.star)
-        rng.star <- updateAutoCorrelatedRNG(
-          rng, rho = (rng$rho + rnorm(1L, sd = exp(log.rng.s))) %% rng$R
-        )
+          # The wrapped random-walk proposal for rho is symmetric.
+          rng.star <- updateAutoCorrelatedRNG(
+            rng,
+            rho = (rng$rho + rnorm(1L, sd = exp(log.rng.s))) %% rng$R
+          )
 
-        # Evaluate Lx(x*), Lx(x*) automatically truncates x* (if necessary)
-        if (is.null(Lx)) Lx <- L(x, rng = rng)
-        Lx.star <- L(x.star, rng = rng.star)
+          Lx.star <- L(x.star, rng = rng.star, W = alpha.W * W)
 
-        # Lx(x*) automatically truncates x* (if necessary)
-        x.star[idx] <- pmin(x.star[idx], attr(Lx.star, "upper")[idx])
-        x.star[idx] <- pmax(x.star[idx], attr(Lx.star, "lower")[idx])
+          # L() returns the bounds used to constrain the proposed parameters.
+          x.star[idx] <- pmin(x.star[idx], attr(Lx.star, "upper")[idx])
+          x.star[idx] <- pmax(x.star[idx], attr(Lx.star, "lower")[idx])
 
-        q.star <- Q$d(x = x[idx], y = x.star[idx], s = S.star.b, log = TRUE)
-        q.x    <- Q$d(x = x.star[idx], y = x[idx], s = S.star.b, log = TRUE)
+          q.star <- Q$d(
+            x = x[idx], y = x.star[idx], s = S.star.b, log = TRUE
+          )
+          q.x <- Q$d(
+            x = x.star[idx], y = x[idx], s = S.star.b, log = TRUE
+          )
+          Px.star <- P(x.star)
 
-        if (is.null(Px)) Px <- P(x)
-        Px.star <- P(x.star)
+          log.ratio <-
+            (q.x - q.star) + (Lx.star + Px.star) - (Lx + Px)
+          accept <- acceptProposal(log.ratio)
+          acceptances.par <- c(acceptances.par, accept)
 
-        a <- min(log(1), (q.x - q.star) + (Lx.star + Px.star) - (Lx + Px)) # q.x/q.star = 1 for symmetric distributions
-        k <- log(runif(1, min = 0, max = 1))
+          if (i <= warmup) {
+            adapt.n[[block]] <- adapt.n[[block]] + 1L
 
-        accept <- k<=a && !is.na(k<=a)
-        acceptances.par <- c(acceptances.par, accept)
-      
-        if (tune == "block") {
-          target <- acceptance.rate(d)
-          adapt.n[[block]] <- adapt.n[[block]] + 1L
+            # Robbins-Monro learning rate
+            eta <- 0.5 / (10 + adapt.n[[block]])^0.6
+            log.scale[[block]] <- log.scale[[block]] +
+              eta * (as.numeric(accept) - target.acceptance[[block]])
+          }
 
-          # Robbins-Monro learning rate
-          eta <- 0.5 / (10 + adapt.n[[block]])^0.6
-          log.scale[[block]] <- log.scale[[block]] + eta * (as.numeric(accept) - target)
-        }
-
-        if (accept) {
-          thresholds.x <- attr(Lx.star, "thresholds")
-          x[idx] <- x.star[idx]
-
-          Px <- Px.star
-          Lx <- Lx.star
-          rng <- rng.star
-
-        } else {
-          thresholds.x <- attr(Lx, "thresholds")
+          if (accept) {
+            thresholds.x <- attr(Lx.star, "thresholds")
+            x[idx] <- x.star[idx]
+            Px <- Px.star
+            Lx <- Lx.star
+            rng <- rng.star
+          }
         }
       }
 
-      samples[i,] <- c(x, thresholds.x)
+      samples[i, ] <- c(x, thresholds.x)
     }
 
+    attr(samples, "rng.s") <- exp(log.rng.s)
+    attr(samples, "rng.acceptance.rate") <- recentAcceptance(
+      acceptances.rng, n = length(acceptances.rng)
+    )
     samples
   }
 
@@ -556,4 +553,20 @@ recentAcceptance <- function(x, n = 100L) {
     return(NA_real_)
 
   mean(tail(x, min(n, length(x))))
+}
+
+
+safeSubtractCovariance <- function(V, W, tol = 1e-8) {
+  alpha <- 1
+
+  while (alpha > 1e-6) {
+    corrected <- V - alpha * W
+
+    if (!inherits(try(chol(corrected), silent = TRUE), "try-error"))
+      return(list(vcov = corrected, fraction = alpha))
+
+    alpha <- alpha / 2
+  }
+
+  list(vcov = V, fraction = 0)
 }

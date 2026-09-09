@@ -101,6 +101,8 @@ mcmc_pls <- function(syntax,
 
   lower <- NULL
   upper <- NULL
+  Epsilon <- NULL
+  VEpsilon <- 0
 
   L <- function(x) {
     fit.sim <- fit0
@@ -117,8 +119,8 @@ mcmc_pls <- function(syntax,
 
     if (length(ordered)) {
       thresholdStruct <- thresholdStruct0
-      # probs <- boot.probs[sample(NROW(boot.probs), 1),,drop=TRUE]
-      # thresholdStruct@proportions <- probs
+      probs <- boot.probs[sample(NROW(boot.probs), 1),,drop=TRUE]
+      thresholdStruct@proportions <- probs
 
       sim.ov <- ordinalizeDataFrame(
         df = sim.ov, thresholdStruct = thresholdStruct0,
@@ -144,8 +146,9 @@ mcmc_pls <- function(syntax,
     fit.y <- estimatePLS_Inner(fit.sim)
 
     y <- coef(fit.y, use.labels=FALSE)
-    l <- mvtnorm::dmvnorm(matrix(y[pars], nrow = 1), mean = coef, sigma = vcov, log = TRUE)
+    l <- mvtnorm::dmvnorm(matrix(y[pars], nrow = 1), mean = coef, sigma = vcov + VEpsilon, log = TRUE)
 
+    attr(l, "y") <- y[pars]
     if (length(ordered))
       attr(l, "thresholds") <- y[thr.pars]
 
@@ -213,8 +216,8 @@ mcmc_pls <- function(syntax,
       dimnames = list(NULL, c(pars, thr.pars))
     )
 
-    Lx <- NULL
-    Px <- NULL
+    Px.last <- NULL
+    Lx.last <- NULL
 
     for (i in seq_len(iter)) {
       mode <- if (i > warmup) "sampling" else "warmup"
@@ -280,6 +283,15 @@ mcmc_pls <- function(syntax,
         Lx.star <- L(x.star)
         Px.star <- P(x.star)
 
+        if (!is.null(Lx.last)) {
+          y0 <- attr(Lx.last, "y")
+          y1 <- attr(Lx, "y")
+
+          Epsilon <- rbind(Epsilon, y1 - y0)
+          if (NROW(Epsilon) > 10)
+            VEpsilon <- stats::cov(Epsilon, use = "complete.obs")
+        }
+
         a <- min(log(1), (q.x - q.star) + (Lx.star + Px.star) - (Lx + Px)) # q.x/q.star = 1 for symmetric distributions
         k <- log(runif(1, min = 0, max = 1))
 
@@ -299,11 +311,13 @@ mcmc_pls <- function(syntax,
           thresholds.x <- attr(Lx.star, "thresholds")
           x[idx] <- x.star[idx]
 
-          Px <- Px.star
-          Lx <- Lx.star
+          Px.last <- Px.star
+          Lx.last <- Lx.star
 
         } else {
           thresholds.x <- attr(Lx, "thresholds")
+          Px.last <- NULL
+          Lx.last <- NULL
         }
       }
 
@@ -348,7 +362,6 @@ mcmc_pls <- function(syntax,
           }
         )
       )
-
 
       results <- progressr::with_progress({
         report.every <- max(1L, floor(iter / 10))

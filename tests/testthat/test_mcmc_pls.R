@@ -15,14 +15,17 @@ m <- '
 
 if (FALSE) { # don't run on GitHub
   set.seed(23942)
-  fit <- mcmc_pls(m, modsem::oneInt, boot.R = 500, warmup = 2000, iter = 4000, sampler = "Metropolis-Hastings",
-   parallel = "multisession", chains = 2)
-  round(apply(fit, MARGIN = 2, FUN = mean), 3)
-  round(apply(fit, MARGIN = 2, FUN = sd), 3)
+  fit <- mcmc_pls(
+    m, modsem::oneInt, boot.R = 500, warmup = 2000, iter = 4000, sampler = "Metropolis-Hastings",
+    parallel = "multisession", chains = 2
+  )
+
+  round(apply(fit$samples, MARGIN = 2, FUN = mean), 3)
+  round(apply(fit$samples, MARGIN = 2, FUN = sd), 3)
 
 
   fit <- mcmc_pls(m, oneIntOrdered, ordered = colnames(oneIntOrdered),
                   boot.R = 500, warmup = 2000, iter = 4000, sampler = "Metropolis-Hastings")
-  round(apply(fit[[1]], MARGIN = 2, FUN = mean), 3)
-  round(apply(fit[[1]], MARGIN = 2, FUN = sd), 3)
+  round(apply(fit$samples, MARGIN = 2, FUN = mean), 3)
+  round(apply(fit$samples, MARGIN = 2, FUN = sd), 3)
 }

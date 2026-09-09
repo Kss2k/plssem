@@ -23,6 +23,10 @@ mcmc_pls <- function(syntax,
                      probit = FALSE,
 
                      # Advanced stuff
+                     rng.R = 20,
+                     rng.s.start = 0.05,
+                     rng.tune.pct   = 0.1, # spend 10% of the warmup tuning rng sampling
+                     rng.tune.times = 10, # tune it 10 times
                      N = 20000,
                      acceptance.rate = \(d) 0.234 + 0.21 / d, # acceptance ratio by the number of dimensions in a block
                      Q = list(
@@ -71,6 +75,11 @@ mcmc_pls <- function(syntax,
   data <- modelData(fit0)
   vars <- colnames(data)
 
+  pls_stopif(!is.null(attr(data, "cluster")),
+    "Bayesian estimation of Multilevel/Mixed-Effects",
+    "models is not supported (yet)!"
+  )
+
   parTableAll <- parameter_estimates(fit0)
   parTable <- getFreeParamsTable(fit0)
 
@@ -99,45 +108,65 @@ mcmc_pls <- function(syntax,
       priors[[missing]] <- \(...) 1 # flat prior
   }
 
-  lower <- NULL
-  upper <- NULL
-  Epsilon <- NULL
-  VEpsilon <- 0
-
-  L <- function(x) {
+  L <- function(x, rng = autoCorrelatedRNG(R = rng.R)) {
     fit.sim <- fit0
 
     parTablex <- parTable[c("lhs", "op", "rhs", "est", "is.free")]
     parTablex[parTablex$is.free, "est"] <- x
 
-    sim <- simulateDataParTable(
-      parTable = parTablex,
-      N = N
-    )
-   
-    sim.ov <- sim$ov
+    N1 <- min(max(1, floor(rng$prop * N)), N)
+    N0 <- N - N1
+
+    if (N0 > 0) {
+      sim0 <- simulateDataParTable(
+        parTable = parTablex,
+        N = N,
+        seed = rng$rng0
+      )
+
+      sim.ov0 <- sim0$ov[seq_len(N0),,drop=FALSE]
+    } else {
+      sim.ov0 <- NULL
+    }
+    
+    if (N1 > 0) {
+      sim1 <- simulateDataParTable(
+        parTable = parTablex,
+        N = N,
+        seed = rng$rng1
+      )
+
+      sim.ov1 <- sim1$ov[seq_len(N1),,drop=FALSE]
+    } else {
+      sim.ov1 <- NULL
+    }
+
+    sim.ov <- rbind(sim.ov0, sim.ov1)
 
     if (length(ordered)) {
       thresholdStruct <- thresholdStruct0
-      probs <- boot.probs[sample(NROW(boot.probs), 1),,drop=TRUE]
+
+      idx0 <- withSeed(sample(NROW(boot.probs), 1), seed = rng$rng0)
+      idx1 <- withSeed(sample(NROW(boot.probs), 1), seed = rng$rng1)
+
+      probs0 <- boot.probs[idx0,,drop=TRUE]
+      probs1 <- boot.probs[idx1,,drop=TRUE]
+
+      # mix
+      probs <- (1 - rng$prop) * probs0 + rng$prop * probs1
+
       thresholdStruct@proportions <- probs
 
       sim.ov <- ordinalizeDataFrame(
-        df = sim.ov, thresholdStruct = thresholdStruct0,
+        df = sim.ov, thresholdStruct = thresholdStruct,
         return.thr = TRUE
       )
 
       fit.sim@thresholdStruct <- attr(sim.ov, "thresholdStruct")
     }
 
-    lower <<- sim$lower
-    upper <<- sim$upper
-
     Y <- Rfast::standardise(as.matrix(sim.ov[vars]))
     S <- Rfast::cova(Y)
-
-    if (!is.null(sim$cluster))
-      attr(Y, "cluster") <- sim$cluster
 
     # Update observed-data (lowest-order) model input
     modelData(fit.sim)  <- Y
@@ -146,11 +175,20 @@ mcmc_pls <- function(syntax,
     fit.y <- estimatePLS_Inner(fit.sim)
 
     y <- coef(fit.y, use.labels=FALSE)
-    l <- mvtnorm::dmvnorm(matrix(y[pars], nrow = 1), mean = coef, sigma = vcov + VEpsilon, log = TRUE)
+    l <- mvtnorm::dmvnorm(matrix(y[pars], nrow = 1), mean = coef, sigma = vcov, log = TRUE)
 
     attr(l, "y") <- y[pars]
     if (length(ordered))
       attr(l, "thresholds") <- y[thr.pars]
+
+    if (N1 >= N0) {
+      # inherited from sim with largest N
+      attr(l, "lower") <- sim1$lower
+      attr(l, "upper") <- sim1$upper
+    } else {
+      attr(l, "lower") <- sim0$lower
+      attr(l, "upper") <- sim0$upper
+    }
 
     l
   }
@@ -205,22 +243,44 @@ mcmc_pls <- function(syntax,
   )
 
   runChain <- function(chain, p = printf) {
-    # Number of adaptation steps for each block
-    adapt.n <- integer(length(blocks))
+    # Tuning settings
+    tune             <- "block"
+    block.tune.times <- rng.tune.times
+    block.tune.pct   <- 1 - rng.tune.pct
+    block.tune.iters <- max(floor(block.tune.pct * warmup / block.tune.times), 1)
+    rng.tune.iters   <- max(floor(rng.tune.pct * warmup / rng.tune.times), 1)
+    tuned.times      <- 0
 
-    rejections <- numeric(length(blocks))
-    acceptances <- numeric(length(blocks))
+    # Number of adaptation steps for each block/rng
+    adapt.n           <- integer(length(blocks))
+    adapt.n.rng       <- 0
+    acceptances.rng   <- numeric(0)
+    acceptances.par   <- numeric(0)
+    log.rng.s         <- log(rng.s.start)
 
     samples <- matrix(
       NA, nrow = iter, ncol = length(x) + length(thr.pars),
       dimnames = list(NULL, c(pars, thr.pars))
     )
 
-    Px.last <- NULL
-    Lx.last <- NULL
+    rng <- autoCorrelatedRNG(R = rng.R)
+
+    Lx <- NULL
+    Px <- NULL
 
     for (i in seq_len(iter)) {
       mode <- if (i > warmup) "sampling" else "warmup"
+      tuned.times <- tuned.times + 1
+
+      if (i > warmup) {
+        tune <- "block"
+      } else if (i <= warmup && tune == "block" && tuned.times > block.tune.iters) {
+        tune <- "rng"
+        tuned.times <- 0
+      } else if (i <= warmup && tune == "rng" && tuned.times > rng.tune.iters) {
+        tune <- "block"
+        tuned.times <- 0
+      }
 
       if (verbose && (i == 1 || i %% max(1, floor(iter / 10)) == 0)) {
         w <- nchar(as.character(iter))
@@ -230,13 +290,16 @@ mcmc_pls <- function(syntax,
           "Chain: %", c, "d, ",
           "iter: %", w, "d/%", w, "d, ",
           "mode: %8s, ",
-          "acceptance rate: %.3f...\n"
+          "ar(par): %.3f, ",
+          "ar(rng): %.3f...\n"
         )
-       
-        arate <- sum(acceptances)/(sum(acceptances)+sum(rejections))
+      
+        acc.rate.par <- recentAcceptance(acceptances.par)
+        acc.rate.rng <- recentAcceptance(acceptances.rng)
+
         p(sprintf(
           fstring,
-          chain, i, iter, mode, arate
+          chain, i, iter, mode, acc.rate.par, acc.rate.rng
         ))
       }
 
@@ -254,7 +317,34 @@ mcmc_pls <- function(syntax,
         }
       }
 
-      for (block in seq_along(blocks)) {
+      if (tune == "rng") {
+        # Symmetric: Q(rng.star|rng)=Q(rng|rng.star)
+        rng.star <- updateAutoCorrelatedRNG(
+          rng, rho = (rng$rho + rnorm(1L, sd = exp(log.rng.s))) %% rng$R
+        )
+
+        if (is.null(Lx)) Lx <- L(x, rng = rng)
+        Lx.star <- L(x, rng = rng.star)
+
+        a <- min(log(1), Lx.star - Lx)
+        k <- log(runif(1, min = 0, max = 1))
+
+        accept <- k<=a && !is.na(k<=a)
+        acceptances.rng <- c(acceptances.rng, accept)
+      
+        target <- acceptance.rate(1)
+        adapt.n.rng <- adapt.n.rng + 1L
+
+        # Robbins-Monro learning rate
+        eta <- 0.5 / (10 + adapt.n.rng)^0.6
+        log.rng.s <- log.rng.s + eta * (as.numeric(accept) - target)
+
+        if (accept) {
+          rng <- rng.star
+          Lx <- Lx.star
+        }
+
+      } else for (block in seq_along(blocks)) {
         x.star <- x
         idx <- blocks[[block]]
         d <- length(idx) # dimension
@@ -267,57 +357,50 @@ mcmc_pls <- function(syntax,
         S.star.b <- scale^2 * S[idx, idx, drop = FALSE]
         x.star[idx] <- Q$r(x = x[idx], s = S.star.b)
 
-        # Constrain by the last iterations lower and upper bounds
-        if (!is.null(upper)) x.star[idx] <- pmin(x.star[idx], upper[idx])
-        if (!is.null(lower)) x.star[idx] <- pmax(x.star[idx], lower[idx])
+        # Symmetric: Q(rng.star|rng)=Q(rng|rng.star)
+        rng.star <- updateAutoCorrelatedRNG(
+          rng, rho = (rng$rho + rnorm(1L, sd = exp(log.rng.s))) %% rng$R
+        )
+
+        # Evaluate Lx(x*), Lx(x*) automatically truncates x* (if necessary)
+        if (is.null(Lx)) Lx <- L(x, rng = rng)
+        Lx.star <- L(x.star, rng = rng.star)
+
+        # Lx(x*) automatically truncates x* (if necessary)
+        x.star[idx] <- pmin(x.star[idx], attr(Lx.star, "upper")[idx])
+        x.star[idx] <- pmax(x.star[idx], attr(Lx.star, "lower")[idx])
 
         q.star <- Q$d(x = x[idx], y = x.star[idx], s = S.star.b, log = TRUE)
         q.x    <- Q$d(x = x.star[idx], y = x[idx], s = S.star.b, log = TRUE)
 
-        # if (is.null(Lx)) Lx <- L(x)
-        # if (is.null(Px)) Px <- P(x) # caching works poorly. Due to sampling error?
-
-        Lx <- L(x)
-        Px <- P(x)
-
-        Lx.star <- L(x.star)
+        if (is.null(Px)) Px <- P(x)
         Px.star <- P(x.star)
-
-        if (!is.null(Lx.last)) {
-          y0 <- attr(Lx.last, "y")
-          y1 <- attr(Lx, "y")
-
-          Epsilon <- rbind(Epsilon, y1 - y0)
-          if (NROW(Epsilon) > 10)
-            VEpsilon <- stats::cov(Epsilon, use = "complete.obs")
-        }
 
         a <- min(log(1), (q.x - q.star) + (Lx.star + Px.star) - (Lx + Px)) # q.x/q.star = 1 for symmetric distributions
         k <- log(runif(1, min = 0, max = 1))
 
         accept <- k<=a && !is.na(k<=a)
-        rejections[[block]] <- rejections[[block]] + as.integer(!accept)
-        acceptances[[block]] <- acceptances[[block]] + as.integer(accept)
+        acceptances.par <- c(acceptances.par, accept)
       
-        adapt.n[[block]] <- adapt.n[[block]] + 1L
+        if (tune == "block") {
+          target <- acceptance.rate(d)
+          adapt.n[[block]] <- adapt.n[[block]] + 1L
 
-        # Robbins-Monro learning rate
-        eta <- 0.5 / (10 + adapt.n[[block]])^0.6
-
-        target <- acceptance.rate(d)
-        log.scale[[block]] <- log.scale[[block]] + eta * (as.numeric(accept) - target)
+          # Robbins-Monro learning rate
+          eta <- 0.5 / (10 + adapt.n[[block]])^0.6
+          log.scale[[block]] <- log.scale[[block]] + eta * (as.numeric(accept) - target)
+        }
 
         if (accept) {
           thresholds.x <- attr(Lx.star, "thresholds")
           x[idx] <- x.star[idx]
 
-          Px.last <- Px.star
-          Lx.last <- Lx.star
+          Px <- Px.star
+          Lx <- Lx.star
+          rng <- rng.star
 
         } else {
           thresholds.x <- attr(Lx, "thresholds")
-          Px.last <- NULL
-          Lx.last <- NULL
         }
       }
 
@@ -392,6 +475,85 @@ mcmc_pls <- function(syntax,
       )
     }
   }
+  
+  samples <- do.call(
+    rbind, lapply(
+      X = results,
+      FUN = \(samples) samples[(warmup+1):(iter), , drop = FALSE]
+    )
+  )
 
-  results
+  list(
+    fit = fit0,
+    results = results,
+    samples = samples
+  )
+}
+
+
+integerSeeds <- function(n = 1) {
+  floor(runif(n, min = 100000, max = 999999))
+}
+
+
+autoCorrelatedRNG <- function(seed = NULL, rho = 500.5, R = 1000) {
+  rng.seeds <- withSeed(integerSeeds(R), seed = seed)
+
+  updateAutoCorrelatedRNG(list(
+    rng  = rng.seeds,
+    rho  = NULL,
+    idx0 = NULL,
+    idx1 = NULL,
+    prop = NULL,
+    rng0 = NULL,
+    rng1 = NULL,
+    R    = R
+  ), rho = rho)
+}
+
+
+updateAutoCorrelatedRNG <- function(rng, rho = rng$rho) {
+  rho  <- rho %% rng$R
+  base <- floor(rho)
+
+  idx0 <- base + 1L
+  idx1 <- idx0 %% rng$R + 1L
+  prop <- rho - base
+
+  rng$rho  <- rho
+  rng$prop <- prop
+  rng$idx0 <- idx0
+  rng$idx1 <- idx1
+  rng$rng0 <- rng$rng[[idx0]]
+  rng$rng1 <- rng$rng[[idx1]]
+
+  refreshInactiveRNG(rng)
+}
+
+
+refreshInactiveRNG <- function(rng) {
+  inactive <- setdiff(seq_len(rng$R), c(rng$idx0, rng$idx1))
+  rng$rng[inactive] <- integerSeeds(length(inactive))
+  rng
+}
+
+
+withSeed <- function(expr, seed = NULL) {
+  if (!is.null(seed) && exists(".Random.seed")) {
+    .Random.seed.orig <- .Random.seed
+    on.exit(.Random.seed <<- .Random.seed.orig)
+  }
+
+  if (!is.null(seed))
+    set.seed(seed)
+
+  expr
+}
+
+
+recentAcceptance <- function(x, n = 100L) {
+  if (!length(x))
+    return(NA_real_)
+
+  mean(tail(x, min(n, length(x))))
 }

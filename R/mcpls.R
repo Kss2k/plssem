@@ -436,10 +436,9 @@ mcpls <- function(
 }
 
 
-ordinalize <- function(x, probs, tol = 0.001) {
-  probs  <- sort(probs[probs < 1])
-  probs[probs<=tol] <- tol
-  probs <- probs / sum(probs)
+ordinalize <- function(x, probs, zero.tol = 0.001) {
+  probs <- pmin(pmax(probs, zero.tol), 1 - zero.tol)
+  probs <- sort(probs)
 
   breaks <- collapse::fquantile(x, probs = probs)
 

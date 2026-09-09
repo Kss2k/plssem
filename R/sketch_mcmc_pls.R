@@ -6,7 +6,6 @@ PRIOR_OP_ALIAS <- "==" # override this operator, as it's not used for anything
 mcmc_pls <- function(syntax,
                      data,
                      ...,
-                     priors = list(),
                      chains = 1L,
                      iter = 2000,
                      warmup = floor(iter / 2),
@@ -61,22 +60,12 @@ mcmc_pls <- function(syntax,
   input <- modsem::modsemify(syntax, parentheses.as.string = TRUE)
   input[input$op == PRIOR_OP_ALIAS, "op"] <- PRIOR_OP
 
-  inputModel  <- input[input$op != PRIOR_OP, , drop = FALSE]
-  inputPriors <- input[input$op == PRIOR_OP, , drop = FALSE]
+  inputModel   <- input[input$op != PRIOR_OP, , drop = FALSE]
+  inputModel[isFunc(inputModel$mod), "mod"] <- ""
 
-  if (NROW(inputPriors)) {
-    priorsSyntax <- lapply(
-      stats::setNames(
-        paste0("(function(x) x |> ", inputPriors$rhs, ")"),
-        nm = inputPriors$lhs
-      ),
-      FUN = \(expr) eval(parse(text=expr))
-    )
-
-  } else {
-    priorsSyntax <- NULL
-
-  }
+  inputPriors0 <- input[isFunc(input$mod), , drop = FALSE]
+  inputPriors1 <- input[input$op == PRIOR_OP, , drop = FALSE]
+  inputPriors0 <- addReverseCovariancesToParTable(inputPriors0)
 
   fit0 <- pls(
     syntax = parTableToSyntax(inputModel),
@@ -108,22 +97,34 @@ mcmc_pls <- function(syntax,
   thr.pars <- parTableAll[parTableAll$op == "|", "par"]
 
   boot.probs <- fit0@boot$boot.probs
-  vcov <- vcov(fit0, use.labels = FALSE)[pars, pars, drop = FALSE]
-  coef <- coef(fit0, use.labels = FALSE)[pars]
+  vcov0 <- vcov(fit0, use.labels = FALSE)[pars, pars, drop = FALSE]
+  coef0 <- coef(fit0, use.labels = FALSE)[pars]
 
   labs <- stats::setNames(
     names(coef(fit0, use.labels = TRUE)),
     names(coef(fit0, use.labels = FALSE))
   )
 
-  missingPriors <- setdiff(pars, names(priors))
-  for (missing in missingPriors) {
-    lab <- tryCatch(labs[[missing]], error = \(.e) NULL)
+  priorsIndirect <- getPriorFunctions(
+    nm = inputPriors1$lhs, exprs = inputPriors1$rhs
+  )
 
-    if (!is.null(lab) && lab %in% names(priorsSyntax))
-      priors[[missing]] <- priorsSyntax[[lab]]
+  priorsDirect <- getPriorFunctions(
+    nm = getParNamesFromParTable(inputPriors0),
+    exprs = inputPriors0$mod
+  )
+
+  priors <- emptyNamedList(pars)
+
+  for (par in pars) {
+    lab <- tryCatch(labs[[par]], error = \(.e) NULL)
+
+    if (par %in% names(priorsDirect))
+      priors[[par]] <- priorsDirect[[par]]
+    else if (!is.null(lab) && lab %in% names(priorsIndirect))
+      priors[[par]] <- priorsIndirect[[lab]]
     else
-      priors[[missing]] <- \(...) 1 # flat prior
+      priors[[par]] <- Uniform.pInf.nInf # flat prior
   }
 
   L <- function(x, rng = autoCorrelatedRNG(R = rng.R), W = 0) {
@@ -177,7 +178,7 @@ mcmc_pls <- function(syntax,
 
     y <- coef(fit.y, use.labels = FALSE)
     l <- mvtnorm::dmvnorm(
-      matrix(y[pars], nrow = 1), mean = coef, sigma = vcov - W, log = TRUE
+      matrix(y[pars], nrow = 1), mean = coef0, sigma = vcov0 - W, log = TRUE
     )
 
     attr(l, "y") <- y[pars]
@@ -209,19 +210,19 @@ mcmc_pls <- function(syntax,
   pls_msg_note("Correcting for sampling error...")
   for (b in seq_len(correct.vcov.b)) {
     rng.b <- autoCorrelatedRNG(R = rng.R)
-    lb <- L(coef, rng = rng.b)
+    lb <- L(coef0, rng = rng.b)
     Y[b,] <- attr(lb, "y")
   }
 
   W <- stats::cov(Y)
-  alpha.W <- safeSubtractCovariance(V = vcov, W = W)$fraction
+  alpha.W <- safeSubtractCovariance(V = vcov0, W = W)$fraction
 
   acceptProposal <- function(log.ratio)
     !is.na(log.ratio) && log(stats::runif(1L)) <= min(0, log.ratio)
 
   pls_stopif(warmup >= iter, "warmup must be less than iter!")
-  x  <- coef
-  S0 <- vcov
+  x  <- coef0
+  S0 <- vcov0
   S  <- S0
 
   if (sampler == "metropolis-hastings") {
@@ -480,11 +481,43 @@ mcmc_pls <- function(syntax,
     )
   )
 
-  list(
-    fit = fit0,
-    results = results,
-    samples = samples
+  coef1 <- apply(samples, MARGIN = 2, FUN = mean, na.rm = TRUE)
+  vcov1 <- stats::cov(samples, use = "complete.obs")
+
+  parTablex <- parTable[c("lhs", "op", "rhs", "est", "is.free")]
+  parTablex[parTablex$is.free, "est"] <- coef[pars]
+
+  fit0.combined <- combinedModel(fit0)
+
+  fit.out <- updateModelFromFreeParTableMC(
+    parTable        = parTablex,
+    model           = fit0.combined,
+    mc.reps         = N,
+    thresholdStruct = thresholdStruct0,
+    ordered         = ordered,
+    seed            = NULL,
+    clusterSizes    = NULL,
+    clusterName     = NULL,
+    full            = TRUE,
+    retry           = TRUE
   )
+
+  replace <- intersect(pars, fit.out$params$names)
+
+  fit.out@boot$samples <- plssemMatrix(samples)
+  fit.out@boot$boot <- plssemMatrix(samples)
+  fit.out@boot$chains <- results
+  fit.out$boot$vcov[replace, replace] <- vcov1[replace, replace, drop = FALSE]
+
+  fit.out@param$se[replace] <- sqrt(diag(vcov1))[replace]
+
+  fit.out@status$fit0 <- fit0
+
+  fit.out@status$iterations <- iter
+  fit.out@status$warmups <- warmup
+
+  fit.out@parTable <- getParTableEstimates(fit.out)
+  fit.out
 }
 
 
@@ -570,3 +603,30 @@ safeSubtractCovariance <- function(V, W, tol = 1e-8) {
 
   list(vcov = V, fraction = 0)
 }
+
+
+isFunc <- function(exprs) {
+  grepl("[A-z\\._0-9]\\(.*\\)", exprs)
+}
+
+
+getPriorFunctions <- function(nm, exprs) {
+  if (!length(nm) || !length(exprs))
+    return(NULL)
+
+  stats::setNames(lapply(
+    X = exprs,
+    FUN = function(expr) {
+      fexpr <- paste0("(function(x) x |> ", expr, ")")
+      f <- eval(parse(text=fexpr))
+      attr(f, "prior.label") <- expr
+      f
+    }
+  ), nm = nm)
+}
+
+
+Uniform.pInf.nInf <- function(...) {
+  1 # flat prior across all
+}
+attr(Uniform.pInf.nInf, "prior.label") <- "Uniform[-Inf,+Inf]"

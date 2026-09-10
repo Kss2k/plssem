@@ -921,3 +921,11 @@ getMcUpperBounds <- function(par, tol = 1e-3) {
 
   upper
 }
+
+
+getEmpiricalVarParsParTable <- function(parTable, full = hasResidualCovariances(parTable)) {
+  sim <- simulateDataParTable(
+    parTable = parTable, N = 1000, collect.empirical.vpars = TRUE, full = full
+  )
+  names(sim$empirical.vpars)
+}

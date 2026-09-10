@@ -1,38 +1,38 @@
 PRIOR_OP <- ":~"
 
-mcmc_pls <- function(syntax,
-                     data,
-                     ...,
-                     chains = 1L,
-                     iter = 2000,
-                     warmup = floor(iter / 2),
-                     parallel = "no",
-                     ncores = chains,
-                     iseed = runif(1, min = 100000, max = 999999),
-                     sampler = c("Metropolis-Hastings", "Gibbs"),
-                     verbose = interactive(),
+bpls <- function(syntax,
+                 data,
+                 ...,
+                 chains = 1L,
+                 iter = 2000,
+                 warmup = floor(iter / 2),
+                 parallel = "no",
+                 ncores = chains,
+                 iseed = runif(1, min = 100000, max = 999999),
+                 sampler = c("Metropolis-Hastings", "Gibbs"),
+                 verbose = interactive(),
 
-                     warm.start = TRUE,
-                     noise.correction = TRUE,
-                     noise.correction.R = min(max(floor(warmup/4L), 200), 1000),
+                 warm.start = TRUE,
+                 noise.correction = TRUE,
+                 noise.correction.R = min(max(floor(warmup/4L), 200), 1000),
 
-                     # capture
-                     bootstrap = NULL,
-                     consistent = FALSE,
-                     mcpls = NULL,
-                     probit = FALSE,
+                 # capture
+                 bootstrap = NULL,
+                 consistent = FALSE,
+                 mcpls = NULL,
+                 probit = FALSE,
 
-                     # Advanced stuff
-                     rng.R = 20,
-                     rng.s.start = 0.20,
-                     rng.tune.pct = 0.1,
-                     rng.acceptance.rate = 0.44,
-                     N = 20000,
-                     acceptance.rate = \(d) 0.234 + 0.21 / d,
-                     Q = list(
-                       r = \(x, s) as.vector(mvtnorm::rmvnorm(n = 1, mean = x, sigma = s)),
-                       d = \(x, y, s, log = TRUE) mvtnorm::dmvnorm(matrix(y, nrow = 1), mean = x, sigma = s, log = log)
-                     )) {
+                 # Advanced stuff
+                 rng.R = 20,
+                 rng.s.start = 0.4,
+                 rng.tune.pct = 0.1,
+                 rng.acceptance.rate = 0.44,
+                 N = 20000,
+                 acceptance.rate = \(d) 0.234 + 0.21 / d,
+                 Q = list(
+                          r = \(x, s) as.vector(mvtnorm::rmvnorm(n = 1, mean = x, sigma = s)),
+                          d = \(x, y, s, log = TRUE) mvtnorm::dmvnorm(matrix(y, nrow = 1), mean = x, sigma = s, log = log)
+                          )) {
 
   sampler <- match.arg(tolower(sampler), c("metropolis-hastings", "gibbs"))
 
@@ -101,6 +101,11 @@ mcmc_pls <- function(syntax,
   pars <- parTable[parTable$is.free, "par"]
   thr.pars <- parTableAll[parTableAll$op == "|", "par"]
 
+  empirical.vpars <- intersect(
+    getParNamesFromParTable(parTableAll),
+    getEmpiricalVarParsParTable(parTable)
+  )
+
   boot.probs <- fit.mc@boot$boot.probs
   coef0 <- coef(fit0, use.labels = FALSE)[pars]
  
@@ -142,7 +147,7 @@ mcmc_pls <- function(syntax,
     else if (!is.null(lab) && lab %in% names(priorsIndirect))
       priors[[par]] <- priorsIndirect[[lab]]
     else
-      priors[[par]] <- Uniform.pInf.nInf # flat prior
+      priors[[par]] <- \(...) 1 # flat/no prior
   }
 
   L <- function(x, rng = autoCorrelatedRNG(R = rng.R), W = 0) {
@@ -156,8 +161,19 @@ mcmc_pls <- function(syntax,
 
     # Both simulations use the same size so their prefixes remain stable as
     # rng$prop changes. The PLS estimator is run once on the combined sample.
-    sim0 <- simulateDataParTable(parTable = parTablex, N = N, seed = rng$rng0)
-    sim1 <- simulateDataParTable(parTable = parTablex, N = N, seed = rng$rng1)
+    sim0 <- simulateDataParTable(
+      parTable = parTablex,
+      N = N,
+      seed = rng$rng0,
+      collect.empirical.vpars = TRUE
+    )
+
+    sim1 <- simulateDataParTable(
+      parTable = parTablex,
+      N = N,
+      seed = rng$rng1,
+      collect.empirical.vpars = TRUE
+    )
 
     sim.ov <- rbind(
       sim0$ov[seq_len(N0), , drop = FALSE],
@@ -203,6 +219,11 @@ mcmc_pls <- function(syntax,
     if (length(ordered))
       attr(l, "thresholds") <- y[thr.pars]
 
+    vpars0 <- sim0$empirical.vpars[empirical.vpars]
+    vpars1 <- sim1$empirical.vpars[empirical.vpars]
+    vpars  <- (1 - rng$prop) * vpars0 + rng$prop * vpars1
+    attr(l, "empirical.vpars") <- vpars
+
     if (N1 >= N0) {
       attr(l, "lower") <- sim1$lower
       attr(l, "upper") <- sim1$upper
@@ -224,8 +245,6 @@ mcmc_pls <- function(syntax,
   }
 
   if (warm.start) {
-    pls_msg_note("Using naive MAP estimates as warm start...")
-
     objective <- function(x) {
       
       - P(x) - mvtnorm::dmvnorm(
@@ -324,14 +343,16 @@ mcmc_pls <- function(syntax,
     log.rng.s <- log(rng.s.start)
 
     samples <- matrix(
-      NA, nrow = iter, ncol = length(x) + length(thr.pars),
-      dimnames = list(NULL, c(pars, thr.pars))
+      NA, nrow = iter,
+      ncol = length(x) + length(thr.pars) + length(empirical.vpars),
+      dimnames = list(NULL, c(pars, thr.pars, empirical.vpars))
     )
 
     rng <- autoCorrelatedRNG(R = rng.R)
     Lx <- L(x, rng = rng, W = alpha.W * W)
     Px <- P(x)
     thresholds.x <- attr(Lx, "thresholds")
+    empirical.vpars.x <- attr(Lx, "empirical.vpars")
 
     for (i in seq_len(iter)) {
       mode <- if (i > warmup) "sampling" else "warmup"
@@ -444,6 +465,7 @@ mcmc_pls <- function(syntax,
 
           if (accept) {
             thresholds.x <- attr(Lx.star, "thresholds")
+            empirical.vpars.x <- attr(Lx.star, "empirical.vpars")
             x[idx] <- x.star[idx]
             Px <- Px.star
             Lx <- Lx.star
@@ -452,7 +474,7 @@ mcmc_pls <- function(syntax,
         }
       }
 
-      samples[i, ] <- c(x, thresholds.x)
+      samples[i, ] <- c(x, thresholds.x, empirical.vpars.x)
     }
 
     attr(samples, "rng.s") <- exp(log.rng.s)
@@ -560,6 +582,7 @@ mcmc_pls <- function(syntax,
 
   fit.out@boot$samples <- plssemMatrix(samples)
   fit.out@boot$boot <- plssemMatrix(samples)
+  fit.out@info$estimator <- paste0("B", fit.out@info$estimator)
 
   # add samples to bootstrap results
   fit.out@boot$chains.all <- results
@@ -585,7 +608,8 @@ mcmc_pls <- function(syntax,
 
   fit.out@parTable <- addMCMC_DiagnosticsParTable(
     parTable = fit.out@parTable,
-    chains = fit.out@boot$chains.sample
+    chains = fit.out@boot$chains.sample,
+    priors = priors
   )
 
   fit.out
@@ -697,13 +721,14 @@ getPriorFunctions <- function(nm, exprs) {
 }
 
 
-addMCMC_DiagnosticsParTable <- function(parTable, chains) {
+addMCMC_DiagnosticsParTable <- function(parTable, chains, priors = list()) {
   k <- length(chains)
   n <- NROW(chains[[1L]])
 
   cchains <- do.call(cbind, chains)
 
   parTable$rhat <- NA_real_
+  parTable$prior <- NA_character_
   parTable$ess.tail <- NA_real_
   parTable$ess.bulk <- NA_real_
 
@@ -730,9 +755,14 @@ addMCMC_DiagnosticsParTable <- function(parTable, chains) {
     ess.tail.par <- posterior::ess_tail(chains.par)
 
     # non-symmetric P-value (Mplus note: https://www.statmodel.com/download/FAQ-Bootstrap%20-%20Pvalue.pdf)
-    M.par        <- sum(cchain.par, na.rm = TRUE)
+    M.par        <- sum(cchain.par>0, na.rm = TRUE)
     B.par        <- sum(!is.na(cchain.par))
     p.value.par  <- 2 * min(M.par/B.par, 1 - M.par/B.par) # Two-sided (non-symmetric)
+
+    if (par %in% names(priors)) {
+      prior.par <- attr(priors[[par]], "prior.label")
+      parTable[i, "prior"] <- ifelse(is.null(prior.par), NA_character_, prior.par)
+    }
 
     parTable[i, "rhat"] <- rhat.par
     parTable[i, "ess.bulk"] <- ess.bulk.par
@@ -744,14 +774,5 @@ addMCMC_DiagnosticsParTable <- function(parTable, chains) {
     parTable[i, "pvalue"]   <- p.value.par
   }
 
-  pls_msg_warn("Z-stats are not computed correctly for MCMC models (yet)")
-
-
   parTable
 }
-
-
-Uniform.pInf.nInf <- function(...) {
-  1 # flat prior across all
-}
-attr(Uniform.pInf.nInf, "prior.label") <- "Uniform[-Inf,+Inf]"

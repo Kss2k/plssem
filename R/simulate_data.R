@@ -9,7 +9,8 @@ simulateDataParTable <- function(parTable,
                                  clusterName  = NULL,
                                  standardize  = FALSE,
                                  full         = FALSE,
-                                 cut          = FALSE) {
+                                 cut          = FALSE,
+                                 collect.empirical.vpars = FALSE) {
   if (!is.null(seed) && exists(".Random.seed")) .Random.seed.orig <- .Random.seed
   else                                          .Random.seed.orig <- NULL
 
@@ -29,7 +30,7 @@ simulateDataParTable <- function(parTable,
       return(v)
     }
 
-    if (v < 0) {
+   if (v < 0) {
       is.admissible <<- FALSE
       v <- 0
       attr(v, "ok") <- FALSE
@@ -56,6 +57,7 @@ simulateDataParTable <- function(parTable,
   indsLVs <- getIndsLVs(parTable, lVs = lvs)
   ovs     <- getOVs(parTable)
   mixed   <- !is.null(clusterSizes) && !is.null(clusterName)
+  empirical.vpars <- NULL
 
   if (mixed) {
     randeff <- getRandomEffectLabels(parTable)
@@ -106,7 +108,7 @@ simulateDataParTable <- function(parTable,
   # as they are drawn, so each disturbance can be drawn conditional on the
   # prior noise with the specified residual covariances (eta~~eta and xi~~eta).
   # `rescov(v, w)` returns the residual covariance between two nodes
-  if (full) {
+  if (full || collect.empirical.vpars) {
     disturbances <- as.matrix(Xi[, xis, drop = FALSE])
     dnames <- xis
 
@@ -125,7 +127,7 @@ simulateDataParTable <- function(parTable,
     }
   }
 
-  undefIntTerms <- getIntTerms(parTable)
+  undefIntTerms <- intTerms <- getIntTerms(parTable)
   elemsIntTerms <- stringr::str_split(undefIntTerms, pattern = ":")
   names(elemsIntTerms) <- undefIntTerms
 
@@ -210,7 +212,7 @@ simulateDataParTable <- function(parTable,
 
       # Only fall back to `.varguard` when the actual budget isn't positive
       rawMaxvar <- (1 - .varguard) - stats::var(vals.random)
-      maxvar <- if (is.finite(rawMaxvar) && rawMaxvar > 0) rawMaxvar else .varguard
+      maxvar <- !full && if (is.finite(rawMaxvar) && rawMaxvar > 0) rawMaxvar else .varguard
 
       beta.y <- projectBetaOntoConstrainedEllipsoid(
         beta   = beta.x,
@@ -383,7 +385,7 @@ simulateDataParTable <- function(parTable,
 
     vals <- vals + zeta
 
-    if (full) {
+    if (full || collect.empirical.vpars) {
       disturbances <- cbind(disturbances, zeta)
       dnames       <- c(dnames, eta)
     }
@@ -411,14 +413,41 @@ simulateDataParTable <- function(parTable,
       parTable[cond, "upper"] <-  1 - tol
 
       # vals <- lambda * Xi[[lv]] + rnorm(N, mean = 0, sd = sqrt(epsilon))
-      vals <- lambda * Xi[[lv]] + Rfast::Rnorm(N, m = 0, s = sqrt(epsilon), seed = rfast.seed())
+      eps <- Rfast::Rnorm(N, m = 0, s = sqrt(epsilon), seed = rfast.seed())
+      vals <- lambda * Xi[[lv]] + eps
 
       if (standardize)
         vals <- (vals - mean(vals)) / stats::sd(vals)
 
       Inds[[ind]] <- vals
+
+      if (collect.empirical.vpars) {
+        empirical.vpars <- c(
+          empirical.vpars,
+          stats::setNames(epsilon, nm = paste0(ind, "~~", ind))
+        )
+      }
     }
   }
+  
+  if (collect.empirical.vpars) {
+    if (length(intTerms)) {
+      disturbances <- cbind(disturbances, Xi[,intTerms,drop=FALSE])
+      dnames       <- c(dnames, intTerms)
+    }
+   
+    colnames(disturbances) <- dnames
+    Sigma <- Rfast::cova(as.matrix(disturbances), large = TRUE)
+
+    m <- NCOL(disturbances)
+    lhs <- c(matrix(dnames, byrow = TRUE, ncol = m, nrow = m))
+    rhs <- c(matrix(dnames, byrow = FALSE, ncol = m, nrow = m))
+
+    empirical.vpars <- c(
+      empirical.vpars,
+      stats::setNames(Sigma, nm = paste0(lhs, "~~", rhs))
+    )
+  } 
 
   for (lv in mode.b) {
     inds.lv <- indsLVs[[lv]]
@@ -461,7 +490,8 @@ simulateDataParTable <- function(parTable,
     lower         = parTable$lower,
     upper         = parTable$upper,
     parTable      = parTable,
-    cluster       = clusterMat
+    cluster       = clusterMat,
+    empirical.vpars = empirical.vpars
   )
 }
 

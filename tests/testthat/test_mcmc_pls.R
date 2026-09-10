@@ -12,7 +12,7 @@ m <- '
 if (FALSE) { # don't run on GitHub
   set.seed(23942)
   fit <- mcmc_pls(
-    m, modsem::oneInt, boot.R = 500, warmup = 2000, iter = 4000, sampler = "Metropolis-Hastings",
+    m, modsem::oneInt, boot.R = 500, warmup = 200, iter = 400, sampler = "Metropolis-Hastings",
     parallel = "multisession", chains = 2
   )
 

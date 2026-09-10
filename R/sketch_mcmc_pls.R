@@ -570,11 +570,11 @@ mcmc_pls <- function(syntax,
     X = results, FUN = \(X) X[seq_len(warmup), , drop = FALSE]
   )
 
-  fit.out@boot$vcov[] <- NA_real_
-  fit.out@boot$vcov[replace, replace] <- vcov1[replace, replace, drop = FALSE]
+  fit.out@boot$vcov <- vcov1[replace, replace, drop = FALSE]
 
+  names(fit.out@params$se) <- fit.out@params$names
   fit.out@params$se[] <- NA_real_
-  fit.out@param$se[replace] <- sqrt(diag(vcov1))[replace]
+  fit.out@params$se[replace] <- sqrt(diag(vcov1))[replace]
 
   fit.out@status$fit0 <- fit0
 
@@ -701,6 +701,8 @@ addMCMC_DiagnosticsParTable <- function(parTable, chains) {
   k <- length(chains)
   n <- NROW(chains[[1L]])
 
+  cchains <- do.call(cbind, chains)
+
   parTable$rhat <- NA_real_
   parTable$ess.tail <- NA_real_
   parTable$ess.bulk <- NA_real_
@@ -719,15 +721,32 @@ addMCMC_DiagnosticsParTable <- function(parTable, chains) {
     if (k > 1) rhat.par <- posterior::rhat(chains.par)
     else       rhat.par <- NA_real_
 
-    ess.bulk.par <- posterios::ess_bulk(chains.par)
-    ess.tail.par <- posterios::ess_tail(chains.par)
+    cchain.par   <- cchains[,par,drop=TRUE]
+    se.par       <- stats::sd(cchain.par, na.rm = TRUE)
+    z.par        <- parTable[i, "est"] / se.par
+    ci.lower.par <- quantile(cchain.par, probs = 0.025)
+    ci.upper.par <- quantile(cchain.par, probs = 0.975)
+    ess.bulk.par <- posterior::ess_bulk(chains.par)
+    ess.tail.par <- posterior::ess_tail(chains.par)
+
+    # non-symmetric P-value (Mplus note: https://www.statmodel.com/download/FAQ-Bootstrap%20-%20Pvalue.pdf)
+    M.par        <- sum(cchain.par, na.rm = TRUE)
+    B.par        <- sum(!is.na(cchain.par))
+    p.value.par  <- 2 * min(M.par/B.par, 1 - M.par/B.par) # Two-sided (non-symmetric)
 
     parTable[i, "rhat"] <- rhat.par
     parTable[i, "ess.bulk"] <- ess.bulk.par
     parTable[i, "ess.tail"] <- ess.tail.par
+    parTable[i, "se"] <- se.par
+    parTable[i, "z"]  <- 
+    parTable[i, "ci.lower"] <- ci.lower.par
+    parTable[i, "ci.upper"] <- ci.upper.par
+    parTable[i, "pvalue"]   <- p.value.par
   }
 
   pls_msg_warn("Z-stats are not computed correctly for MCMC models (yet)")
+
+
   parTable
 }
 

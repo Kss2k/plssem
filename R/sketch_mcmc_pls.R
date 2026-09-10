@@ -1,7 +1,4 @@
 PRIOR_OP <- ":~"
-PRIOR_OP_ALIAS <- "==" # override this operator, as it's not used for anything
-                       # this can be fixed properly in modsem later
-
 
 mcmc_pls <- function(syntax,
                      data,
@@ -15,16 +12,19 @@ mcmc_pls <- function(syntax,
                      sampler = c("Metropolis-Hastings", "Gibbs"),
                      verbose = interactive(),
 
+                     warm.start = TRUE,
+                     noise.correction = TRUE,
+                     noise.correction.R = min(max(floor(warmup/4L), 200), 1000),
+
                      # capture
                      bootstrap = NULL,
                      consistent = FALSE,
-                     mcpls = FALSE,
+                     mcpls = NULL,
                      probit = FALSE,
-                     correct.vcov.b = 200,
 
                      # Advanced stuff
                      rng.R = 20,
-                     rng.s.start = 0.05,
+                     rng.s.start = 0.20,
                      rng.tune.pct = 0.1,
                      rng.acceptance.rate = 0.44,
                      N = 20000,
@@ -56,9 +56,7 @@ mcmc_pls <- function(syntax,
   )
 
   # Parse priors specified in the model syntax.
-  syntax <- stringr::str_replace_all(syntax, stringr::fixed(PRIOR_OP), PRIOR_OP_ALIAS)
   input <- modsem::modsemify(syntax, parentheses.as.string = TRUE)
-  input[input$op == PRIOR_OP_ALIAS, "op"] <- PRIOR_OP
 
   inputModel   <- input[input$op != PRIOR_OP, , drop = FALSE]
   inputModel[isFunc(inputModel$mod), "mod"] <- ""
@@ -67,15 +65,22 @@ mcmc_pls <- function(syntax,
   inputPriors1 <- input[input$op == PRIOR_OP, , drop = FALSE]
   inputPriors0 <- addReverseCovariancesToParTable(inputPriors0)
 
-  fit0 <- pls(
+
+  fit.mc <- pls(
     syntax = parTableToSyntax(inputModel),
     data   = data,
     bootstrap = TRUE, # neccessary
     consistent = consistent,
-    mcpls = mcpls,
+    mcpls = warm.start,
     probit = probit,
     ...
   )
+
+  if (warm.start) {
+    fit0 <- combinedModel(fit.mc)@status$fit0
+  } else {
+    fit0 <- fit.mc
+  }
 
   ordered <- combinedModel(fit0)@info$ordered
   thresholdStruct0 <- combinedModel(fit0)@thresholdStruct
@@ -87,7 +92,7 @@ mcmc_pls <- function(syntax,
     "models is not supported (yet)!"
   )
 
-  parTableAll <- parameter_estimates(fit0)
+  parTableAll <- getParTableEstimates(fit0)
   parTable <- getFreeParamsTable(fit0)
 
   parTable$par <- paste0(parTable$lhs, parTable$op, parTable$rhs)
@@ -96,9 +101,22 @@ mcmc_pls <- function(syntax,
   pars <- parTable[parTable$is.free, "par"]
   thr.pars <- parTableAll[parTableAll$op == "|", "par"]
 
-  boot.probs <- fit0@boot$boot.probs
-  vcov0 <- vcov(fit0, use.labels = FALSE)[pars, pars, drop = FALSE]
+  boot.probs <- fit.mc@boot$boot.probs
   coef0 <- coef(fit0, use.labels = FALSE)[pars]
+ 
+  if (warm.start) {
+    vcov.mc <- vcov(fit.mc, use.labels = FALSE)
+    vcov0 <- stats::cov(fit.mc@boot$boot, use = "complete.obs")
+
+    vcov.mc <- vcov.mc[pars, pars, drop = FALSE]
+    vcov0 <- vcov0[pars, pars, drop = FALSE]
+
+    coef.mc <- coef(fit.mc, use.labels = FALSE)[pars]
+
+  } else {
+    vcov0 <- vcov(fit0, use.labels = FALSE)
+    vcov0 <- vcov0[pars, pars, drop = FALSE]
+  }
 
   labs <- stats::setNames(
     names(coef(fit0, use.labels = TRUE)),
@@ -204,18 +222,54 @@ mcmc_pls <- function(syntax,
     }
     sum(log(p))
   }
-  
-  Y <- matrix(NA_real_, correct.vcov.b, length(pars))
 
-  pls_msg_note("Correcting for sampling error...")
-  for (b in seq_len(correct.vcov.b)) {
-    rng.b <- autoCorrelatedRNG(R = rng.R)
-    lb <- L(coef0, rng = rng.b)
-    Y[b,] <- attr(lb, "y")
+  if (warm.start) {
+    pls_msg_note("Using naive MAP estimates as warm start...")
+
+    objective <- function(x) {
+      
+      - P(x) - mvtnorm::dmvnorm(
+        matrix(x, nrow = 1),
+        mean = coef.mc,
+        sigma = vcov0,
+        log = TRUE
+      )
+    }
+
+    start <- tryCatch(stats::nlminb(
+        start = coef.mc,
+        objective = objective,
+        control = list(iter.max = 1000, eval.max = 2000)
+      )$par,
+      error = \(e) coef0
+    )
+
+  } else {
+    start <- coef0
   }
 
-  W <- stats::cov(Y)
-  alpha.W <- safeSubtractCovariance(V = vcov0, W = W)$fraction
+  if (noise.correction) {
+    Y <- matrix(NA_real_, noise.correction.R, length(pars))
+
+    pls_msg_note("Correcting for sampling error...")
+    for (b in seq_len(noise.correction.R)) {
+      rng.b <- autoCorrelatedRNG(R = rng.R)
+      lb <- L(coef0, rng = rng.b)
+      Y[b,] <- attr(lb, "y")
+    }
+
+    W <- stats::cov(Y)
+    alpha.W <- safeSubtractCovariance(V = vcov0, W = W)$fraction
+
+    pls_warnif(alpha.W <= 0.01,
+      "Noise correction seems to be unstable..."
+    )
+
+  } else {
+    W <- diag(length(pars))
+    alpha.W <- 0
+
+  }
 
   acceptProposal <- function(log.ratio)
     !is.na(log.ratio) && log(stats::runif(1L)) <= min(0, log.ratio)
@@ -485,7 +539,7 @@ mcmc_pls <- function(syntax,
   vcov1 <- stats::cov(samples, use = "complete.obs")
 
   parTablex <- parTable[c("lhs", "op", "rhs", "est", "is.free")]
-  parTablex[parTablex$is.free, "est"] <- coef[pars]
+  parTablex[parTablex$is.free, "est"] <- coef1[pars]
 
   fit0.combined <- combinedModel(fit0)
 
@@ -502,13 +556,24 @@ mcmc_pls <- function(syntax,
     retry           = TRUE
   )
 
-  replace <- intersect(pars, fit.out$params$names)
+  replace <- intersect(pars, fit.out@params$names)
 
   fit.out@boot$samples <- plssemMatrix(samples)
   fit.out@boot$boot <- plssemMatrix(samples)
-  fit.out@boot$chains <- results
-  fit.out$boot$vcov[replace, replace] <- vcov1[replace, replace, drop = FALSE]
 
+  # add samples to bootstrap results
+  fit.out@boot$chains.all <- results
+  fit.out@boot$chains.sample <- lapply(
+    X = results, FUN = \(X) X[(warmup+1):(iter), , drop = FALSE]
+  )
+  fit.out@boot$chains.warmup <- lapply(
+    X = results, FUN = \(X) X[seq_len(warmup), , drop = FALSE]
+  )
+
+  fit.out@boot$vcov[] <- NA_real_
+  fit.out@boot$vcov[replace, replace] <- vcov1[replace, replace, drop = FALSE]
+
+  fit.out@params$se[] <- NA_real_
   fit.out@param$se[replace] <- sqrt(diag(vcov1))[replace]
 
   fit.out@status$fit0 <- fit0
@@ -517,6 +582,12 @@ mcmc_pls <- function(syntax,
   fit.out@status$warmups <- warmup
 
   fit.out@parTable <- getParTableEstimates(fit.out)
+
+  fit.out@parTable <- addMCMC_DiagnosticsParTable(
+    parTable = fit.out@parTable,
+    chains = fit.out@boot$chains.sample
+  )
+
   fit.out
 }
 
@@ -623,6 +694,41 @@ getPriorFunctions <- function(nm, exprs) {
       f
     }
   ), nm = nm)
+}
+
+
+addMCMC_DiagnosticsParTable <- function(parTable, chains) {
+  k <- length(chains)
+  n <- NROW(chains[[1L]])
+
+  parTable$rhat <- NA_real_
+  parTable$ess.tail <- NA_real_
+  parTable$ess.bulk <- NA_real_
+
+  for (i in seq_len(NROW(parTable))) {
+    row <- parTable[i,,drop=TRUE]
+    par <- paste0(row$lhs, row$op, row$rhs)
+
+    if (!par %in% colnames(chains[[1L]]))
+      next
+
+    chains.par <- do.call(cbind,
+      lapply(chains, FUN = \(chain) chain[,par,drop=FALSE])
+    )
+   
+    if (k > 1) rhat.par <- posterior::rhat(chains.par)
+    else       rhat.par <- NA_real_
+
+    ess.bulk.par <- posterios::ess_bulk(chains.par)
+    ess.tail.par <- posterios::ess_tail(chains.par)
+
+    parTable[i, "rhat"] <- rhat.par
+    parTable[i, "ess.bulk"] <- ess.bulk.par
+    parTable[i, "ess.tail"] <- ess.tail.par
+  }
+
+  pls_msg_warn("Z-stats are not computed correctly for MCMC models (yet)")
+  parTable
 }
 
 

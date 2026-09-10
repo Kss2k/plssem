@@ -352,7 +352,8 @@ mcpls <- function(
     sds[NROW(tail.f) < 10 | !is.finite(sds) | sds <= tol] <- Inf # not reliable
 
     # Bonferroni-adjusted z-score
-    resid.tol <- stats::qnorm(1 - 0.025 / length(p0))
+    p.criterion <- 0.01
+    resid.tol <- stats::qnorm(1 - 0.5 * p.criterion / length(p0))
     bad.resid <- abs(resid.p0) > resid.tol * sds
     bad.pars <- names(resid.p0)[bad.resid]
     max.res  <- max(abs(resid.p0))

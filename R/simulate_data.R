@@ -1,16 +1,19 @@
 simulateDataParTable <- function(parTable,
-                                 N            = 1e5,
-                                 seed         = NULL,
-                                 tol          = 1e-3,
-                                 .cortol      = .95,
-                                 .varguard       = 5 * tol,
-                                 check.hi.ord = FALSE,
-                                 clusterSizes = NULL,
-                                 clusterName  = NULL,
-                                 standardize  = FALSE,
-                                 full         = FALSE,
-                                 cut          = FALSE,
-                                 collect.empirical.vpars = FALSE) {
+                                 N                       = 1e5,
+                                 seed                    = NULL,
+                                 tol                     = 1e-3,
+                                 .cortol                 = .95,
+                                 .varguard               = 5 * tol,
+                                 check.hi.ord            = FALSE,
+                                 clusterSizes            = NULL,
+                                 clusterName             = NULL,
+                                 standardize             = FALSE,
+                                 full                    = FALSE,
+                                 cut                     = FALSE,
+                                 collect.empirical.vpars = FALSE,
+                                 innovations             = NULL,
+                                 return.innovations      = FALSE) {
+
   if (!is.null(seed) && exists(".Random.seed")) .Random.seed.orig <- .Random.seed
   else                                          .Random.seed.orig <- NULL
 
@@ -20,6 +23,41 @@ simulateDataParTable <- function(parTable,
 
   if (!is.null(seed))
     set.seed(seed)
+
+  use.innovations <- return.innovations || !is.null(innovations)
+  supplied.innovations <- !is.null(innovations)
+
+  pls_stopif(supplied.innovations &&
+    (!inherits(innovations, "Innovations") || !innovations$initialized),
+    "`innovations` must be an initialized `Innovations` object!"
+  )
+
+  if (is.null(innovations)) innovations.out <- innovationStruct()
+  else innovations.out <- innovations
+
+  drawInnovations <- function(key, nrow, ncol = 1) {
+
+    if (supplied.innovations) {
+
+      z <- innovations$blocks[[key]]
+
+      pls_stopif(is.null(z),
+        "Innovation block `", key, "` is missing."
+      )
+
+      pls_stopif(NROW(z) != nrow || NCOL(z) != ncol,
+        "Innovation block `", key, "` has incompatible dimensions."
+      )
+
+    } else {
+      if (ncol > 1) z <- matrix(frnorm(nrow * ncol), nrow = nrow, ncol = ncol)
+      else          z <- frnorm(nrow)
+
+      innovations.out$blocks[[key]] <<- z
+    }
+
+    z
+  }
 
   is.admissible <- TRUE
   checkFixVar <- function(v) {
@@ -98,7 +136,10 @@ simulateDataParTable <- function(parTable,
 
   parTable <- res$parTable
 
-  xiDraw <- rmvnSafe(N, res$mat)
+  if (use.innovations) z.xi <- drawInnovations("exogenous", N, length(xis))
+  else z.xi <- NULL
+
+  xiDraw <- rmvnSafe(N, res$mat, innovations = z.xi)
   is.admissible <- is.admissible && xiDraw$is.admissible
 
   Xi <- as.data.frame(Rfast::standardise(xiDraw$x))
@@ -152,7 +193,17 @@ simulateDataParTable <- function(parTable,
 
         parTable <- res$parTable
 
-        uDraw <- rmvnSafe(ncluster, res$mat)
+        if (use.innovations) {
+          z.random <- drawInnovations(
+            key = paste0("random-effects:", eta),
+            nrow = ncluster,
+            ncol = length(randeff.eta)
+          )
+        } else {
+          z.random <- NULL
+        }
+
+        uDraw <- rmvnSafe(ncluster, res$mat, innovations = z.random)
         is.admissible <- is.admissible && uDraw$is.admissible
 
         U <- uDraw$x
@@ -377,10 +428,22 @@ simulateDataParTable <- function(parTable,
         }
       }
 
-      zeta <- cmean + Rfast::Rnorm(N, m = 0, s = sqrt(condvar), seed = rfast.seed())
+      if (use.innovations) {
+        z <- drawInnovations(key = paste0("structural:", eta), nrow = N, ncol = 1)
+      } else {
+        z <- Rfast::Rnorm(N, m = 0, s = 1, seed = rfast.seed())
+      }
+
+      zeta <- cmean + sqrt(condvar) * z
 
     } else {
-      zeta <- Rfast::Rnorm(N, m = 0, s = sqrt(resvar), seed = rfast.seed())
+      if (use.innovations) {
+        z <- drawInnovations(key = paste0("structural:", eta), nrow = N, ncol = 1)
+      } else {
+        z <- Rfast::Rnorm(N, m = 0, s = 1, seed = rfast.seed())
+      }
+
+      zeta <- sqrt(resvar) * z
     }
 
     vals <- vals + zeta
@@ -413,7 +476,13 @@ simulateDataParTable <- function(parTable,
       parTable[cond, "upper"] <-  1 - tol
 
       # vals <- lambda * Xi[[lv]] + rnorm(N, mean = 0, sd = sqrt(epsilon))
-      eps <- Rfast::Rnorm(N, m = 0, s = sqrt(epsilon), seed = rfast.seed())
+      if (use.innovations) {
+        z <- drawInnovations(key = paste0("indicator:", ind), nrow = N, ncol = 1)
+      } else {
+        z <- Rfast::Rnorm(N, m = 0, s = 1, seed = rfast.seed())
+      }
+
+      eps <- sqrt(epsilon) * z
       vals <- lambda * Xi[[lv]] + eps
 
       if (standardize)
@@ -482,6 +551,9 @@ simulateDataParTable <- function(parTable,
   Lv <- All[lvs]
   Ov <- All[ovs]
 
+  if (use.innovations)
+    innovations.out$initialized <- TRUE
+
   list(
     all           = All,
     ov            = Ov,
@@ -491,7 +563,8 @@ simulateDataParTable <- function(parTable,
     upper         = parTable$upper,
     parTable      = parTable,
     cluster       = clusterMat,
-    empirical.vpars = empirical.vpars
+    empirical.vpars = empirical.vpars,
+    innovations   = if (use.innovations) innovations.out else NULL
   )
 }
 
@@ -543,7 +616,7 @@ buildCovMat <- function(vars, parTable, .cortol, unitVariances = FALSE) {
 }
 
 
-rmvnSafe <- function(n, mat) {
+rmvnSafe <- function(n, mat, innovations = NULL) {
   is.admissible <- TRUE
 
   decomp <- tryCatch(
@@ -559,17 +632,66 @@ rmvnSafe <- function(n, mat) {
     }
   )
 
-  x <- mvnfast::rmvn(
-    n  = n,
-    mu = rep(0, NCOL(mat)),
-    sigma = decomp,
-    isChol = TRUE
-  )
+  if (is.null(innovations)) {
+    x <- mvnfast::rmvn(
+      n  = n,
+      mu = rep(0, NCOL(mat)),
+      sigma = decomp,
+      isChol = TRUE
+    )
+
+  } else {
+    pls_stopif(
+      NROW(innovations) != n || NCOL(innovations) != NCOL(mat),
+      "Multivariate-normal innovations have incompatible dimensions."
+    )
+
+    x <- innovations %*% decomp
+  }
 
   list(
     x             = x,
     is.admissible = is.admissible
   )
+}
+
+
+innovationStruct <- function() {
+  out <- list(
+    blocks = list(),
+    initialized = FALSE
+  )
+
+  class(out) <- "Innovations"
+  out 
+}
+
+
+perturbInnovations <- function(innovations, scale) {
+  pls_stopif(
+    !inherits(innovations, "Innovations") || !innovations$initialized,
+    "`innovations` must be an initialized `Innovations` object!"
+  )
+
+  pls_stopif(
+    length(scale) != 1L || !is.finite(scale) || scale <= 0 || scale > 1,
+    "`scale` must be in (0, 1]."
+  )
+
+  persistence <- sqrt(1 - scale^2)
+  out <- innovations
+
+  out$blocks <- lapply(
+    X = out$blocks,
+    FUN = \(X) X * persistence + scale * frnorm(length(X))
+  )
+
+  out
+}
+
+
+frnorm <- function(n, mean = 0, sd = 1) {
+  Rfast::Rnorm(n, m = mean, s = sd, seed = rfast.seed())
 }
 
 

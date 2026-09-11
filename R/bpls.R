@@ -23,8 +23,7 @@ bpls <- function(syntax,
                  probit = FALSE,
 
                  # Advanced stuff
-                 rng.R = 20,
-                 rng.s.start = 0.4,
+                 rng.s.start = 0.20,
                  rng.tune.pct = 0.1,
                  rng.acceptance.rate = 0.44,
                  N = 20000,
@@ -37,12 +36,9 @@ bpls <- function(syntax,
   sampler <- match.arg(tolower(sampler), c("metropolis-hastings", "gibbs"))
 
   pls_stopif(
-    length(rng.R) != 1L || !is.finite(rng.R) || rng.R < 2,
-    "`rng.R` must be at least 2!"
-  )
-  pls_stopif(
-    length(rng.s.start) != 1L || !is.finite(rng.s.start) || rng.s.start <= 0,
-    "`rng.s.start` must be positive!"
+    length(rng.s.start) != 1L || !is.finite(rng.s.start) ||
+      rng.s.start <= 0 || rng.s.start > 1,
+    "`rng.s.start` must be in (0, 1]!"
   )
   pls_stopif(
     length(rng.tune.pct) != 1L || !is.finite(rng.tune.pct) ||
@@ -150,48 +146,33 @@ bpls <- function(syntax,
       priors[[par]] <- \(...) 1 # flat/no prior
   }
 
-  L <- function(x, rng = autoCorrelatedRNG(R = rng.R), W = 0) {
+  L <- function(x, innovations = NULL, W = 0) {
     fit.sim <- fit0
 
     parTablex <- parTable[c("lhs", "op", "rhs", "est", "is.free")]
     parTablex[parTablex$is.free, "est"] <- x
 
-    N1 <- min(max(1, floor(rng$prop * N)), N)
-    N0 <- N - N1
-
-    # Both simulations use the same size so their prefixes remain stable as
-    # rng$prop changes. The PLS estimator is run once on the combined sample.
-    sim0 <- simulateDataParTable(
-      parTable = parTablex,
-      N = N,
-      seed = rng$rng0,
-      collect.empirical.vpars = TRUE
+    sim <- simulateDataParTable(
+      parTable                = parTablex,
+      N                       = N,
+      collect.empirical.vpars = TRUE,
+      innovations             = innovations,
+      return.innovations      = TRUE
     )
 
-    sim1 <- simulateDataParTable(
-      parTable = parTablex,
-      N = N,
-      seed = rng$rng1,
-      collect.empirical.vpars = TRUE
-    )
-
-    sim.ov <- rbind(
-      sim0$ov[seq_len(N0), , drop = FALSE],
-      sim1$ov[seq_len(N1), , drop = FALSE]
-    )
+    sim.ov <- sim$ov
+    innovations <- sim$innovations
 
     if (length(ordered)) {
       thresholdStruct <- thresholdStruct0
 
-      idx0 <- withSeed(sample(NROW(boot.probs), 1L), seed = rng$rng0)
-      idx1 <- withSeed(sample(NROW(boot.probs), 1L), seed = rng$rng1)
+      ordinal.key <- "ordinal-bootstrap"
+      if (is.null(innovations$blocks[[ordinal.key]]))
+        innovations$blocks[[ordinal.key]] <- stats::rnorm(1L)
 
-      probs0 <- boot.probs[idx0, , drop = TRUE]
-      probs1 <- boot.probs[idx1, , drop = TRUE]
-
-      probs <- (1 - rng$prop) * probs0 + rng$prop * probs1
-
-      thresholdStruct@proportions <- probs
+      u <- stats::pnorm(innovations$blocks[[ordinal.key]][[1L]])
+      idx <- min(NROW(boot.probs), floor(u * NROW(boot.probs)) + 1L)
+      thresholdStruct@proportions <- boot.probs[idx, , drop = TRUE]
 
       sim.ov <- ordinalizeDataFrame(
         df = sim.ov, thresholdStruct = thresholdStruct,
@@ -216,21 +197,13 @@ bpls <- function(syntax,
     )
 
     attr(l, "y") <- y[pars]
+    attr(l, "innovations") <- innovations
     if (length(ordered))
       attr(l, "thresholds") <- y[thr.pars]
 
-    vpars0 <- sim0$empirical.vpars[empirical.vpars]
-    vpars1 <- sim1$empirical.vpars[empirical.vpars]
-    vpars  <- (1 - rng$prop) * vpars0 + rng$prop * vpars1
-    attr(l, "empirical.vpars") <- vpars
-
-    if (N1 >= N0) {
-      attr(l, "lower") <- sim1$lower
-      attr(l, "upper") <- sim1$upper
-    } else {
-      attr(l, "lower") <- sim0$lower
-      attr(l, "upper") <- sim0$upper
-    }
+    attr(l, "empirical.vpars") <- sim$empirical.vpars[empirical.vpars]
+    attr(l, "lower") <- sim$lower
+    attr(l, "upper") <- sim$upper
 
     l
   }
@@ -272,8 +245,7 @@ bpls <- function(syntax,
 
     pls_msg_note("Correcting for sampling error...")
     for (b in seq_len(noise.correction.R)) {
-      rng.b <- autoCorrelatedRNG(R = rng.R)
-      lb <- L(coef0, rng = rng.b)
+      lb <- L(coef0)
       Y[b,] <- attr(lb, "y")
     }
 
@@ -348,8 +320,8 @@ bpls <- function(syntax,
       dimnames = list(NULL, c(pars, thr.pars, empirical.vpars))
     )
 
-    rng <- autoCorrelatedRNG(R = rng.R)
-    Lx <- L(x, rng = rng, W = alpha.W * W)
+    Lx <- L(x, W = alpha.W * W)
+    innovations <- attr(Lx, "innovations")
     Px <- P(x)
     thresholds.x <- attr(Lx, "thresholds")
     empirical.vpars.x <- attr(Lx, "empirical.vpars")
@@ -395,12 +367,11 @@ bpls <- function(syntax,
       }
 
       if (tune.rng) {
-        # Symmetric: Q(rng.star|rng)=Q(rng|rng.star)
-        rng.star <- updateAutoCorrelatedRNG(
-          rng, rho = (rng$rho + rnorm(1L, sd = exp(log.rng.s))) %% rng$R
+        innovations.star <- perturbInnovations(
+          innovations, scale = exp(log.rng.s)
         )
 
-        Lx.star <- L(x, rng = rng.star, W = alpha.W * W)
+        Lx.star <- L(x, innovations = innovations.star, W = alpha.W * W)
         accept <- acceptProposal(Lx.star - Lx)
         acceptances.rng <- c(acceptances.rng, accept)
         adapt.n.rng <- adapt.n.rng + 1L
@@ -412,8 +383,10 @@ bpls <- function(syntax,
         log.rng.s <- min(log(0.5), max(log(1 / N), log.rng.s))
 
         if (accept) {
-          rng <- rng.star
+          innovations <- innovations.star
           Lx <- Lx.star
+          thresholds.x <- attr(Lx.star, "thresholds")
+          empirical.vpars.x <- attr(Lx.star, "empirical.vpars")
         }
 
       } else {
@@ -429,13 +402,13 @@ bpls <- function(syntax,
           S.star.b <- scale^2 * S[idx, idx, drop = FALSE]
           x.star[idx] <- Q$r(x = x[idx], s = S.star.b)
 
-          # The wrapped random-walk proposal for rho is symmetric.
-          rng.star <- updateAutoCorrelatedRNG(
-            rng,
-            rho = (rng$rho + rnorm(1L, sd = exp(log.rng.s))) %% rng$R
+          innovations.star <- perturbInnovations(
+            innovations, scale = exp(log.rng.s)
           )
 
-          Lx.star <- L(x.star, rng = rng.star, W = alpha.W * W)
+          Lx.star <- L(
+            x.star, innovations = innovations.star, W = alpha.W * W
+          )
 
           # L() returns the bounds used to constrain the proposed parameters.
           x.star[idx] <- pmin(x.star[idx], attr(Lx.star, "upper")[idx])
@@ -469,7 +442,7 @@ bpls <- function(syntax,
             x[idx] <- x.star[idx]
             Px <- Px.star
             Lx <- Lx.star
-            rng <- rng.star
+            innovations <- innovations.star
           }
         }
       }
@@ -613,66 +586,6 @@ bpls <- function(syntax,
   )
 
   fit.out
-}
-
-
-integerSeeds <- function(n = 1) {
-  floor(runif(n, min = 100000, max = 999999))
-}
-
-
-autoCorrelatedRNG <- function(seed = NULL, rho = 500.5, R = 1000) {
-  rng.seeds <- withSeed(integerSeeds(R), seed = seed)
-
-  updateAutoCorrelatedRNG(list(
-    rng  = rng.seeds,
-    rho  = NULL,
-    idx0 = NULL,
-    idx1 = NULL,
-    prop = NULL,
-    rng0 = NULL,
-    rng1 = NULL,
-    R    = R
-  ), rho = rho)
-}
-
-
-updateAutoCorrelatedRNG <- function(rng, rho = rng$rho) {
-  rho  <- rho %% rng$R
-  base <- floor(rho)
-
-  idx0 <- base + 1L
-  idx1 <- idx0 %% rng$R + 1L
-  prop <- rho - base
-
-  rng$rho  <- rho
-  rng$prop <- prop
-  rng$idx0 <- idx0
-  rng$idx1 <- idx1
-  rng$rng0 <- rng$rng[[idx0]]
-  rng$rng1 <- rng$rng[[idx1]]
-
-  refreshInactiveRNG(rng)
-}
-
-
-refreshInactiveRNG <- function(rng) {
-  inactive <- setdiff(seq_len(rng$R), c(rng$idx0, rng$idx1))
-  rng$rng[inactive] <- integerSeeds(length(inactive))
-  rng
-}
-
-
-withSeed <- function(expr, seed = NULL) {
-  if (!is.null(seed) && exists(".Random.seed")) {
-    .Random.seed.orig <- .Random.seed
-    on.exit(.Random.seed <<- .Random.seed.orig)
-  }
-
-  if (!is.null(seed))
-    set.seed(seed)
-
-  expr
 }
 
 

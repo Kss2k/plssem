@@ -145,12 +145,28 @@ simulateDataParTable <- function(parTable,
   Xi <- as.data.frame(Rfast::standardise(xiDraw$x))
   colnames(Xi) <- xis
 
+  undefIntTerms <- intTerms <- getIntTerms(parTable)
+  elemsIntTerms <- stringr::str_split(undefIntTerms, pattern = ":")
+  names(elemsIntTerms) <- undefIntTerms
+
   # Full mode: track the realised disturbances (including exogenous lvs) and,
   # as they are drawn, so each disturbance can be drawn conditional on the
   # prior noise with the specified residual covariances (eta~~eta and xi~~eta).
   # `rescov(v, w)` returns the residual covariance between two nodes
   if (full || collect.empirical.vpars) {
-    disturbances <- as.matrix(Xi[, xis, drop = FALSE])
+    dnames.all <- unique(c(xis, etas, intTerms))
+
+    if (full) {
+      disturbances <- as.matrix(Xi[, xis, drop = FALSE])
+
+    } else {
+      disturbance.blocks <- stats::setNames(
+        vector("list", length(dnames.all)), dnames.all
+      )
+
+      disturbance.blocks[xis] <- as.list(Xi[, xis, drop = FALSE])
+    }
+
     dnames <- xis
 
     rescovRows <- parTable[
@@ -167,10 +183,6 @@ simulateDataParTable <- function(parTable,
       if (any(idx)) rescovRows$est[which(idx)[1L]] else 0
     }
   }
-
-  undefIntTerms <- intTerms <- getIntTerms(parTable)
-  elemsIntTerms <- stringr::str_split(undefIntTerms, pattern = ":")
-  names(elemsIntTerms) <- undefIntTerms
 
   for (eta in etas) {
 
@@ -428,20 +440,18 @@ simulateDataParTable <- function(parTable,
         }
       }
 
-      if (use.innovations) {
+      if (use.innovations)
         z <- drawInnovations(key = paste0("structural:", eta), nrow = N, ncol = 1)
-      } else {
+      else
         z <- Rfast::Rnorm(N, m = 0, s = 1, seed = rfast.seed())
-      }
 
       zeta <- cmean + sqrt(condvar) * z
 
     } else {
-      if (use.innovations) {
+      if (use.innovations)
         z <- drawInnovations(key = paste0("structural:", eta), nrow = N, ncol = 1)
-      } else {
+      else
         z <- Rfast::Rnorm(N, m = 0, s = 1, seed = rfast.seed())
-      }
 
       zeta <- sqrt(resvar) * z
     }
@@ -449,7 +459,8 @@ simulateDataParTable <- function(parTable,
     vals <- vals + zeta
 
     if (full || collect.empirical.vpars) {
-      disturbances <- cbind(disturbances, zeta)
+      if (full) disturbances <- cbind(disturbances, zeta)
+      else      disturbance.blocks[[eta]] <- zeta
       dnames       <- c(dnames, eta)
     }
 
@@ -476,11 +487,10 @@ simulateDataParTable <- function(parTable,
       parTable[cond, "upper"] <-  1 - tol
 
       # vals <- lambda * Xi[[lv]] + rnorm(N, mean = 0, sd = sqrt(epsilon))
-      if (use.innovations) {
+      if (use.innovations)
         z <- drawInnovations(key = paste0("indicator:", ind), nrow = N, ncol = 1)
-      } else {
+      else
         z <- Rfast::Rnorm(N, m = 0, s = 1, seed = rfast.seed())
-      }
 
       eps <- sqrt(epsilon) * z
       vals <- lambda * Xi[[lv]] + eps
@@ -501,11 +511,15 @@ simulateDataParTable <- function(parTable,
   
   if (collect.empirical.vpars) {
     if (length(intTerms)) {
-      disturbances <- cbind(disturbances, Xi[,intTerms,drop=FALSE])
-      dnames       <- c(dnames, intTerms)
+      if (full) disturbances <- cbind(disturbances, Xi[, intTerms, drop = FALSE])
+      else disturbance.blocks[intTerms] <- as.list(Xi[, intTerms, drop = FALSE])
+
+      dnames <- c(dnames, intTerms)
     }
-   
-    colnames(disturbances) <- dnames
+
+    if (!full)
+      disturbances <- do.call(cbind, disturbance.blocks[dnames])
+
     Sigma <- Rfast::cova(as.matrix(disturbances), large = TRUE)
 
     m <- NCOL(disturbances)

@@ -120,7 +120,7 @@ simulateDataParTable <- function(parTable,
     elemsIntTerms <- compiled.info$elemsIntTerms
   }
 
-  empirical.vpars <- NULL
+  empirical.vpars <- numeric(0L)
 
   if (mixed) {
 
@@ -177,20 +177,8 @@ simulateDataParTable <- function(parTable,
   # as they are drawn, so each disturbance can be drawn conditional on the
   # prior noise with the specified residual covariances (eta~~eta and xi~~eta).
   # `rescov(v, w)` returns the residual covariance between two nodes
-  if (full || collect.empirical.vpars) {
-    dnames.all <- unique(c(xis, etas, intTerms))
-
-    if (full) {
-      disturbances <- as.matrix(Xi[, xis, drop = FALSE])
-
-    } else {
-      disturbance.blocks <- stats::setNames(
-        vector("list", length(dnames.all)), dnames.all
-      )
-
-      disturbance.blocks[xis] <- as.list(Xi[, xis, drop = FALSE])
-    }
-
+  if (full) {
+    disturbances <- as.matrix(Xi[, xis, drop = FALSE])
     dnames <- xis
 
     rescovRows <- parTable[
@@ -482,9 +470,11 @@ simulateDataParTable <- function(parTable,
 
     vals <- vals + zeta
 
-    if (full || collect.empirical.vpars) {
-      if (full) disturbances <- cbind(disturbances, zeta)
-      else      disturbance.blocks[[eta]] <- zeta
+    if (collect.empirical.vpars && !full)
+      empirical.vpars[[paste0(eta, "~~", eta)]] <- resvar
+
+    if (full) {
+      disturbances <- cbind(disturbances, zeta)
       dnames <- c(dnames, eta)
     }
 
@@ -534,27 +524,42 @@ simulateDataParTable <- function(parTable,
   }
   
   if (collect.empirical.vpars) {
-    if (length(intTerms)) {
-      if (full) disturbances <- cbind(disturbances, Xi[, intTerms, drop = FALSE])
-      else disturbance.blocks[intTerms] <- as.list(Xi[, intTerms, drop = FALSE])
+    if (full && length(etas)) {
+      eta.disturbances <- disturbances[, match(etas, dnames), drop = FALSE]
+      eta.variances <- Rfast::colVars(eta.disturbances)
+      names(eta.variances) <- paste0(etas, "~~", etas)
+      empirical.vpars[names(eta.variances)] <- eta.variances
 
-      dnames <- c(dnames, intTerms)
+      rows <- which(
+        rescovRows$lhs %in% dnames &
+        rescovRows$rhs %in% dnames &
+        (rescovRows$lhs %in% etas | rescovRows$rhs %in% etas)
+      )
+
+      if (length(rows)) {
+        values <- vapply(rows, FUN.VALUE = numeric(1L), FUN = \(row) {
+          lhs <- disturbances[, match(rescovRows$lhs[[row]], dnames)]
+          rhs <- disturbances[, match(rescovRows$rhs[[row]], dnames)]
+          stats::cov(lhs, rhs)
+        })
+        names(values) <- paste0(rescovRows$lhs[rows], "~~", rescovRows$rhs[rows])
+        empirical.vpars[names(values)] <- values
+      }
     }
 
-    if (!full)
-      disturbances <- do.call(cbind, disturbance.blocks[dnames])
+    if (length(intTerms)) {
+      X <- as.matrix(Xi[, xis, drop = FALSE])
+      I <- as.matrix(Xi[, intTerms, drop = FALSE])
+      Sigma.ix <- crossprod(I, X) / (N - 1L)
 
-    Sigma <- Rfast::cova(as.matrix(disturbances), large = TRUE)
+      int.names <- rep(intTerms, times = length(xis))
+      xi.names <- rep(xis, each = length(intTerms))
+      values <- c(Sigma.ix)
 
-    m <- NCOL(disturbances)
-    lhs <- c(matrix(dnames, byrow = TRUE, ncol = m, nrow = m))
-    rhs <- c(matrix(dnames, byrow = FALSE, ncol = m, nrow = m))
-
-    empirical.vpars <- c(
-      empirical.vpars,
-      stats::setNames(Sigma, nm = paste0(lhs, "~~", rhs))
-    )
-  } 
+      empirical.vpars[paste0(int.names, "~~", xi.names)] <- values
+      empirical.vpars[paste0(xi.names, "~~", int.names)] <- values
+    }
+  }
 
   for (lv in mode.b) {
     inds.lv <- indsLVs[[lv]]

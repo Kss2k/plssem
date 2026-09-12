@@ -29,9 +29,9 @@ bpls <- function(syntax,
                  N = 20000,
                  acceptance.rate = \(d) 0.234 + 0.21 / d,
                  Q = list(
-                          r = \(x, s) as.vector(mvtnorm::rmvnorm(n = 1, mean = x, sigma = s)),
-                          d = \(x, y, s, log = TRUE) mvtnorm::dmvnorm(matrix(y, nrow = 1), mean = x, sigma = s, log = log)
-                          )) {
+                   r = \(x, s) as.vector(mvtnorm::rmvnorm(n = 1, mean = x, sigma = s)),
+                   d = \(x, y, s, log = TRUE) mvtnorm::dmvnorm(matrix(y, nrow = 1), mean = x, sigma = s, log = log)
+                 )) {
 
   sampler <- match.arg(tolower(sampler), c("metropolis-hastings", "gibbs"))
 
@@ -78,6 +78,7 @@ bpls <- function(syntax,
     fit0 <- fit.mc
   }
 
+  is.hi.ord <- isTRUE(combinedModel(fit0)@info$is.high.ord)
   ordered <- combinedModel(fit0)@info$ordered
   thresholdStruct0 <- combinedModel(fit0)@thresholdStruct
   data <- modelData(fit0)
@@ -146,6 +147,8 @@ bpls <- function(syntax,
       priors[[par]] <- \(...) 1 # flat/no prior
   }
 
+  compiled.info <- NULL
+
   L <- function(x, innovations = NULL, W = 0) {
     fit.sim <- fit0
 
@@ -155,10 +158,15 @@ bpls <- function(syntax,
     sim <- simulateDataParTable(
       parTable                = parTablex,
       N                       = N,
+      check.hi.ord            = is.hi.ord,
       collect.empirical.vpars = TRUE,
       innovations             = innovations,
-      return.innovations      = TRUE
+      return.innovations      = TRUE,
+      compiled.info           = compiled.info
     )
+
+    if (is.null(compiled.info))
+      compiled.info <<- sim$compiled.info
 
     sim.ov <- sim$ov
     innovations <- sim$innovations

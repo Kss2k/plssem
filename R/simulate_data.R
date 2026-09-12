@@ -12,7 +12,8 @@ simulateDataParTable <- function(parTable,
                                  cut                     = FALSE,
                                  collect.empirical.vpars = FALSE,
                                  innovations             = NULL,
-                                 return.innovations      = FALSE) {
+                                 return.innovations      = FALSE,
+                                 compiled.info           = NULL) {
 
   if (!is.null(seed) && exists(".Random.seed")) .Random.seed.orig <- .Random.seed
   else                                          .Random.seed.orig <- NULL
@@ -87,23 +88,50 @@ simulateDataParTable <- function(parTable,
   parTable$upper <- +Inf
 
   # info
-  xis     <- getXis(parTable, isLV = !check.hi.ord)
-  etas    <- getSortedEtas(parTable)
-  mode.a  <- getReflectiveLVs(parTable)
-  mode.b  <- getFormativeLVs(parTable)
-  lvs     <- unique(c(mode.a, mode.b))
-  indsLVs <- getIndsLVs(parTable, lVs = lvs)
-  ovs     <- getOVs(parTable)
-  mixed   <- !is.null(clusterSizes) && !is.null(clusterName)
+  if (is.null(compiled.info)) {
+    xis           <- getXis(parTable, isLV = !check.hi.ord)
+    etas          <- getSortedEtas(parTable)
+    mode.a        <- getReflectiveLVs(parTable)
+    mode.b        <- getFormativeLVs(parTable)
+    lvs           <- unique(c(mode.a, mode.b))
+    indsLVs       <- getIndsLVs(parTable, lVs = lvs)
+    ovs           <- getOVs(parTable)
+    mixed         <- !is.null(clusterSizes) && !is.null(clusterName)
+    randeff       <- NULL
+    intTerms      <- getIntTerms(parTable)
+    undefIntTerms <- intTerms
+    elemsIntTerms <- stats::setNames(
+      stringr::str_split(intTerms, pattern = ":"),
+      nm = intTerms 
+    )
+
+  } else {
+    xis           <- compiled.info$xis
+    etas          <- compiled.info$etas
+    mode.a        <- compiled.info$mode.a
+    mode.b        <- compiled.info$mode.b
+    lvs           <- compiled.info$lvs
+    indsLVs       <- compiled.info$indsLVs
+    ovs           <- compiled.info$ovs
+    mixed         <- compiled.info$mixed
+    randeff       <- compiled.info$randeff
+    intTerms      <- compiled.info$intTerms
+    undefIntTerms <- compiled.info$intTerms
+    elemsIntTerms <- compiled.info$elemsIntTerms
+  }
+
   empirical.vpars <- NULL
 
   if (mixed) {
-    randeff <- getRandomEffectLabels(parTable)
 
-    ovs  <- setdiff(ovs, randeff)
-    lvs  <- setdiff(lvs, randeff)
-    xis  <- setdiff(xis, randeff)
-    etas <- setdiff(etas, randeff)
+    if (is.null(compiled.info)) {
+      randeff <- getRandomEffectLabels(parTable)
+
+      ovs  <- setdiff(ovs, randeff)
+      lvs  <- setdiff(lvs, randeff)
+      xis  <- setdiff(xis, randeff)
+      etas <- setdiff(etas, randeff)
+    }
 
     if (N < sum(clusterSizes)) {
       N <- sum(clusterSizes)
@@ -144,10 +172,6 @@ simulateDataParTable <- function(parTable,
 
   Xi <- as.data.frame(Rfast::standardise(xiDraw$x))
   colnames(Xi) <- xis
-
-  undefIntTerms <- intTerms <- getIntTerms(parTable)
-  elemsIntTerms <- stringr::str_split(undefIntTerms, pattern = ":")
-  names(elemsIntTerms) <- undefIntTerms
 
   # Full mode: track the realised disturbances (including exogenous lvs) and,
   # as they are drawn, so each disturbance can be drawn conditional on the
@@ -461,7 +485,7 @@ simulateDataParTable <- function(parTable,
     if (full || collect.empirical.vpars) {
       if (full) disturbances <- cbind(disturbances, zeta)
       else      disturbance.blocks[[eta]] <- zeta
-      dnames       <- c(dnames, eta)
+      dnames <- c(dnames, eta)
     }
 
     if (standardize)
@@ -568,17 +592,34 @@ simulateDataParTable <- function(parTable,
   if (use.innovations)
     innovations.out$initialized <- TRUE
 
+  if (is.null(compiled.info)) {
+    compiled.info <- list(
+      xis           = xis,  
+      etas          = etas,
+      mode.a        = mode.a,
+      mode.b        = mode.b,
+      lvs           = lvs,
+      indsLVs       = indsLVs,
+      ovs           = ovs,  
+      mixed         = mixed,
+      randeff       = randeff,
+      intTerms      = intTerms,
+      elemsIntTerms = elemsIntTerms
+    )
+  }
+
   list(
-    all           = All,
-    ov            = Ov,
-    lv            = Lv,
-    is.admissible = is.admissible,
-    lower         = parTable$lower,
-    upper         = parTable$upper,
-    parTable      = parTable,
-    cluster       = clusterMat,
+    all             = All,
+    ov              = Ov,
+    lv              = Lv,
+    is.admissible   = is.admissible,
+    lower           = parTable$lower,
+    upper           = parTable$upper,
+    parTable        = parTable,
+    cluster         = clusterMat,
     empirical.vpars = empirical.vpars,
-    innovations   = if (use.innovations) innovations.out else NULL
+    innovations     = if (use.innovations) innovations.out else NULL,
+    compiled.info   = compiled.info
   )
 }
 

@@ -33,6 +33,7 @@ mcpls <- function(
   is.hi.ord <- isTRUE(fit0.combined@info$is.high.ord)
   thresholdStruct0 <- fit0.combined@thresholdStruct
   estimator <- fit0.combined@info$path.estimator
+  compiled.info <- NULL
 
   # Residual-covariance handling:
   #   reduced: Residual covariances are treated as constrained parameters
@@ -84,17 +85,25 @@ mcpls <- function(
     parx
   }
 
+  compiled.info <- NULL
+
   .simulate <- function(p, standardize = FALSE) {
-    simulateDataParTable(
-      parTable     = .parTable(p),
-      N            = mc.reps,
-      seed         = rng.seed,
-      check.hi.ord = is.hi.ord,
-      clusterSizes = clusterSizes,
-      clusterName  = clusterName,
-      standardize  = standardize,
-      full         = use.full.rescov
+    sim <- simulateDataParTable(
+      parTable      = .parTable(p),
+      N             = mc.reps,
+      seed          = rng.seed,
+      check.hi.ord  = is.hi.ord,
+      clusterSizes  = clusterSizes,
+      clusterName   = clusterName,
+      standardize   = standardize,
+      full          = use.full.rescov,
+      compiled.info = compiled.info
     )
+    
+    if (is.null(compiled.info))
+      compiled.info <<- sim$compiled.info
+  
+    sim
   }
 
   .f <- function(p, thresholdStruct = thresholdStruct0, sim = NULL) {
@@ -102,14 +111,18 @@ mcpls <- function(
     if (is.null(sim)) {
       par1[par1$is.free, "est"] <- p
       sim <- simulateDataParTable(
-        parTable     = par1,
-        N            = mc.reps,
-        seed         = rng.seed,
-        check.hi.ord = is.hi.ord,
-        clusterSizes = clusterSizes,
-        clusterName  = clusterName,
-        full         = use.full.rescov
+        parTable      = par1,
+        N             = mc.reps,
+        seed          = rng.seed,
+        check.hi.ord  = is.hi.ord,
+        clusterSizes  = clusterSizes,
+        clusterName   = clusterName,
+        full          = use.full.rescov,
+        compiled.info = compiled.info
       )
+
+      if (is.null(compiled.info))
+        compiled.info <<- sim$compiled.info
     }
 
     sim.ov  <- ordinalizeDataFrame(

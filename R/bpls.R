@@ -69,10 +69,13 @@ bpls <- function(syntax,
   data <- modelData(fit0)
   vars <- colnames(data)
 
-  pls_stopif(!is.null(attr(data, "cluster")),
-    "Bayesian estimation of Multilevel/Mixed-Effects",
-    "models is not supported (yet)!"
-  )
+  if (isMLM(fit0)) {
+    clusterSizes <- as.numeric(table(attr(data, "cluster")))
+    clusterName  <- colnames(attr(data, "cluster"))
+  } else {
+    clusterSizes <- NULL
+    clusterName  <- NULL
+  }
 
   parTableAll <- getParTableEstimates(fit0)
   parTable <- getFreeParamsTable(fit0)
@@ -85,7 +88,9 @@ bpls <- function(syntax,
 
   empirical.vpars <- intersect(
     getParNamesFromParTable(parTableAll),
-    getEmpiricalVarParsParTable(parTable)
+    getEmpiricalVarParsParTable(
+      parTable, clusterSizes = clusterSizes, clusterName = clusterName
+    )
   )
 
   boot.probs <- fit.mc@boot$boot.probs
@@ -144,6 +149,8 @@ bpls <- function(syntax,
       parTable                = parTablex,
       N                       = N,
       check.hi.ord            = is.hi.ord,
+      clusterSizes            = clusterSizes,
+      clusterName             = clusterName,
       collect.empirical.vpars = TRUE,
       innovations             = innovations,
       return.innovations      = TRUE,
@@ -178,6 +185,9 @@ bpls <- function(syntax,
     Y <- Rfast::standardise(as.matrix(sim.ov[vars]))
     S <- Rfast::cova(Y)
 
+    if (!is.null(sim$cluster))
+      attr(Y, "cluster") <- sim$cluster
+
     # Update observed-data (lowest-order) model input
     modelData(fit.sim)  <- Y
     indCorrMatrix(fit.sim) <- S
@@ -195,8 +205,8 @@ bpls <- function(syntax,
       attr(l, "thresholds") <- y[thr.pars]
 
     attr(l, "empirical.vpars") <- sim$empirical.vpars[empirical.vpars]
-    attr(l, "lower") <- sim$lower
-    attr(l, "upper") <- sim$upper
+    attr(l, "lower") <- sim$lower[parTablex$is.free]
+    attr(l, "upper") <- sim$upper[parTablex$is.free]
 
     l
   }
@@ -541,8 +551,8 @@ bpls <- function(syntax,
     thresholdStruct = thresholdStruct0,
     ordered         = ordered,
     seed            = NULL,
-    clusterSizes    = NULL,
-    clusterName     = NULL,
+    clusterSizes    = clusterSizes,
+    clusterName     = clusterName,
     full            = TRUE,
     retry           = TRUE
   )

@@ -936,9 +936,17 @@ getMcUpperBounds <- function(par, tol = 1e-3) {
 }
 
 
-getEmpiricalVarParsParTable <- function(parTable, full = hasResidualCovariances(parTable)) {
+getEmpiricalVarParsParTable <- function(parTable,
+                                        full = hasResidualCovariances(parTable),
+                                        clusterSizes = NULL,
+                                        clusterName = NULL) {
   sim <- simulateDataParTable(
-    parTable = parTable, N = 1000, collect.empirical.vpars = TRUE, full = full
+    parTable = parTable,
+    N = 1000,
+    collect.empirical.vpars = TRUE,
+    full = full,
+    clusterSizes = clusterSizes,
+    clusterName = clusterName
   )
   names(sim$empirical.vpars)
 }

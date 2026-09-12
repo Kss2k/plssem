@@ -287,7 +287,8 @@ simulateDataParTable <- function(parTable,
 
       # Only fall back to `.varguard` when the actual budget isn't positive
       rawMaxvar <- (1 - .varguard) - stats::var(vals.random)
-      maxvar <- !full && if (is.finite(rawMaxvar) && rawMaxvar > 0) rawMaxvar else .varguard
+      if (!full && is.finite(rawMaxvar) && rawMaxvar > 0) maxvar <- rawMaxvar
+      else maxvar <- .varguard
 
       beta.y <- projectBetaOntoConstrainedEllipsoid(
         beta   = beta.x,

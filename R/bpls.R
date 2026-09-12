@@ -11,6 +11,7 @@ bpls <- function(syntax,
                  iseed = runif(1, min = 100000, max = 999999),
                  sampler = c("Metropolis-Hastings", "Gibbs"),
                  verbose = interactive(),
+                 point.estimate = c("median", "mean"),
 
                  warm.start = TRUE,
                  noise.correction = TRUE,
@@ -32,24 +33,8 @@ bpls <- function(syntax,
                    r = \(x, s) as.vector(mvtnorm::rmvnorm(n = 1, mean = x, sigma = s)),
                    d = \(x, y, s, log = TRUE) mvtnorm::dmvnorm(matrix(y, nrow = 1), mean = x, sigma = s, log = log)
                  )) {
-
+  point.estimate <- match.arg(tolower(point.estimate), c("median", "mean"))
   sampler <- match.arg(tolower(sampler), c("metropolis-hastings", "gibbs"))
-
-  pls_stopif(
-    length(rng.s.start) != 1L || !is.finite(rng.s.start) ||
-      rng.s.start <= 0 || rng.s.start > 1,
-    "`rng.s.start` must be in (0, 1]!"
-  )
-  pls_stopif(
-    length(rng.tune.pct) != 1L || !is.finite(rng.tune.pct) ||
-      rng.tune.pct < 0 || rng.tune.pct > 1,
-    "`rng.tune.pct` must be between 0 and 1!"
-  )
-  pls_stopif(
-    length(rng.acceptance.rate) != 1L || !is.finite(rng.acceptance.rate) ||
-      rng.acceptance.rate <= 0 || rng.acceptance.rate >= 1,
-    "`rng.acceptance.rate` must be between 0 and 1!"
-  )
 
   # Parse priors specified in the model syntax.
   input <- modsem::modsemify(syntax, parentheses.as.string = TRUE)
@@ -538,7 +523,10 @@ bpls <- function(syntax,
     )
   )
 
-  coef1 <- apply(samples, MARGIN = 2, FUN = mean, na.rm = TRUE)
+  if (point.estimate == "median") .agg <- stats::median
+  else                            .agg <- mean
+
+  coef1 <- apply(samples, MARGIN = 2, FUN = .agg, na.rm = TRUE)
   vcov1 <- stats::cov(samples, use = "complete.obs")
 
   parTablex <- parTable[c("lhs", "op", "rhs", "est", "is.free")]

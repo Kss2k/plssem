@@ -1,14 +1,127 @@
 PRIOR_OP <- ":~"
 
+#' Bayesian Partial Least Squares Structural Equation Modeling
+#'
+#' Fits a Bayesian PLS-SEM model using a pseudo-marginal Markov chain Monte
+#' Carlo sampler. The estimator is an extension of the MC-PLSc estimator.
+#' Priors can be specified directly for parameters in the model syntax, or
+#' specified on parameter labels with the `:~` operator.
+#'
+#' @param syntax Character string with \code{lavaan}-style model syntax describing
+#'   both measurement (\code{=~}) and structural (\code{~}) relations. Random effects are
+#'   specified with \code{(term | cluster)} statements.
+#'
+#' @param data A \code{data.frame} or coercible object containing the manifest
+#'   indicators referenced in \code{syntax}. Ordered factors are automatically
+#'   detected, but can also be supplied explicitly through \code{ordered}.
+#'
+#' @param ... Additional arguments passed to [pls()], such as `ordered` and
+#'   `boot.R`.
+#'
+#' @param chains Positive integer giving the number of MCMC chains.
+#'
+#' @param iter Positive integer giving the total number of iterations per chain,
+#'   including warmup.
+#'
+#' @param warmup Non-negative integer giving the number of initial iterations
+#'   discarded from each chain.
+#'
+#' @param parallel The type of parallel operation to be used (if any). The
+#'   default is \code{"no"}. \code{"multisession"} runs the chains using multiple
+#'   background \code{R} sessions (works on all platforms), while \code{"multicore"}
+#'   uses forked processes (not available on Windows). \code{"snow"} is kept for
+#'   backwards compatibility and is treated as an alias for \code{"multisession"}.
+#'   Internally this is implemented using the \code{future} package 
+#'
+#' @param ncores Positive integer giving the number of parallel workers.
+#'
+#' @param iseed Integer seed used for the chains
+#'
+#' @param sampler MCMC blocking scheme. `"Metropolis-Hastings"` proposes all
+#'   parameters jointly; `"Gibbs"` uses groups of related parameters as blocks.
+#'
+#' @param verbose Should verbose output be printed?
+#'
+#' @param point.estimate Posterior point estimate used in the returned model.
+#'   Either `"median"` or `"mean"`.
+#'
+#' @param warm.start Logical; use an MC-PLS fit to initialize the sampler and its
+#'   proposal covariance? Defaults to \code{TRUE}.
+#'
+#' @param noise.correction Logical; estimate and correct for Monte Carlo noise in
+#'   the synthetic likelihood?
+#'
+#' @param noise.correction.R Positive integer giving the number of simulations
+#'   used to estimate Monte Carlo noise.
+#'
+#' @param bootstrap Reserved argument. Bootstrap estimation is performed
+#'   internally because it is required to construct the synthetic likelihood.
+#'
+#' @param consistent Logical; request the PLSc consistency correction in the
+#'   underlying PLS fits. Should in general be set to \code{FALSE}.
+#'
+#' @param mcpls Reserved argument; MC-PLS use is controlled by `warm.start`.
+#'
+#' @param probit Logical; use probit factor scores in the underlying PLS fits?
+#'   Should in general be set to \code{FALSE}.
+#'
+#' @param rng.s.start Initial scale used when correlating proposed and current
+#'   simulation innovations. For advanced users.
+#'
+#' @param rng.tune.pct Fraction determining how often the innovation scale is
+#'   tuned during warmup. For advanced users.
+#'
+#' @param rng.acceptance.rate Target acceptance rate for innovation proposals.
+#'   For advanced users.
+#'
+#' @param mc.reps Positive integer giving the simulated sample size used to approximate
+#'   the likelihood.
+#'
+#' @param acceptance.rate Function mapping a proposal-block dimension to its
+#'   target acceptance rate. For advanced users.
+#'
+#' @param Q List with functions `r` and `d` for drawing from and evaluating the
+#'   parameter proposal distribution. For advanced users.
+#'
+#' @return A fitted `PlsModel` object. Posterior draws are available in the
+#'   model's bootstrap results, including retained, warmup, and per-chain draws.
+#'
+#' @seealso [pls()]
+#'
+#' @examples
+#' \dontrun{
+#' m <- '
+#'   X =~ load * x1 + load * x2 + load * x3
+#'   Z =~ load * z1 + load * z2 + load * z3
+#'   Y =~ load * y1 + load * y2 + load * y3
+#' 
+#'   Y ~ "dnorm(.4, .1)" * X +
+#'      "dnorm(.35, .1)" * Z +
+#'      "dnorm(.45, .1)" * X:Z +
+#'      "dnorm(0, .005)" * X:X
+#' 
+#'   load :~ dnorm(.8, .5)
+#' '
+#'
+#' set.seed(23942)
+#' fit <- bpls(
+#'   m, modsem::oneInt, boot.R = 500, warmup = 5000, iter = 10000,
+#'   parallel = "multisession", chains = 2
+#' )
+#'
+#' summary(fit)
+#' }
+#'
+#' @export
 bpls <- function(syntax,
                  data,
                  ...,
                  chains = 1L,
                  iter = 2000,
                  warmup = floor(iter / 2),
-                 parallel = "no",
+                 parallel = c("no", "multicore", "multisession", "snow"),
                  ncores = chains,
-                 iseed = runif(1, min = 100000, max = 999999),
+                 iseed = stats::runif(1, min = 100000, max = 999999),
                  sampler = c("Metropolis-Hastings", "Gibbs"),
                  verbose = interactive(),
                  point.estimate = c("median", "mean"),
@@ -27,12 +140,16 @@ bpls <- function(syntax,
                  rng.s.start = 0.20,
                  rng.tune.pct = 0.1,
                  rng.acceptance.rate = 0.44,
-                 N = 20000,
+                 mc.reps = 20000,
                  acceptance.rate = \(d) 0.234 + 0.21 / d,
                  Q = list(
-                   r = \(x, s) as.vector(mvtnorm::rmvnorm(n = 1, mean = x, sigma = s)),
-                   d = \(x, y, s, log = TRUE) mvtnorm::dmvnorm(matrix(y, nrow = 1), mean = x, sigma = s, log = log)
+                   r = \(x, s) as.vector(mvnfast::rmvn(n = 1, mu = x, sigma = s)),
+                   d = \(x, y, s, log = TRUE) mvnfast::dmvn(matrix(y, nrow = 1), mu = x, sigma = s, log = log)
                  )) {
+  # Check arguments
+  if (is.null(parallel)) parallel <- "no"
+  parallel <- match.arg(parallel, c("no", "multicore", "multisession", "snow"))
+  if (parallel == "snow") parallel <- "multisession"
   point.estimate <- match.arg(tolower(point.estimate), c("median", "mean"))
   sampler <- match.arg(tolower(sampler), c("metropolis-hastings", "gibbs"))
 
@@ -147,7 +264,7 @@ bpls <- function(syntax,
 
     sim <- simulateDataParTable(
       parTable                = parTablex,
-      N                       = N,
+      N                       = mc.reps,
       check.hi.ord            = is.hi.ord,
       clusterSizes            = clusterSizes,
       clusterName             = clusterName,
@@ -195,8 +312,8 @@ bpls <- function(syntax,
     fit.y <- estimatePLS_Inner(fit.sim)
 
     y <- coef(fit.y, use.labels = FALSE)
-    l <- mvtnorm::dmvnorm(
-      matrix(y[pars], nrow = 1), mean = coef0, sigma = vcov0 - W, log = TRUE
+    l <- mvnfast::dmvn(
+      matrix(y[pars], nrow = 1), mu = coef0, sigma = vcov0 - W, log = TRUE
     )
 
     attr(l, "y") <- y[pars]
@@ -223,9 +340,9 @@ bpls <- function(syntax,
   if (warm.start) {
     objective <- function(x) {
       
-      - P(x) - mvtnorm::dmvnorm(
+      - P(x) - mvnfast::dmvn(
         matrix(x, nrow = 1),
-        mean = coef.mc,
+        mu = coef.mc,
         sigma = vcov0,
         log = TRUE
       )
@@ -269,8 +386,8 @@ bpls <- function(syntax,
     !is.na(log.ratio) && log(stats::runif(1L)) <= min(0, log.ratio)
 
   pls_stopif(warmup >= iter, "warmup must be less than iter!")
-  x  <- coef0
-  S0 <- vcov0
+  x  <- start
+  S0 <- if (warm.start) vcov.mc else vcov0
   S  <- S0
 
   if (sampler == "metropolis-hastings") {
@@ -291,7 +408,6 @@ bpls <- function(syntax,
 
     blocks <- c(oblocks, mblock, pblock, cblock)
   }
-
 
   # One log proposal-SD multiplier per block
   # If S is already a reasonable estimate of the target covariance,
@@ -361,7 +477,7 @@ bpls <- function(syntax,
         n    <- iter - warmup
         n1   <- floor(i * wpct)
         n0   <- max(0, n - n1)
-        sub  <- tail(samples[seq_len(i), pars, drop = FALSE], n = n1)
+        sub  <- utils::tail(samples[seq_len(i), pars, drop = FALSE], n = n1)
 
         if (NROW(sub) > 10) {
           S1 <- stats::cov(sub, use = "complete.obs")
@@ -383,7 +499,7 @@ bpls <- function(syntax,
         eta <- 0.5 / (10 + adapt.n.rng)^0.6
         log.rng.s <- log.rng.s +
           eta * (as.numeric(accept) - target.rng.acceptance)
-        log.rng.s <- min(log(0.5), max(log(1 / N), log.rng.s))
+        log.rng.s <- min(log(0.5), max(log(1 / mc.reps), log.rng.s))
 
         if (accept) {
           innovations <- innovations.star
@@ -414,19 +530,16 @@ bpls <- function(syntax,
           )
 
           # L() returns the bounds used to constrain the proposed parameters.
+          # L() has already constrained the parameters when evaluation the
+          # log likelihood. So we should constrain our parameters as well
           x.star[idx] <- pmin(x.star[idx], attr(Lx.star, "upper")[idx])
           x.star[idx] <- pmax(x.star[idx], attr(Lx.star, "lower")[idx])
 
-          q.star <- Q$d(
-            x = x[idx], y = x.star[idx], s = S.star.b, log = TRUE
-          )
-          q.x <- Q$d(
-            x = x.star[idx], y = x[idx], s = S.star.b, log = TRUE
-          )
+          q.star <- Q$d(x = x[idx], y = x.star[idx], s = S.star.b, log = TRUE)
+          q.x <- Q$d(x = x.star[idx], y = x[idx], s = S.star.b, log = TRUE)
           Px.star <- P(x.star)
 
-          log.ratio <-
-            (q.x - q.star) + (Lx.star + Px.star) - (Lx + Px)
+          log.ratio <- (q.x - q.star) + (Lx.star + Px.star) - (Lx + Px)
           accept <- acceptProposal(log.ratio)
           acceptances.par <- c(acceptances.par, accept)
 
@@ -490,7 +603,7 @@ bpls <- function(syntax,
           update = function(config, state, progression, ...) {
             if (length(state$message) && nzchar(state$message)) {
               cat(state$message)
-              flush.console()
+              utils::flush.console()
             }
           }
         )
@@ -547,7 +660,7 @@ bpls <- function(syntax,
   fit.out <- updateModelFromFreeParTableMC(
     parTable        = parTablex,
     model           = fit0.combined,
-    mc.reps         = N,
+    mc.reps         = mc.reps,
     thresholdStruct = thresholdStruct0,
     ordered         = ordered,
     seed            = NULL,
@@ -599,7 +712,7 @@ recentAcceptance <- function(x, n = 100L) {
   if (!length(x))
     return(NA_real_)
 
-  mean(tail(x, min(n, length(x))))
+  mean(utils::tail(x, min(n, length(x))))
 }
 
 
@@ -668,8 +781,8 @@ addMCMC_DiagnosticsParTable <- function(parTable, chains, priors = list()) {
     cchain.par   <- cchains[,par,drop=TRUE]
     se.par       <- stats::sd(cchain.par, na.rm = TRUE)
     z.par        <- parTable[i, "est"] / se.par
-    ci.lower.par <- quantile(cchain.par, probs = 0.025)
-    ci.upper.par <- quantile(cchain.par, probs = 0.975)
+    ci.lower.par <- stats::quantile(cchain.par, probs = 0.025)
+    ci.upper.par <- stats::quantile(cchain.par, probs = 0.975)
     ess.bulk.par <- posterior::ess_bulk(chains.par)
     ess.tail.par <- posterior::ess_tail(chains.par)
 
@@ -687,7 +800,7 @@ addMCMC_DiagnosticsParTable <- function(parTable, chains, priors = list()) {
     parTable[i, "ess.bulk"] <- ess.bulk.par
     parTable[i, "ess.tail"] <- ess.tail.par
     parTable[i, "se"] <- se.par
-    parTable[i, "z"]  <- 
+    parTable[i, "z"]  <- z.par
     parTable[i, "ci.lower"] <- ci.lower.par
     parTable[i, "ci.upper"] <- ci.upper.par
     parTable[i, "pvalue"]   <- p.value.par

@@ -1,12 +1,16 @@
 devtools::load_all()
 
 m <- '
-  X =~ l * x1 + l * x2 + l * x3
-  Z =~ l * z1 + l * z2 + l * z3
-  Y =~ l * y1 + l * y2 + l * y3
+  X =~ load * x1 + load * x2 + load * x3
+  Z =~ load * z1 + load * z2 + load * z3
+  Y =~ load * y1 + load * y2 + load * y3
 
-  Y ~ "dnorm(.4, .1)" * X + "dnorm(.35, .1)" * Z + "dnorm(.45, .1)" * X:Z + "dnorm(0, .005)" * X:X
-  l :~ dnorm(.8, .3)
+  Y ~ "dnorm(.4, .1)" * X +
+     "dnorm(.35, .1)" * Z +
+     "dnorm(.45, .1)" * X:Z +
+     "dnorm(0, .005)" * X:X
+
+  load :~ dnorm(.8, .5)
 '
 
 if (FALSE) { # don't run on GitHub

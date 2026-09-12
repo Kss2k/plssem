@@ -11,7 +11,8 @@ The goal of the [`plssem`](https://kss2k.github.io/plssem/) package is to allow 
 estimation of complex Structural Equation Models (SEMs) using the
 PLS-SEM framework. This package expands the PLS-SEM (and PLSc-SEM) framework
 to handle categorical data, non-linear models, and multilevel structures, using
-[Monte-Carlo Consistent Partial Least Squares Structural Equation Modelling (MC-PLSc-SEM)](https://osf.io/preprints/psyarxiv/fwzj6_v1)
+[Monte-Carlo Consistent Partial Least Squares Structural Equation Modelling (MC-PLSc-SEM)](https://osf.io/preprints/psyarxiv/fwzj6_v1).
+The `bpls()` function implements a Bayesian extension of the MC-PLSc estimator.
 
 [`plssem`](https://kss2k.github.io/plssem/) is currently under development. The end goal is to allow the consistent estimation
 of non-linear multilevel SEMs with ordinal and categorical data, using the MC-PLSc-SEM framework.
@@ -163,6 +164,36 @@ syntax <- "
   W ~ X + Z + X:Z + (1 + X + Z + X:Z | cluster)
 "
 
-fit <- pls(m, randomSlopes, bootstrap = TRUE)
+fit <- pls(syntax, randomSlopes, bootstrap = TRUE)
+summary(fit)
+```
+
+### Bayesian Interaction Model with Ordered Data
+
+```r
+m <- '
+  X =~ load * x1 + load * x2 + load * x3
+  Z =~ load * z1 + load * z2 + load * z3
+  Y =~ load * y1 + load * y2 + load * y3
+
+  Y ~ "dnorm(.4, .1)" * X +
+     "dnorm(.35, .1)" * Z +
+     "dnorm(.45, .1)" * X:Z +
+     "dnorm(0, .005)" * X:X
+
+  load :~ dnorm(.8, .5)
+'
+
+fit <- bpls(
+  m,
+  oneIntOrdered,
+  ordered = colnames(oneIntOrdered),
+  boot.R = 5000,
+  warmup = 5000,
+  iter = 10000,
+  parallel = "multisession",
+  chains = 3,
+  iseed = 23942
+)
 summary(fit)
 ```

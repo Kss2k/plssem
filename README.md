@@ -184,8 +184,6 @@ m <- '
   load :~ dnorm(.8, .5)
 '
 
-# The second argument to dnorm() is the prior standard deviation.
-# These settings illustrate a production analysis and are computationally intensive.
 fit <- bpls(
   m,
   oneIntOrdered,

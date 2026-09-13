@@ -17,15 +17,14 @@ bpls(
   sampler = c("Metropolis-Hastings", "Gibbs"),
   verbose = interactive(),
   point.estimate = c("median", "mean"),
-  warm.start = TRUE,
-  noise.correction = TRUE,
+  warm.start = FALSE,
+  noise.correction = FALSE,
   noise.correction.R = min(max(floor(warmup/4L), 200), 1000),
   bootstrap = NULL,
   consistent = FALSE,
   mcpls = NULL,
   probit = FALSE,
   rng.s.start = 0.2,
-  rng.tune.pct = 0.1,
   rng.acceptance.rate = 0.44,
   mc.reps = 20000,
   acceptance.rate = function(d) 0.234 + 0.21/d,
@@ -95,9 +94,6 @@ Should in general be set to \code{FALSE}.}
 
 \item{rng.s.start}{Initial scale used when correlating proposed and current
 simulation innovations. For advanced users.}
-
-\item{rng.tune.pct}{Fraction determining how often the innovation scale is
-tuned during warmup. For advanced users.}
 
 \item{rng.acceptance.rate}{Target acceptance rate for innovation proposals.
 For advanced users.}

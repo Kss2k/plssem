@@ -13,20 +13,31 @@ m <- '
   load :~ dnorm(.8, .5)
 '
 
+m <- '
+  X =~ x1 + x2 + x3
+  Z =~ z1 + z2 + z3
+  Y =~ y1 + y2 + y3
+
+  Y ~ X + Z + X:Z + X:X
+'
+
 if (FALSE) { # don't run on GitHub
   set.seed(23942)
   fit <- bpls(
     m, modsem::oneInt, boot.R = 500, warmup = 200, iter = 400, sampler = "Metropolis-Hastings",
-    parallel = "multisession", chains = 2
+    parallel = "multicore", chains = 2, warm.start = FALSE, noise.correction = FALSE
   )
 
   round(apply(fit$samples, MARGIN = 2, FUN = mean), 3)
   round(apply(fit$samples, MARGIN = 2, FUN = sd), 3)
 
 
-  fit <- bpls(m, oneIntOrdered, ordered = colnames(oneIntOrdered),
-                  boot.R = 5000, warmup = 5000, iter = 10000, sampler = "Metropolis-Hastings",
-                  parallel = "multicore", chains = 3)
+  fit <- bpls(
+    m, oneIntOrdered, ordered = colnames(oneIntOrdered),
+    boot.R = 500, warmup = 20000, iter = 50000, sampler = "Metropolis-Hastings",
+    parallel = "multicore", chains = 3
+  )
+
   round(apply(fit$samples, MARGIN = 2, FUN = mean), 3)
   round(apply(fit$samples, MARGIN = 2, FUN = sd), 3)
 

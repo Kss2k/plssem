@@ -68,9 +68,6 @@ PRIOR_OP <- ":~"
 #' @param rng.s.start Initial scale used when correlating proposed and current
 #'   simulation innovations. For advanced users.
 #'
-#' @param rng.tune.pct Fraction determining how often the innovation scale is
-#'   tuned during warmup. For advanced users.
-#'
 #' @param rng.acceptance.rate Target acceptance rate for innovation proposals.
 #'   For advanced users.
 #'
@@ -126,8 +123,8 @@ bpls <- function(syntax,
                  verbose = interactive(),
                  point.estimate = c("median", "mean"),
 
-                 warm.start = TRUE,
-                 noise.correction = TRUE,
+                 warm.start = FALSE,
+                 noise.correction = FALSE,
                  noise.correction.R = min(max(floor(warmup/4L), 200), 1000),
 
                  # capture
@@ -138,7 +135,6 @@ bpls <- function(syntax,
 
                  # Advanced stuff
                  rng.s.start = 0.20,
-                 rng.tune.pct = 0.1,
                  rng.acceptance.rate = 0.44,
                  mc.reps = 20000,
                  acceptance.rate = \(d) 0.234 + 0.21 / d,
@@ -162,7 +158,6 @@ bpls <- function(syntax,
   inputPriors0 <- input[isFunc(input$mod), , drop = FALSE]
   inputPriors1 <- input[input$op == PRIOR_OP, , drop = FALSE]
   inputPriors0 <- addReverseCovariancesToParTable(inputPriors0)
-
 
   fit.mc <- pls(
     syntax = parTableToSyntax(inputModel),
@@ -430,7 +425,7 @@ bpls <- function(syntax,
     adapt.n <- integer(length(blocks))
     adapt.n.rng <- 0L
     acceptances.rng <- logical(0L)
-    acceptances.par <- logical(0L)
+    acceptances.par <- rep(list(logical(0L)), length(blocks))
     log.rng.s <- log(rng.s.start)
 
     samples <- matrix(
@@ -447,8 +442,6 @@ bpls <- function(syntax,
 
     for (i in seq_len(iter)) {
       mode <- if (i > warmup) "sampling" else "warmup"
-      tune.rng <- i <= warmup &&
-        floor(i * rng.tune.pct) > floor((i - 1L) * rng.tune.pct)
 
       if (verbose && (i == 1 || i %% max(1, floor(iter / 10)) == 0)) {
         w <- nchar(as.character(iter))
@@ -458,16 +451,29 @@ bpls <- function(syntax,
           "Chain: %", c, "d, ",
           "iter: %", w, "d/%", w, "d, ",
           "mode: %8s, ",
-          "ar(par): %.3f, ",
-          "ar(rng): %.3f...\n"
+          "ar(par): %.3f, s(par): %.3f, ",
+          "ar(rng): %.3f, s(rng): %.3f...\n"
         )
-      
-        acc.rate.par <- recentAcceptance(acceptances.par, n = 500)
-        acc.rate.rng <- recentAcceptance(acceptances.rng, n = 250)
+     
+        if (i > 1) {
+          window <- max(1, floor(iter / 10))
+
+          acc.rate.rng <- recentAcceptance(acceptances.rng, n = window)
+          acc.rate.par <- recentAcceptance(
+            unlist(acceptances.par, use.names = FALSE),
+            n = length(acceptances.par) * window
+          )
+
+        } else {
+          acc.rate.par <- 0.999
+          acc.rate.rng <- 0.999
+        }
 
         p(sprintf(
           fstring,
-          chain, i, iter, mode, acc.rate.par, acc.rate.rng
+          chain, i, iter, mode,
+          acc.rate.par, mean(exp(log.scale)),
+          acc.rate.rng, exp(log.rng.s)
         ))
       }
 
@@ -485,91 +491,80 @@ bpls <- function(syntax,
         }
       }
 
-      if (tune.rng) {
-        innovations.star <- perturbInnovations(
-          innovations, scale = exp(log.rng.s)
-        )
+      innovations.star <- perturbInnovations(
+        innovations, scale = exp(log.rng.s)
+      )
 
-        Lx.star <- L(x, innovations = innovations.star, W = alpha.W * W)
-        accept <- acceptProposal(Lx.star - Lx)
-        acceptances.rng <- c(acceptances.rng, accept)
+      Lx.star <- L(x, innovations = innovations.star, W = alpha.W * W)
+      accept <- acceptProposal(Lx.star - Lx)
+      acceptances.rng <- c(acceptances.rng, accept)
+
+      if (i <= warmup) {
         adapt.n.rng <- adapt.n.rng + 1L
 
         # Robbins-Monro learning rate
         eta <- 0.5 / (10 + adapt.n.rng)^0.6
         log.rng.s <- log.rng.s +
           eta * (as.numeric(accept) - target.rng.acceptance)
-        log.rng.s <- min(log(0.5), max(log(1 / mc.reps), log.rng.s))
+        log.rng.s <- min(log(1), max(log(1 / mc.reps), log.rng.s))
+      }
 
-        if (accept) {
-          innovations <- innovations.star
-          Lx <- Lx.star
-          thresholds.x <- attr(Lx.star, "thresholds")
-          empirical.vpars.x <- attr(Lx.star, "empirical.vpars")
+      if (accept) {
+        innovations <- innovations.star
+        Lx <- Lx.star
+        thresholds.x <- attr(Lx.star, "thresholds")
+        empirical.vpars.x <- attr(Lx.star, "empirical.vpars")
+      }
+
+      for (block in seq_along(blocks)) {
+        x.star <- x
+        idx <- blocks[[block]]
+        d <- length(idx)
+
+        if (d <= 0)
+          next
+
+        scale <- exp(log.scale[[block]])
+        S.star.b <- scale^2 * S[idx, idx, drop = FALSE]
+        x.star[idx] <- Q$r(x = x[idx], s = S.star.b)
+
+        Lx.star <- L(x.star, innovations = innovations, W = alpha.W * W)
+
+        # L() returns the bounds used to constrain the proposed parameters.
+        # L() has already constrained the parameters when evaluation the
+        # log likelihood. So we should constrain our parameters as well
+        x.star[idx] <- pmin(x.star[idx], attr(Lx.star, "upper")[idx])
+        x.star[idx] <- pmax(x.star[idx], attr(Lx.star, "lower")[idx])
+
+        q.star <- Q$d(x = x[idx], y = x.star[idx], s = S.star.b, log = TRUE)
+        q.x <- Q$d(x = x.star[idx], y = x[idx], s = S.star.b, log = TRUE)
+        Px.star <- P(x.star)
+
+        log.ratio <- (q.x - q.star) + (Lx.star + Px.star) - (Lx + Px)
+        accept <- acceptProposal(log.ratio)
+        acceptances.par[[block]] <- c(acceptances.par[[block]], accept)
+
+        if (i <= warmup) {
+          adapt.n[[block]] <- adapt.n[[block]] + 1L
+
+          # Robbins-Monro learning rate
+          eta <- 0.5 / (10 + adapt.n[[block]])^0.6
+          log.scale[[block]] <- log.scale[[block]] +
+            eta * (as.numeric(accept) - target.acceptance[[block]])
         }
 
-      } else {
-        for (block in seq_along(blocks)) {
-          x.star <- x
-          idx <- blocks[[block]]
-          d <- length(idx)
-
-          if (d <= 0)
-            next
-
-          scale <- exp(log.scale[[block]])
-          S.star.b <- scale^2 * S[idx, idx, drop = FALSE]
-          x.star[idx] <- Q$r(x = x[idx], s = S.star.b)
-
-          innovations.star <- perturbInnovations(
-            innovations, scale = exp(log.rng.s)
-          )
-
-          Lx.star <- L(
-            x.star, innovations = innovations.star, W = alpha.W * W
-          )
-
-          # L() returns the bounds used to constrain the proposed parameters.
-          # L() has already constrained the parameters when evaluation the
-          # log likelihood. So we should constrain our parameters as well
-          x.star[idx] <- pmin(x.star[idx], attr(Lx.star, "upper")[idx])
-          x.star[idx] <- pmax(x.star[idx], attr(Lx.star, "lower")[idx])
-
-          q.star <- Q$d(x = x[idx], y = x.star[idx], s = S.star.b, log = TRUE)
-          q.x <- Q$d(x = x.star[idx], y = x[idx], s = S.star.b, log = TRUE)
-          Px.star <- P(x.star)
-
-          log.ratio <- (q.x - q.star) + (Lx.star + Px.star) - (Lx + Px)
-          accept <- acceptProposal(log.ratio)
-          acceptances.par <- c(acceptances.par, accept)
-
-          if (i <= warmup) {
-            adapt.n[[block]] <- adapt.n[[block]] + 1L
-
-            # Robbins-Monro learning rate
-            eta <- 0.5 / (10 + adapt.n[[block]])^0.6
-            log.scale[[block]] <- log.scale[[block]] +
-              eta * (as.numeric(accept) - target.acceptance[[block]])
-          }
-
-          if (accept) {
-            thresholds.x <- attr(Lx.star, "thresholds")
-            empirical.vpars.x <- attr(Lx.star, "empirical.vpars")
-            x[idx] <- x.star[idx]
-            Px <- Px.star
-            Lx <- Lx.star
-            innovations <- innovations.star
-          }
+        if (accept) {
+          thresholds.x <- attr(Lx.star, "thresholds")
+          empirical.vpars.x <- attr(Lx.star, "empirical.vpars")
+          x[idx] <- x.star[idx]
+          Px <- Px.star
+          Lx <- Lx.star
         }
       }
 
       samples[i, ] <- c(x, thresholds.x, empirical.vpars.x)
     }
 
-    attr(samples, "rng.s") <- exp(log.rng.s)
-    attr(samples, "rng.acceptance.rate") <- recentAcceptance(
-      acceptances.rng, n = length(acceptances.rng)
-    )
     samples
   }
 
@@ -674,7 +669,13 @@ bpls <- function(syntax,
 
   fit.out@boot$samples <- plssemMatrix(samples)
   fit.out@boot$boot <- plssemMatrix(samples)
-  fit.out@info$estimator <- paste0("B", fit.out@info$estimator)
+
+  if (is_mcpls(fit.out)) {
+    fit.out@info$estimator <- paste0("B", fit.out@info$estimator)
+  } else {
+    fit.out@info$is.mcpls <- TRUE
+    fit.out@info$estimator <- paste0("BMC-", fit.out@info$estimator)
+  }
 
   # add samples to bootstrap results
   fit.out@boot$chains.all <- results

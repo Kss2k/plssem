@@ -157,8 +157,10 @@ getFitPLSModel <- function(model, consistent = TRUE) {
 }
 
 
-modelFitIsAdmissible <- function(fit) {
+modelFitIsAdmissible <- function(fit, tol = 1e-12) {
   # Simple check to see if model fit is (in)admissible
+  atol <- abs(tol)
+  ltol <- 1 + atol # loadings
 
   Q.admissible <- (
     is.null(attr(fit$Q, "admissible")) ||
@@ -166,17 +168,17 @@ modelFitIsAdmissible <- function(fit) {
   )
 
   (
-    !anyNA(fit$fitWeights)                          &&
-    !anyNA(fit$fitLambda)                           &&
-    !anyNA(fit$fitStructural)                       &&
-    !anyNA(fit$fitTheta)                            &&
-    !anyNA(fit$fitCov)                              &&
-    !anyNA(fit$fitC)                                &&
-    isPositiveDefinite(fit$fitC)                    &&
-    all(diag(fit$fitTheta) >= 0)                    &&
-    all(diag(fit$fitCov) >= 0)                      &&
-    all(fit$fitLambda  >= -1 & fit$fitLambda  <= 1) && # weights can exceed +/- 1, but not loadings
-    Q.admissible                                    &&
+    !anyNA(fit$fitWeights)                               &&
+    !anyNA(fit$fitLambda)                                &&
+    !anyNA(fit$fitStructural)                            &&
+    !anyNA(fit$fitTheta)                                 &&
+    !anyNA(fit$fitCov)                                   &&
+    !anyNA(fit$fitC)                                     &&
+    isPositiveDefinite(fit$fitC)                         &&
+    all(diag(fit$fitTheta) >= -atol)                     &&
+    all(diag(fit$fitCov) >= -atol)                       &&
+    all(fit$fitLambda  >= -ltol & fit$fitLambda <= ltol) && # weights can exceed +/- 1, but not loadings
+    Q.admissible                                         &&
     fit$status.admissible # check flag from the input model
   )
 }

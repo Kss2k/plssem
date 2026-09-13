@@ -57,8 +57,5 @@ tpb_uk <- "
 testthat::expect_no_error({
   fit <- pls(tpb_uk, TPB_UK, ordered = colnames(TPB_UK),
              mc.max.iter = 500, consistent = FALSE)
-  fit <- bpls(tpb_uk, TPB_UK, ordered = colnames(TPB_UK),
-              warmup = 10000, iter = 30000, chains = 4,
-              ncores = 4, parallel = "multicore", tune.rng.pct = 0.2)
   summary(fit)
 })

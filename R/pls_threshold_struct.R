@@ -13,7 +13,8 @@ ThresholdStruct <- function(data, ordered = NULL, digits = 5L) {
 
     # get values
     levels.x      <- sort(unique(x))
-    freq.x        <- table(factor(x, levels = levels.x))
+    z             <- as.integer(factor(x, levels = levels.x))
+    freq.x        <- tabulate(z, nbins = length(levels.x))
     pct.x         <- cumsum(freq.x) / sum(freq.x)
     proportions.x <- unname(pct.x[-length(pct.x)])
     thresholds.x  <- stats::qnorm(proportions.x)   
@@ -52,8 +53,10 @@ updateProportions <- function(thr, data) {
   for (ord in thr@ordered) {
     # round to avoid bad floating point comparisons
     x <- round(data[, ord, drop = TRUE], thr@digits)
+    z <- as.integer(factor(x, levels = thr@levels[[ord]]))
 
-    freq.x        <- table(factor(x, levels = thr@levels[[ord]]))
+    # get values
+    freq.x        <- tabulate(z, nbins = length(thr@levels[[ord]]))
     pct.x         <- cumsum(freq.x) / sum(freq.x)
     proportions.x <- pct.x[-length(pct.x)]
 

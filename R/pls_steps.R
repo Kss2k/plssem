@@ -49,8 +49,11 @@ estimatePLS_Step0 <- function(model) {
   partLambda <- cbind(model@matrices$Ip, lambda)
   S          <- model@matrices$S
 
-  model@matrices$C  <- t(lambda) %*% S %*% lambda
-  model@matrices$SC <- t(partLambda) %*% S %*% partLambda
+  SC <- crossprod(partLambda, S %*% partLambda)
+
+  constructs <- colnames(lambda)
+  model@matrices$C  <- SC[constructs, constructs, drop = FALSE]
+  model@matrices$SC <- SC
   model@matrices$lambda <- lambda
   model
 }
@@ -95,25 +98,22 @@ estimatePLS_Step2 <- function(model) {
   force(model)
 
   Ip         <- model@matrices$Ip
-  lambda     <- model@matrices$lambda
   gamma      <- model@matrices$gamma
-  C          <- model@matrices$C
-  S          <- model@matrices$S
   SC         <- model@matrices$SC
 
   if (NROW(gamma) <= 1)
     return(model)
 
-  partLambda <- cbind(Ip, lambda)
   partGamma  <- rbind(
     cbind(Ip, matrix(0, nrow = nrow(Ip), ncol = ncol(gamma))),
     cbind(matrix(0, nrow = nrow(gamma), ncol = ncol(Ip)), gamma)
   )
 
-  newC  <- t(gamma) %*% C %*% gamma
-  newSC <- t(partGamma) %*% t(partLambda) %*% S %*% partLambda %*% partGamma
+  newSC <- crossprod(partGamma, SC %*% partGamma)
 
   dimnames(newSC) <- dimnames(SC)
+  constructs <- colnames(gamma)
+  newC <- newSC[constructs, constructs, drop = FALSE]
 
   model@matrices$C  <- newC
   model@matrices$SC <- newSC
@@ -169,8 +169,11 @@ estimatePLS_Step4 <- function(model) {
   partLambda <- cbind(model@matrices$Ip, lambda)
   S          <- model@matrices$S
 
-  model@matrices$C  <- t(lambda) %*% S %*% lambda
-  model@matrices$SC <- t(partLambda) %*% S %*% partLambda
+  SC <- crossprod(partLambda, S %*% partLambda)
+
+  constructs <- colnames(lambda)
+  model@matrices$C  <- SC[constructs, constructs, drop = FALSE]
+  model@matrices$SC <- SC
   model
 }
 

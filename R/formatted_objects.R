@@ -1,4 +1,21 @@
-plssemMatrix <- function(mat, symmetric = isSymmetric(mat), is.public = FALSE) {
+# `base::isSymmetric()` compares via `all.equal()`, which is very slow relative
+# to the matrices involved here. `plssemMatrix()` is called several times per
+# PLS fit, and MC-PLS performs thousands of fits, so use a direct comparison.
+isSymmetricFast <- function(mat) {
+  if (!is.matrix(mat) || !is.numeric(mat) || NROW(mat) != NCOL(mat))
+    return(FALSE)
+
+  rn <- rownames(mat)
+  cn <- colnames(mat)
+  if (!is.null(rn) && !is.null(cn) && !identical(rn, cn))
+    return(FALSE)
+
+  tol <- 1.5e-8 * max(1, max(abs(mat)))
+  all(abs(mat - t(mat)) <= tol)
+}
+
+
+plssemMatrix <- function(mat, symmetric = isSymmetricFast(mat), is.public = FALSE) {
   if (is.null(mat)) return(mat)
 
   if (is.public) {

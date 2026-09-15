@@ -1,4 +1,4 @@
-impliedConstructCorrMat <- function(model, saturated = FALSE, mc.reps = 1e6) {
+impliedConstructCorrMat <- function(model, saturated = FALSE, mc.reps = 100) {
   
   if (is_mcpls(model)) {
     pls_msg_note(sprintf("Resampling MC-PLSc Model (R = %d)...", mc.reps))
@@ -56,7 +56,7 @@ impliedConstructCorrMat <- function(model, saturated = FALSE, mc.reps = 1e6) {
 }
 
 
-impliedIndicatorCorrMat <- function(object, saturated = FALSE, mc.reps = 1e6) {
+impliedIndicatorCorrMat <- function(object, saturated = FALSE, mc.reps = 100) {
 
   if (is_mcpls(object)) {
     pls_msg_note(sprintf("Resampling MC-PLSc Model (R = %d)...", mc.reps))
@@ -100,7 +100,7 @@ impliedIndicatorCorrMat <- function(object, saturated = FALSE, mc.reps = 1e6) {
 # matrix is used so that associations running through single-indicator stand-in
 # latents (observed structural variables, composite-MIMIC reflective indicators)
 # are captured.
-impliedJointCorrMat <- function(object, saturated = FALSE, mc.reps = 1e6) {
+impliedJointCorrMat <- function(object, saturated = FALSE, mc.reps = 100) {
   Phi    <- impliedConstructCorrMat(object, saturated = saturated, mc.reps = mc.reps)
   SigmaO <- impliedIndicatorCorrMat(object, saturated = saturated, mc.reps = mc.reps)
 
@@ -123,7 +123,7 @@ impliedJointCorrMat <- function(object, saturated = FALSE, mc.reps = 1e6) {
 }
 
 
-fitMeasures <- function(model, saturated = FALSE, mc.reps = 1e6) {
+fitMeasures <- function(model, saturated = FALSE, mc.reps = 100) {
   tryCatch({
 
     if (is_mcpls(model)) {

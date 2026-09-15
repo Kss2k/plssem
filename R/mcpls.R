@@ -27,6 +27,7 @@ mcpls <- function(
   )
 
   data      <- fit0.base@data
+  n         <- NROW(data)
   vars      <- colnames(data)
   ordered   <- fit0@info$ordered
   is.probit <- fit0@info$is.probit
@@ -63,6 +64,28 @@ mcpls <- function(
 
   par1 <- par0[c("lhs", "op", "rhs", "est", "is.free")]
 
+  # `getFreeParamsTable()` rebuilds the whole parameter table on every call
+  # which is unecessary...
+  free.idx <- NULL
+
+  getFreeParamsFast <- function(fit) {
+    model <- combinedModel(fit)
+
+    if (is.null(free.idx)) {
+      probe <- model
+      probe@params$values[] <- seq_along(probe@params$values)
+
+      idx <- as.integer(getFreeParamsTable(probe)$est)
+      pls_stopif(anyNA(idx) || length(idx) != NROW(par0),
+        "Failed to resolve free parameters. This is likely a bug!"
+      )
+
+      free.idx <<- idx[par0$is.free]
+    }
+
+    unname(model@params$values[free.idx])
+  }
+
   if (fixed.seed && is.null(rng.seed)) {
     rng.seed <- floor(stats::runif(1L, min = 0, max = 9999999))
     if (verbose) pls_msg_note(sprintf("Using fixed seed %i...", rng.seed))
@@ -87,7 +110,7 @@ mcpls <- function(
   .simulate <- function(p, standardize = FALSE) {
     simulateDataParTable(
       parTable     = .parTable(p),
-      N            = mc.reps,
+      N            = mc.reps * n,
       seed         = rng.seed,
       check.hi.ord = is.hi.ord,
       clusterSizes = clusterSizes,
@@ -103,7 +126,7 @@ mcpls <- function(
       par1[par1$is.free, "est"] <- p
       sim <- simulateDataParTable(
         parTable     = par1,
-        N            = mc.reps,
+        N            = mc.reps * n,
         seed         = rng.seed,
         check.hi.ord = is.hi.ord,
         clusterSizes = clusterSizes,
@@ -116,28 +139,42 @@ mcpls <- function(
       df = sim$ov, thresholdStruct = thresholdStruct
     )
 
-    fit.sim <- fit0.base
-    X       <- Rfast::standardise(as.matrix(sim.ov[vars]))
+    sim.mat <- as.matrix(sim.ov[vars])
 
-    if (is.probit) S <- getCorrMat(X, probit = TRUE, ordered = ordered)
-    else           S <- Rfast::cova(X)
+    # For multilevel models `simulateDataParTable()` tiles the observed cluster-size
+    # vector `mc.reps` times, so every tile corresponds to `n` rows.
+    pls_stopif(NROW(sim.mat) != mc.reps * n, sprintf(paste(
+      "Simulated data has %i rows, but %i (mc.reps * n) were",
+      "expected. Monte Carlo replications would not align with",
+      "the simulated clusters!"), NROW(sim.mat), mc.reps * n
+    ))
 
-    if (!is.null(sim$cluster))
-      attr(X, "cluster") <- sim$cluster
-
-    # Update observed-data (lowest-order) model input
-    modelData(fit.sim)  <- X
-    indCorrMatrix(fit.sim) <- S
-
-    # Thresholds are not part of the root equation. Avoid recomputing them on
-    # every Robbins-Monro iteration.
-    fit2 <- estimatePLS_Inner(fit.sim)
-    par2 <- getFreeParamsTable(combinedModel(fit2))
-
-    eps <- par2$est - par0$est
     free <- par0$is.free
+    est0 <- par0$est[free]
+    out  <- 0
 
-    out <- eps[free]
+    for (i in seq_len(mc.reps)) {
+      fit.sim <- fit0.base
+      rows    <- (i - 1) * n + seq_len(n)
+      X       <- Rfast::standardise(sim.mat[rows, , drop = FALSE])
+
+      if (is.probit) S <- getCorrMat(X, probit = TRUE, ordered = ordered)
+      else           S <- Rfast::cova(X)
+
+      if (!is.null(sim$cluster))
+        attr(X, "cluster") <- sim$cluster[rows, , drop = FALSE]
+
+      # Update observed-data (lowest-order) model input
+      modelData(fit.sim)  <- X
+      indCorrMatrix(fit.sim) <- S
+
+      # Thresholds are not part of the root equation. Avoid recomputing them on
+      # every Robbins-Monro iteration.
+      fit2 <- estimatePLS_Inner(fit.sim)
+
+      out <- out + (getFreeParamsFast(fit2) - est0) / mc.reps
+    }
+
     attr(out, "lower") <- sim$lower[free]
     attr(out, "upper") <- sim$upper[free]
 
@@ -149,6 +186,7 @@ mcpls <- function(
       parTable         = .parTable(p),
       model            = fit0.combined,
       mc.reps          = mc.reps,
+      n                = n,
       thresholdStruct  = thresholdStruct,
       ordered          = ordered,
       seed             = rng.seed,
@@ -304,6 +342,7 @@ mcpls <- function(
     parTable        = par1,
     model           = fit0.combined,
     mc.reps         = mc.reps,
+    n               = n,
     thresholdStruct = thresholdStruct0,
     ordered         = ordered,
     seed            = rng.seed,
@@ -489,6 +528,12 @@ getFreeParamsTable <- function(model) {
 }
 
 
+getDefaultMC_Reps <- function(mc.reps, n, sim.rows, min.reps, max.reps) {
+  if (!is.null(mc.reps)) return(as.integer(mc.reps))
+  as.integer(min(max(ceiling(sim.rows / n), min.reps), max.reps))
+}
+
+
 isIntTermVariable <- function(x) {
   # Check if x is a intTerm variable name. However, it can be a parameter label
   # with an interaction term (e.g., "Y~X:Z")
@@ -499,6 +544,7 @@ isIntTermVariable <- function(x) {
 updateModelFromFreeParTableMC <- function(parTable,
                                           model,
                                           mc.reps,
+                                          n,
                                           thresholdStruct,
                                           ordered,
                                           seed = NULL,
@@ -512,7 +558,7 @@ updateModelFromFreeParTableMC <- function(parTable,
   if (is.null(sim)) {
     sim <- simulateDataParTable(
       parTable     = parTable,
-      N            = mc.reps,
+      N            = mc.reps * n,
       seed         = seed,
       check.hi.ord = model@info$is.high.ord,
       clusterSizes = clusterSizes,
@@ -530,7 +576,7 @@ updateModelFromFreeParTableMC <- function(parTable,
 
         sim.i <- simulateDataParTable(
           parTable     = parTable,
-          N            = mc.reps,
+          N            = mc.reps * n,
           seed         = seed.i,
           check.hi.ord = model@info$is.high.ord,
           clusterSizes = clusterSizes,
@@ -682,6 +728,7 @@ updateModelFromFreeParTableMC <- function(parTable,
     parTable        = parTable,
     model           = model,
     mc.reps         = mc.reps,
+    n               = n,
     thresholdStruct = thresholdStruct,
     ordered         = ordered,
     seed            = seed,

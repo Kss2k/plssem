@@ -7,7 +7,7 @@
 \usage{
 pls_rmsea(object, saturated = FALSE, mc.reps = 1e+06, ...)
 
-\S4method{pls_rmsea}{PlsModel}(object, saturated = FALSE, mc.reps = 1e+06, ...)
+\S4method{pls_rmsea}{PlsModel}(object, saturated = FALSE, mc.reps = 100, ...)
 }
 \arguments{
 \item{object}{A fitted [PlsModel] object.}

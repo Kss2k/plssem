@@ -550,13 +550,13 @@ setMethod("unstandardized_estimates", "PlsModel",
 #' @export
 setGeneric(
   "fit_measures",
-  function(object, saturated = FALSE, mc.reps = 1e6, ...) standardGeneric("fit_measures")
+  function(object, saturated = FALSE, mc.reps = 100, ...) standardGeneric("fit_measures")
 )
 
 
 #' @rdname fit_measures
 #' @export
-setMethod("fit_measures", "PlsModel", function(object, saturated = FALSE, mc.reps = 1e6, ...) {
+setMethod("fit_measures", "PlsModel", function(object, saturated = FALSE, mc.reps = 100, ...) {
   fitMeasures(object, saturated = saturated, mc.reps = mc.reps)
 })
 
@@ -592,7 +592,7 @@ setGeneric(
 
 #' @rdname pls_rmsea 
 #' @export
-setMethod("pls_rmsea", "PlsModel", function(object, saturated = FALSE, mc.reps = 1e6, ...) {
+setMethod("pls_rmsea", "PlsModel", function(object, saturated = FALSE, mc.reps = 100, ...) {
   fitMeasures(object, saturated = saturated, mc.reps = mc.reps)$rmsea
 })
 

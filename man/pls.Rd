@@ -26,13 +26,16 @@ pls(
   sample = NULL,
   mc.min.iter = 50L,
   mc.max.iter = 1000L,
-  mc.reps = 20000L,
+  mc.reps = NULL,
+  mc.sim.rows = 20000L,
+  mc.min.reps = 5L,
+  mc.max.reps = 50L,
   mc.fixed.seed = FALSE,
   mc.polyak.juditsky = TRUE,
   mc.pj.extrapolate = TRUE,
   mc.tol = if (mc.polyak.juditsky) 1e-04 else 0.001,
   mc.delta.se = TRUE,
-  mc.delta.jacobian.k = max(floor(boot.R/100L), 1),
+  mc.delta.jacobian.k = max(floor(boot.R/500L), 1),
   mc.fn.args = list(),
   mc.rescov = c("auto", "reduced", "full"),
   mc.diag.secant = FALSE,
@@ -123,7 +126,25 @@ exists) in the global environment is left untouched.}
 
 \item{mc.max.iter}{Maximum number of iterations in MC-PLS algorithm.}
 
-\item{mc.reps}{Monte-Carlo sample size in MC-PLS algorithm.}
+\item{mc.reps}{Number of Monte-Carlo replications drawn per MC-PLS iteration.
+Each replication is a simulated data set with the same number of
+observations as \code{data}. If \code{NULL} (the default) it is chosen
+automatically from the sample size as
+\code{ceiling(mc.sim.rows / n)}, bounded to
+\code{[mc.min.reps, mc.max.reps]}. Monte-Carlo error is governed by the
+total number of simulated rows (\code{mc.reps * n}), so a fixed value
+over-samples for large \code{n} without improving precision.}
+
+\item{mc.sim.rows}{Target number of simulated rows per MC-PLS iteration, used
+to choose \code{mc.reps} when it is \code{NULL}. Larger values reduce
+Monte-Carlo noise at proportionally higher cost.}
+
+\item{mc.min.reps}{Lower bound on the automatically chosen \code{mc.reps}.}
+
+\item{mc.max.reps}{Upper bound on the automatically chosen \code{mc.reps}.
+Keeps the cost bounded for small \code{n}, where each replication is cheap
+but the required number of replications would otherwise grow as
+\code{1 / n}.}
 
 \item{mc.fixed.seed}{Should a fixed seed be used in the MC-PLS algorithm?
 Setting a fixed seed will likely yield less accurate estimates, but can

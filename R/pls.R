@@ -84,7 +84,22 @@ USE_NON_LINEAR_PROBIT_CORR_MAT <- FALSE
 #'
 #' @param mc.max.iter Maximum number of iterations in MC-PLS algorithm.
 #'
-#' @param mc.reps Monte-Carlo sample size in MC-PLS algorithm.
+#' @param mc.reps Number of Monte-Carlo replications drawn per MC-PLS iteration.
+#'   Each replication is a simulated data set with the same number of
+#'   observations as \code{data}. If \code{NULL} (the default) it is chosen
+#'   automatically from the sample size as
+#'   \code{ceiling(mc.sim.rows / n)}, bounded to
+#'   \code{[mc.min.reps, mc.max.reps]}. Monte-Carlo error is governed by the
+#'   total number of simulated rows (\code{mc.reps * n}), so a fixed value
+#'   over-samples for large \code{n} without improving precision.
+#' @param mc.sim.rows Target number of simulated rows per MC-PLS iteration, used
+#'   to choose \code{mc.reps} when it is \code{NULL}. Larger values reduce
+#'   Monte-Carlo noise at proportionally higher cost.
+#' @param mc.min.reps Lower bound on the automatically chosen \code{mc.reps}.
+#' @param mc.max.reps Upper bound on the automatically chosen \code{mc.reps}.
+#'   Keeps the cost bounded for small \code{n}, where each replication is cheap
+#'   but the required number of replications would otherwise grow as
+#'   \code{1 / n}.
 #'
 #' @param mc.fixed.seed Should a fixed seed be used in the MC-PLS algorithm?
 #'   Setting a fixed seed will likely yield less accurate estimates, but can
@@ -204,13 +219,16 @@ pls <- function(syntax,
                 sample = NULL,
                 mc.min.iter = 50L,
                 mc.max.iter = 1000L,
-                mc.reps = 20000L,
+                mc.reps = NULL,
+                mc.sim.rows = 20000L,
+                mc.min.reps = 5L,
+                mc.max.reps = 50L,
                 mc.fixed.seed = FALSE,
                 mc.polyak.juditsky = TRUE,
                 mc.pj.extrapolate = TRUE,
                 mc.tol = if (mc.polyak.juditsky) 0.0001 else 0.001,
                 mc.delta.se = TRUE,
-                mc.delta.jacobian.k = max(floor(boot.R / 100L), 1),
+                mc.delta.jacobian.k = max(floor(boot.R / 500L), 1),
                 mc.fn.args = list(),
                 mc.rescov = c("auto", "reduced", "full"),
                 mc.diag.secant = FALSE,
@@ -247,6 +265,17 @@ pls <- function(syntax,
   }
 
   data <- asDataFrame(data)
+
+  # Number of Monte Carlo replications per MC-PLS iteration. Chosen from the
+  # sample size so the simulation budget (`mc.reps * n` rows) stays roughly
+  # constant across data sets; see `resolveMCReps()`.
+  mc.reps <- resolveMCReps(
+    mc.reps  = mc.reps,
+    n        = NROW(data),
+    sim.rows = mc.sim.rows,
+    min.reps = mc.min.reps,
+    max.reps = mc.max.reps
+  )
 
   model <- specifyModel(
     syntax                 = syntax,

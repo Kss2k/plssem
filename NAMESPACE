@@ -55,3 +55,5 @@ importFrom(stats,
   predict,
   vcov
 )
+importFrom(Rcpp,sourceCpp)
+useDynLib(plssem, .registration = TRUE)

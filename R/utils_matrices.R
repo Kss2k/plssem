@@ -7,7 +7,8 @@ getOlsPathCoefs <- function(y, X, C) {
   # y: dependent factor
   # X: independent factors
   # C: correlation matrix
-  solve(C[X, X]) %*% C[X, y]
+  # `solve(A, b)` avoids forming the explicit inverse.
+  solve(C[X, X, drop = FALSE], C[X, y])
 }
 
 
@@ -41,8 +42,9 @@ diag2 <- function(X) {
   if (NROW(X) <= 1L)
     return(X[1, 1, drop=FALSE])
 
-  Y <- diag(diag(X))
-  dimnames(Y) <- dimnames(X)
+  n <- NROW(X)
+  Y <- matrix(0, n, n, dimnames = dimnames(X))
+  Y[1L + 0L:(n - 1L) * (n + 1L)] <- X[1L + 0L:(n - 1L) * (n + 1L)]
   Y
 }
 
@@ -53,8 +55,16 @@ tr <- function(x) {
 
 
 isPositiveDefinite <- function(X, tol = 1e-8) {
-  eigenvalues <- eigen(X, symmetric = TRUE, only.values = TRUE)$values
-  all(eigenvalues > tol)
+  # A Cholesky factorisation succeeds exactly for positive-definite matrices and
+  # is far cheaper than a full eigendecomposition. `pivot = TRUE` reports the
+  # rank instead of erroring, and the pivoted diagonal gives the same tolerance
+  # test as the smallest eigenvalue.
+  if (anyNA(X)) return(FALSE)
+  # `chol(pivot = TRUE)` warns rather than errors on a non-PD matrix, so no
+  # condition handler is needed -- and handlers are expensive relative to a
+  # factorisation this small.
+  R <- suppressWarnings(chol.default(X, pivot = TRUE))
+  attr(R, "rank") == NCOL(X) && min(diag(R)^2) > tol
 }
 
 

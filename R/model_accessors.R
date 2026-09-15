@@ -136,7 +136,10 @@ hasHigherOrderModel <- function(object) {
 
 
 hasCombinedModel <- function(object) {
-  is(object@combinedModel, "PlsModel")
+  # `is()` does a full S4 class-graph lookup; the slot is either NULL or a
+  # PlsModel, so testing the class attribute directly is equivalent here.
+  cm <- object@combinedModel
+  !is.null(cm) && class(cm)[[1L]] == "PlsModel"
 }
 
 

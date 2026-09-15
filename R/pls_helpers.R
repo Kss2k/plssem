@@ -1,6 +1,6 @@
 updateOuterWeights <- function(model) {
-  resetPLS_ModelLowerOrder(model, hard.reset = TRUE) |>
-    estimatePLS_Step0_5()
+  m <- resetPLS_ModelLowerOrder(model, hard.reset = TRUE)
+  estimatePLS_Step0_5(m)
 }
 
 

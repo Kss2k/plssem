@@ -268,8 +268,8 @@ pls <- function(syntax,
 
   # Number of Monte Carlo replications per MC-PLS iteration. Chosen from the
   # sample size so the simulation budget (`mc.reps * n` rows) stays roughly
-  # constant across data sets; see `resolveMCReps()`.
-  mc.reps <- resolveMCReps(
+  # constant across data sets; see `getDefaultMC_Reps()`.
+  mc.reps <- getDefaultMC_Reps(
     mc.reps  = mc.reps,
     n        = NROW(data),
     sim.rows = mc.sim.rows,
@@ -350,12 +350,11 @@ resetPLS_ModelLowerOrder <- function(model, hard.reset = FALSE) {
 
 
 estimatePLS_InnerLocal <- function(model) {
-  model |>
-    updateOuterWeights() |>
-    updateFactorScores() |>
-    updateFitObjects()   |>
-    updateParamVector() |>
-    updateEstimationStatus()
+  m1 <- updateOuterWeights(model)
+  m2 <- updateFactorScores(m1)
+  m3 <- updateFitObjects(m2)
+  m4 <- updateParamVector(m3)
+  updateEstimationStatus(m4)
 }
 
 

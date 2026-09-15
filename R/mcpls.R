@@ -476,9 +476,11 @@ mcpls <- function(
 
 
 ordinalize <- function(x, probs) {
-  probs  <- sort(probs[probs < 1])
-  breaks <- collapse::fquantile(x, probs = probs)
-  findInterval(x, vec = breaks)
+  # C++ equivalent of
+  #   findInterval(x, collapse::fquantile(x, probs = sort(probs[probs < 1])))
+  # -- one sort and a binary search instead of a quantile pass plus a separate
+  # interval search. This runs over every simulated column on every iteration.
+  ordinalizeCpp(as.numeric(x), as.numeric(probs))
 }
 
 

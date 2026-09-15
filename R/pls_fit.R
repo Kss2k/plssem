@@ -117,11 +117,7 @@ getFitPLSModel <- function(model, consistent = TRUE) {
 
   k        <- length(inds)
   fitTheta <- matrix(0, nrow = k, ncol = k, dimnames = list(inds, inds))
-  crossLoaded <- apply(
-    X      = fitMeasurement,
-    MARGIN = 1L,
-    FUN    = \(x) sum(abs(x) > .Machine$double.xmin) > 1L
-  )
+  crossLoaded <- rowSums(abs(fitMeasurement) > .Machine$double.xmin) > 1L
 
   fitThetaFull <- model@matrices$SC[inds, inds]
 
@@ -144,14 +140,14 @@ getFitPLSModel <- function(model, consistent = TRUE) {
   }
 
   list(
-    fitMeasurement    = plssemMatrix(fitMeasurement),
-    fitStructural     = plssemMatrix(fitStructural),
-    fitCov            = plssemMatrix(fitCov, symmetric = TRUE),
-    fitTheta          = plssemMatrix(fitTheta, symmetric = TRUE),
-    fitWeights        = plssemMatrix(fitWeights),
-    fitLambda         = plssemMatrix(fitLambda),
-    fitC              = plssemMatrix(C),
-    Q                 = plssemVector(Q),
+    fitMeasurement    = fitMeasurement,
+    fitStructural     = fitStructural,
+    fitCov            = fitCov,
+    fitTheta          = fitTheta,
+    fitWeights        = fitWeights,
+    fitLambda         = fitLambda,
+    fitC              = C,
+    Q                 = Q,
     status.admissible = model@status$is.admissible
   )
 }

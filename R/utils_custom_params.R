@@ -22,9 +22,29 @@ getCustomExpressions <- function(parTable) {
 }
 
 
+# `names(pars)`, `labels` and `expressions` are fixed by the model
+# specification, so the name bookkeeping is identical on every call. MC-PLS
+# evaluates this once per replication, so keep the last resolution.
+.customExprCache <- new.env(parent = emptyenv())
+
 evalCustomExpressions <- function(pars, labels, expressions) {
-  keep <- intersect(names(pars), names(labels))
-  envir <- customExpressionEnv(stats::setNames(pars[keep], nm = labels[keep]))
+  if (!length(expressions))
+    return(stats::setNames(numeric(0), character(0)))
+
+  np <- names(pars)
+  if (!identical(.customExprCache$np, np) ||
+      !identical(.customExprCache$labels, labels)) {
+    keep <- intersect(np, names(labels))
+    .customExprCache$np     <- np
+    .customExprCache$labels <- labels
+    .customExprCache$keep   <- keep
+    .customExprCache$nm     <- unname(labels[keep])
+  }
+
+  keep  <- .customExprCache$keep
+  envir <- customExpressionEnv(
+    stats::setNames(pars[keep], nm = .customExprCache$nm)
+  )
 
   names <- names(expressions)
   out <- stats::setNames(
@@ -79,12 +99,22 @@ validateCustomExpression <- function(expr, name) {
 }
 
 
+# The whitelisted functions never change, so build that environment once and
+# hang each call's values off it as a child rather than re-copying the bindings.
+.customExprBaseEnv <- local({
+  e <- NULL
+  function() {
+    if (is.null(e)) {
+      e <<- new.env(parent = emptyenv())
+      for (fn in CUSTOM_EXPRESSION_FUNCTIONS)
+        assign(fn, get(fn, envir = baseenv()), envir = e)
+    }
+    e
+  }
+})
+
+
 customExpressionEnv <- function(values) {
-  envir <- new.env(parent = emptyenv())
-
-  for (fn in CUSTOM_EXPRESSION_FUNCTIONS)
-    assign(fn, get(fn, envir = baseenv()), envir = envir)
-
   values <- values[nzchar(names(values))]
-  list2env(as.list(values), envir = envir)
+  list2env(as.list(values), envir = new.env(parent = .customExprBaseEnv()))
 }

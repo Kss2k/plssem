@@ -439,7 +439,7 @@ getEstimatorFromInfo <- function(info) {
   if (consistent || is.mcpls) estimator <- paste0(estimator, "c")
   if (is.mlm)                 estimator <- paste0(estimator, "-MLM")
   if (is.ord)                 estimator <- paste0("Ord", estimator)
-  if (is.mcpls)               estimator <- paste0("MC", estimator)
+  if (is.mcpls)               estimator <- paste0("MC-", estimator)
 
   estimator
 }

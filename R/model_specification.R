@@ -405,7 +405,7 @@ initMatrices <- function(pt, higherOrderLVs = NULL) {
 
   # C++ specific objects
   modeB_Cpp <- as.integer(lvs %in% mode.b)
-  lvColIdxCpp <- seq_along(lvs) - 1
+  lvColIdx <- seq_along(lvs) - 1
 
   indsIdxLVsCpp <- lapply(
     X = indsLvs,
@@ -451,7 +451,7 @@ initMatrices <- function(pt, higherOrderLVs = NULL) {
     customExpressions = getCustomExpressions(pt),
     cpp = list(
       indsIdxLVs   = indsIdxLVsCpp,
-      lvColIdxCpp  = lvColIdxCpp,
+      lvColIdx     = lvColIdx,
       modeB        = modeB_Cpp,
       prodElemsIdx = prodElemsIdxCpp,
       prodColIdx   = prodColIdxCpp

@@ -129,9 +129,14 @@ Rcpp::List estimatePLS_Step0_5_Cpp(
 
     // Step 5
     w1 = vectorise(lambda);
-    const arma::vec diff = arma::abs(arma::omit_nonfinite(w1 - w0));
+    const arma::vec diff = arma::abs(w1 - w0);
 
-    if (diff.n_elem && diff.max() <= tolerance) {
+    if (diff.is_empty() || !diff.is_finite()) {
+      converged = false;
+      break;
+    }
+
+    if (diff.max() <= tolerance) {
       converged = true;
       break;
     }
@@ -145,7 +150,7 @@ Rcpp::List estimatePLS_Step0_5_Cpp(
     Rcpp::_["C"]           = C,
     Rcpp::_["SC"]          = SC,
     Rcpp::_["convergence"] = converged,
-    Rcpp::_["iterations"]  = converged ? iter + 1L : maxiter
+    Rcpp::_["iterations"]  = iter < maxiter ? iter + 1L : maxiter
   );
 }
 

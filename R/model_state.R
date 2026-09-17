@@ -1,12 +1,13 @@
 initModelStatus <- function(tolerance, max.iter.0_5) {
   list(
-    convergence    = FALSE,
-    iterations     = 0L,
-    iterations.0_5 = 0L,
-    tolerance      = tolerance,
-    max.iter.0_5   = max.iter.0_5,
-    is.admissible  = TRUE,
-    mcpls.update.args = NULL
+    convergence       = FALSE,
+    iterations        = 0L,
+    iterations.0_5    = 0L,
+    tolerance         = tolerance,
+    max.iter.0_5      = max.iter.0_5,
+    is.admissible     = TRUE,
+    mcpls.update.args = NULL,
+    quick             = FALSE
   )
 }
 

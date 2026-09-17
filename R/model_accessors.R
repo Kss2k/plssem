@@ -232,6 +232,25 @@ isAdmissible <- function(object) {
 }
 
 
+`modelStatusIsQuick<-` <- function(object, recursive = TRUE, value) {
+  object@status$quick <- value
+
+  if (recursive) {
+
+    # Higher order
+    if (hasHigherOrderModel(object))
+      modelStatusIsQuick(object@higherOrderModel, recursive = TRUE) <- value
+
+    # Combined model
+    if (hasCombinedModel(object))
+      modelStatusIsQuick(object@combinedModel, recursive = TRUE) <- value
+
+  }
+
+  object
+}
+
+
 isMLM <- function(object) {
   isTRUE(object@info$is.mlm)
 }

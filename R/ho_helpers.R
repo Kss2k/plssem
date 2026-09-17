@@ -157,7 +157,8 @@ combineModelResultsFirstSecondOrder <- function(model) {
     tolerance      = c(s1$tolerance, s2$tolerance),
     max.iter.0_5   = c(s1$max.iter.0_5, s2$max.iter.0_5),
     is.admissible  = s1$is.admissible && s2$is.admissible,
-    mcpls.update.args = NULL
+    mcpls.update.args = NULL,
+    quick          = isTRUE(s1$quick) || isTRUE(s2$quick)
   )
 
   parTableInput <- rbind(

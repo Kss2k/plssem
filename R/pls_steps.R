@@ -3,193 +3,77 @@
 estimatePLS_Step0_5 <- function(model) {
   force(model)
 
-  max.iter.0_5 <- model@status$max.iter.0_5
-
-  model <- estimatePLS_Step0(model)
-
-  for (i in seq_len(max.iter.0_5)) {
-    model <- model |>
-      estimatePLS_Step1() |>
-      estimatePLS_Step2() |>
-      estimatePLS_Step3() |>
-      estimatePLS_Step4() |>
-      estimatePLS_Step5()
-
-    if (model@status$convergence) {
-      break
-    } else if (i >= max.iter.0_5) {
-      pls_msg_warn("Convergence not reached. Stopping.")
-      model@status$is.admissible <- FALSE
-      break
-    }
-  }
-
-  model@status$iterations.0_5 <- model@status$iterations.0_5 + i
-  model@status$iterations     <- model@status$iterations + i
-  model
-}
-
-
-estimatePLS_Step0 <- function(model) {
-  force(model)
-
-  lvs     <- model@info$lvs.linear
-  indsLvs <- model@info$indsLvs
-  lambda  <- model@matrices$lambda
-  SC      <- model@matrices$SC
-
-  for (lv in lvs) {
-    inds <- indsLvs[[lv]]
-    wj   <- rep(1, length(inds))
-    Sjj  <- SC[inds, inds]
-    wj   <- wj / c(sqrt(t(wj) %*% Sjj %*% wj))
-    lambda[inds, lv] <- wj
-  }
-
-  partLambda <- cbind(model@matrices$Ip, lambda)
-  S          <- model@matrices$S
-
-  model@matrices$C  <- t(lambda) %*% S %*% lambda
-  model@matrices$SC <- t(partLambda) %*% S %*% partLambda
-  model@matrices$lambda <- lambda
-  model
-}
-
-
-estimatePLS_Step1 <- function(model) {
-  force(model)
-
-  lvs   <- model@info$lvs.linear
-  succs <- model@matrices$succs.linear
-  preds <- model@matrices$preds.linear
-  gamma <- model@matrices$gamma
-  C     <- model@matrices$C
-  SC    <- model@matrices$SC
+  matrices <- model@matrices
 
   if (model@info$is.cfa) {
-    succs <- model@matrices$succs.cfa
-    preds <- model@matrices$preds.cfa
+    succs <- matrices$succs.cfa
+    preds <- matrices$preds.cfa
+  } else {
+    succs <- matrices$succs.linear
+    preds <- matrices$preds.linear
   }
 
-  for (lv in lvs) {
-    predsLv <- lvs[preds[, lv, drop = TRUE]]
-    succsLv <- lvs[succs[, lv, drop = TRUE]]
-
-    for (succ in succsLv)
-      gamma[succ, lv] <- C[lv, succ]
-
-    if (length(predsLv) > 0)
-      gamma[predsLv, lv] <- solve(SC[predsLv, predsLv]) %*% SC[predsLv, lv]
-
-    scalef <- c(sqrt(t(gamma[, lv]) %*% C %*% gamma[, lv]))
-    if (scalef)
-      gamma[, lv] <- gamma[, lv] / scalef
-  }
-
-  model@matrices$gamma <- gamma
-  model
-}
-
-
-estimatePLS_Step2 <- function(model) {
-  force(model)
-
-  Ip         <- model@matrices$Ip
-  lambda     <- model@matrices$lambda
-  gamma      <- model@matrices$gamma
-  C          <- model@matrices$C
-  S          <- model@matrices$S
-  SC         <- model@matrices$SC
-
-  if (NROW(gamma) <= 1)
-    return(model)
-
-  partLambda <- cbind(Ip, lambda)
-  partGamma  <- rbind(
-    cbind(Ip, matrix(0, nrow = nrow(Ip), ncol = ncol(gamma))),
-    cbind(matrix(0, nrow = nrow(gamma), ncol = ncol(Ip)), gamma)
+  result <- estimatePLS_Step0_5_Cpp(
+    lambda       = matrices$lambda,
+    gamma        = matrices$gamma,
+    S            = matrices$S,
+    C            = matrices$C,
+    SC           = matrices$SC,
+    R_IndsIdxLVs = matrices$cpp$indsIdxLVs,
+    lvColIdx     = matrices$cpp$lvColIdx,
+    modeB        = matrices$cpp$modeB,
+    preds        = preds,
+    succs        = succs,
+    tolerance    = model@status$tolerance,
+    maxiter      = model@status$max.iter.0_5
   )
 
-  newC  <- t(gamma) %*% C %*% gamma
-  newSC <- t(partGamma) %*% t(partLambda) %*% S %*% partLambda %*% partGamma
-
-  dimnames(newSC) <- dimnames(SC)
-
-  model@matrices$C  <- newC
-  model@matrices$SC <- newSC
-  model
-}
-
-
-estimatePLS_Step3 <- function(model) {
-  force(model)
-
-  lvs     <- model@info$lvs.linear
-  indsLvs <- model@info$indsLvs
-  lambda  <- model@matrices$lambda
-  SC      <- model@matrices$SC
-  modes   <- model@info$modes
-
-  for (lv in lvs) {
-    mode.lv <- modes[[lv]]
-    inds    <- indsLvs[[lv]]
-
-    wj <- switch(mode.lv,
-      A = getWeightsModeA(lv = lv, lambda = lambda, SC = SC, inds = inds),
-      B = getWeightsModeB(lv = lv, lambda = lambda, SC = SC, inds = inds),
-      NA_real_
-    )
-
-    Sjj <- SC[inds, inds]
-    wj  <- wj / c(sqrt(t(wj) %*% Sjj %*% wj))
-    lambda[inds, lv] <- wj
+  if (!result$convergence) {
+    pls_msg_warn("Convergence not reached. Stopping.")
+    model@status$is.admissible <- FALSE
   }
 
-  model@matrices$lambda <- lambda
+  # status
+  model@status$iterations.0_5 <- model@status$iterations.0_5 + result$iterations
+  model@status$iterations     <- model@status$iterations + result$iterations
+  model@status$convergence    <- result$convergence
+
+  # fit
+  model@matrices$C[]      <- result$C
+  model@matrices$SC[]     <- result$SC
+  model@matrices$lambda[] <- result$lambda
+  model@matrices$gamma[]  <- result$gamma
+
   model
 }
 
 
-getWeightsModeA <- function(lv, lambda, SC, inds) {
-  as.vector(SC[inds, lv])
-}
-
-
-getWeightsModeB <- function(lv, lambda, SC, inds) {
-  getOlsPathCoefs(y = lv, X = inds, C = SC)
-}
-
-
-# Step 4 is structurally identical to step 0: recompute C and SC from the
-# updated outer weights after step 3.
-estimatePLS_Step4 <- function(model) {
+estimatePLS_Step6 <- function(model, cpp = TRUE) {
   force(model)
 
-  lambda     <- model@matrices$lambda
-  partLambda <- cbind(model@matrices$Ip, lambda)
-  S          <- model@matrices$S
+  if (cpp && !model@info$is.probit && model@info$is.nlin) {
+    par <- colnames(model@matrices$C)
 
-  model@matrices$C  <- t(lambda) %*% S %*% lambda
-  model@matrices$SC <- t(partLambda) %*% S %*% partLambda
-  model
-}
+    result <- estimatePLS_Step6_Cpp(
+      X = model@data,
+      W = model@matrices$lambda,
+      prodElemsIdx = model@matrices$cpp$prodElemsIdx,
+      prodColIdx   = model@matrices$cpp$prodColIdx,
+      standardize  = !model@info$standardized
+    )
 
+    F <- result$F
+    C <- result$C
 
-estimatePLS_Step5 <- function(model) {
-  force(model)
+    colnames(F) <- colnames(model@matrices$C)
+    dimnames(C) <- dimnames(model@matrices$C)
 
-  oldWeights <- model@matrices$outerWeights
-  newWeights <- getNonZeroElems(model@matrices$lambda)
+    model@factorScores          <- F
+    model@matrices$C[par, par]  <- C
+    model@matrices$SC[par, par] <- C
 
-  weightDiff <- (oldWeights - newWeights) / oldWeights
-  model@status$convergence    <- all(abs(weightDiff) < model@status$tolerance)
-  model@matrices$outerWeights <- newWeights
-  model
-}
-
-
-estimatePLS_Step6 <- function(model) {
-  force(model)
+    return(model)
+  }
 
   model@factorScores <- computeFactorScores(model)
 

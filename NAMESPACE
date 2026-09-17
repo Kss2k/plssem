@@ -49,9 +49,11 @@ exportMethods(summary)
 exportMethods(unstandardized_estimates)
 exportMethods(vcov)
 import(methods)
+importFrom(Rcpp,sourceCpp)
 importFrom(stats,
   coef,
   coefficients,
   predict,
   vcov
 )
+useDynLib(plssem, .registration = TRUE)

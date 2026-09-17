@@ -11,7 +11,7 @@ m <- '
 
 testthat::expect_no_error({
   fit <- pls(m, modsem::oneInt, bootstrap = FALSE, boot.R = 100,
-             boot.parallel = "snow", boot.ncores = 2)
+             boot.parallel = "snow", boot.ncores = 1)
   summary(fit, unstandardized = TRUE)
 })
 

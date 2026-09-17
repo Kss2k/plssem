@@ -60,12 +60,7 @@ Rcpp::List estimatePLS_Step0_5_Cpp(
   arma::vec w0 = vectorise(lambda);
   arma::vec w1 = w0;
 
-  outerUpdateCovarianceMatrices(
-    S      = S,
-    lambda = lambda,
-    C      = C,
-    SC     = SC
-  );
+  outerUpdateCovarianceMatrices(S, lambda, C, SC);
 
   bool converged = false;
   int iter;
@@ -130,12 +125,7 @@ Rcpp::List estimatePLS_Step0_5_Cpp(
     }
 
     // Step 4
-    outerUpdateCovarianceMatrices(
-      S      = S,
-      lambda = lambda,
-      C      = C,
-      SC     = SC
-    );
+    outerUpdateCovarianceMatrices(S, lambda, C, SC);
 
     // Step 5
     w1 = vectorise(lambda);

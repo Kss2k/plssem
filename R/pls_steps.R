@@ -51,7 +51,7 @@ estimatePLS_Step0_5 <- function(model) {
 estimatePLS_Step6 <- function(model, cpp = TRUE) {
   force(model)
 
-  if (cpp && !model@info$is.probit) {
+  if (cpp && !model@info$is.probit && model@info$is.nlin) {
     par <- colnames(model@matrices$C)
 
     result <- estimatePLS_Step6_Cpp(

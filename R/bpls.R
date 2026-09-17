@@ -478,10 +478,13 @@ bpls <- function(syntax,
       }
 
       if (i <= warmup && i %% 10 == 0) {
+        drop.pct <- 0.2 # drop the first 20% of the current warmup samples
+                        # as they may just be junk...
         n1 <- i - 1L
+        n0 <- max(floor(drop.pct * n1), 1)
 
-        if (n1 > 10L) {
-          sub <- samples[seq_len(n1), pars, drop = FALSE]
+          if (n1 - n0 >= 10L) {
+          sub <- samples[(n0+1):n1, pars, drop = FALSE]
           S1 <- stats::cov(sub)
 
           halfway <- max(floor(warmup / 2L), 1L)

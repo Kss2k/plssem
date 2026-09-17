@@ -1,4 +1,7 @@
-getFitPLSModel <- function(model, consistent = TRUE) {
+getFitPLSModel <- function(model, consistent = TRUE, quick = model@status$quick) {
+  if (!consistent && model@info$path.estimator == "ols")
+    return(getFitPLSModelUncorrected(model, quick = quick))
+
   lambda    <- model@matrices$lambda
   gamma     <- model@matrices$gamma
   preds     <- model@matrices$preds
@@ -117,11 +120,19 @@ getFitPLSModel <- function(model, consistent = TRUE) {
 
   k        <- length(inds)
   fitTheta <- matrix(0, nrow = k, ncol = k, dimnames = list(inds, inds))
-  crossLoaded <- apply(
-    X      = fitMeasurement,
-    MARGIN = 1L,
-    FUN    = \(x) sum(abs(x) > .Machine$double.xmin) > 1L
-  )
+
+  if (!quick) {
+    crossLoaded <- apply(
+      X      = fitMeasurement,
+      MARGIN = 1L,
+      FUN    = \(x) sum(abs(x) > .Machine$double.xmin) > 1L
+    )
+
+    pls_warnif(any(crossLoaded),
+      "Did not expect any cross loaded indicators,\n",
+      "when calculating indicator residuals!"
+    )
+  }
 
   fitThetaFull <- model@matrices$SC[inds, inds]
 
@@ -131,16 +142,141 @@ getFitPLSModel <- function(model, consistent = TRUE) {
     fitTheta[idx, idx] <- fitThetaFull[idx, idx]
   }
 
-  pls_warnif(any(crossLoaded),
-             "Did not expect any cross loaded indicators,\n",
-             "when calculating indicator residuals!")
-
   for (ind in inds.a) {                                  # Guard for NaN in fitMeasurement
     j   <- max(which.max(abs(fitMeasurement[ind, ])), 1) # max(numeric(0), 1) = 1
     r   <- fitMeasurement[ind, j]
     v   <- SC[ind, ind]
 
     fitTheta[ind, ind] <- v - r^2
+  }
+
+  if (quick) {
+    return(list(
+      fitMeasurement    = fitMeasurement,
+      fitStructural     = fitStructural,
+      fitCov            = fitCov,
+      fitTheta          = fitTheta,
+      fitWeights        = fitWeights,
+      fitLambda         = fitLambda,
+      fitC              = C,
+      Q                 = Q,
+      status.admissible = model@status$is.admissible
+    ))
+  }
+
+  list(
+    fitMeasurement    = plssemMatrix(fitMeasurement, symmetric = FALSE),
+    fitStructural     = plssemMatrix(fitStructural,  symmetric = FALSE),
+    fitCov            = plssemMatrix(fitCov,         symmetric = TRUE),
+    fitTheta          = plssemMatrix(fitTheta,       symmetric = TRUE),
+    fitWeights        = plssemMatrix(fitWeights,     symmetric = FALSE),
+    fitLambda         = plssemMatrix(fitLambda,      symmetric = FALSE),
+    fitC              = plssemMatrix(C,              symmetric = FALSE),
+    Q                 = plssemVector(Q),
+    status.admissible = model@status$is.admissible
+  )
+}
+
+
+getFitPLSModelUncorrected <- function(model, quick = model@status$quick) {
+  matrices <- model@matrices
+  info     <- model@info
+
+  lambda  <- matrices$lambda
+  C       <- matrices$C
+  S       <- matrices$S
+  inds    <- info$allInds
+  lvs     <- info$lvs
+  etas    <- info$etas
+  xis     <- info$xis
+  mode.b  <- info$mode.b
+  inds.a  <- info$inds.a
+  indsLvs <- info$indsLvs
+
+  # Measurement model -------------------------------------------------------
+  fitWeights <- lambda
+
+  fitLambda   <- lambda
+  fitLambda[] <- 0
+
+  selected <- matrices$select$lambda
+  loadings <- matrices$SC[inds, lvs, drop = FALSE]
+  fitLambda[selected] <- loadings[selected]
+
+  fitMeasurement <- fitLambda
+  fitMeasurement[, mode.b] <- fitWeights[, mode.b, drop = FALSE]
+
+  # Structural model --------------------------------------------------------
+  fitStructural   <- matrices$gamma
+  fitStructural[] <- 0
+  fitCov          <- C
+
+  if (length(etas)) {
+    fitCov[etas, etas] <- 0
+    fitCov[etas, xis]  <- 0
+    fitCov[xis, etas]  <- 0
+  }
+
+  for (lv in etas) {
+    pred.idx <- which(matrices$preds[, lv, drop = TRUE])
+    if (!length(pred.idx)) next
+
+    beta <- solve(
+      C[pred.idx, pred.idx, drop = FALSE],
+      C[pred.idx, lv, drop = FALSE]
+    )
+
+    fitStructural[pred.idx, lv] <- beta
+    fitCov[lv, lv] <- C[lv, lv] - sum(beta * C[pred.idx, lv])
+  }
+
+  # Indicator residuals -----------------------------------------------------
+  fitTheta <- matrix(
+    0,
+    nrow = length(inds), ncol = length(inds),
+    dimnames = list(inds, inds)
+  )
+
+  for (b in mode.b) {
+    idx <- indsLvs[[b]]
+    fitTheta[idx, idx] <- S[idx, idx, drop = FALSE]
+  }
+
+  if (!quick) {
+    crossLoaded <- rowSums(
+      abs(fitMeasurement) > .Machine$double.xmin
+    ) > 1L
+
+    pls_warnif(any(crossLoaded),
+               "Did not expect any cross loaded indicators,\n",
+               "when calculating indicator residuals!")
+  }
+
+  if (length(inds.a)) {
+    measurement.a <- fitMeasurement[inds.a, , drop = FALSE]
+    construct.idx <- max.col(abs(measurement.a), ties.method = "first")
+    loading <- measurement.a[cbind(seq_along(inds.a), construct.idx)]
+    residual <- diag(S[inds.a, inds.a, drop = FALSE]) - loading^2
+    theta.idx <- match(inds.a, inds)
+
+    fitTheta[cbind(theta.idx, theta.idx)] <- residual
+  }
+
+  Q <- numeric(0)
+  attr(Q, "admissible") <- TRUE
+
+  if (quick) {
+    return(list(
+      fitMeasurement    = fitMeasurement,
+      fitStructural     = fitStructural,
+      fitCov            = fitCov,
+      fitTheta          = fitTheta,
+      fitWeights        = fitWeights,
+      fitLambda         = fitLambda,
+      fitC              = C,
+      Q                 = Q,
+      status.admissible = model@status$is.admissible
+    ))
   }
 
   list(

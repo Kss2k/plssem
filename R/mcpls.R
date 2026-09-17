@@ -117,7 +117,9 @@ mcpls <- function(
     )
 
     fit.sim <- fit0.base
-    X       <- Rfast::standardise(as.matrix(sim.ov[vars]))
+    modelStatusIsQuick(fit.sim) <- TRUE
+
+    X <- Rfast::standardise(as.matrix(sim.ov[vars]))
 
     if (is.probit) S <- getCorrMat(X, probit = TRUE, ordered = ordered)
     else           S <- Rfast::cova(X)

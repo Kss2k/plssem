@@ -346,6 +346,9 @@ estimatePLS_Outer <- function(model, ...) {
 
 
 estimatePLS_Status <- function(model, ...) {
+  if (model@status$quick)
+    return(model)
+
   prev    <- isTRUE(model@status$is.admissible)
   current <- modelFitIsAdmissible(model@fit)
 

@@ -144,13 +144,13 @@ getFitPLSModel <- function(model, consistent = TRUE) {
   }
 
   list(
-    fitMeasurement    = plssemMatrix(fitMeasurement),
-    fitStructural     = plssemMatrix(fitStructural),
-    fitCov            = plssemMatrix(fitCov, symmetric = TRUE),
-    fitTheta          = plssemMatrix(fitTheta, symmetric = TRUE),
-    fitWeights        = plssemMatrix(fitWeights),
-    fitLambda         = plssemMatrix(fitLambda),
-    fitC              = plssemMatrix(C),
+    fitMeasurement    = plssemMatrix(fitMeasurement, symmetric = FALSE),
+    fitStructural     = plssemMatrix(fitStructural,  symmetric = FALSE),
+    fitCov            = plssemMatrix(fitCov,         symmetric = TRUE),
+    fitTheta          = plssemMatrix(fitTheta,       symmetric = TRUE),
+    fitWeights        = plssemMatrix(fitWeights,     symmetric = FALSE),
+    fitLambda         = plssemMatrix(fitLambda,      symmetric = FALSE),
+    fitC              = plssemMatrix(C,              symmetric = FALSE),
     Q                 = plssemVector(Q),
     status.admissible = model@status$is.admissible
   )

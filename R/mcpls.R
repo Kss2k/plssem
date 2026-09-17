@@ -436,13 +436,6 @@ mcpls <- function(
 }
 
 
-ordinalize <- function(x, probs) {
-  probs  <- sort(probs[probs < 1])
-  breaks <- collapse::fquantile(x, probs = probs)
-  findInterval(x, vec = breaks)
-}
-
-
 ordinalizeDataFrame <- function(df, thresholdStruct) {
   nm <- colnames(df)
   ordered <- thresholdStruct@ordered
@@ -451,7 +444,7 @@ ordinalizeDataFrame <- function(df, thresholdStruct) {
 
   quickdf(stats::setNames(
     lapply(nm, FUN = function(v) {
-      if (v %in% ordered) ordinalize(df[[v]], probs = probs[indices[[v]]])
+      if (v %in% ordered) ordinalizeVectorCpp(df[[v]], probs = probs[indices[[v]]])
       else df[[v]]
     }),
     nm = nm

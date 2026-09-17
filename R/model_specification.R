@@ -275,11 +275,12 @@ initMatrices <- function(pt, higherOrderLVs = NULL) {
   )
 
   checkLhsIntTerms(pt)
+  intTerms <- getIntTerms(pt)
   etas <- unique(pt[pt$op == "~", "lhs"])
-  lvs  <- c(lvs.linear, getIntTerms(pt))
+  lvs  <- c(lvs.linear, intTerms)
   xis  <- lvs[!lvs %in% etas]
 
-  indsLvs        <- vector("list", length(lvs))
+  indsLvs <- vector("list", length(lvs))
   names(indsLvs) <- lvs
   for (lv in lvs) {
     indsLvs[[lv]] <- pt[pt$lhs == lv & pt$op %in% c("=~", "<~"), "rhs"]
@@ -302,12 +303,21 @@ initMatrices <- function(pt, higherOrderLVs = NULL) {
   }
 
   # Gamma ------------------------------------------------------------------
-  gamma       <- matrix(0,     nrow = length(lvs), ncol = length(lvs),
-                        dimnames = list(lvs, lvs))
-  selectGamma <- matrix(FALSE, nrow = length(lvs), ncol = length(lvs),
-                        dimnames = list(lvs, lvs))
-  preds <- succs <- matrix(FALSE, nrow = length(lvs), ncol = length(lvs),
-                           dimnames = list(lvs, lvs))
+  gamma <- matrix(
+    0, nrow = length(lvs), ncol = length(lvs),
+    dimnames = list(lvs, lvs)
+  )
+  
+  selectGamma <- matrix(
+    FALSE, nrow = length(lvs), ncol = length(lvs),
+    dimnames = list(lvs, lvs)
+  )
+
+  preds <- succs <- matrix(
+    FALSE, nrow = length(lvs), ncol = length(lvs),
+    dimnames = list(lvs, lvs)
+  )
+
   for (lv in lvs) {
     predsLv <- pt[pt$lhs == lv & pt$op == "~", "rhs"]
     succsLv <- pt[pt$rhs == lv & pt$op == "~", "lhs"]
@@ -393,6 +403,30 @@ initMatrices <- function(pt, higherOrderLVs = NULL) {
   )
   higherOrderComposites <- lvs.linear[isHigherOrderComposite]
 
+  # C++ specific objects
+  modeB_Cpp <- as.integer(lvs %in% mode.b)
+  lvColIdxCpp <- seq_along(lvs) - 1
+
+  indsIdxLVsCpp <- lapply(
+    X = indsLvs,
+    FUN = \(inds) which(allInds %in% inds) - 1
+  )
+
+  prodElemsIdxCpp <- lapply(
+    X = stringr::str_split(intTerms, pattern = ":"),
+    FUN = \(elems) vapply(
+      X = elems,
+      FUN.VALUE = integer(1L),
+      FUN = \(elem) as.integer(which(lvs == elem) - 1)
+    )
+  )
+
+  prodColIdxCpp <- vapply(
+    X = intTerms,
+    FUN.VALUE = integer(1L),
+    FUN = \(x) as.integer(which(lvs == x) - 1)
+  )
+
   matrices <- list(
     lambda       = lambda,
     gamma        = gamma,
@@ -414,7 +448,14 @@ initMatrices <- function(pt, higherOrderLVs = NULL) {
       theta    = selectTheta,
       nlinFrom = nlinSelectFrom
     ),
-    customExpressions = getCustomExpressions(pt)
+    customExpressions = getCustomExpressions(pt),
+    cpp = list(
+      indsIdxLVs   = indsIdxLVsCpp,
+      lvColIdxCpp  = lvColIdxCpp,
+      modeB        = modeB_Cpp,
+      prodElemsIdx = prodElemsIdxCpp,
+      prodColIdx   = prodColIdxCpp
+    )
   )
 
   info <- list(

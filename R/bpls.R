@@ -478,16 +478,18 @@ bpls <- function(syntax,
       }
 
       if (i <= warmup && i %% 10 == 0) {
-        # Update S
-        wpct <- warmup / iter
-        n    <- iter - warmup
-        n1   <- floor(i * wpct)
-        n0   <- max(0, n - n1)
-        sub  <- utils::tail(samples[seq_len(i), pars, drop = FALSE], n = n1)
+        n1 <- i - 1L
 
-        if (NROW(sub) > 10) {
-          S1 <- stats::cov(sub, use = "complete.obs")
-          S <- ((n0 - 1) * S0 + (n1 * 1) * S1) / (n0 + n1 - 2)
+        if (n1 > 10L) {
+          sub <- samples[seq_len(n1), pars, drop = FALSE]
+          S1 <- stats::cov(sub)
+
+          halfway <- max(floor(warmup / 2L), 1L)
+          weight <- max(0, 1 - n1 / halfway)
+          S <- weight * S0 + (1 - weight) * S1
+
+          ridge <- 1e-6 * pmax(diag(S0), .Machine$double.eps)
+          diag(S) <- diag(S) + ridge
         }
       }
 

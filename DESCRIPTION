@@ -53,7 +53,9 @@ Imports:
     FNN,
     MASS,
     pbivnorm,
-    posterior
+    posterior,
+    Rcpp (>= 1.1.2)
+LinkingTo: Rcpp, RcppArmadillo
 Remotes:
     github::kss2k/modsem
 Depends:

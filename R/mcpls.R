@@ -130,7 +130,9 @@ mcpls <- function(
     )
 
     fit.sim <- fit0.base
-    X       <- Rfast::standardise(as.matrix(sim.ov[vars]))
+    modelStatusIsQuick(fit.sim) <- TRUE
+
+    X <- Rfast::standardise(as.matrix(sim.ov[vars]))
 
     if (is.probit) S <- getCorrMat(X, probit = TRUE, ordered = ordered)
     else           S <- Rfast::cova(X)
@@ -450,19 +452,6 @@ mcpls <- function(
 }
 
 
-ordinalize <- function(x, probs, zero.tol = 0.001) {
-  probs <- pmin(pmax(probs, zero.tol), 1 - zero.tol)
-  probs <- sort(probs)
-
-  breaks <- collapse::fquantile(x, probs = probs)
-
-  out <- findInterval(x, vec = breaks)
-  attr(out, "tau") <- breaks
-
-  out
-}
-
-
 ordinalizeDataFrame <- function(df, thresholdStruct, return.thr = FALSE) {
   nm <- colnames(df)
   ordered <- thresholdStruct@ordered
@@ -472,8 +461,10 @@ ordinalizeDataFrame <- function(df, thresholdStruct, return.thr = FALSE) {
   out <- quickdf(stats::setNames(
     lapply(nm, FUN = function(v) {
       if (v %in% ordered) {
-        z <- ordinalize(df[[v]], probs = probs[indices[[v]]])
-        thresholdStruct@thresholds[indices[[v]]] <<- attr(z, "tau")
+        z <- ordinalizeVectorCpp(df[[v]], probs = probs[indices[[v]]])
+
+        if (return.thr)
+          thresholdStruct@thresholds[indices[[v]]] <<- attr(z, "tau")
 
         attr(z, "tau") <- NULL # remove before assigning to df
         z

@@ -126,6 +126,7 @@ factor scores, and supports multilevel specifications expressed with
 <span>  mc.delta.jacobian.k <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">floor</a></span><span class="op">(</span><span class="va">boot.R</span><span class="op">/</span><span class="fl">100L</span><span class="op">)</span>, <span class="fl">1</span><span class="op">)</span>,</span>
 <span>  mc.fn.args <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  mc.rescov <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"auto"</span>, <span class="st">"reduced"</span>, <span class="st">"full"</span><span class="op">)</span>,</span>
+<span>  mc.diag.secant <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/interactive.html" class="external-link">interactive</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  boot.optimize <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  boot.drop.inadmissible <span class="op">=</span> <span class="cn">FALSE</span>,</span>
@@ -313,6 +314,13 @@ endogenous residual covariances (<code>eta ~~ eta</code> and <code>xi ~~ eta</co
 are free parameters, explicitly simulated. <code>"auto"</code> uses <code>"full"</code>
 when the structural model is estimated by GLS (i.e. the model contains
 residual covariances) and <code>"reduced"</code> otherwise.</p></dd>
+
+
+<dt id="arg-mc-diag-secant">mc.diag.secant<a class="anchor" aria-label="anchor" href="#arg-mc-diag-secant"></a></dt>
+<dd><p>Logical; if <code>TRUE</code>, the MC-PLS root-finding algorithm
+uses a per-coordinate diagonal-secant step (estimating each coordinate's local
+slope from consecutive iterates), instead of the standard Robbins-Monro step.
+This might be usefull if the binding funtion is non-monotone.</p></dd>
 
 
 <dt id="arg-verbose">verbose<a class="anchor" aria-label="anchor" href="#arg-verbose"></a></dt>

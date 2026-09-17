@@ -15,7 +15,7 @@ tpb <- '
 
 
 testthat::expect_no_error({
-  fit <- pls(tpb, modsem::TPB, bootstrap = TRUE, boot.R = 50)
+  fit <- pls(tpb, modsem::TPB, bootstrap = TRUE, boot.R = 1000)
   summary(fit)
 })
 

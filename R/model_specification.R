@@ -97,6 +97,8 @@ specifySubModel <- function(parTable,
                             mc.fn.args             = list(),
                             mc.rescov              = "auto",
                             mc.diag.secant         = FALSE,
+                            mc.small.sample        = FALSE,
+                            mc.small.sample.max.k  = 50L,
                             verbose                = interactive(),
                             bootstrap              = FALSE,
                             boot.ncores            = 1L,
@@ -159,7 +161,9 @@ specifySubModel <- function(parTable,
     delta.jacobian.k = mc.delta.jacobian.k,
     fn.args          = mc.fn.args,
     rescov           = match.arg(mc.rescov, c("auto", "reduced", "full")),
-    diag.secant      = mc.diag.secant
+    diag.secant      = mc.diag.secant,
+    small.sample     = mc.small.sample,
+    small.sample.max.k = mc.small.sample.max.k
   )
 
   boot.info <- initModelBootInfo(

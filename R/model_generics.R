@@ -27,12 +27,13 @@ setMethod("show", "PlsModel", function(object) {
 #' Summarize a fitted \code{PlsModel} model
 #'
 #' @param object A \code{PlsModel} object.
-#' @param fit Logical; whether to compute fit measures.
+#' @param fit Logical; Whether to compute fit measures.
 #' @param unstandardized Logical; Should unstandardized estiamtes be included?
+#' @param ci. Logical; Should confidence intervals for parameter estimates be included?
 #' @param ... Arguments passes to \code{\link{unstandardized_estimates}}.
 #' @return A \code{SummaryPlsSem} list with formatted results.
 #' @export
-setMethod("summary", "PlsModel", function(object, fit = TRUE, unstandardized = FALSE, ...) {
+setMethod("summary", "PlsModel", function(object, fit = TRUE, unstandardized = FALSE, ci = FALSE, ...) {
 
   combined   <- combinedModel(object)
   parTable   <- parameter_estimates(combined)
@@ -66,6 +67,10 @@ setMethod("summary", "PlsModel", function(object, fit = TRUE, unstandardized = F
       )
 
     })
+  }
+
+  if (ci) {
+    extra.cols <- c("ci.lower", "ci.upper")
   }
 
   width.out <- plsGetWidthPrintedParTable(parTable)

@@ -4,16 +4,18 @@
 \alias{summary,PlsModel-method}
 \title{Summarize a fitted \code{PlsModel} model}
 \usage{
-\S4method{summary}{PlsModel}(object, fit = TRUE, unstandardized = FALSE, ...)
+\S4method{summary}{PlsModel}(object, fit = TRUE, unstandardized = FALSE, ci = FALSE, ...)
 }
 \arguments{
 \item{object}{A \code{PlsModel} object.}
 
-\item{fit}{Logical; whether to compute fit measures.}
+\item{fit}{Logical; Whether to compute fit measures.}
 
 \item{unstandardized}{Logical; Should unstandardized estiamtes be included?}
 
 \item{...}{Arguments passes to \code{\link{unstandardized_estimates}}.}
+
+\item{ci.}{Logical; Should confidence intervals for parameter estimates be included?}
 }
 \value{
 A \code{SummaryPlsSem} list with formatted results.

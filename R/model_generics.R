@@ -70,7 +70,7 @@ setMethod("summary", "PlsModel", function(object, fit = TRUE, unstandardized = F
   }
 
   if (ci) {
-    extra.cols <- c("ci.lower", "ci.upper")
+    extra.cols <- c(extra.cols, "ci.lower", "ci.upper")
   }
 
   width.out <- plsGetWidthPrintedParTable(parTable)

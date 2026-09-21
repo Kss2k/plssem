@@ -32,7 +32,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">plssem</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.1.4</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.1.5</span>
       </span>
     </div>
 
@@ -136,7 +136,7 @@ intercept models, with both continuous and ordinal data.</p>
 <span>  boot.R    <span class="op">=</span> <span class="fl">50</span></span>
 <span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit_slopes_cont</span><span class="op">)</span></span>
-<span><span class="co">#&gt; plssem (0.1.4) ended normally after 66 iterations</span></span>
+<span><span class="co">#&gt; plssem (0.1.5) ended normally after 66 iterations</span></span>
 <span><span class="co">#&gt;   Estimator                                 MCPLSc-MLM</span></span>
 <span><span class="co">#&gt;   Link                                          LINEAR</span></span>
 <span><span class="co">#&gt;                                                       </span></span>
@@ -249,7 +249,7 @@ intercept models, with both continuous and ordinal data.</p>
 <span>  ordered   <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">randomSlopesOrdered</span><span class="op">)</span> <span class="co"># explicitly specify variables as ordered</span></span>
 <span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit_slopes_ord</span><span class="op">)</span></span>
-<span><span class="co">#&gt; plssem (0.1.4) ended normally after 64 iterations</span></span>
+<span><span class="co">#&gt; plssem (0.1.5) ended normally after 64 iterations</span></span>
 <span><span class="co">#&gt;   Estimator                              MCOrdPLSc-MLM</span></span>
 <span><span class="co">#&gt;   Link                                          PROBIT</span></span>
 <span><span class="co">#&gt;                                                       </span></span>
@@ -445,7 +445,7 @@ intercept models, with both continuous and ordinal data.</p>
 <span>  boot.R    <span class="op">=</span> <span class="fl">50</span></span>
 <span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit_intercepts_cont</span><span class="op">)</span></span>
-<span><span class="co">#&gt; plssem (0.1.4) ended normally after 76 iterations</span></span>
+<span><span class="co">#&gt; plssem (0.1.5) ended normally after 76 iterations</span></span>
 <span><span class="co">#&gt;   Estimator                                 MCPLSc-MLM</span></span>
 <span><span class="co">#&gt;   Link                                          LINEAR</span></span>
 <span><span class="co">#&gt;                                                       </span></span>
@@ -526,7 +526,7 @@ intercept models, with both continuous and ordinal data.</p>
 <span>  ordered   <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">randomInterceptsOrdered</span><span class="op">)</span> <span class="co"># explicitly specify variables as ordered</span></span>
 <span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit_intercepts_ord</span><span class="op">)</span></span>
-<span><span class="co">#&gt; plssem (0.1.4) ended normally after 59 iterations</span></span>
+<span><span class="co">#&gt; plssem (0.1.5) ended normally after 59 iterations</span></span>
 <span><span class="co">#&gt;   Estimator                              MCOrdPLSc-MLM</span></span>
 <span><span class="co">#&gt;   Link                                          PROBIT</span></span>
 <span><span class="co">#&gt;                                                       </span></span>
@@ -552,17 +552,17 @@ intercept models, with both continuous and ordinal data.</p>
 <span><span class="co">#&gt; Latent Variables:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error   z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   f =~          </span></span>
-<span><span class="co">#&gt;     y1              0.936      0.005   205.450    0.000</span></span>
-<span><span class="co">#&gt;     y2              0.887      0.011    82.557    0.000</span></span>
-<span><span class="co">#&gt;     y3              0.905      0.006   155.902    0.000</span></span>
+<span><span class="co">#&gt;     y1              0.936      0.005   205.707    0.000</span></span>
+<span><span class="co">#&gt;     y2              0.887      0.011    82.533    0.000</span></span>
+<span><span class="co">#&gt;     y3              0.905      0.006   155.924    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Regressions:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error   z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   f ~           </span></span>
-<span><span class="co">#&gt;     x1              0.251      0.007    35.318    0.000</span></span>
-<span><span class="co">#&gt;     x2              0.159      0.008    19.400    0.000</span></span>
-<span><span class="co">#&gt;     x3              0.080      0.007    11.563    0.000</span></span>
-<span><span class="co">#&gt;     w1              0.122      0.035     3.438    0.001</span></span>
+<span><span class="co">#&gt;     x1              0.251      0.007    35.324    0.000</span></span>
+<span><span class="co">#&gt;     x2              0.159      0.008    19.399    0.000</span></span>
+<span><span class="co">#&gt;     x3              0.080      0.007    11.566    0.000</span></span>
+<span><span class="co">#&gt;     w1              0.122      0.035     3.439    0.001</span></span>
 <span><span class="co">#&gt;     w2              0.077      0.043     1.784    0.074</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Covariances:</span></span>
@@ -584,24 +584,24 @@ intercept models, with both continuous and ordinal data.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Thresholds:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error   z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;     y1|t1          -2.652      0.067   -39.460    0.000</span></span>
-<span><span class="co">#&gt;     y1|t2          -1.815      0.054   -33.365    0.000</span></span>
+<span><span class="co">#&gt;     y1|t1          -2.652      0.067   -39.461    0.000</span></span>
+<span><span class="co">#&gt;     y1|t2          -1.815      0.054   -33.382    0.000</span></span>
 <span><span class="co">#&gt;     y1|t3          -0.421      0.040   -10.646    0.000</span></span>
-<span><span class="co">#&gt;     y1|t4           0.337      0.042     8.072    0.000</span></span>
-<span><span class="co">#&gt;     y1|t5           1.319      0.054    24.428    0.000</span></span>
-<span><span class="co">#&gt;     y1|t6           2.347      0.041    57.318    0.000</span></span>
-<span><span class="co">#&gt;     y2|t1          -2.917      0.051   -57.540    0.000</span></span>
-<span><span class="co">#&gt;     y2|t2          -1.938      0.055   -35.196    0.000</span></span>
-<span><span class="co">#&gt;     y2|t3          -0.976      0.042   -23.050    0.000</span></span>
+<span><span class="co">#&gt;     y1|t4           0.337      0.042     8.073    0.000</span></span>
+<span><span class="co">#&gt;     y1|t5           1.319      0.054    24.426    0.000</span></span>
+<span><span class="co">#&gt;     y1|t6           2.347      0.041    57.331    0.000</span></span>
+<span><span class="co">#&gt;     y2|t1          -2.917      0.051   -57.538    0.000</span></span>
+<span><span class="co">#&gt;     y2|t2          -1.938      0.055   -35.199    0.000</span></span>
+<span><span class="co">#&gt;     y2|t3          -0.976      0.042   -23.047    0.000</span></span>
 <span><span class="co">#&gt;     y2|t4           0.188      0.037     5.065    0.000</span></span>
-<span><span class="co">#&gt;     y2|t5           1.034      0.038    27.052    0.000</span></span>
-<span><span class="co">#&gt;     y2|t6           2.228      0.110    20.298    0.000</span></span>
-<span><span class="co">#&gt;     y3|t1          -2.285      0.115   -19.895    0.000</span></span>
-<span><span class="co">#&gt;     y3|t2          -1.265      0.046   -27.336    0.000</span></span>
+<span><span class="co">#&gt;     y2|t5           1.034      0.038    27.054    0.000</span></span>
+<span><span class="co">#&gt;     y2|t6           2.228      0.110    20.297    0.000</span></span>
+<span><span class="co">#&gt;     y3|t1          -2.285      0.115   -19.894    0.000</span></span>
+<span><span class="co">#&gt;     y3|t2          -1.265      0.046   -27.332    0.000</span></span>
 <span><span class="co">#&gt;     y3|t3           0.010      0.039     0.264    0.792</span></span>
 <span><span class="co">#&gt;     y3|t4           0.698      0.039    17.981    0.000</span></span>
-<span><span class="co">#&gt;     y3|t5           1.764      0.073    24.029    0.000</span></span>
-<span><span class="co">#&gt;     y3|t6           2.775      0.073    37.968    0.000</span></span>
+<span><span class="co">#&gt;     y3|t5           1.764      0.073    24.028    0.000</span></span>
+<span><span class="co">#&gt;     y3|t6           2.775      0.073    37.964    0.000</span></span>
 <span><span class="co">#&gt;     x1|t1          -2.372      0.022  -109.813    0.000</span></span>
 <span><span class="co">#&gt;     x1|t2          -1.361      0.014   -96.526    0.000</span></span>
 <span><span class="co">#&gt;     x1|t3          -0.670      0.010   -68.508    0.000</span></span>
@@ -635,15 +635,15 @@ intercept models, with both continuous and ordinal data.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Variances:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error   z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;    .f               0.874      0.011    77.498    0.000</span></span>
+<span><span class="co">#&gt;    .f               0.874      0.011    77.462    0.000</span></span>
 <span><span class="co">#&gt;     x1              1.000                              </span></span>
 <span><span class="co">#&gt;     x2              1.000                              </span></span>
 <span><span class="co">#&gt;     x3              1.000                              </span></span>
 <span><span class="co">#&gt;     w1              1.000                              </span></span>
 <span><span class="co">#&gt;     w2              1.000                              </span></span>
-<span><span class="co">#&gt;    .y1              0.123      0.009    14.462    0.000</span></span>
-<span><span class="co">#&gt;    .y2              0.214      0.019    11.206    0.000</span></span>
-<span><span class="co">#&gt;    .y3              0.181      0.011    17.209    0.000</span></span>
+<span><span class="co">#&gt;    .y1              0.123      0.009    14.480    0.000</span></span>
+<span><span class="co">#&gt;    .y2              0.214      0.019    11.203    0.000</span></span>
+<span><span class="co">#&gt;    .y3              0.181      0.011    17.212    0.000</span></span>
 <span><span class="co">#&gt;     f~1             0.665      0.040    16.643    0.000</span></span></code></pre></div>
 </div>
 </div>

@@ -29,7 +29,7 @@ setMethod("show", "PlsModel", function(object) {
 #' @param object A \code{PlsModel} object.
 #' @param fit Logical; Whether to compute fit measures.
 #' @param unstandardized Logical; Should unstandardized estiamtes be included?
-#' @param ci. Logical; Should confidence intervals for parameter estimates be included?
+#' @param ci Logical; Should confidence intervals for parameter estimates be included?
 #' @param ... Arguments passes to \code{\link{unstandardized_estimates}}.
 #' @return A \code{SummaryPlsSem} list with formatted results.
 #' @export

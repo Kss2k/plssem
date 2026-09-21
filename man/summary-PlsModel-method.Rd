@@ -13,9 +13,9 @@
 
 \item{unstandardized}{Logical; Should unstandardized estiamtes be included?}
 
-\item{...}{Arguments passes to \code{\link{unstandardized_estimates}}.}
+\item{ci}{Logical; Should confidence intervals for parameter estimates be included?}
 
-\item{ci.}{Logical; Should confidence intervals for parameter estimates be included?}
+\item{...}{Arguments passes to \code{\link{unstandardized_estimates}}.}
 }
 \value{
 A \code{SummaryPlsSem} list with formatted results.

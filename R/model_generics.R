@@ -693,3 +693,57 @@ setGeneric(
 setMethod("mcpls_loglik", "PlsModel", function(object, boot.R = 500, verbose = interactive(), ...) {
   mcplsLoglik(object, boot.R = boot.R, verbose = verbose)
 })
+
+
+#' Bias-corrected MC-PLS estimates
+#'
+#' Correct the finite-sample bias of the MC-PLS estimator with a single nested
+#' Newton step.
+#'
+#' MC-PLS returns the solution of \eqn{f(X) = f(g(\theta))}, that is
+#' \eqn{\hat{\theta} = b^{-1}(\hat{\theta}^{*})} for the binding function
+#' \eqn{b = f \circ g}. Because \eqn{b^{-1}} is non-linear and the auxiliary
+#' estimates \eqn{\hat{\theta}^{*}} are dispersed in finite samples,
+#' \eqn{E[b^{-1}(\hat{\theta}^{*})] \neq b^{-1}(E[\hat{\theta}^{*}])}, which
+#' leaves a bias of order \eqn{1/n}. The bias is largest when the indicators
+#' carry little information about the model, for example with few categories
+#' and strongly skewed thresholds.
+#'
+#' Since the bias is a smooth function of \eqn{\theta} and data can be
+#' simulated from \eqn{\theta}, it is estimated by simulation: `B` data sets of
+#' the observed sample size are drawn from \eqn{\hat{\theta}} and the whole
+#' estimator is applied to each. Writing \eqn{\bar{\theta}} for the mean of the
+#' replicate estimates, the correction is
+#' \eqn{\hat{\theta}_{BC} = 2\hat{\theta} - \bar{\theta}}.
+#'
+#' Only the free parameters are corrected. Residual variances and thresholds
+#' are functions of these and are recomputed by the estimator.
+#'
+#' The correction costs `B` full MC-PLS fits and carries a Monte-Carlo error of
+#' its own that falls as \eqn{1/\sqrt{B}}; check the returned `se` before
+#' relying on the corrected values.
+#'
+#' @param object A fitted [PlsModel] object, using MC-PLS.
+#' @param B Integer; number of simulated data sets used to estimate the bias.
+#' @param seed Optional integer; seed for the simulated data sets.
+#' @param verbose Logical; Should a progressbar be displayed?
+#' @param ... Passed on to the underlying routine. `reuse.start = TRUE` starts
+#'   each replicate at \eqn{\hat{\theta}} instead of at its own auxiliary
+#'   estimates (faster, but shrinks the estimated bias towards zero);
+#'   `clamp = FALSE` disables clamping of corrected values to the bounds of the
+#'   parameter space.
+#' @return List with the original estimates, the simulated bias and its
+#'   Monte-Carlo standard error, the bias-corrected estimates, the matrix of
+#'   replicate estimates, and the number of usable replicates.
+#' @export
+setGeneric(
+  "mcpls_bias_correct",
+  function(object, B = 50L, seed = NULL, verbose = interactive(), ...) standardGeneric("mcpls_bias_correct")
+)
+
+
+#' @rdname mcpls_bias_correct
+#' @export
+setMethod("mcpls_bias_correct", "PlsModel", function(object, B = 50L, seed = NULL, verbose = interactive(), ...) {
+  mcplsBiasCorrect(object, B = B, seed = seed, verbose = verbose, ...)
+})

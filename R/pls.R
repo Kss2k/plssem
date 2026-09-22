@@ -262,9 +262,12 @@ pls <- function(syntax,
 
   data <- asDataFrame(data)
 
-  model <- specifyModel(
+  # Everything needed to re-specify this model on a new data set. Stored on the
+  # fitted object (below) so that routines which have to re-run the estimator on
+  # simulated data -- see `mcpls_bias_correct()` -- can reproduce the exact
+  # specification without the caller having to repeat the arguments.
+  spec.args <- c(list(
     syntax                 = syntax,
-    data                   = data,
     consistent             = consistent,
     missing                = missing,
     standardize            = standardize,
@@ -299,9 +302,11 @@ pls <- function(syntax,
     mc.boot.control        = mc.boot.control,
     knn.k                  = knn.k,
     reliabilities          = reliabilities,
-    default.path.estimator = default.path.estimator,
-    ...
-  )
+    default.path.estimator = default.path.estimator
+  ), list(...))
+
+  model <- do.call(specifyModel, c(list(data = data), spec.args))
+  model@info$spec.args <- spec.args
 
   model <- estimatePLS(model = model)
 

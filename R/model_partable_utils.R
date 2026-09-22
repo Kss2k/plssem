@@ -198,6 +198,16 @@ getParNamesFromParTable <- function(parTable) {
 }
 
 
+getParNamesReverseFromParTable <- function(parTable) {
+  reversed <- parTable
+  idx <- which(parTable$op == "~~")
+  reversed[idx, "lhs"] <- parTable[idx, "rhs"]
+  reversed[idx, "rhs"] <- parTable[idx, "lhs"]
+
+  getParNamesFromParTable(reversed)
+}
+
+
 hasResidualCovariances <- function(parTable) {
   etas <- unique(parTable[parTable$op == "~", "lhs"])
 

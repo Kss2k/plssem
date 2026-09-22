@@ -17,8 +17,14 @@ mcpls <- function(
   diag.secant        = fit0@info$mc.args$diag.secant,
   small.sample       = fit0@info$mc.args$small.sample,
   small.sample.max.k = fit0@info$mc.args$small.sample.max.k,
+  metric             = fit0@info$mc.args$metric,
+  Omega              = fit0@info$mc.args$Omega,
   ...
 ) {
+  # `metric` is missing on models fitted before it was introduced
+  if (is.null(metric)) metric <- "root"
+  metric <- match.arg(metric, c("root", "loglik"))
+
   fit0.base <- fit0
   fit0.combined <- combinedModel(fit0.base)
 
@@ -181,6 +187,8 @@ mcpls <- function(
 
     attr(out, "lower") <- sim$lower[free]
     attr(out, "upper") <- sim$upper[free]
+    attr(out, "admissible") <- sim$is.admissible
+
     out
   }
 
@@ -214,6 +222,48 @@ mcpls <- function(
   ok.start <- !is.null(p.start) && length(p.start) == sum(par1$is.free)
   p        <- if (ok.start) p.start else par1[par1$is.free, "est"]
   names(p) <- getParNamesFromParTable(par1)[par1$is.free]
+  
+  # The weight matrix for `metric = "loglik"`. It is cached in `mc.args` so that
+  # bootstrap replicates reuse the weight matrix of the main fit, instead of
+  # each replicate bootstrapping itself.
+  if (metric == "loglik" && !is.null(Omega)) {
+    pls_stopif(
+      NROW(Omega) != length(p) || NCOL(Omega) != length(p),
+      "`Omega` must be a square matrix with one row per free parameter."
+    )
+
+  } else if (metric == "loglik") {
+    # `Omega` is the sampling covariance of the *observed-data* PLS estimates
+    # (`par0`), so the replicates must be plain PLS fits. De-flagging MC-PLS
+    # also keeps the replicates from bootstrapping themselves, which would
+    # otherwise recurse whenever `mc.delta.se = FALSE`.
+    fit0.boot <- fit0.base
+    combinedModel(fit0.boot) <- NULL
+    isMCPLS(fit0.boot, recursive = TRUE) <- FALSE
+
+    if (verbose) pls_msg_note("Bootstrapping the log-likelihood weight matrix...")
+
+    boot <- bootstrap(fit0.boot)
+    vcov <- boot$vcov
+
+    nm0 <- names(p)
+    nm1 <- getParNamesReverseFromParTable(par1)[par1$is.free]
+    nm  <- ifelse(nm0 %in% colnames(vcov), yes = nm0, no = nm1)
+    mis <- setdiff(colnames(vcov), nm)
+
+    if (length(mis)) {
+      vcov.mis <- diag(length(mis))
+      dimnames(vcov.mis) <- list(mis, mis)
+
+      vcov <- diagPartitioned(
+        X = vcov,
+        Y = vcov.mis
+      )
+    }
+
+    Omega <- vcov[nm, nm, drop = FALSE]
+  }
+
 
   # If p.start was not supplied, check if any parameters were specified
   # in the model syntax/parameter table. We add the reversed covariances
@@ -236,106 +286,189 @@ mcpls <- function(
   lower <- getMcLowerBounds(par1)
   upper <- getMcUpperBounds(par1)
 
-  if (polyak.juditsky && !pj.extrapolate) {
-    # If we're not using a Nonlinear Regression to solve for the convergence
-    # point, we will get a biased root with Polyak-Juditsky averaging, if
-    # we have no warmup
-    if (verbose) pls_msg_note("Warming up...")
+  if (metric == "root") {
+    if (polyak.juditsky && !pj.extrapolate) {
+      # If we're not using a Nonlinear Regression to solve for the convergence
+      # point, we will get a biased root with Polyak-Juditsky averaging, if
+      # we have no warmup
+      if (verbose) pls_msg_note("Warming up...")
+
+      mcfit <- robbinsMonro1951(
+        p                = p,
+        f                = .f,
+        tol              = 10 * tol,
+        min.iter         = 5L,
+        max.iter         = 20L,
+        verbose          = verbose,
+        polyak.juditsky  = FALSE,
+        fn.args          = fn.args,
+        lower            = lower,
+        upper            = upper,
+        diag.secant      = diag.secant,
+        ...
+      )
+
+      p <- mcfit$root # keep names - `robbinsMonro1951()` relies on them for `history.f`
+    }
 
     mcfit <- robbinsMonro1951(
       p                = p,
       f                = .f,
-      tol              = 10 * tol,
-      min.iter         = 5L,
-      max.iter         = 20L,
+      tol              = tol,
+      min.iter         = min.iter,
+      max.iter         = max.iter,
       verbose          = verbose,
-      polyak.juditsky  = FALSE,
+      polyak.juditsky  = polyak.juditsky,
       fn.args          = fn.args,
+      pj.extrapolate   = pj.extrapolate,
       lower            = lower,
       upper            = upper,
       diag.secant      = diag.secant,
       ...
     )
 
-    p <- mcfit$root # keep names - `robbinsMonro1951()` relies on them for `history.f`
-  }
+    iter <- mcfit$iter
+    diverged <- mcfit$diverged
+    if ((iter >= max.iter && !polyak.juditsky) || diverged) {
 
-  mcfit <- robbinsMonro1951(
-    p                = p,
-    f                = .f,
-    tol              = tol,
-    min.iter         = min.iter,
-    max.iter         = max.iter,
-    verbose          = verbose,
-    polyak.juditsky  = polyak.juditsky,
-    fn.args          = fn.args,
-    pj.extrapolate   = pj.extrapolate,
-    lower            = lower,
-    upper            = upper,
-    diag.secant      = diag.secant,
-    ...
-  )
+      if (diverged) {
+        # Might signal a non-monotone .f(). Try switching to diag.secant,
+        # which actually can account for a non-monotone .f()
+        retry.ds <- !diag.secant
 
-  iter <- mcfit$iter
-  diverged <- mcfit$diverged
-  if ((iter >= max.iter && !polyak.juditsky) || diverged) {
+        pls_msg_warn(
+          "The root-finding algorithm appears to be diverging!\n",
+          "Restarting from the best point found so far, with",
+          if (retry.ds) "the diagonal-secant step method..." else "Polyak Juditsky averaging..."
+        )
 
-    if (diverged) {
-      # Might signal a non-monotone .f(). Try switching to diag.secant,
-      # which actually can account for a non-monotone .f()
-      retry.ds <- !diag.secant
+      } else {
+        retry.ds <- diag.secant
 
-      pls_msg_warn(
-        "The root-finding algorithm appears to be diverging!\n",
-        "Restarting from the best point found so far, with",
-        if (retry.ds) "the diagonal-secant step method..." else "Polyak Juditsky averaging..."
+        pls_msg_warn(
+          "Maximum number of (initial) iterations reached!\n",
+          sprintf("Attempting to use Polyak Juditsky averaging...")
+        )
+      }
+
+      start.p <- if (retry.ds) mcfit$best.p else mcfit$root
+      mcfit <- robbinsMonro1951(
+        p                = start.p, # keep names - see the warmup retry above
+        f                = .f,
+        tol              = tol,
+        min.iter         = min.iter,
+        max.iter         = max.iter,
+        verbose          = verbose,
+        polyak.juditsky  = TRUE,
+        fn.args          = fn.args,
+        pj.extrapolate   = pj.extrapolate,
+        lower            = lower,
+        upper            = upper,
+        diag.secant      = retry.ds,
+        ...
       )
 
-    } else {
-      retry.ds <- diag.secant
-
-      pls_msg_warn(
-        "Maximum number of (initial) iterations reached!\n",
-        sprintf("Attempting to use Polyak Juditsky averaging...")
-      )
+      iter <- iter + mcfit$iter
     }
 
-    start.p <- if (retry.ds) mcfit$best.p else mcfit$root
-    mcfit <- robbinsMonro1951(
-      p                = start.p, # keep names - see the warmup retry above
-      f                = .f,
-      tol              = tol,
-      min.iter         = min.iter,
-      max.iter         = max.iter,
-      verbose          = verbose,
-      polyak.juditsky  = TRUE,
-      fn.args          = fn.args,
-      pj.extrapolate   = pj.extrapolate,
-      lower            = lower,
-      upper            = upper,
-      diag.secant      = retry.ds,
-      ...
+    # Check status of (last) mcfit
+    if (mcfit$diverged) {
+      pls_msg_warn(
+        "The root-finding algorithm diverged and did not recover!\n",
+        "Parameter estimates might be unreliable!"
+      )
+
+      modelStatus(fit0.combined)$is.admissible <- FALSE
+
+    } else if (mcfit$iter >= max.iter) {
+      pls_msg_warn(
+        "Maximum number of iterations reached!\n",
+        "Parameter estimates might be unreliable!"
+      )
+
+      modelStatus(fit0.combined)$is.admissible <- FALSE
+    }
+
+  } else if (metric == "loglik") {
+    rng.seed.orig <- rng.seed
+
+    objective <- function(theta) {
+      x <- .f(theta)
+
+      ll <- mvnfast::dmvn(
+        X = matrix(x, nrow = 1),
+        mu = rep(0, length(x)),
+        sigma = Omega,
+        log = TRUE
+      )
+
+      if (!attr(x, "admissible"))
+        return(abs(ll) * 100)
+
+      -ll
+    }
+
+    THETA <- NULL
+    theta.hat <- p
+
+    for (i in seq_len(max.iter)) {
+      rng.seed <- runif(1, min = 100000, 999999)
+
+      opt.i <- stats::nlminb(
+        start = theta.hat,
+        objective = objective,
+        gradient = \(x) numGradient(x, .f = objective),
+        lower = lower,
+        upper = upper,
+        control = list(
+          eval.max = max.iter * 2, iter.max = max.iter,
+          rel.tol = tol / 10, x.tol = tol, trace = 0
+        )
+      )
+
+      THETA <- rbind(THETA, opt.i$par)
+      if (NROW(THETA) > 1L) {
+        theta.hat.i <- apply(
+          X = THETA,
+          MARGIN = 2L,
+          FUN = mean,
+          na.rm = TRUE
+        )
+
+      } else {
+        theta.hat.i <- c(THETA)
+      }
+
+      diff <- abs(theta.hat - theta.hat.i)
+    
+      if (verbose) {
+        msg <- MSG_STRINGS$strings$SimDesign.RobbinsMonro0
+        messagef(msg, i, max(diff))
+      }
+
+      if (all(diff <= tol))
+        break
+
+      theta.hat <- theta.hat.i
+    }
+
+    if (verbose) message("\n")
+
+    mcfit <- list(
+      iter            = i,
+      root            = theta.hat.i,
+      history.p       = THETA,
+      history.f       = NULL,
+      lower           = lower,
+      upper           = upper,
+      converged       = i < max.iter,
+      polyak.juditsky = FALSE,
+      diverged        = NULL,
+      resid.norm      = NULL,
+      best.p          = theta.hat
     )
 
-    iter <- iter + mcfit$iter
-  }
-
-  # Check status of (last) mcfit
-  if (mcfit$diverged) {
-    pls_msg_warn(
-      "The root-finding algorithm diverged and did not recover!\n",
-      "Parameter estimates might be unreliable!"
-    )
-
-    modelStatus(fit0.combined)$is.admissible <- FALSE
-
-  } else if (mcfit$iter >= max.iter) {
-    pls_msg_warn(
-      "Maximum number of iterations reached!\n",
-      "Parameter estimates might be unreliable!"
-    )
-
-    modelStatus(fit0.combined)$is.admissible <- FALSE
+    rng.seed <- rng.seed.orig
   }
 
   par1[par1$is.free, "est"] <- as.vector(mcfit$root)
@@ -355,57 +488,59 @@ mcpls <- function(
 
   if (delta.jacobian) {
 
-    if (is.null(delta.jacobian.k))
-      delta.jacobian.k <- floor(fit0@info$boot$R / 50)
+      if (is.null(delta.jacobian.k))
+        delta.jacobian.k <- floor(fit0@info$boot$R / 50)
 
-    pls_stopif(
-      !length(delta.jacobian.k) || !is.finite(delta.jacobian.k[1L]) ||
-      delta.jacobian.k[[1L]] <= 0,
-      "`mc.delta.jacobian.k` must be a positive integer or `NULL`."
-    )
+      pls_stopif(
+        !length(delta.jacobian.k) || !is.finite(delta.jacobian.k[1L]) ||
+        delta.jacobian.k[[1L]] <= 0,
+        "`mc.delta.jacobian.k` must be a positive integer or `NULL`."
+      )
 
-    if (verbose) pls_msg_note("Calculating Jacobian...")
+      if (verbose) pls_msg_note("Calculating Jacobian...")
 
 
-    probs0 <- thresholdStruct0@proportions
-    nm <- paste0(par1$lhs, par1$op, par1$rhs)
-    p0 <- stats::setNames(mcfit$root, nm[par1$is.free])
-    p1 <- fit1.combined@params$values
+      probs0 <- thresholdStruct0@proportions
+      nm <- paste0(par1$lhs, par1$op, par1$rhs)
+      p0 <- stats::setNames(mcfit$root, nm[par1$is.free])
+      p1 <- fit1.combined@params$values
 
-    # Delta-method SEs assume `p0` is close to the root. Simplest way to check
-    # is by looking at the residual
-    resid.p0 <- .f(as.vector(p0))
-    names(resid.p0) <- names(p0)
+      if (!is.null(mcfit$history.f)) {
+      # Delta-method SEs assume `p0` is close to the root. Simplest way to check
+      # is by looking at the residual
+      resid.p0 <- .f(as.vector(p0))
+      names(resid.p0) <- names(p0)
 
-    # Use a sufficiently large factor, to avoid false positives
-    history.f <- mcfit$history.f[,names(resid.p0), drop = FALSE]
+      # Use a sufficiently large factor, to avoid false positives
+      history.f <- mcfit$history.f[,names(resid.p0), drop = FALSE]
 
-    # Only use the tail (steady-state) half of the trajectory: the early,
-    # far-from-root iterations have their own large, systematic swings on top
-    # of MC noise, which would otherwise inflate `sds` and mask a genuinely
-    # bad residual at `p0`.
-    n.hist   <- NROW(history.f)
-    tail.idx <- ceiling(n.hist / 2):n.hist
-    tail.f   <- history.f[tail.idx, , drop = FALSE]
+      # Only use the tail (steady-state) half of the trajectory: the early,
+      # far-from-root iterations have their own large, systematic swings on top
+      # of MC noise, which would otherwise inflate `sds` and mask a genuinely
+      # bad residual at `p0`.
+      n.hist   <- NROW(history.f)
+      tail.idx <- ceiling(n.hist / 2):n.hist
+      tail.f   <- history.f[tail.idx, , drop = FALSE]
 
-    sds <- apply(tail.f, MARGIN = 2L, FUN = stats::sd, na.rm = TRUE)
-    sds[NROW(tail.f) < 10 | !is.finite(sds) | sds <= tol] <- Inf # not reliable
+      sds <- apply(tail.f, MARGIN = 2L, FUN = stats::sd, na.rm = TRUE)
+      sds[NROW(tail.f) < 10 | !is.finite(sds) | sds <= tol] <- Inf # not reliable
 
-    # Bonferroni-adjusted z-score
-    resid.tol <- stats::qnorm(1 - 0.025 / length(p0))
-    bad.resid <- abs(resid.p0) > resid.tol * sds
-    bad.pars <- names(resid.p0)[bad.resid]
-    max.res  <- max(abs(resid.p0))
+      # Bonferroni-adjusted z-score
+      resid.tol <- stats::qnorm(1 - 0.025 / length(p0))
+      bad.resid <- abs(resid.p0) > resid.tol * sds
+      bad.pars <- names(resid.p0)[bad.resid]
+      max.res  <- max(abs(resid.p0))
 
-    pls_warnif(
-      any(bad.resid),
-      "The MC-PLS root residual is not small relative to the sampling error for:",
-      paste0(bad.pars, collapse = ", "),
-      sprintf("(largest |residual| = %.4g).", max.res),
-      "Delta-method standard errors might be unreliable for these parameters.",
-      "Consider decreasing `mc.tol`, increasing `mc.max.iter`, or using",
-      "bootstrap standard errors instead (`mc.delta.se = FALSE`)."
-    )
+      pls_warnif(
+        any(bad.resid),
+        "The MC-PLS root residual is not small relative to the sampling error for:",
+        paste0(bad.pars, collapse = ", "),
+        sprintf("(largest |residual| = %.4g).", max.res),
+        "Delta-method standard errors might be unreliable for these parameters.",
+        "Consider decreasing `mc.tol`, increasing `mc.max.iter`, or using",
+        "bootstrap standard errors instead (`mc.delta.se = FALSE`)."
+      )
+    }
 
     if (verbose) {
       pb <- utils::txtProgressBar(
@@ -472,6 +607,12 @@ mcpls <- function(
   fit0.base@combinedModel        <- fit1.combined
   fit0.base@status$iterations    <- mcfit$iter
   fit0.base@info$mc.args$p.start <- as.vector(mcfit$root)
+
+  if (metric == "loglik") {
+    fit1.combined@info$mc.args$Omega <- Omega
+    fit0.base@info$mc.args$Omega     <- Omega
+  }
+
   fit0.base
 }
 
@@ -934,4 +1075,20 @@ getMcUpperBounds <- function(par, tol = 1e-3) {
   upper[parf$op == "=~"] <- 1 - tol
 
   upper
+}
+
+
+numGradient <- function(par, .f, f0 = NULL, eps = 1e-3) {
+
+  if (is.null(f0))
+    f0 <- .f(par)
+
+  grad <- numeric(length(par))
+  for (i in seq_along(grad)) {
+    par.i <- par
+    par.i[i] <- par[i] + eps
+    grad[i] <- (.f(par.i) - f0) / eps
+  }
+
+  grad
 }

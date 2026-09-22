@@ -73,7 +73,8 @@ initModelMcArgs <- function(min.iter,
                             rescov = "reduced",
                             diag.secant = FALSE,
                             small.sample = FALSE,
-                            small.sample.max.k = 50L) {
+                            small.sample.max.k = 50L,
+                            metric = "root") {
   list(
     min.iter         = min.iter,
     max.iter         = max.iter,
@@ -89,6 +90,8 @@ initModelMcArgs <- function(min.iter,
     diag.secant      = diag.secant,
     small.sample     = small.sample,
     small.sample.max.k = small.sample.max.k,
+    metric           = metric,
+    Omega            = NULL,
     rng.seed         = NULL,
     p.start          = NULL
   )

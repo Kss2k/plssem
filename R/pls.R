@@ -139,6 +139,15 @@ USE_NON_LINEAR_PROBIT_CORR_MAT <- FALSE
 #'   when the structural model is estimated by GLS (i.e. the model contains
 #'   residual covariances) and \code{"reduced"} otherwise.
 #'
+#' @param mc.metric Which criterion the MC-PLS algorithm optimizes. One of
+#'   \code{"root"} (the default) or \code{"loglik"}. With \code{"root"} the
+#'   binding function is solved directly by Robbins-Monro stochastic
+#'   approximation. With \code{"loglik"} the parameters are chosen to maximize
+#'   the (Gaussian) log-likelihood of the simulation residuals, using the
+#'   bootstrapped sampling covariance matrix of the PLS estimates as the weight
+#'   matrix. Note that \code{"loglik"} requires an additional bootstrap of the
+#'   base fit, and is therefore substantially more expensive.
+#'
 #' @param verbose Should verbose output be printed?
 #'
 #' @param boot.optimize Logical; if \code{TRUE} and \code{bootstrap = TRUE}, applies
@@ -228,6 +237,7 @@ pls <- function(syntax,
                 mc.diag.secant = FALSE,
                 mc.small.sample = FALSE,
                 mc.small.sample.max.k = 50L,
+                mc.metric = c("root", "loglik"),
                 verbose = interactive(),
                 boot.optimize = TRUE,
                 boot.drop.inadmissible = FALSE,
@@ -249,6 +259,7 @@ pls <- function(syntax,
   missing       <- match.arg(tolower(missing), c("listwise", "mean", "knn"))
   boot.parallel <- match.arg(tolower(boot.parallel), c("no", "multicore", "multisession", "snow"))
   default.path.estimator <- match.arg(tolower(default.path.estimator), c("ols", "gls"))
+  mc.metric     <- match.arg(tolower(mc.metric), c("root", "loglik"))
 
   if (!is.null(boot.ncpus)) {
     pls_msg_warn("The `boot.ncpus` argument is deprecated; please use `boot.ncores` instead.")
@@ -288,6 +299,7 @@ pls <- function(syntax,
     mc.diag.secant         = mc.diag.secant,
     mc.small.sample        = mc.small.sample,
     mc.small.sample.max.k  = mc.small.sample.max.k,
+    mc.metric              = mc.metric,
     verbose                = verbose,
     bootstrap              = bootstrap,
     boot.ncores            = boot.ncores,

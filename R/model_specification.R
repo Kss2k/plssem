@@ -99,6 +99,7 @@ specifySubModel <- function(parTable,
                             mc.diag.secant         = FALSE,
                             mc.small.sample        = FALSE,
                             mc.small.sample.max.k  = 50L,
+                            mc.metric              = "root",
                             verbose                = interactive(),
                             bootstrap              = FALSE,
                             boot.ncores            = 1L,
@@ -163,7 +164,8 @@ specifySubModel <- function(parTable,
     rescov           = match.arg(mc.rescov, c("auto", "reduced", "full")),
     diag.secant      = mc.diag.secant,
     small.sample     = mc.small.sample,
-    small.sample.max.k = mc.small.sample.max.k
+    small.sample.max.k = mc.small.sample.max.k,
+    metric           = match.arg(mc.metric, c("root", "loglik"))
   )
 
   boot.info <- initModelBootInfo(

@@ -18,7 +18,7 @@ testthat::expect_no_error({
 
 testthat::expect_no_error({
   fit <- pls(m, oneIntOrdered, bootstrap = TRUE, boot.R = 500,
-             boot.parallel = "multicore", boot.ncores = 4)
+             boot.parallel = "multicore", boot.ncores = 4, mc.metric = "loglik", mc.small.sample = TRUE)
   summary(fit, unstandardized = TRUE)
 })
 

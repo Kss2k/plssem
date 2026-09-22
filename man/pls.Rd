@@ -38,6 +38,7 @@ pls(
   mc.diag.secant = FALSE,
   mc.small.sample = FALSE,
   mc.small.sample.max.k = 50L,
+  mc.metric = c("root", "loglik"),
   verbose = interactive(),
   boot.optimize = TRUE,
   boot.drop.inadmissible = FALSE,
@@ -179,6 +180,15 @@ not affected by the sample size.}
 when \code{mc.small.sample = TRUE}. Defaults to 50. The number of samples
 is also limited by \code{mc.reps}, rounded down to a multiple of the
 observed sample size, with at least one sample.}
+
+\item{mc.metric}{Which criterion the MC-PLS algorithm optimizes. One of
+\code{"root"} (the default) or \code{"loglik"}. With \code{"root"} the
+binding function is solved directly by Robbins-Monro stochastic
+approximation. With \code{"loglik"} the parameters are chosen to maximize
+the (Gaussian) log-likelihood of the simulation residuals, using the
+bootstrapped sampling covariance matrix of the PLS estimates as the weight
+matrix. Note that \code{"loglik"} requires an additional bootstrap of the
+base fit, and is therefore substantially more expensive.}
 
 \item{verbose}{Should verbose output be printed?}
 

@@ -17,7 +17,7 @@ pls(
   mc.fast.lmer = mcpls,
   probit = NULL,
   tolerance = 1e-05,
-  max.iter.0_5 = 100L,
+  max.iter.0_5 = 500L,
   boot.ncores = 1L,
   boot.ncpus = NULL,
   boot.parallel = c("no", "multicore", "multisession", "snow"),
@@ -36,6 +36,8 @@ pls(
   mc.fn.args = list(),
   mc.rescov = c("auto", "reduced", "full"),
   mc.diag.secant = FALSE,
+  mc.small.sample = FALSE,
+  mc.small.sample.max.k = 50L,
   verbose = interactive(),
   boot.optimize = TRUE,
   boot.drop.inadmissible = FALSE,
@@ -165,6 +167,18 @@ residual covariances) and \code{"reduced"} otherwise.}
 uses a per-coordinate diagonal-secant step (estimating each coordinate's local
 slope from consecutive iterates), instead of the standard Robbins-Monro step.
 This might be usefull if the binding funtion is non-monotone.}
+
+\item{mc.small.sample}{Logical; if \code{TRUE}, average MC-PLS
+estimating equations over simulated samples of the observed sample size.
+If \code{FALSE} (default), fit one sample using all simulated observations.
+This assumes that the auxiliary estimator (i.e., traditional PLS) has
+negligible finite sample bias. I.e., that the bias of the estimator is
+not affected by the sample size.}
+
+\item{mc.small.sample.max.k}{Maximum number of simulated samples to average
+when \code{mc.small.sample = TRUE}. Defaults to 50. The number of samples
+is also limited by \code{mc.reps}, rounded down to a multiple of the
+observed sample size, with at least one sample.}
 
 \item{verbose}{Should verbose output be printed?}
 

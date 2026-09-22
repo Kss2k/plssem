@@ -1,20 +1,22 @@
 mcpls <- function(
   fit0,
-  p.start          = fit0@info$mc.args$p.start,
-  min.iter         = fit0@info$mc.args$min.iter,
-  max.iter         = fit0@info$mc.args$max.iter,
-  mc.reps          = fit0@info$mc.args$mc.reps,
-  rng.seed         = fit0@info$mc.args$rng.seed,
-  tol              = fit0@info$mc.args$tol,
-  fixed.seed       = fit0@info$mc.args$fixed.seed,
-  verbose          = fit0@info$verbose,
-  polyak.juditsky  = fit0@info$mc.args$polyak.juditsky,
-  fn.args          = fit0@info$mc.args$fn.args,
-  pj.extrapolate   = fit0@info$mc.args$pj.extrapolate,
-  delta.jacobian   = fit0@info$mc.args$delta.se && fit0@info$boot$bootstrap,
-  delta.fixed.seed = TRUE,
-  delta.jacobian.k = fit0@info$mc.args$delta.jacobian.k,
-  diag.secant      = fit0@info$mc.args$diag.secant,
+  p.start            = fit0@info$mc.args$p.start,
+  min.iter           = fit0@info$mc.args$min.iter,
+  max.iter           = fit0@info$mc.args$max.iter,
+  mc.reps            = fit0@info$mc.args$mc.reps,
+  rng.seed           = fit0@info$mc.args$rng.seed,
+  tol                = fit0@info$mc.args$tol,
+  fixed.seed         = fit0@info$mc.args$fixed.seed,
+  verbose            = fit0@info$verbose,
+  polyak.juditsky    = fit0@info$mc.args$polyak.juditsky,
+  fn.args            = fit0@info$mc.args$fn.args,
+  pj.extrapolate     = fit0@info$mc.args$pj.extrapolate,
+  delta.jacobian     = fit0@info$mc.args$delta.se && fit0@info$boot$bootstrap,
+  delta.fixed.seed   = TRUE,
+  delta.jacobian.k   = fit0@info$mc.args$delta.jacobian.k,
+  diag.secant        = fit0@info$mc.args$diag.secant,
+  small.sample       = fit0@info$mc.args$small.sample,
+  small.sample.max.k = fit0@info$mc.args$small.sample.max.k,
   ...
 ) {
   fit0.base <- fit0
@@ -27,6 +29,7 @@ mcpls <- function(
   )
 
   data      <- fit0.base@data
+  n         <- NROW(data)
   vars      <- colnames(data)
   ordered   <- fit0@info$ordered
   is.probit <- fit0@info$is.probit
@@ -46,6 +49,28 @@ mcpls <- function(
     auto    = estimator == "gls",
     pls_msg_stop("Unrecognized value for `mc.rescov` argument:", mc.rescov)
   )
+  
+  if (small.sample) {
+    pls_stopif(
+      !is.numeric(small.sample.max.k) ||
+      length(small.sample.max.k) != 1L ||
+      !is.finite(small.sample.max.k),
+      "`mc.small.sample.max.k` must be a single finite number."
+    )
+
+    max.k.int <- round(small.sample.max.k)
+
+    pls_warnif(abs(small.sample.max.k - max.k.int) > 1e-12,
+      "`mc.small.sample.max.k` should be an integer!",
+      sprintf("Using `small.sample.max.k = %d`", max.k.int)
+    )
+
+    k <- max(max.k.int, 1)
+    mc.reps <- min(k * n, max(mc.reps - mc.reps %% n, n))
+    mc.reps.k <- max(floor(mc.reps / n), 1)
+  } else {
+    mc.reps.k <- 1L
+  }
 
   par0 <- getFreeParamsTable(fit0.combined)
 
@@ -125,37 +150,50 @@ mcpls <- function(
         compiled.info <<- sim$compiled.info
     }
 
-    sim.ov  <- ordinalizeDataFrame(
-      df = sim$ov, thresholdStruct = thresholdStruct
-    )
+    # sim.ov  <- ordinalizeDataFrame(
+    #   df = sim$ov, thresholdStruct = thresholdStruct
+    # )
+    # sim.mat <- as.matrix(sim.ov[vars])
 
     fit.sim <- fit0.base
     modelStatusIsQuick(fit.sim) <- TRUE
 
-    X <- Rfast::standardise(as.matrix(sim.ov[vars]))
-
-    if (is.probit) S <- getCorrMat(X, probit = TRUE, ordered = ordered)
-    else           S <- Rfast::cova(X)
-
-    if (!is.null(sim$cluster))
-      attr(X, "cluster") <- sim$cluster
-
-    # Update observed-data (lowest-order) model input
-    modelData(fit.sim)  <- X
-    indCorrMatrix(fit.sim) <- S
-
-    # Thresholds are not part of the root equation. Avoid recomputing them on
-    # every Robbins-Monro iteration.
-    fit2 <- estimatePLS_Inner(fit.sim)
-    par2 <- getFreeParamsTable(combinedModel(fit2))
-
-    eps <- par2$est - par0$est
     free <- par0$is.free
+    out <- 0
+    nk <- max(floor(NROW(sim$ov) / mc.reps.k), 1)
 
-    out <- eps[free]
+    for (i in seq_len(mc.reps.k)) {
+      offset <- (i - 1) * nk
+      idx <- (offset+1):(offset+nk)
+
+      sim.ov  <- ordinalizeDataFrame(
+        df = sim$ov[idx,,drop=FALSE], thresholdStruct = thresholdStruct
+      )
+
+      X <- Rfast::standardise(as.matrix(sim.ov[vars]))
+
+      if (is.probit) S <- getCorrMat(X, probit = TRUE, ordered = ordered)
+      else           S <- Rfast::cova(X)
+
+      # clusters are placed in tiles of length n
+      if (!is.null(sim$cluster))
+        attr(X, "cluster") <- sim$cluster[idx,,drop=FALSE]
+
+      # Update observed-data (lowest-order) model input
+      modelData(fit.sim)  <- X
+      indCorrMatrix(fit.sim) <- S
+
+      # Thresholds are not part of the root equation. Avoid recomputing them on
+      # every Robbins-Monro iteration.
+      fit2 <- estimatePLS_Inner(fit.sim)
+      par2 <- getFreeParamsTable(combinedModel(fit2))
+
+      eps <- par2$est - par0$est
+      out <- out + eps[free] / mc.reps.k
+    }
+
     attr(out, "lower") <- sim$lower[free]
     attr(out, "upper") <- sim$upper[free]
-
     out
   }
 

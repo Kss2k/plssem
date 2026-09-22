@@ -86,6 +86,18 @@ USE_NON_LINEAR_PROBIT_CORR_MAT <- FALSE
 #'
 #' @param mc.reps Monte-Carlo sample size in MC-PLS algorithm.
 #'
+#' @param mc.small.sample Logical; if \code{TRUE}, average MC-PLS
+#'   estimating equations over simulated samples of the observed sample size.
+#'   If \code{FALSE} (default), fit one sample using all simulated observations.
+#'   This assumes that the auxiliary estimator (i.e., traditional PLS) has
+#'   negligible finite sample bias. I.e., that the bias of the estimator is
+#'   not affected by the sample size.
+#'
+#' @param mc.small.sample.max.k Maximum number of simulated samples to average
+#'   when \code{mc.small.sample = TRUE}. Defaults to 50. The number of samples
+#'   is also limited by \code{mc.reps}, rounded down to a multiple of the
+#'   observed sample size, with at least one sample.
+#'
 #' @param mc.fixed.seed Should a fixed seed be used in the MC-PLS algorithm?
 #'   Setting a fixed seed will likely yield less accurate estimates, but can
 #'   substantially improve the stability and computational efficiency of the
@@ -195,7 +207,7 @@ pls <- function(syntax,
                 mc.fast.lmer = mcpls,
                 probit = NULL,
                 tolerance = 1e-5,
-                max.iter.0_5 = 100L,
+                max.iter.0_5 = 500L,
                 boot.ncores = 1L,
                 boot.ncpus = NULL,
                 boot.parallel = c("no", "multicore", "multisession", "snow"),
@@ -214,6 +226,8 @@ pls <- function(syntax,
                 mc.fn.args = list(),
                 mc.rescov = c("auto", "reduced", "full"),
                 mc.diag.secant = FALSE,
+                mc.small.sample = FALSE,
+                mc.small.sample.max.k = 50L,
                 verbose = interactive(),
                 boot.optimize = TRUE,
                 boot.drop.inadmissible = FALSE,
@@ -272,6 +286,8 @@ pls <- function(syntax,
     mc.fn.args             = mc.fn.args,
     mc.rescov              = match.arg(mc.rescov, c("auto", "reduced", "full")),
     mc.diag.secant         = mc.diag.secant,
+    mc.small.sample        = mc.small.sample,
+    mc.small.sample.max.k  = mc.small.sample.max.k,
     verbose                = verbose,
     bootstrap              = bootstrap,
     boot.ncores            = boot.ncores,

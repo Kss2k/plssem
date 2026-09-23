@@ -37,7 +37,8 @@ pls(
   mc.rescov = c("auto", "reduced", "full"),
   mc.diag.secant = FALSE,
   mc.small.sample = FALSE,
-  mc.small.sample.max.k = 50L,
+  mc.small.sample.max.k = 100L,
+  mc.small.sample.point.estimate = c("median", "mean"),
   verbose = interactive(),
   boot.optimize = TRUE,
   boot.drop.inadmissible = FALSE,
@@ -176,9 +177,23 @@ negligible finite sample bias. I.e., that the bias of the estimator is
 not affected by the sample size.}
 
 \item{mc.small.sample.max.k}{Maximum number of simulated samples to average
-when \code{mc.small.sample = TRUE}. Defaults to 50. The number of samples
+when \code{mc.small.sample = TRUE}. Defaults to 100. The number of samples
 is also limited by \code{mc.reps}, rounded down to a multiple of the
 observed sample size, with at least one sample.}
+
+\item{mc.small.sample.point.estimate}{Which point estimate of the simulated
+  auxiliary parameters the root equation matches to the observed ones, when
+  \code{mc.small.sample = TRUE}? \code{"mean"} solves
+  \eqn{E[\theta^{*}|\theta] = \hat{\theta}^{*}}. \code{"median"} (the default)
+  solves \eqn{median[\theta^{*}|\theta] = \hat{\theta}^{*}}.
+
+  The median commutes with the (monotone) binding function where the mean
+  does not, so median-matching targets a median-unbiased estimator. This
+  removes the finite-sample bias. which can be introduced by the curvature
+  size models, and when the indicators are uninformative (small loadings,
+  few categories, strongly assymetric thresholds). It makes the estimating
+  function somewhat noisier for a given number of simulated samples.
+  Ignored when \code{mc.small.sample = FALSE}.}
 
 \item{verbose}{Should verbose output be printed?}
 

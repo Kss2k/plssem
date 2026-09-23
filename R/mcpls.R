@@ -1,22 +1,23 @@
 mcpls <- function(
   fit0,
-  p.start            = fit0@info$mc.args$p.start,
-  min.iter           = fit0@info$mc.args$min.iter,
-  max.iter           = fit0@info$mc.args$max.iter,
-  mc.reps            = fit0@info$mc.args$mc.reps,
-  rng.seed           = fit0@info$mc.args$rng.seed,
-  tol                = fit0@info$mc.args$tol,
-  fixed.seed         = fit0@info$mc.args$fixed.seed,
-  verbose            = fit0@info$verbose,
-  polyak.juditsky    = fit0@info$mc.args$polyak.juditsky,
-  fn.args            = fit0@info$mc.args$fn.args,
-  pj.extrapolate     = fit0@info$mc.args$pj.extrapolate,
-  delta.jacobian     = fit0@info$mc.args$delta.se && fit0@info$boot$bootstrap,
-  delta.fixed.seed   = TRUE,
-  delta.jacobian.k   = fit0@info$mc.args$delta.jacobian.k,
-  diag.secant        = fit0@info$mc.args$diag.secant,
-  small.sample       = fit0@info$mc.args$small.sample,
-  small.sample.max.k = fit0@info$mc.args$small.sample.max.k,
+  p.start                     = fit0@info$mc.args$p.start,
+  min.iter                    = fit0@info$mc.args$min.iter,
+  max.iter                    = fit0@info$mc.args$max.iter,
+  mc.reps                     = fit0@info$mc.args$mc.reps,
+  rng.seed                    = fit0@info$mc.args$rng.seed,
+  tol                         = fit0@info$mc.args$tol,
+  fixed.seed                  = fit0@info$mc.args$fixed.seed,
+  verbose                     = fit0@info$verbose,
+  polyak.juditsky             = fit0@info$mc.args$polyak.juditsky,
+  fn.args                     = fit0@info$mc.args$fn.args,
+  pj.extrapolate              = fit0@info$mc.args$pj.extrapolate,
+  delta.jacobian              = fit0@info$mc.args$delta.se && fit0@info$boot$bootstrap,
+  delta.fixed.seed            = TRUE,
+  delta.jacobian.k            = fit0@info$mc.args$delta.jacobian.k,
+  diag.secant                 = fit0@info$mc.args$diag.secant,
+  small.sample                = fit0@info$mc.args$small.sample,
+  small.sample.max.k          = fit0@info$mc.args$small.sample.max.k,
+  small.sample.point.estimate = fit0@info$mc.args$small.sample.point.estimate,
   ...
 ) {
   fit0.base <- fit0
@@ -146,8 +147,8 @@ mcpls <- function(
     modelStatusIsQuick(fit.sim) <- TRUE
 
     free <- par0$is.free
-    out <- 0
     nk <- max(floor(NROW(sim$ov) / mc.reps.k), 1)
+    THETA <- matrix(NA_real_, nrow = mc.reps.k, ncol = sum(free))
 
     for (i in seq_len(mc.reps.k)) {
       offset <- (i - 1) * nk
@@ -176,8 +177,15 @@ mcpls <- function(
       par2 <- getFreeParamsTable(combinedModel(fit2))
 
       eps <- par2$est - par0$est
-      out <- out + eps[free] / mc.reps.k
+      THETA[i, ] <- eps[free]
     }
+
+    # which point estimate should we use?
+    out <- switch(small.sample.point.estimate,
+      mean   = colMeans(THETA, na.rm = TRUE),
+      median = colMedians(THETA, na.rm = TRUE),
+      colMeans(THETA, na.rm = TRUE) 
+    )
 
     attr(out, "lower") <- sim$lower[free]
     attr(out, "upper") <- sim$upper[free]

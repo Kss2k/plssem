@@ -94,7 +94,7 @@ SE_NON_LINEAR_PROBIT_CORR_MAT <- FALSE
 #'   not affected by the sample size.
 #'
 #' @param mc.small.sample.max.k Maximum number of simulated samples to average
-#'   when \code{mc.small.sample = TRUE}. Defaults to 50. The number of samples
+#'   when \code{mc.small.sample = TRUE}. Defaults to 100. The number of samples
 #'   is also limited by \code{mc.reps}, rounded down to a multiple of the
 #'   observed sample size, with at least one sample.
 #'

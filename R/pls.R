@@ -1,4 +1,4 @@
-USE_NON_LINEAR_PROBIT_CORR_MAT <- FALSE
+SE_NON_LINEAR_PROBIT_CORR_MAT <- FALSE
 
 
 #' Fit Partial Least Squares Structural Equation Models
@@ -97,6 +97,21 @@ USE_NON_LINEAR_PROBIT_CORR_MAT <- FALSE
 #'   when \code{mc.small.sample = TRUE}. Defaults to 50. The number of samples
 #'   is also limited by \code{mc.reps}, rounded down to a multiple of the
 #'   observed sample size, with at least one sample.
+#'
+#' @param mc.small.sample.point.estimate Which point estimate of the simulated
+#'   auxiliary parameters the root equation matches to the observed ones, when
+#'   \code{mc.small.sample = TRUE}? \code{"mean"} solves
+#'   \eqn{E[\theta^{*}|\theta] = \hat{\theta}^{*}}. \code{"median"} (the default)
+#'   solves \eqn{median[\theta^{*}|\theta] = \hat{\theta}^{*}}.
+#'
+#'   The median commutes with the (monotone) binding function where the mean
+#'   does not, so median-matching targets a median-unbiased estimator. This
+#'   removes the finite-sample bias. which can be introduced by the curvature
+#    of the inverse binding function. This is most pronounced for small sample
+#'   size models, and when the indicators are uninformative (small loadings,
+#'   few categories, strongly assymetric thresholds). It makes the estimating
+#'   function somewhat noisier for a given number of simulated samples.
+#'   Ignored when \code{mc.small.sample = FALSE}.
 #'
 #' @param mc.fixed.seed Should a fixed seed be used in the MC-PLS algorithm?
 #'   Setting a fixed seed will likely yield less accurate estimates, but can
@@ -227,7 +242,8 @@ pls <- function(syntax,
                 mc.rescov = c("auto", "reduced", "full"),
                 mc.diag.secant = FALSE,
                 mc.small.sample = FALSE,
-                mc.small.sample.max.k = 50L,
+                mc.small.sample.max.k = 100L,
+                mc.small.sample.point.estimate = c("median", "mean"),
                 verbose = interactive(),
                 boot.optimize = TRUE,
                 boot.drop.inadmissible = FALSE,
@@ -249,6 +265,7 @@ pls <- function(syntax,
   missing       <- match.arg(tolower(missing), c("listwise", "mean", "knn"))
   boot.parallel <- match.arg(tolower(boot.parallel), c("no", "multicore", "multisession", "snow"))
   default.path.estimator <- match.arg(tolower(default.path.estimator), c("ols", "gls"))
+  mc.small.sample.point.estimate <- match.arg(tolower(mc.small.sample.point.estimate), c("median", "mean"))
 
   if (!is.null(boot.ncpus)) {
     pls_msg_warn("The `boot.ncpus` argument is deprecated; please use `boot.ncores` instead.")
@@ -263,43 +280,44 @@ pls <- function(syntax,
   data <- asDataFrame(data)
 
   model <- specifyModel(
-    syntax                 = syntax,
-    data                   = data,
-    consistent             = consistent,
-    missing                = missing,
-    standardize            = standardize,
-    ordered                = ordered,
-    probit                 = probit,
-    mcpls                  = mcpls,
-    mc.fast.lmer           = mc.fast.lmer,
-    tolerance              = tolerance,
-    max.iter.0_5           = max.iter.0_5,
-    mc.min.iter            = mc.min.iter,
-    mc.max.iter            = mc.max.iter,
-    mc.reps                = mc.reps,
-    mc.tol                 = mc.tol,
-    mc.fixed.seed          = mc.fixed.seed,
-    mc.polyak.juditsky     = mc.polyak.juditsky,
-    mc.pj.extrapolate      = mc.pj.extrapolate,
-    mc.delta.se            = mc.delta.se,
-    mc.delta.jacobian.k    = mc.delta.jacobian.k,
-    mc.fn.args             = mc.fn.args,
-    mc.rescov              = match.arg(mc.rescov, c("auto", "reduced", "full")),
-    mc.diag.secant         = mc.diag.secant,
-    mc.small.sample        = mc.small.sample,
-    mc.small.sample.max.k  = mc.small.sample.max.k,
-    verbose                = verbose,
-    bootstrap              = bootstrap,
-    boot.ncores            = boot.ncores,
-    boot.parallel          = boot.parallel,
-    boot.R                 = boot.R,
-    boot.iseed             = boot.iseed,
-    boot.optimize          = boot.optimize,
-    boot.drop.inadmissible = boot.drop.inadmissible,
-    mc.boot.control        = mc.boot.control,
-    knn.k                  = knn.k,
-    reliabilities          = reliabilities,
-    default.path.estimator = default.path.estimator,
+    syntax                         = syntax,
+    data                           = data,
+    consistent                     = consistent,
+    missing                        = missing,
+    standardize                    = standardize,
+    ordered                        = ordered,
+    probit                         = probit,
+    mcpls                          = mcpls,
+    mc.fast.lmer                   = mc.fast.lmer,
+    tolerance                      = tolerance,
+    max.iter.0_5                   = max.iter.0_5,
+    mc.min.iter                    = mc.min.iter,
+    mc.max.iter                    = mc.max.iter,
+    mc.reps                        = mc.reps,
+    mc.tol                         = mc.tol,
+    mc.fixed.seed                  = mc.fixed.seed,
+    mc.polyak.juditsky             = mc.polyak.juditsky,
+    mc.pj.extrapolate              = mc.pj.extrapolate,
+    mc.delta.se                    = mc.delta.se,
+    mc.delta.jacobian.k            = mc.delta.jacobian.k,
+    mc.fn.args                     = mc.fn.args,
+    mc.rescov                      = match.arg(mc.rescov, c("auto", "reduced", "full")),
+    mc.diag.secant                 = mc.diag.secant,
+    mc.small.sample                = mc.small.sample,
+    mc.small.sample.max.k          = mc.small.sample.max.k,
+    mc.small.sample.point.estimate = mc.small.sample.point.estimate,
+    verbose                        = verbose,
+    bootstrap                      = bootstrap,
+    boot.ncores                    = boot.ncores,
+    boot.parallel                  = boot.parallel,
+    boot.R                         = boot.R,
+    boot.iseed                     = boot.iseed,
+    boot.optimize                  = boot.optimize,
+    boot.drop.inadmissible         = boot.drop.inadmissible,
+    mc.boot.control                = mc.boot.control,
+    knn.k                          = knn.k,
+    reliabilities                  = reliabilities,
+    default.path.estimator         = default.path.estimator,
     ...
   )
 

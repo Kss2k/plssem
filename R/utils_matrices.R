@@ -63,3 +63,8 @@ gradSymMat <- function(gX) {
   # here we return the gradient of X assuming X is symmetric
   2 * gX - diag(diag(gX))
 }
+
+
+colMedians <- function(X, na.rm = FALSE) {
+  apply(X = X, MARGIN = 2L, FUN = stats::median, na.rm = na.rm)
+}

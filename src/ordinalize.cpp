@@ -1,7 +1,13 @@
 #include "Rcpp.h"
 
 // [[Rcpp::export]]
-Rcpp::IntegerVector ordinalizeVectorCpp(const Rcpp::NumericVector& x, Rcpp::NumericVector probs) {
+Rcpp::IntegerVector ordinalizeVectorCpp(
+    const Rcpp::NumericVector& x,
+    Rcpp::NumericVector probs,
+    double ztol = 0.001
+) {
+  if (!R_finite(ztol) || ztol < 0 || ztol >= 0.5)
+    Rcpp::stop("ztol must be finite and in [0, 0.5)");
 
   const R_xlen_t n = x.size();
   Rcpp::IntegerVector out(n);
@@ -10,12 +16,15 @@ Rcpp::IntegerVector ordinalizeVectorCpp(const Rcpp::NumericVector& x, Rcpp::Nume
   std::vector<double> p;
   p.reserve(probs.size());
   for (R_xlen_t i = 0; i < probs.size(); ++i) {
-    if (probs[i] < 1.0) p.push_back(probs[i]);
+    if (!R_finite(probs[i])) Rcpp::stop("probs must be finite");
+    p.push_back(std::min(std::max(probs[i], ztol), 1.0 - ztol));
   }
 
   std::sort(p.begin(), p.end());
 
   const std::size_t k = p.size();
+  Rcpp::NumericVector thresholds(k, NA_REAL);
+  out.attr("tau") = thresholds;
   if (k == 0 || n == 0) return out;
 
   std::vector<double> buf;
@@ -56,7 +65,7 @@ Rcpp::IntegerVector ordinalizeVectorCpp(const Rcpp::NumericVector& x, Rcpp::Nume
     lo = need[t] + 1;
   }
 
-  std::vector<double> brk(k);
+  double* brk = REAL(thresholds);
   for (std::size_t j = 0; j < k; ++j) {
     const double fl = std::floor(h[j]);
     std::size_t li = static_cast<std::size_t>(fl);
@@ -67,7 +76,7 @@ Rcpp::IntegerVector ordinalizeVectorCpp(const Rcpp::NumericVector& x, Rcpp::Nume
   // findInterval(): count of breaks <= x. k is small and the breaks are
   // sorted, so sum the comparisons branchlessly instead of looping/searching.
   int* po = INTEGER(out);
-  const double* pb = brk.data();
+  const double* pb = brk;
 
   if (anyNA) {
     for (R_xlen_t i = 0; i < n; ++i) {

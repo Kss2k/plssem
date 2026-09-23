@@ -12,14 +12,15 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
 // ordinalizeVectorCpp
-Rcpp::IntegerVector ordinalizeVectorCpp(const Rcpp::NumericVector& x, Rcpp::NumericVector probs);
-RcppExport SEXP _plssem_ordinalizeVectorCpp(SEXP xSEXP, SEXP probsSEXP) {
+Rcpp::IntegerVector ordinalizeVectorCpp(const Rcpp::NumericVector& x, Rcpp::NumericVector probs, double ztol);
+RcppExport SEXP _plssem_ordinalizeVectorCpp(SEXP xSEXP, SEXP probsSEXP, SEXP ztolSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const Rcpp::NumericVector& >::type x(xSEXP);
     Rcpp::traits::input_parameter< Rcpp::NumericVector >::type probs(probsSEXP);
-    rcpp_result_gen = Rcpp::wrap(ordinalizeVectorCpp(x, probs));
+    Rcpp::traits::input_parameter< double >::type ztol(ztolSEXP);
+    rcpp_result_gen = Rcpp::wrap(ordinalizeVectorCpp(x, probs, ztol));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -62,7 +63,7 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_plssem_ordinalizeVectorCpp", (DL_FUNC) &_plssem_ordinalizeVectorCpp, 2},
+    {"_plssem_ordinalizeVectorCpp", (DL_FUNC) &_plssem_ordinalizeVectorCpp, 3},
     {"_plssem_estimatePLS_Step0_5_Cpp", (DL_FUNC) &_plssem_estimatePLS_Step0_5_Cpp, 12},
     {"_plssem_estimatePLS_Step6_Cpp", (DL_FUNC) &_plssem_estimatePLS_Step6_Cpp, 5},
     {NULL, NULL, 0}

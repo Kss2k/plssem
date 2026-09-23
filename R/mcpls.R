@@ -37,6 +37,7 @@ mcpls <- function(
   is.hi.ord <- isTRUE(fit0.combined@info$is.high.ord)
   thresholdStruct0 <- fit0.combined@thresholdStruct
   estimator <- fit0.combined@info$path.estimator
+  compiled.info <- NULL
 
   # Residual-covariance handling:
   #   reduced: Residual covariances are treated as constrained parameters
@@ -110,17 +111,25 @@ mcpls <- function(
     parx
   }
 
+  compiled.info <- NULL
+
   .simulate <- function(p, standardize = FALSE) {
-    simulateDataParTable(
-      parTable     = .parTable(p),
-      N            = mc.reps,
-      seed         = rng.seed,
-      check.hi.ord = is.hi.ord,
-      clusterSizes = clusterSizes,
-      clusterName  = clusterName,
-      standardize  = standardize,
-      full         = use.full.rescov
+    sim <- simulateDataParTable(
+      parTable      = .parTable(p),
+      N             = mc.reps,
+      seed          = rng.seed,
+      check.hi.ord  = is.hi.ord,
+      clusterSizes  = clusterSizes,
+      clusterName   = clusterName,
+      standardize   = standardize,
+      full          = use.full.rescov,
+      compiled.info = compiled.info
     )
+    
+    if (is.null(compiled.info))
+      compiled.info <<- sim$compiled.info
+  
+    sim
   }
 
   .f <- function(p, thresholdStruct = thresholdStruct0, sim = NULL) {
@@ -128,14 +137,18 @@ mcpls <- function(
     if (is.null(sim)) {
       par1[par1$is.free, "est"] <- p
       sim <- simulateDataParTable(
-        parTable     = par1,
-        N            = mc.reps,
-        seed         = rng.seed,
-        check.hi.ord = is.hi.ord,
-        clusterSizes = clusterSizes,
-        clusterName  = clusterName,
-        full         = use.full.rescov
+        parTable      = par1,
+        N             = mc.reps,
+        seed          = rng.seed,
+        check.hi.ord  = is.hi.ord,
+        clusterSizes  = clusterSizes,
+        clusterName   = clusterName,
+        full          = use.full.rescov,
+        compiled.info = compiled.info
       )
+
+      if (is.null(compiled.info))
+        compiled.info <<- sim$compiled.info
     }
 
     # sim.ov  <- ordinalizeDataFrame(
@@ -400,7 +413,8 @@ mcpls <- function(
     sds[NROW(tail.f) < 10 | !is.finite(sds) | sds <= tol] <- Inf # not reliable
 
     # Bonferroni-adjusted z-score
-    resid.tol <- stats::qnorm(1 - 0.025 / length(p0))
+    p.criterion <- 0.01
+    resid.tol <- stats::qnorm(1 - 0.5 * p.criterion / length(p0))
     bad.resid <- abs(resid.p0) > resid.tol * sds
     bad.pars <- names(resid.p0)[bad.resid]
     max.res  <- max(abs(resid.p0))
@@ -484,23 +498,37 @@ mcpls <- function(
 }
 
 
-ordinalizeDataFrame <- function(df, thresholdStruct) {
+ordinalizeDataFrame <- function(df, thresholdStruct, return.thr = FALSE) {
   nm <- colnames(df)
   ordered <- thresholdStruct@ordered
   probs   <- thresholdStruct@proportions
   indices <- thresholdStruct@indices
 
-  quickdf(stats::setNames(
+  out <- quickdf(stats::setNames(
     lapply(nm, FUN = function(v) {
-      if (v %in% ordered) ordinalizeVectorCpp(df[[v]], probs = probs[indices[[v]]])
-      else df[[v]]
-    }),
-    nm = nm
+      if (v %in% ordered) {
+        z <- ordinalizeVectorCpp(df[[v]], probs = probs[indices[[v]]])
+
+        if (return.thr)
+          thresholdStruct@thresholds[indices[[v]]] <<- attr(z, "tau")
+
+        attr(z, "tau") <- NULL # remove before assigning to df
+        z
+      }
+      else {
+        df[[v]]
+      }
+    }), nm = nm
   ))
+
+  if (return.thr)
+    attr(out, "thresholdStruct") <- thresholdStruct
+
+  out
 }
 
 
-getFreeParamsTable <- function(model) {
+getFreeParamsTable <- function(model, exclude = c("~1", "|", ":=")) {
   model <- combinedModel(model)
   parTable <- getParTableEstimates(
     model, rm.tmp.ov = FALSE, clean.tmp.ind = FALSE
@@ -518,7 +546,7 @@ getFreeParamsTable <- function(model) {
 
   cond1 <- !(lhs == rhs & op == "~~" & !grepl("~", rhs))
   cond2 <- !((isIntTermVariable(lhs) | isIntTermVariable(rhs)) & op == "~~")
-  cond3 <- !op %in% c("~1", "|", ":=")
+  cond3 <- !op %in% exclude
   cond4 <- !(lhs %in% inds.b & op == "~~") & !(rhs %in% inds.b & op == "~~")
   cond  <- cond1 & cond2 & cond3 & cond4
 
@@ -942,4 +970,20 @@ getMcUpperBounds <- function(par, tol = 1e-3) {
   upper[parf$op == "=~"] <- 1 - tol
 
   upper
+}
+
+
+getEmpiricalVarParsParTable <- function(parTable,
+                                        full = hasResidualCovariances(parTable),
+                                        clusterSizes = NULL,
+                                        clusterName = NULL) {
+  sim <- simulateDataParTable(
+    parTable = parTable,
+    N = 1000,
+    collect.empirical.vpars = TRUE,
+    full = full,
+    clusterSizes = clusterSizes,
+    clusterName = clusterName
+  )
+  names(sim$empirical.vpars)
 }

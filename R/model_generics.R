@@ -69,6 +69,16 @@ setMethod("summary", "PlsModel", function(object, fit = TRUE, unstandardized = F
     })
   }
 
+  if ("rhat" %in% colnames(parTable)) {
+    parTable$R.hat <- parTable$rhat
+    extra.cols <- c(extra.cols, "R.hat")
+  }
+  
+  if ("prior" %in% colnames(parTable)) {
+    parTable$Prior <- parTable$prior
+    extra.cols <- c(extra.cols, "Prior")
+  }
+
   if (ci) {
     extra.cols <- c(extra.cols, "ci.lower", "ci.upper")
   }

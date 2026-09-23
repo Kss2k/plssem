@@ -380,36 +380,66 @@ mcpls <- function(
     p0 <- stats::setNames(mcfit$root, nm[par1$is.free])
     p1 <- fit1.combined@params$values
 
-    # Delta-method SEs assume `p0` is close to the root. Simplest way to check
-    # is by looking at the residual
-    resid.p0 <- .f(as.vector(p0))
-    names(resid.p0) <- names(p0)
-
-    # Use a sufficiently large factor, to avoid false positives
-    history.f <- mcfit$history.f[,names(resid.p0), drop = FALSE]
+    # Delta-method SEs assume `p0` is close to the root.
+    history.f <- mcfit$history.f[, names(p0), drop = FALSE]
+    history.f <- history.f[stats::complete.cases(history.f), , drop = FALSE]
 
     # Only use the tail (steady-state) half of the trajectory: the early,
     # far-from-root iterations have their own large, systematic swings on top
-    # of MC noise, which would otherwise inflate `sds` and mask a genuinely
-    # bad residual at `p0`.
+    # of MC noise, which would otherwise swamp the steady-state behaviour.
     n.hist   <- NROW(history.f)
     tail.idx <- ceiling(n.hist / 2):n.hist
     tail.f   <- history.f[tail.idx, , drop = FALSE]
+    n.tail   <- NROW(tail.f)
 
-    sds <- apply(tail.f, MARGIN = 2L, FUN = stats::sd, na.rm = TRUE)
-    sds[NROW(tail.f) < 10 | !is.finite(sds) | sds <= tol] <- Inf # not reliable
+    # Successive residuals are autocorrelated (`p` moves slowly) and under
+    # `mc.fixed.seed = TRUE` consecutive iterations share the same MC error.
+    # Here we use a batch-means estimator, where we split the tail into `n.batch`
+    # blocks long enough to break the autocorrelation, and treat the block
+    # means as approximately independent replicates. Batches are kept at least
+    # `5` iterations long; with `mc.min.iter = 50` a typical run only leaves
+    # ~25 steady-state iterations, and demanding longer batches would silently
+    # disable the check. The `t` quantile below compensates for the resulting
+    # small number of batches.
+    n.batch <- max(min(floor(sqrt(n.tail)), floor(n.tail / 5L)), 0L)
 
-    # Bonferroni-adjusted z-score
-    resid.tol <- stats::qnorm(1 - 0.025 / length(p0))
-    bad.resid <- abs(resid.p0) > resid.tol * sds
-    bad.pars <- names(resid.p0)[bad.resid]
-    max.res  <- max(abs(resid.p0))
+    if (n.batch < 3L) {
+      # Too few iterations to say anything about the steady state
+      resid     <- stats::setNames(rep(NA_real_, length(p0)), names(p0))
+      bad.resid <- rep(FALSE, length(p0))
+
+    } else {
+      b       <- floor(n.tail / n.batch)
+      batch.f <- rowsum(
+        tail.f[seq_len(n.batch * b), , drop = FALSE],
+        group = rep(seq_len(n.batch), each = b)
+      ) / b
+
+      resid    <- colMeans(batch.f)
+      resid.se <- apply(batch.f, MARGIN = 2L, FUN = stats::sd) / sqrt(n.batch)
+      resid.se[!is.finite(resid.se)] <- Inf # not reliable
+
+      # Bonferroni-adjusted t-score - `n.batch` is small, so the normal
+      # quantile would be too tight
+      p.criterion <- 0.001
+      resid.tol   <- stats::qt(
+        1 - 0.5 * p.criterion / length(p0), df = n.batch - 1L
+      )
+
+      # Require the residual to be both statistically and practically
+      # non-zero. With `mc.reps` large the sampling error is tiny, so a
+      # residual well inside `mc.tol` can be "significant" without mattering.
+      bad.resid <- abs(resid) > resid.tol * resid.se & abs(resid) > tol
+    }
+
+    bad.pars <- names(p0)[bad.resid]
+    max.res  <- if (any(bad.resid)) max(abs(resid[bad.resid])) else NA_real_
 
     pls_warnif(
       any(bad.resid),
-      "The MC-PLS root residual is not small relative to the sampling error for:",
+      "The MC-PLS residuals did not settle around zero for:",
       paste0(bad.pars, collapse = ", "),
-      sprintf("(largest |residual| = %.4g).", max.res),
+      sprintf("(largest |mean residual| = %.4g).", max.res),
       "Delta-method standard errors might be unreliable for these parameters.",
       "Consider decreasing `mc.tol`, increasing `mc.max.iter`, or using",
       "bootstrap standard errors instead (`mc.delta.se = FALSE`)."

@@ -180,83 +180,18 @@ bootstrap <- function(model,
   if (verbose) pls_msg_note("Bootstrapping...")
 
   workers <- if (parallel == "no") 1L else ncores
-  if (workers <= 1L) {
-    set.seed(iseed)
+  if (workers <= 1L) set.seed(iseed) # `iseed` is passed on as `future.seed`
+                                     # in the parallel case
 
-    if (verbose) {
-      pb <- utils::txtProgressBar(
-        min     = 0,
-        max     = R,
-        initial = 0,
-        style   = 3,
-        file    = stderr()
-      )
-
-      on.exit(close(pb), add = TRUE)
-
-      results <- lapply(seq_len(R), function(i) {
-        tryCatch(
-          utils::setTxtProgressBar(pb, i),
-          error = \(e) pls_msg_warn(
-            paste0("Unable to update progress bar!\nMessage: ", conditionMessage(e))
-          )
-        )
-
-        .bootf(i)
-      })
-
-    } else {
-      results <- lapply(seq_len(R), .bootf)
-
-    }
-
-  } else {
-    oldPlan <- future::plan()
-    on.exit(future::plan(oldPlan), add = TRUE)
-
-    if (parallel == "multicore" && .Platform$OS.type == "windows") {
-      pls_msg_warn(paste0(
-        "The `boot.parallel = 'multicore'` option is not supported on Windows.\n",
-        "Falling back to `boot.parallel = 'multisession'`."
-      ))
-      parallel <- "multisession"
-    }
-
-    if (parallel == "multicore") {
-      future::plan(future::multicore, workers = workers)
-    } else {
-      future::plan(future::multisession, workers = workers)
-    }
-
-    if (verbose) {
-      results <- progressr::with_progress({
-        oldHandlers <- progressr::handlers()
-        on.exit(progressr::handlers(oldHandlers), add = TRUE)
-        progressr::handlers(progressr::handler_txtprogressbar(
-          file = stderr(),
-          style = 3L
-        ))
-        p <- progressr::progressor(along = seq_len(R))
-        future.apply::future_lapply(
-          X = seq_len(R),
-          FUN = function(i) {
-            p(sprintf("Bootstrap %d/%d", i, R))
-            .bootf(i)
-          },
-          future.seed = iseed,
-          future.packages = "plssem"
-        )
-      })
-
-    } else {
-      results <- future.apply::future_lapply(
-        X = seq_len(R),
-        FUN = .bootf,
-        future.seed = iseed,
-        future.packages = "plssem"
-      )
-    }
-  }
+  results <- plapply(
+    X        = seq_len(R),
+    FUN      = .bootf,
+    parallel = parallel,
+    ncores   = ncores,
+    verbose  = verbose,
+    iseed    = iseed,
+    label    = "Bootstrap"
+  )
 
   ids <- vapply(results, FUN.VALUE = integer(1L), FUN = \(x) attr(x, "id"))
 

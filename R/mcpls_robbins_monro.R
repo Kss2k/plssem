@@ -29,7 +29,10 @@ robbinsMonro1951 <- function(p,
   if (max.iter < min.iter)
     max.iter <- min.iter
 
-  history.p <- history.f <- rbind(p, matrix(NA, nrow=max.iter, ncol=length(p)))
+  history.p <- rbind(p, matrix(NA, nrow=max.iter, ncol=length(p)))
+  history.f <- history.p
+  history.f[1L, ] <- NA_real_
+
   k.succ <- 0
   pbar.last <- pbar <- p
   diverged <- FALSE
@@ -148,7 +151,7 @@ robbinsMonro1951 <- function(p,
 
   converged <- i < max.iter && !diverged
   history.p <- history.p[0L:i + 1L, , drop=FALSE]
-  history.f <- history.f[0L:i + 1L, , drop=FALSE]
+  history.f <- history.f[seq_len(i) + 1L, , drop=FALSE] # drop the empty row 1
 
   if (verbose) messagef("\n")
 

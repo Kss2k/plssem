@@ -18,6 +18,8 @@ mcpls <- function(
   small.sample                = fit0@info$mc.args$small.sample,
   small.sample.max.k          = fit0@info$mc.args$small.sample.max.k,
   small.sample.point.estimate = fit0@info$mc.args$small.sample.point.estimate,
+  parallel                    = fit0@info$boot$parallel,
+  ncores                      = fit0@info$boot$ncores,
   ...
 ) {
   fit0.base <- fit0
@@ -218,6 +220,27 @@ mcpls <- function(
          g = .g(p, thresholdStruct = thresholdStruct, sim = sim))
   }
 
+  # `.simulate()`, `.f()` and `.g()` read `rng.seed` from this frame. The
+  # Jacobian replicates each need their own seed, so instead of overwriting
+  # `rng.seed` here (which would not carry over to a parallel worker) we
+  # rebind the closures in a child environment holding the replicate's seed
+  mc.env <- environment()
+
+  .seedContext <- function(seed) {
+    env <- new.env(parent = mc.env)
+    env$rng.seed <- seed
+
+    for (nm in c(".simulate", ".f", ".g", ".fg")) {
+      fn <- get(nm, envir = mc.env)
+
+      # replace environment of fn before assigning it to env
+      environment(fn) <- env
+      assign(nm, fn, envir = env)
+    }
+
+    env
+  }
+
   # Starting parameters
   ok.start <- !is.null(p.start) && length(p.start) == sum(par1$is.free)
   p        <- if (ok.start) p.start else par1[par1$is.free, "est"]
@@ -374,8 +397,6 @@ mcpls <- function(
 
     if (verbose) pls_msg_note("Calculating Jacobian...")
 
-
-    probs0 <- thresholdStruct0@proportions
     nm <- paste0(par1$lhs, par1$op, par1$rhs)
     p0 <- stats::setNames(mcfit$root, nm[par1$is.free])
     p1 <- fit1.combined@params$values
@@ -445,58 +466,39 @@ mcpls <- function(
       "bootstrap standard errors instead (`mc.delta.se = FALSE`)."
     )
 
-    if (verbose) {
-      pb <- utils::txtProgressBar(
-        min     = 0,
-        max     = delta.jacobian.k * (length(p) + length(probs0)),
-        initial = 0,
-        style   = 3,
-        file    = stderr()
-      )
-
-      on.exit(close(pb), add = TRUE)
-
-    } else {
-      pb <- NULL
-
-    }
-
     delta.jacobian.k <- delta.jacobian.k[[1L]]
-    J0 <- J1 <- Jp <- Gp <- 0
 
-    for (i in seq_len(delta.jacobian.k)) {
-
-      if (delta.fixed.seed)
-        rng.seed <- floor(stats::runif(1L, min = 0, max = 9999999))
-
-      JAC  <- calcMcJacobians(
-        .fg             = .fg,
-        .f              = .f,
-        .simulate       = .simulate,
-        p0              = p0,
-        p1              = p1,
-        thresholdStruct = thresholdStruct0,
-        lower           = lower,
-        upper           = upper,
-        progressBar     = pb,
-        k               = i
-      )
-
-      J0.i <- JAC$J0
-      J1.i <- JAC$J1
-      Jp.i <- JAC$Jp
-      Gp.i <- JAC$Gp
-
-      J1 <- J1 + J1.i / delta.jacobian.k
-      J0 <- J0 + J0.i / delta.jacobian.k
-      Jp <- Jp + Jp.i / delta.jacobian.k
-      Gp <- Gp + Gp.i / delta.jacobian.k
+    if (delta.fixed.seed) {
+      seeds <- as.list(floor(stats::runif(delta.jacobian.k, min = 0, max = 9999999)))
+    } else {
+      seeds <- rep(list(rng.seed), delta.jacobian.k)
     }
 
-    fit1.combined@params$Jacobian0 <- J0
-    fit1.combined@params$Jacobian1 <- J1
-    fit1.combined@params$JacobianProbs0 <- Jp
-    fit1.combined@params$JacobianProbs1 <- Gp
+    # Seed for the parallel workers. The replicate seeds are drawn above, so a
+    # given `parallel`/`ncores` setting is reproducible. Serial and parallel
+    # runs are not bit-identical though: the workers use L'Ecuyer-CMRG streams,
+    # so the simulated data sets differ (by Monte-Carlo noise only) -- the same
+    # applies to `bootstrap()`.
+    jac.iseed <- floor(stats::runif(1L, min = 0, max = 9999999))
+
+    JAC <- calcMcJacobians(
+      seedContext     = .seedContext,
+      seeds           = seeds,
+      p0              = p0,
+      p1              = p1,
+      thresholdStruct = thresholdStruct0,
+      lower           = lower,
+      upper           = upper,
+      verbose         = verbose,
+      parallel        = parallel,
+      ncores          = ncores,
+      iseed           = jac.iseed
+    )
+
+    fit1.combined@params$Jacobian0 <- JAC$J0
+    fit1.combined@params$Jacobian1 <- JAC$J1
+    fit1.combined@params$JacobianProbs0 <- JAC$Jp
+    fit1.combined@params$JacobianProbs1 <- JAC$Gp
   }
 
   fit1.combined@params$mcpls.history <- plssemMatrix(mcfit$history.p)
@@ -819,19 +821,40 @@ thresholdJacobian <- function(thresholdStruct, sim.cont = NULL, eps = 1e-3,
 }
 
 
-calcMcJacobians <- function(.fg, .f, .simulate, p0, p1,
-                            thresholdStruct, lower = -Inf, upper = Inf,
-                            eps = 5e-3, progressBar = NULL, k = 1) {
+# Estimates the Jacobians used for the (implicit) delta-method standard errors.
+#
+# `seeds` holds one RNG seed per replicate, and `seedContext(seed)` returns an
+# environment with `.simulate()`, `.f()`, `.g()` and `.fg()` bound to that seed
+# (see `mcpls()`). The replicates are averaged.
+#
+# Each finite-difference column is independent of the others, so all of them
+# are evaluated through a single (optionally parallel) `plapply()` call. The
+# threshold-probability columns of a replicate share a single simulated data
+# set, so they are kept together in one task.
+calcMcJacobians <- function(seedContext,
+                            seeds,
+                            p0,
+                            p1,
+                            thresholdStruct,
+                            parallel,
+                            ncores,
+                            verbose,
+                            iseed,
+                            lower = -Inf,
+                            upper = Inf,
+                            eps   = 5e-3) {
+
   probs0 <- thresholdStruct@proportions
+  k      <- length(seeds)
 
   J0 <- matrix(
-    NA_real_,
+    0,
     nrow = length(p0), ncol = length(p0),
     dimnames = list(names(p0), names(p0))
   )
 
   J1 <- matrix(
-    NA_real_,
+    0,
     nrow = length(p1), ncol = length(p0),
     dimnames = list(names(p1), names(p0))
   )
@@ -848,25 +871,97 @@ calcMcJacobians <- function(.fg, .f, .simulate, p0, p1,
     dimnames = list(names(p1), names(probs0))
   )
 
-  for (i in seq_along(p0)) {
-    points <- boundedParameterFiniteDiffPoints(
-      x = p0, i = i, eps = eps, lower = lower, upper = upper
+  tasks.k <- function(k) {
+    par.tasks <- lapply(
+      seq_along(p0),
+      FUN = \(i) list(k = k, type = "par", index = i)
     )
 
-    fg.p <- .fg(points$plus, thresholdStruct = thresholdStruct)
-    fg.m <- .fg(points$minus, thresholdStruct = thresholdStruct)
-    J0[,i] <- (fg.p$f - fg.m$f) / points$denominator
-    J1[,i] <- (fg.p$g - fg.m$g) / points$denominator
+    if (!length(probs0)) par.tasks
+    else c(par.tasks, list(list(k = k, type = "probs")))
+  }
 
-    if (!is.null(progressBar)) {
-      utils::setTxtProgressBar(
-        progressBar, (k - 1) * (length(p0) + length(probs0)) + i
-      )
+  tasks <- unlist(
+    lapply(X = seq_len(k), FUN = tasks.k),
+    recursive = FALSE
+  )
+
+  do.task <- function(task) {
+    env <- seedContext(seeds[[task$k]])
+
+    if (task$type == "probs") {
+      return(calcMcThresholdJacobians(
+        .f              = env$.f,
+        .simulate       = env$.simulate,
+        p0              = p0,
+        p1              = p1,
+        thresholdStruct = thresholdStruct,
+        eps             = eps
+      ))
+    }
+
+    points <- boundedParameterFiniteDiffPoints(
+      x = p0, i = task$index, eps = eps, lower = lower, upper = upper
+    )
+
+    fg.p <- env$.fg(points$plus, thresholdStruct = thresholdStruct)
+    fg.m <- env$.fg(points$minus, thresholdStruct = thresholdStruct)
+
+    list(
+      J0 = (fg.p$f - fg.m$f) / points$denominator,
+      J1 = (fg.p$g - fg.m$g) / points$denominator
+    )
+  }
+
+  results <- plapply(
+    X        = tasks,
+    FUN      = do.task,
+    parallel = parallel,
+    ncores   = ncores,
+    verbose  = verbose,
+    iseed    = iseed,
+    label    = "Jacobian"
+  )
+
+  for (j in seq_along(tasks)) {
+    task <- tasks[[j]]
+    res  <- results[[j]]
+
+    if (task$type == "probs") {
+      Jp <- Jp + res$Jp / k
+      Gp <- Gp + res$Gp / k
+
+    } else {
+      J0[, task$index] <- J0[, task$index] + res$J0 / k
+      J1[, task$index] <- J1[, task$index] + res$J1 / k
+
     }
   }
 
-  offset <- length(p0)
-  sim0 <- if (length(probs0)) .simulate(p0, standardize = TRUE) else NULL
+  list(J0 = J0, J1 = J1, Jp = Jp, Gp = Gp)
+}
+
+
+# Derivatives of the root equation (`Jp`) and of the thresholds (`Gp`) with
+# respect to the category proportions, for a single replicate. All columns
+# reuse the same simulated data set.
+calcMcThresholdJacobians <- function(.f, .simulate, p0, p1, thresholdStruct,
+                                     eps = 5e-3) {
+  probs0 <- thresholdStruct@proportions
+
+  Jp <- matrix(
+    0,
+    nrow = length(p0), ncol = length(probs0),
+    dimnames = list(names(p0), names(probs0))
+  )
+
+  Gp <- matrix(
+    0,
+    nrow = length(p1), ncol = length(probs0),
+    dimnames = list(names(p1), names(probs0))
+  )
+
+  sim0 <- .simulate(p0, standardize = TRUE)
 
   for (i in seq_along(probs0)) {
     points <- boundedProbabilityFiniteDiffPoints(probs0, i = i, eps = eps)
@@ -887,26 +982,18 @@ calcMcJacobians <- function(.fg, .f, .simulate, p0, p1,
       .f(p0, thresholdStruct = T1, sim = sim0) -
       .f(p0, thresholdStruct = T0, sim = sim0)
     ) / points$denominator
-
-    if (!is.null(progressBar)) {
-      utils::setTxtProgressBar(
-        progressBar, (k - 1) * (length(p0) + length(probs0)) + offset + i
-      )
-    }
   }
 
   # Jacobian probs->thresholds
-  if (length(probs0)) {
-    # use larger eps for better numerical stability
-    T <- thresholdJacobian(thresholdStruct, sim.cont = sim0$ov, eps = 2 * eps)
+  # use larger eps for better numerical stability
+  T <- thresholdJacobian(thresholdStruct, sim.cont = sim0$ov, eps = 2 * eps)
 
-    thr.rows <- intersect(rownames(Gp), rownames(T))
-    prob.cols <- intersect(colnames(Gp), colnames(T))
+  thr.rows  <- intersect(rownames(Gp), rownames(T))
+  prob.cols <- intersect(colnames(Gp), colnames(T))
 
-    Gp[thr.rows, prob.cols] <- T[thr.rows, prob.cols, drop = FALSE]
-  }
+  Gp[thr.rows, prob.cols] <- T[thr.rows, prob.cols, drop = FALSE]
 
-  list(J0 = J0, J1 = J1, Jp = Jp, Gp = Gp)
+  list(Jp = Jp, Gp = Gp)
 }
 
 

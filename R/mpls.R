@@ -16,8 +16,8 @@ mpls <- function(syntax,
     "cluster must be a character string of length 1!"
   )
 
-  parsed <- parseMultilevelSyntax(syntax)
-
+  parsed <- parseMultilevelModelArguments(syntax, data)
+  
   data <- as.data.frame(data)
   all.vars <- c(cluster, parsed$ovs.all)
   missing <- setdiff(all.vars, colnames(data))
@@ -40,8 +40,9 @@ mpls <- function(syntax,
   }
 
   # data must be sorted by the clusters
-  data <- data[order(clusterIdx),,drop=FALSE]
-  clusterIdx <- data[[cluster]]
+  data <- as.matrix(data[order(clusterIdx), all.vars,drop=FALSE])
+  data[,parsed$ovs.all] <- Rfast::standardise(data[,parsed$ovs.all])
+  clusterIdx <- data[,cluster, drop=TRUE]
   n <- NROW(data)
 
   # fit auxiliary models
@@ -53,7 +54,6 @@ mpls <- function(syntax,
   )
 
   # for now
-  use.full.rescov <- FALSE
   is.hi.ord.l1 <- isTRUE(combinedModel(baseFits$level.1)@info$is.high.ord)
   is.hi.ord.l2 <- isTRUE(combinedModel(baseFits$level.2)@info$is.high.ord)
   use.full.rescov.l1 <- combinedModel(baseFits$level.1)@info$path.estimator == "gls"
@@ -78,38 +78,52 @@ mpls <- function(syntax,
   freeL1 <- par0L1$is.free
   freeL2 <- par0L2$is.free
 
-  start <- c(par1L1[par1L1$is.free, "est"], par1L2[par1L2$is.free, "est"])
-  lower <- c(getMcLowerBounds(par1L1), getMcLowerBounds(par1L2))
-  upper <- c(getMcUpperBounds(par1L1), getMcUpperBounds(par1L2))
+  # icc
+  # `icc0` is cor(x, cluster mean), which is not the ICC itself. It is only used
+  # as the calibration target. With a (mean) cluster size of nbar we have
+  # cor^2 ~= icc + (1 - icc) / nbar, which we invert to get a starting value.
+  icc0 <- baseFits$icc
+  nbar <- n / length(clusterSizes)
+  lower.icc <- rep(0, length(icc0))
+  upper.icc <- rep(1, length(icc0))
+  start.icc <- pmin(pmax((icc0^2 - 1 / nbar) / (1 - 1 / nbar), 0.01), 0.99)
 
-  .parTables <- function(p) {
+  # starting parameters
+  start <- c(par1L1[par1L1$is.free, "est"], par1L2[par1L2$is.free, "est"], start.icc)
+  lower <- c(getMcLowerBounds(par1L1), getMcLowerBounds(par1L2), lower.icc)
+  upper <- c(getMcUpperBounds(par1L1), getMcUpperBounds(par1L2), upper.icc)
+
+  .parStruct <- function(p) {
     parxL1 <- par1L1
     parxL2 <- par1L2
+    iccx   <- icc0
 
     n0 <- sum(parxL1$is.free)
     n1 <- sum(parxL2$is.free)
 
-    parxL1[parxL1$is.free, "est"] <- p[1:n0]
-    parxL2[parxL2$is.free, "est"] <- p[(n0+1):(n1+n0)]
+    parxL1[parxL1$is.free, "est"] <- p[seq_len(n0)]
+    parxL2[parxL2$is.free, "est"] <- p[n0 + seq_len(n1)]
+    iccx[] <- p[n0 + n1 + seq_along(icc0)]
 
-    list(level.1 = parxL1, level.2 = parxL2)
+    list(level.1 = parxL1, level.2 = parxL2, icc = iccx)
   }
 
   .f <- function(p, sim.ov.cont = NULL) {
     
     if (is.null(sim.ov.cont)) {
-      parTables <- .parTables(p)
+      parStruct <- .parStruct(p)
+      icc <- parStruct$icc
 
       simL1 <- simulateDataParTable(
-        parTable     = parTables$level.1,
+        parTable     = parStruct$level.1,
         N            = mc.reps.l1,
         seed         = rng.seed,
         check.hi.ord = is.hi.ord.l1,
-        full         = use.full.rescov
+        full         = use.full.rescov.l1
       )
 
       simL2 <- simulateDataParTable(
-        parTable     = parTables$level.2,
+        parTable     = parStruct$level.2,
         N            = mc.reps.l2,
         seed         = rng.seed,
         check.hi.ord = is.hi.ord.l2,
@@ -118,12 +132,13 @@ mpls <- function(syntax,
 
       sim.ov.l1 <- simL1$ov
       sim.ov.l2 <- simL2$ov[clusterIdx.sim,,drop=FALSE]
+      mix <- parsed$ovs.both
 
       sim.ov.cont <- cbind(
         sim.ov.l1[,parsed$ovs.only.1,drop=FALSE],
         sim.ov.l2[,parsed$ovs.only.2,drop=FALSE],
-        sim.ov.l1[,parsed$ovs.both,drop=FALSE] +
-        sim.ov.l2[,parsed$ovs.both,drop=FALSE]
+        sweep(sim.ov.l1[,mix,drop=FALSE], MARGIN = 2, STATS = sqrt(1 - icc), FUN = "*") +
+        sweep(sim.ov.l2[,mix,drop=FALSE], MARGIN = 2, STATS = sqrt(icc), FUN = "*")
       )
 
     }
@@ -145,11 +160,12 @@ mpls <- function(syntax,
 
     out <- c(
       par2L1[freeL1, "est"] - par0L1[freeL1, "est"],
-      par2L2[freeL2, "est"] - par0L2[freeL2, "est"]
+      par2L2[freeL2, "est"] - par0L2[freeL2, "est"],
+      refit$icc - icc0
     )
 
-    attr(out, "lower") <- c(simL1$lower[freeL1], simL2$lower[freeL2])
-    attr(out, "upper") <- c(simL1$upper[freeL1], simL2$upper[freeL2])
+    attr(out, "lower") <- c(simL1$lower[freeL1], simL2$lower[freeL2], lower.icc)
+    attr(out, "upper") <- c(simL1$upper[freeL1], simL2$upper[freeL2], upper.icc)
 
     out
   }
@@ -170,18 +186,19 @@ mpls <- function(syntax,
     ...
   )
 
-  .parTables(c(mcfit$root))
+  .parStruct(c(mcfit$root))
 }
 
 
-parseMultilevelSyntax <- function(syntax) {
+parseMultilevelModelArguments <- function(syntax, data) {
   lines <- stringr::str_split_1(syntax, pattern = "\n|;")
   lines <- stringr::str_trim(lines)
   lines <- lines[lines != ""]
-  idxl2 <- which(lines == "level: 2")
 
   # Check input formatting...
-  pls_stopif(lines[[1]] != "level: 1", "first line must be `level: 1`")
+  idxl2 <- which(grepl("^level\\s*:\\s*2$", lines))
+  pls_stopif(!length(lines), "model syntax is empty!")
+  pls_stopif(!grepl("^level\\s*:\\s*1", lines[[1]]), "first line must be `level: 1`")
   pls_stopif(!length(idxl2), "`level: 2` must be specified!")
   pls_stopif(idxl2 <= 2, "level: 1 must have more than one line")
   pls_stopif(idxl2 == length(lines), "level: 2 must have more than one line")
@@ -230,23 +247,34 @@ decompData <- function(data, ovs.1, ovs.2, clusterIdx) {
   )
 
   vars <- union(ovs.1, ovs.2)
+  ovs.both <- intersect(ovs.1, ovs.2)
+  icc <- stats::setNames(numeric(length(ovs.both)), ovs.both)
 
   for (nm in vars) {
+    # x is standardized
     x <- data[,nm,drop=TRUE]
-    x.l2 <- numeric(k) # for now
 
-    if (nm %in% ovs.2) {
+    is.l1 <- nm %in% ovs.1
+    is.l2 <- nm %in% ovs.2
+
+    if (is.l2) {
       x.l2 <- groupMean(x, g = clusterIdx)
       dataL2[,nm] <- x.l2
     }
 
-    if (nm %in% ovs.1) {
-      x.l1 <- x - x.l2[clusterIdx] # currently not alligned
+    if (is.l1 && is.l2) {
+      x.l2.full <- x.l2[clusterIdx]
+      x.l1 <- x - x.l2.full # currently not alligned
       dataL1[,nm] <- x.l1
+      icc[[nm]] <- cor(x, x.l2.full)
+
+    } else if (is.l1) {
+      # exists only at level 1
+      dataL1[,nm] <- x
     }
   }
 
-  list(level.1 = dataL1, level.2 = dataL2)
+  list(level.1 = dataL1, level.2 = dataL2, icc = icc)
 }
 
 
@@ -264,8 +292,9 @@ fitAuxiliaryMLM_PLS <- function(parsed, data, clusterIdx, ...) {
   fit0L1 <- pls(parsed$syntax.1, data = dataL1, consistent = FALSE, ...)
   fit0L2 <- pls(parsed$syntax.2, data = dataL2, consistent = FALSE, ...)
 
-  list(level.1 = fit0L1, level.2 = fit0L2)
+  list(level.1 = fit0L1, level.2 = fit0L2, icc = decomp$icc)
 }
+
 
 refitAuxiliaryMLM_PLS <- function(fits, parsed, data.sim, clusterIdx.sim) {
   decomp <- decompData(
@@ -301,5 +330,5 @@ refitAuxiliaryMLM_PLS <- function(fits, parsed, data.sim, clusterIdx.sim) {
   fit1 <- estimatePLS_Inner(fit1)
   fit2 <- estimatePLS_Inner(fit2)
 
-  list(level.1 = fit1, level.2 = fit2)
+  list(level.1 = fit1, level.2 = fit2, icc = decomp$icc)
 }

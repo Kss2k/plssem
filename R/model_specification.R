@@ -82,7 +82,6 @@ specifySubModel <- function(parTable,
                             ordered                        = NULL,
                             probit                         = NULL,
                             mcpls                          = NULL,
-                            mc.fast.lmer                   = NULL,
                             tolerance                      = 1e-5,
                             max.iter.0_5                   = 100,
                             mc.max.iter                    = 250,
@@ -122,13 +121,11 @@ specifySubModel <- function(parTable,
     ordered        = ordered,
     probit         = probit,
     mcpls          = mcpls,
-    mc.fast.lmer   = mc.fast.lmer,
     consistent     = consistent,
     is.lower.order = is.lower.order
   )
 
   pt         <- parsed$parTable.pls
-  cluster    <- parsed$cluster
   consistent <- parsed$consistent
   ordered    <- parsed$ordered
 
@@ -140,7 +137,6 @@ specifySubModel <- function(parTable,
     data        = parsed$data,
     indicators  = matricesAndInfo$info$allInds,
     consistent  = consistent,
-    cluster     = cluster,
     standardize = standardize,
     ordered     = ordered,
     is.probit   = parsed$is.probit,
@@ -213,13 +209,6 @@ specifySubModel <- function(parTable,
   } else {
     info$path.estimator <- "ols"
     glsPathModel <- GlsPathModel()
-  }
-
-  if (info$is.mlm && !info$is.mcpls) {
-    pls_msg_note(
-      "Multilevel/Mixed-Effects PLSc models are currently under development!\n",
-      "Consider passing `mcpls=TRUE` to yield more consistent results."
-    )
   }
 
   pls_warnif(!info$is.mcpls && any(!is.na(pt$start)),

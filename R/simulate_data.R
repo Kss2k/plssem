@@ -5,8 +5,6 @@ simulateDataParTable <- function(parTable,
                                  .cortol      = .95,
                                  .varguard       = 5 * tol,
                                  check.hi.ord = FALSE,
-                                 clusterSizes = NULL,
-                                 clusterName  = NULL,
                                  standardize  = FALSE,
                                  full         = FALSE,
                                  cut          = FALSE) {
@@ -55,37 +53,6 @@ simulateDataParTable <- function(parTable,
   lvs     <- unique(c(mode.a, mode.b))
   indsLVs <- getIndsLVs(parTable, lVs = lvs)
   ovs     <- getOVs(parTable)
-  mixed   <- !is.null(clusterSizes) && !is.null(clusterName)
-
-  if (mixed) {
-    randeff <- getRandomEffectLabels(parTable)
-
-    ovs  <- setdiff(ovs, randeff)
-    lvs  <- setdiff(lvs, randeff)
-    xis  <- setdiff(xis, randeff)
-    etas <- setdiff(etas, randeff)
-
-    if (N < sum(clusterSizes)) {
-      N <- sum(clusterSizes)
-
-    } else {
-      K <- floor(N / sum(clusterSizes))
-      clusterSizes <- rep(clusterSizes, K)
-      N <- sum(clusterSizes)
-
-    }
-
-    ncluster <- length(clusterSizes)
-    cluster <- rep(seq_along(clusterSizes), clusterSizes)
-    clusterMat <- matrix(cluster, nrow = N, dimnames = list(NULL, clusterName))
-
-  } else {
-    randeff    <- NULL
-    ncluster   <- 0
-    cluster    <- NULL
-    clusterMat <- NULL
-
-  }
 
   res <- buildCovMat(
     vars          = xis,
@@ -131,35 +98,6 @@ simulateDataParTable <- function(parTable,
 
   for (eta in etas) {
 
-    # forward declare
-    U           <- NULL
-    U.expanded  <- NULL
-    randeff.eta <- character(0L)
-
-    if (mixed) {
-      randeff.eta <- randeff[startsWith(randeff, paste0(eta, "~"))]
-
-      if (length(randeff.eta)) {
-
-        res <- buildCovMat(
-          vars          = randeff.eta,
-          parTable      = parTable,
-          .cortol       = .cortol,
-          unitVariances = FALSE
-        )
-
-        parTable <- res$parTable
-
-        uDraw <- rmvnSafe(ncluster, res$mat)
-        is.admissible <- is.admissible && uDraw$is.admissible
-
-        U <- uDraw$x
-        colnames(U) <- randeff.eta
-        U.expanded  <- U[cluster, , drop = FALSE]
-      }
-
-    }
-
     for (intTerm in undefIntTerms) {
       elems <- elemsIntTerms[[intTerm]]
 
@@ -174,29 +112,13 @@ simulateDataParTable <- function(parTable,
     cond <- parTable$lhs == eta & parTable$op == "~"
     predRows <- parTable[cond, , drop = FALSE]
 
-    vals.fixed <- numeric(N)
-    vals.random <- numeric(N)
-
-    # Random Intercept
-    par <- paste0(eta, "~1")
-    if (par %in% colnames(U))
-      vals.random <- vals.random + U.expanded[,par]
+    vals <- numeric(N)
 
     for (i in seq_len(NROW(predRows))) {
       row  <- predRows[i, ]
-      beta <- row$est
-      pred <- row$rhs
-
-      # Fixed effect
-      vals.fixed <- vals.fixed + beta * Xi[[pred]]
-
-      # Random Effect
-      par <- paste0(eta, "~", pred)
-      if (par %in% colnames(U))
-        vals.random <- vals.random + U.expanded[,par] * Xi[[pred]]
+      vals <- vals + row$est * Xi[[row$rhs]]
     }
 
-    vals <- vals.fixed + vals.random
     projvar <- stats::var(vals)
     resvar  <- checkFixVar(1 - projvar)
 
@@ -209,7 +131,7 @@ simulateDataParTable <- function(parTable,
       Sigma <- Rfast::cova(as.matrix(Xi[preds]))
 
       # Only fall back to `.varguard` when the actual budget isn't positive
-      rawMaxvar <- (1 - .varguard) - stats::var(vals.random)
+      rawMaxvar <- 1 - .varguard
       maxvar <- if (is.finite(rawMaxvar) && rawMaxvar > 0) rawMaxvar else .varguard
 
       beta.y <- projectBetaOntoConstrainedEllipsoid(
@@ -230,43 +152,6 @@ simulateDataParTable <- function(parTable,
         } else {
           lim <- beta.y[[i]] + tol
           parTable[cond, "lower"][i] <- max(parTable[cond, "lower"][i], lim)
-        }
-      }
-    }
-
-    if (is.finite(projvar) && projvar > 1 - .varguard && length(randeff.eta)) {
-      v0 <- stats::var(vals.fixed)
-      v1 <- stats::var(vals.random)
-      vc <- stats::cov(vals.fixed, vals.random)
-
-      if (is.finite(v1) && v1 > 0) {
-        limit <- 1 - tol
-        roots <- polyroot(c(v0 - limit, 2 * vc, v1))
-        roots <- Re(roots[abs(Im(roots)) < 1e-7])
-        roots <- roots[is.finite(roots) & roots >= 0 & roots <= 1]
-        scale <- if (length(roots)) max(roots) else 0
-        scale2 <- scale^2
-
-        re.rows <- which(
-          parTable$op == "~~" &
-          parTable$lhs %in% randeff.eta &
-          parTable$rhs %in% randeff.eta
-        )
-
-        for (row in re.rows) {
-          est <- parTable[row, "est"]
-          if (!is.finite(est)) next
-
-          if (parTable$lhs[[row]] == parTable$rhs[[row]]) {
-            lim <- max(.Machine$double.eps, abs(est) * scale2 - tol)
-            parTable[row, "lower"] <- pmax(parTable[row, "lower"], .Machine$double.eps)
-            parTable[row, "upper"] <- pmin(parTable[row, "upper"], lim)
-
-          } else {
-            lim <- max(0, abs(est) * scale2 - tol)
-            parTable[row, "lower"] <- pmax(parTable[row, "lower"], -lim)
-            parTable[row, "upper"] <- pmin(parTable[row, "upper"],  lim)
-          }
         }
       }
     }
@@ -460,8 +345,7 @@ simulateDataParTable <- function(parTable,
     is.admissible = is.admissible,
     lower         = parTable$lower,
     upper         = parTable$upper,
-    parTable      = parTable,
-    cluster       = clusterMat
+    parTable      = parTable
   )
 }
 

@@ -18,7 +18,6 @@ parseModelArguments <- function(parTable,
                                 ordered = NULL,
                                 probit = NULL,
                                 mcpls = FALSE,
-                                mc.fast.lmer = NULL,
                                 consistent = TRUE,
                                 is.lower.order = FALSE,
                                 strict = TRUE) {
@@ -110,10 +109,6 @@ parseModelArguments <- function(parTable,
   structovs <- getStructOVs(parTable)
   ovs       <- getOVs(parTable)
 
-  # Remove any (x + z + ... + y | cluster1 + cluster2 + ... + cluster3) expressions
-  structovs <- structovs[!grepl("\\(|\\)", structovs)]
-  ovs       <- ovs[!grepl("\\(|\\)", ovs)]
-
   vars       <- intersect(ovs, colnames(data))
   data       <- checkAndFixDTypesPLS_Data(data, check = vars)
   is.ordered <- vapply(data[vars], FUN.VALUE = logical(1L), FUN = is.ordered)
@@ -155,71 +150,26 @@ parseModelArguments <- function(parTable,
   # Recompile syntax
   syntax <- parTableToSyntax(parTable)
 
-  # Check for multilevel/mixed effects
-  isMultilevel <- grepl("\\(.*\\|.*\\)", parTable$rhs) & parTable$op %in% c("~", "~~")
-  if (any(isMultilevel)) {
-    multilevelEtas <- unique(parTable[isMultilevel & parTable$op == "~", "lhs"])
-    lme4.syntax <- character(0L)
-
-    for (eta in multilevelEtas) {
-      rhs <- parTable[parTable$op == "~" & parTable$lhs == eta, "rhs"]
-
-      lme4.syntax <- c(
-        lme4.syntax,
-        sprintf("%s~%s", eta, paste0(rhs, collapse = "+"))
-      )
-    }
-
-    cluster <- getClusterFromMultilevelStrings(parTable[isMultilevel, "rhs"])
-    parTable.pls <- parTable[!isMultilevel, , drop = FALSE]
-
-  } else {
-    parTable.pls <- parTable
-    cluster <- NULL
-    lme4.syntax <- NULL
-  }
-
   COALLESCE <- \(x, y) if (is.null(x)) isTRUE(y) else isTRUE(x)
 
   has.ord            <- length(ordered) > 0L
-  is.mlm             <- length(lme4.syntax) > 0L
-  has.custom         <- any(parTable$op == ":=")
-
-  pls_stopif(is.mlm && has.custom,
-    "Custom parameters (`:=`) are not supported for",
-    "multilevel/mixed-effects models (yet)."
-  )
-
-  use.mcpls.default  <- (has.ord && (is.nlin || is.lower.order)) || is.mlm
+  use.mcpls.default  <- has.ord && (is.nlin || is.lower.order)
   is.mcpls           <- COALLESCE(mcpls, use.mcpls.default)
   is.probit          <- COALLESCE(probit, has.ord && !is.mcpls)
-  mc.fast.lmer       <- COALLESCE(mc.fast.lmer, is.mcpls)
 
   list(
     syntax       = syntax,
     data         = data,
-    parTable.pls = parTable.pls,
+    parTable.pls = parTable,
     parTable.all = parTable,
-    cluster      = cluster,
-    lme4.syntax  = lme4.syntax,
     intTermElems = intTermElems,
     intTermNames = intTermNames,
     is.nlin      = is.nlin,
     ordered      = ordered,
     is.probit    = is.probit,
     is.mcpls     = is.mcpls,
-    is.mlm       = is.mlm,
-    mc.fast.lmer = mc.fast.lmer,
     consistent   = consistent && !is.mcpls # Don't use consistency correction with MC-PLS
   )
-}
-
-
-getClusterFromMultilevelStrings <- function(strings) {
-  split <- stringr::str_remove_all(strings, pattern = "\\(|\\)") |>
-    stringr::str_split_fixed(pattern = "\\|", n = 2L)
-
-  unique(unlist(stringr::str_split(split[,2L], pattern = "\\+")))
 }
 
 

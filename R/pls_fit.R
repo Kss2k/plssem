@@ -432,12 +432,10 @@ computeFactorScores <- function(model) {
 getEstimatorFromInfo <- function(info) {
   consistent <- info$consistent
   is.mcpls   <- info$is.mcpls
-  is.mlm     <- info$is.mlm
   is.ord     <- info$is.probit || (info$is.mcpls && length(info$ordered))
 
   estimator <- "PLS"
   if (consistent || is.mcpls) estimator <- paste0(estimator, "c")
-  if (is.mlm)                 estimator <- paste0(estimator, "-MLM")
   if (is.ord)                 estimator <- paste0("Ord", estimator)
   if (is.mcpls)               estimator <- paste0("MC", estimator)
 
@@ -455,32 +453,6 @@ refreshModelParams <- function(model, update.names = TRUE) {
   # Single level params
   model@params$values <- extractCoefs(model)
   model@params$se     <- rep(NA_real_, length(model@params$values))
-
-  # Multilevel/Mixed-Effect params
-  if (isMLM(model))
-    model <- refreshLmerParams(model)
-
-  model
-}
-
-
-refreshLmerParams <- function(model) {
-  lmerFit <- modelFitLmer(model)
-
-  if (!isMLM(model) || is.null(lmerFit))
-    return(model)
-
-  coefs.x <- model@params$values
-  coefs.y <- lmerFit$values
-
-  common  <- intersect(names(coefs.x), names(coefs.y))
-  new     <- setdiff(names(coefs.y),   names(coefs.x))
-
-  coefs.x[common] <- coefs.y[common]
-  coefs.all       <- c(coefs.x, coefs.y[new])
-
-  model@params$values <- plssemVector(coefs.all)
-  model@params$se     <- rep(NA_real_, length(coefs.all))
 
   model
 }

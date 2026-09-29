@@ -7,15 +7,3 @@
 \description{
 A simulated dataset.
 }
-\examples{
-
-\donttest{
-syntax <- '
-  f =~ y1 + y2 + y3
-  f ~ x1 + x2 + x3 + w1 + w2 + (1 | cluster)
-'
-
-fit <- pls(syntax, data = randomInterceptsOrdered)
-summary(fit)
-}
-}

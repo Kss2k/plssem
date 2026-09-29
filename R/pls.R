@@ -6,12 +6,10 @@ SE_NON_LINEAR_PROBIT_CORR_MAT <- FALSE
 #' \code{pls()} estimates Partial Least Squares Structural Equation Models (PLS-SEM)
 #' and their consistent (PLSc) variants. The function accepts \code{lavaan}-style
 #' syntax, handles ordered indicators through polychoric correlations and probit
-#' factor scores, and supports multilevel specifications expressed with
-#' \code{lme4}-style random effects terms inside the structural model.
+#' factor scores.
 #'
 #' @param syntax Character string with \code{lavaan}-style model syntax describing
-#'   both measurement (\code{=~}) and structural (\code{~}) relations. Random effects are
-#'   specified with \code{(term | cluster)} statements.
+#'   both measurement (\code{=~}) and structural (\code{~}) relations.
 #'
 #' @param data A \code{data.frame} or coercible object containing the manifest
 #'   indicators referenced in \code{syntax}. Ordered factors are automatically
@@ -37,17 +35,13 @@ SE_NON_LINEAR_PROBIT_CORR_MAT <- FALSE
 #'   categories) or nominal variables.
 #'   \code{"kNN"} (or \code{"knn"}) imputes missing indicator values using
 #'   k-nearest neighbors imputation (kNN). When \code{missing = "kNN"}, rows with
-#'   all indicators missing are removed prior to imputation, and rows with missing
-#'   \code{cluster} values are removed for multilevel models.
+#'   all indicators missing are removed prior to imputation.
 #'
 #' @param knn.k Integer specifying the number of neighbors (\code{k}) used when
 #'   \code{missing = "kNN"}.
 #'
 #' @param mcpls Should the model be estimated using the Monte-Carlo Consistent
 #'   Partial Least Squares (MC-PLSc) algorithm?
-#'
-#' @param mc.fast.lmer Should a faster (biased) GLS based estimator of the
-#'   Mixed-Effects model be used in conjunction with the MC-PLS algorithm?
 #'
 #' @param probit Logical; overrides the automatic choice of probit factor scores
 #'   that is based on whether ordered indicators are present.
@@ -219,7 +213,6 @@ pls <- function(syntax,
                 missing = c("listwise", "mean", "kNN"),
                 knn.k = 5,
                 mcpls = NULL,
-                mc.fast.lmer = mcpls,
                 probit = NULL,
                 tolerance = 1e-5,
                 max.iter.0_5 = 500L,
@@ -288,7 +281,6 @@ pls <- function(syntax,
     ordered                        = ordered,
     probit                         = probit,
     mcpls                          = mcpls,
-    mc.fast.lmer                   = mc.fast.lmer,
     tolerance                      = tolerance,
     max.iter.0_5                   = max.iter.0_5,
     mc.min.iter                    = mc.min.iter,

@@ -96,16 +96,6 @@ mcpls <- function(
     if (verbose) pls_msg_note(sprintf("Using fixed seed %i...", rng.seed))
   }
 
-  if (isMLM(fit0)) {
-    clusterSizes <- as.numeric(table(attr(data, "cluster")))
-    clusterName  <- colnames(attr(data, "cluster"))
-
-  } else {
-    clusterSizes <- NULL
-    clusterName  <- NULL
-
-  }
-
   .parTable <- function(p) {
     parx <- par1
     parx[parx$is.free, "est"] <- p
@@ -118,8 +108,6 @@ mcpls <- function(
       N            = mc.reps,
       seed         = rng.seed,
       check.hi.ord = is.hi.ord,
-      clusterSizes = clusterSizes,
-      clusterName  = clusterName,
       standardize  = standardize,
       full         = use.full.rescov
     )
@@ -134,8 +122,6 @@ mcpls <- function(
         N            = mc.reps,
         seed         = rng.seed,
         check.hi.ord = is.hi.ord,
-        clusterSizes = clusterSizes,
-        clusterName  = clusterName,
         full         = use.full.rescov
       )
     }
@@ -164,10 +150,6 @@ mcpls <- function(
 
       if (is.probit) S <- getCorrMat(X, probit = TRUE, ordered = ordered)
       else           S <- Rfast::cova(X)
-
-      # clusters are placed in tiles of length n
-      if (!is.null(sim$cluster))
-        attr(X, "cluster") <- sim$cluster[idx,,drop=FALSE]
 
       # Update observed-data (lowest-order) model input
       modelData(fit.sim)  <- X
@@ -202,8 +184,6 @@ mcpls <- function(
       thresholdStruct  = thresholdStruct,
       ordered          = ordered,
       seed             = rng.seed,
-      clusterSizes     = clusterSizes,
-      clusterName      = clusterName,
       sim              = sim,
       params.only      = TRUE,
       full             = use.full.rescov
@@ -378,8 +358,6 @@ mcpls <- function(
     thresholdStruct = thresholdStruct0,
     ordered         = ordered,
     seed            = rng.seed,
-    clusterSizes    = clusterSizes,
-    clusterName     = clusterName,
     full            = use.full.rescov,
     retry           = TRUE
   )
@@ -575,8 +553,6 @@ updateModelFromFreeParTableMC <- function(parTable,
                                           thresholdStruct,
                                           ordered,
                                           seed = NULL,
-                                          clusterSizes = NULL,
-                                          clusterName = NULL,
                                           sim = NULL,
                                           params.only = FALSE,
                                           full = FALSE,
@@ -588,8 +564,6 @@ updateModelFromFreeParTableMC <- function(parTable,
       N            = mc.reps,
       seed         = seed,
       check.hi.ord = model@info$is.high.ord,
-      clusterSizes = clusterSizes,
-      clusterName  = clusterName,
       standardize  = TRUE,
       full         = full
     )
@@ -606,8 +580,6 @@ updateModelFromFreeParTableMC <- function(parTable,
           N            = mc.reps,
           seed         = seed.i,
           check.hi.ord = model@info$is.high.ord,
-          clusterSizes = clusterSizes,
-          clusterName  = clusterName,
           standardize  = TRUE,
           full         = full
         )
@@ -738,11 +710,6 @@ updateModelFromFreeParTableMC <- function(parTable,
     fitCov[i, j] <- fitCov[j, i] <- par
   }
 
-  if (isMLM(model)) {
-    params <- parTableToParams(parTable)
-    modelFitLmer(model)$values <- params$values
-  }
-
   model@fit$fitMeasurement    <- fitMeasurement
   model@fit$fitStructural     <- fitStructural
   model@fit$fitCov            <- fitCov
@@ -758,8 +725,6 @@ updateModelFromFreeParTableMC <- function(parTable,
     thresholdStruct = thresholdStruct,
     ordered         = ordered,
     seed            = seed,
-    clusterSizes    = clusterSizes,
-    clusterName     = clusterName,
     params.only     = params.only,
     full            = full,
     retry           = retry

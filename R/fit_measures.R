@@ -336,14 +336,6 @@ mcplsLoglik <- function(object, boot.R = 500, verbose = interactive()) {
   vars <- colnames(data)
   n    <- NROW(data)
 
-  if (isMLM(object)) {
-    clusterSizes <- as.numeric(table(attr(data, "cluster")))
-    clusterName  <- colnames(attr(data, "cluster"))
-  } else {
-    clusterSizes <- NULL
-    clusterName  <- NULL
-  }
-
   estimator <- combined@info$path.estimator
   mc.rescov <- object@info$mc.args$rescov
   use.full.rescov <- switch(mc.rescov,
@@ -372,8 +364,6 @@ mcplsLoglik <- function(object, boot.R = 500, verbose = interactive()) {
       parTable     = parTable,
       N            = n,
       check.hi.ord = is.hi.ord,
-      clusterSizes = clusterSizes,
-      clusterName  = clusterName,
       full         = use.full.rescov,
       cut          = TRUE # cut from estimated thresholds
     )
@@ -383,9 +373,6 @@ mcplsLoglik <- function(object, boot.R = 500, verbose = interactive()) {
 
     if (is.probit) S <- getCorrMat(X, probit = TRUE, ordered = ordered)
     else           S <- Rfast::cova(X)
-
-    if (!is.null(sim$cluster))
-      attr(X, "cluster") <- sim$cluster
 
     # Update observed-data (lowest-order) model input
     modelData(fit.sim)  <- X

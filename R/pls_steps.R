@@ -102,38 +102,15 @@ estimatePLS_Step6 <- function(model, cpp = TRUE) {
 estimatePLS_Step7 <- function(model) {
   force(model)
 
-  is.mlm     <- model@info$is.mlm
-  is.mcpls   <- model@info$is.mcpls
-  consistent <- model@info$consistent
-  is.probit  <- model@info$is.probit
-
-  if (!is.mlm) {
-    if (consistent) {
-      modelFitConsistent(model)  <- getFitPLSModel(model, consistent = TRUE)
-      modelFitUncorrected(model) <- list(NULL)
-      modelFit(model)            <- modelFitConsistent(model)
-    } else {
-      modelFitConsistent(model)  <- list(NULL)
-      modelFitUncorrected(model) <- getFitPLSModel(model, consistent = FALSE)
-      modelFit(model)            <- modelFitUncorrected(model)
-    }
-
-    model@matrices$C <- model@fit$fitC
-    return(model)
+  if (model@info$consistent) {
+    modelFitConsistent(model)  <- getFitPLSModel(model, consistent = TRUE)
+    modelFitUncorrected(model) <- list(NULL)
+    modelFit(model)            <- modelFitConsistent(model)
+  } else {
+    modelFitConsistent(model)  <- list(NULL)
+    modelFitUncorrected(model) <- getFitPLSModel(model, consistent = FALSE)
+    modelFit(model)            <- modelFitUncorrected(model)
   }
-
-  model.c <- model
-  model.u <- model
-
-  if (is.probit || is.mcpls) {
-    model.u <- updateModelInfo(model.u, is.probit = FALSE, is.mcpls = FALSE)
-    model.u@matrices$S <- getCorrMat(model.u@data, probit = FALSE)
-    model.u <- updateOuterWeights(model.u) |> updateFactorScores()
-  }
-
-  modelFitConsistent(model)  <- getFitPLSModel(model.c, consistent = consistent)
-  modelFitUncorrected(model) <- getFitPLSModel(model.u, consistent = FALSE)
-  modelFit(model)            <- modelFitConsistent(model)
 
   model@matrices$C <- model@fit$fitC
   model
@@ -146,12 +123,5 @@ estimatePLS_Step8 <- function(model) {
   model@params$values <- extractCoefs(model)
   model@params$se     <- rep(NA_real_, length(model@params$values))
 
-  if (!isMLM(model))
-    return(model)
-
-  modelFitLmer(model) <- plslmer(
-    plsModel = model, fast = isTRUE(model@info$mc.fast.lmer)
-  )
-
-  refreshLmerParams(model) # Update params with Mixed-Effects coefficients
+  model
 }

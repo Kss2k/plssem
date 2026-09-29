@@ -9,6 +9,7 @@ mpls <- function(syntax,
                  max.iter = 1000L,
                  min.iter = 50L,
                  verbose = interactive(),
+                 ordered = NULL,
                  ...,
                  consistent = NULL # capture
                  ) {
@@ -39,8 +40,16 @@ mpls <- function(syntax,
     clusterIdx <- data[[cluster]]
   }
 
+  # ordered variables
+  is.ord  <- vapply(data[parsed$ovs.all], FUN.VALUE = logical(1L), FUN = is.ordered)
+  ordered <- intersect(union(ordered, parsed$ovs.all[is.ord]), parsed$ovs.all)
+
+  for (ord in ordered)
+    data[[ord]] <- as.integer(as.ordered(data[[ord]]))
+
   # data must be sorted by the clusters
   data <- as.matrix(data[order(clusterIdx), all.vars,drop=FALSE])
+  thresholdStruct0 <- ThresholdStruct(data, ordered = ordered)
   data[,parsed$ovs.all] <- Rfast::standardise(data[,parsed$ovs.all])
   clusterIdx <- data[,cluster, drop=TRUE]
   n <- NROW(data)
@@ -108,45 +117,55 @@ mpls <- function(syntax,
     list(level.1 = parxL1, level.2 = parxL2, icc = iccx)
   }
 
-  .f <- function(p, sim.ov.cont = NULL) {
-    
-    if (is.null(sim.ov.cont)) {
-      parStruct <- .parStruct(p)
-      icc <- parStruct$icc
+  .simulate <- function(p) {
+    parStruct <- .parStruct(p)
+    icc <- parStruct$icc
 
-      simL1 <- simulateDataParTable(
-        parTable     = parStruct$level.1,
-        N            = mc.reps.l1,
-        seed         = rng.seed,
-        check.hi.ord = is.hi.ord.l1,
-        full         = use.full.rescov.l1
+    simL1 <- simulateDataParTable(
+      parTable     = parStruct$level.1,
+      N            = mc.reps.l1,
+      seed         = rng.seed,
+      check.hi.ord = is.hi.ord.l1,
+      full         = use.full.rescov.l1
+    )
+
+    simL2 <- simulateDataParTable(
+      parTable     = parStruct$level.2,
+      N            = mc.reps.l2,
+      seed         = rng.seed,
+      check.hi.ord = is.hi.ord.l2,
+      full         = use.full.rescov.l2
+    )
+
+    sim.ov.l1 <- simL1$ov
+    sim.ov.l2 <- simL2$ov[clusterIdx.sim,,drop=FALSE]
+    mix <- parsed$ovs.both
+
+    ov <- cbind(
+      sim.ov.l1[,parsed$ovs.only.1,drop=FALSE],
+      sim.ov.l2[,parsed$ovs.only.2,drop=FALSE],
+      sweep(sim.ov.l1[,mix,drop=FALSE], MARGIN = 2, STATS = sqrt(1 - icc), FUN = "*") +
+      sweep(sim.ov.l2[,mix,drop=FALSE], MARGIN = 2, STATS = sqrt(icc), FUN = "*")
+    )
+
+    list(
+      ov    = ov,
+      lower = c(simL1$lower[freeL1], simL2$lower[freeL2], lower.icc),
+      upper = c(simL1$upper[freeL1], simL2$upper[freeL2], upper.icc)
+    )
+  }
+
+  .f <- function(p, sim = NULL) {
+    if (is.null(sim))
+      sim <- .simulate(p)
+
+    if (length(ordered)) {
+      sim.ov <- ordinalizeDataFrame(
+        df = as.data.frame(sim$ov), thresholdStruct = thresholdStruct0
       )
-
-      simL2 <- simulateDataParTable(
-        parTable     = parStruct$level.2,
-        N            = mc.reps.l2,
-        seed         = rng.seed,
-        check.hi.ord = is.hi.ord.l2,
-        full         = use.full.rescov.l2
-      )
-
-      sim.ov.l1 <- simL1$ov
-      sim.ov.l2 <- simL2$ov[clusterIdx.sim,,drop=FALSE]
-      mix <- parsed$ovs.both
-
-      sim.ov.cont <- cbind(
-        sim.ov.l1[,parsed$ovs.only.1,drop=FALSE],
-        sim.ov.l2[,parsed$ovs.only.2,drop=FALSE],
-        sweep(sim.ov.l1[,mix,drop=FALSE], MARGIN = 2, STATS = sqrt(1 - icc), FUN = "*") +
-        sweep(sim.ov.l2[,mix,drop=FALSE], MARGIN = 2, STATS = sqrt(icc), FUN = "*")
-      )
-
+    } else {
+      sim.ov <- sim$ov
     }
-
-    # sim.ov  <- ordinalizeDataFrame(
-    #   df = sim$ov[idx,,drop=FALSE], thresholdStruct = thresholdStruct
-    # )
-    sim.ov <- sim.ov.cont
 
     refit <- refitAuxiliaryMLM_PLS(
       fits = baseFits,
@@ -164,8 +183,8 @@ mpls <- function(syntax,
       refit$icc - icc0
     )
 
-    attr(out, "lower") <- c(simL1$lower[freeL1], simL2$lower[freeL2], lower.icc)
-    attr(out, "upper") <- c(simL1$upper[freeL1], simL2$upper[freeL2], upper.icc)
+    attr(out, "lower") <- sim$lower
+    attr(out, "upper") <- sim$upper
 
     out
   }
@@ -186,7 +205,15 @@ mpls <- function(syntax,
     ...
   )
 
-  .parStruct(c(mcfit$root))
+  root <- c(mcfit$root)
+  out  <- .parStruct(root)
+
+  # thresholds of the latent response (total) scores
+  out$thresholds <- updateThresholds(
+    thr = thresholdStruct0, sim.cont = .simulate(root)$ov
+  )@thresholds
+
+  out
 }
 
 

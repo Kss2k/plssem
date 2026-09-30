@@ -215,6 +215,11 @@ specifySubModel <- function(parTable,
       "`cluster` must be specified for random slopes estimation!"
     )
 
+    # MC-PLS simulates data without clusters and random slopes
+    pls_stopif(isTRUE(info$is.mcpls),
+      "MC-PLS (`mcpls = TRUE`) is (currently) not supported with random slopes!"
+    )
+
   } else if (path.default == "gls" || has.rescov) {
     info$path.estimator <- "gls"
     glsPathModel <- GlsPathModel(

@@ -38,7 +38,7 @@ mpls <- function(syntax,
   clusterIdx <- data[[cluster]]
 
   if (anyNA(clusterIdx)) {
-    pls_stopif(all(is.na(clusterIdx), "cluster is all NA!"))
+    pls_stopif(all(is.na(clusterIdx)), "cluster is all NA!")
     pls_msg_warn("removing missing values in `cluster`!")
 
     data <- data[!is.na(clusterIdx),, drop = FALSE]
@@ -148,6 +148,10 @@ mpls <- function(syntax,
     list(level.1 = parxL1, level.2 = parxL2, icc = iccx, rsd = rsdx)
   }
 
+  # The levels must use different seeds, otherwise a fixed seed yields
+  # identical draws (and thus correlated components) at both levels.
+  rng.seed.l1 <- if (is.null(rng.seed)) NULL else rng.seed + 1L
+
   .simulate <- function(p) {
     parStruct <- .parStruct(p)
     icc <- parStruct$icc
@@ -183,7 +187,7 @@ mpls <- function(syntax,
     simL1 <- simulateDataParTable(
       parTable     = parTableSimL1,
       N            = mc.reps.l1,
-      seed         = rng.seed,
+      seed         = rng.seed.l1,
       check.hi.ord = is.hi.ord.l1,
       full         = use.full.rescov.l1,
       exogenous    = exogenous
@@ -285,8 +289,7 @@ mpls <- function(syntax,
     pj.extrapolate   = pj.extrapolate,
     lower            = lower,
     upper            = upper,
-    diag.secant      = diag.secant,
-    ...
+    diag.secant      = diag.secant
   )
 
   root <- c(mcfit$root)
@@ -352,7 +355,7 @@ parseMultilevelModelArguments <- function(syntax, data, cluster) {
   vars.all <- c(cluster, union(ovsL1, ovsL2))
   missing <- setdiff(vars.all, colnames(data))
   pls_stopif(length(missing),
-    "Missing variables in `data`:", paste0(missing, ", ")
+    "Missing variables in `data`:", paste0(missing, collapse = ", ")
   )
 
   list(

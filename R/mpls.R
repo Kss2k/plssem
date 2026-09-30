@@ -137,8 +137,8 @@ mpls <- function(syntax,
       full         = use.full.rescov.l2
     )
 
-    sim.ov.l1 <- simL1$ov
-    sim.ov.l2 <- simL2$ov[clusterIdx.sim,,drop=FALSE]
+    sim.ov.l1 <- toOriginalNames(simL1$ov)
+    sim.ov.l2 <- toOriginalNames(simL2$ov)[clusterIdx.sim,,drop=FALSE]
     mix <- parsed$ovs.both
 
     ov <- cbind(
@@ -340,8 +340,13 @@ refitAuxiliaryMLM_PLS <- function(fits, parsed, data.sim, clusterIdx.sim) {
   fit1 <- fits$level.1
   fit2 <- fits$level.2
 
-  X1 <- Rfast::standardise(dataL1[,varsL1])
-  X2 <- Rfast::standardise(dataL2[,varsL2])
+  # Convert to internal names
+  X1 <- toInternalNames(dataL1, vars = varsL1)
+  X2 <- toInternalNames(dataL2, vars = varsL2)
+
+  # Standardise
+  X1 <- Rfast::standardise(X1)
+  X2 <- Rfast::standardise(X2)
 
   S1 <- Rfast::cova(X1)
   S2 <- Rfast::cova(X2)
@@ -358,4 +363,21 @@ refitAuxiliaryMLM_PLS <- function(fits, parsed, data.sim, clusterIdx.sim) {
   fit2 <- estimatePLS_Inner(fit2)
 
   list(level.1 = fit1, level.2 = fit2, icc = decomp$icc)
+}
+
+
+toOriginalNames <- function(X) {
+  original <- removeTempAffixes(colnames(X))
+  keep     <- !duplicated(original)
+
+  X <- X[, keep, drop = FALSE]
+  colnames(X) <- original[keep]
+  X
+}
+
+
+toInternalNames <- function(X, vars) {
+  X <- X[, removeTempAffixes(vars), drop = FALSE]
+  colnames(X) <- vars
+  X
 }

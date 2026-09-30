@@ -219,7 +219,7 @@ mpls <- function(syntax,
       pmin(simL1$upper[idxR], upper.rsd)
     )
 
-    list(ov = ov, lower = lower, upper = upper)
+    list(ov = ov, lower = lower, upper = upper, sim.l1 = simL1, sim.l2 = simL2)
   }
 
   .f <- function(p, sim = NULL) {
@@ -292,15 +292,154 @@ mpls <- function(syntax,
     diag.secant      = diag.secant
   )
 
-  root <- c(mcfit$root)
-  out  <- .parStruct(root)
+  if (mcfit$diverged) {
+    pls_msg_warn(
+      "The root-finding algorithm diverged and did not recover!\n",
+      "Parameter estimates might be unreliable!"
+    )
+  } else if (mcfit$iter >= max.iter) {
+    pls_msg_warn(
+      "Maximum number of iterations reached!\n",
+      "Parameter estimates might be unreliable!"
+    )
+  }
+
+  root      <- c(mcfit$root)
+  parStruct <- .parStruct(root)
+  simRoot   <- .simulate(root)
+
+  level.1 <- finalizeMultilevelLevel(
+    model = baseFits$level.1, parTable = parStruct$level.1,
+    sim = simRoot$sim.l1, iterations = mcfit$iter
+  )
+
+  level.2 <- finalizeMultilevelLevel(
+    model = baseFits$level.2, parTable = parStruct$level.2,
+    sim = simRoot$sim.l2, iterations = mcfit$iter
+  )
 
   # thresholds of the latent response (total) scores
-  out$thresholds <- updateThresholds(
-    thr = thresholdStruct0, sim.cont = .simulate(root)$ov
-  )@thresholds
+  thresholdStruct <- updateThresholds(thr = thresholdStruct0, sim.cont = simRoot$ov)
 
-  out
+  parTableInput <- rbind(
+    cbind(parsed$level.1, level = 1L),
+    cbind(parsed$level.2, level = 2L)
+  )
+
+  is.ord    <- length(ordered) > 0L
+  estimator <- paste0("MC", if (is.ord) "Ord" else "", "PLSc-MLM")
+
+  converged  <- !mcfit$diverged && mcfit$iter < max.iter
+  admissible <- converged && isAdmissible(level.1) && isAdmissible(level.2)
+
+  model <- PlsMultilevelModel(
+    level.1         = level.1,
+    level.2         = level.2,
+    info            = list(
+      estimator    = estimator,
+      cluster      = cluster,
+      n            = n,
+      nclusters    = nclusters,
+      ordered      = ordered,
+      rslopes      = rslopes,
+      small.sample = small.sample,
+      mc.reps      = mc.reps,
+      rng.seed     = rng.seed
+    ),
+    data            = data,
+    thresholdStruct = thresholdStruct,
+    status          = list(
+      iterations    = mcfit$iter,
+      converged     = converged,
+      diverged      = mcfit$diverged,
+      is.admissible = admissible
+    ),
+    params          = list(
+      icc        = parStruct$icc,
+      rsd        = parStruct$rsd,
+      thresholds = thresholdStruct@thresholds
+    ),
+    fit             = list(mcfit = mcfit),
+    factorScores    = list(
+      level.1 = modelFactorScores(combinedModel(level.1)),
+      level.2 = modelFactorScores(combinedModel(level.2))
+    ),
+    parTableInput   = parTableInput
+  )
+
+  model@parTable <- getParTableMultilevel(model)
+  model@params$values <- getCoefsMultilevel(model)
+  model
+}
+
+
+# Update a level model with the calibrated parameters (similar to `mcpls()`),
+# and store its parameter table (similar to `pls()`).
+finalizeMultilevelLevel <- function(model, parTable, sim, iterations) {
+  combined <- combinedModel(model)
+
+  combined <- updateModelFromFreeParTableMC(
+    parTable        = parTable,
+    model           = combined,
+    mc.reps         = NROW(sim$all),
+    thresholdStruct = combined@thresholdStruct,
+    ordered         = NULL,
+    sim             = sim,
+    params.only     = TRUE
+  )
+
+  combined@status$iterations <- iterations
+  combined@parTable <- getParTableEstimates(combined)
+
+  if (hasCombinedModel(model) || hasHigherOrderModel(model)) {
+    model@combinedModel <- combined
+    return(model)
+  }
+
+  combined
+}
+
+
+getParTableMultilevel <- function(model) {
+  pt1 <- parameter_estimates(model@level.1)
+  pt2 <- parameter_estimates(model@level.2)
+
+  pt1$level <- rep(1L, NROW(pt1))
+  pt2$level <- rep(2L, NROW(pt2))
+
+  parTable <- rbind(as.data.frame(pt1), as.data.frame(pt2))
+
+  # The thresholds are defined for the total (latent response) scores, and
+  # are thus level agnostic (`level = NA`), similar to custom parameters.
+  thr <- model@params$thresholds
+
+  if (length(thr)) {
+    split <- stringr::str_split_fixed(names(thr), pattern = "\\|", n = 2L)
+
+    rows <- parTable[rep(NA_integer_, length(thr)), , drop = FALSE]
+    rows$lhs   <- split[, 1L]
+    rows$op    <- "|"
+    rows$rhs   <- split[, 2L]
+    rows$label <- ""
+    rows$est   <- unname(thr)
+    rows$level <- NA_integer_
+
+    parTable <- rbind(parTable, rows)
+  }
+
+  plssemParTable(parTable)
+}
+
+
+# Parameters at level 2 get a `.l2` suffix, as the same parameter
+# (e.g., `y1~~y1`) can appear at both levels.
+getCoefsMultilevel <- function(model) {
+  pt <- model@parTable
+  nm <- paste0(pt$lhs, pt$op, pt$rhs)
+  l2 <- which(pt$level == 2L)
+  nm[l2] <- paste0(nm[l2], ".l2")
+
+  stats::setNames(pt$est, nm)
 }
 
 

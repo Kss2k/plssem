@@ -99,3 +99,36 @@ setClass(
     boot             = list()
   )
 )
+
+
+setClass(
+  "PlsMultilevelModel",
+  slots = c(
+    level.1         = "PlsModel",         # within model (at the calibrated root)
+    level.2         = "PlsModel",         # between model (at the calibrated root)
+    info            = "list",
+    data            = "matrix",           # standardized data, sorted by cluster
+    thresholdStruct = "ThresholdStruct",  # thresholds of the total (latent response) scores
+    status          = "list",
+    params          = "list",             # values, icc, rsd, thresholds
+    fit             = "list",             # results of the root-finding algorithm
+    factorScores    = "list",             # factor scores for each level
+    parTableInput   = "data.frame",
+    parTable        = PAR_TABLE,          # NULL or data.frame/PlsSemParTable
+    boot            = "list"
+  ),
+  prototype = list(
+    level.1         = methods::new("PlsModel"),
+    level.2         = methods::new("PlsModel"),
+    info            = list(),
+    data            = matrix(numeric(0), 0, 0),
+    thresholdStruct = methods::new("ThresholdStruct"),
+    status          = list(),
+    params          = list(),
+    fit             = list(),
+    factorScores    = list(),
+    parTableInput   = data.frame(),
+    parTable        = NULL,
+    boot            = list()
+  )
+)

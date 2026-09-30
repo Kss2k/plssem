@@ -34,3 +34,33 @@ PlsModel <- function(matrices         = list(),
     boot             = boot
   )
 }
+
+
+PlsMultilevelModel <- function(level.1         = PlsModel(),
+                               level.2         = PlsModel(),
+                               info            = list(),
+                               data            = matrix(),
+                               thresholdStruct = ThresholdStruct(),
+                               status          = list(),
+                               params          = list(),
+                               fit             = list(),
+                               factorScores    = list(),
+                               parTableInput   = data.frame(),
+                               parTable        = NULL,
+                               boot            = list()) {
+
+  methods::new("PlsMultilevelModel",
+    level.1         = level.1,
+    level.2         = level.2,
+    info            = info,
+    data            = data,
+    thresholdStruct = thresholdStruct,
+    status          = status,
+    params          = params,
+    fit             = fit,
+    factorScores    = factorScores,
+    parTableInput   = parTableInput,
+    parTable        = parTable,
+    boot            = boot
+  )
+}

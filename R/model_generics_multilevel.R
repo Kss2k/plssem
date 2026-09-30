@@ -1,6 +1,3 @@
-# S4 methods for the PlsMultilevelModel class (see `mpls()`).
-
-
 printMultilevelStatusHeader <- function(model) {
   printStatusHeader(isTRUE(model@status$is.admissible), iterations = model@status$iterations)
 }
@@ -38,7 +35,15 @@ setMethod("summary", "PlsMultilevelModel", function(object, ...) {
     )
   })
 
-  rsd <- object@params$rsd
+  # `estimate (std.error)`, if standard errors are available
+  withSE <- function(est, se) {
+    if (!length(est) || is.null(se)) return(est)
+    stats::setNames(paste0(formatNumeric(est), " (", formatNumeric(se[names(est)]), ")"),
+                    nm = names(est))
+  }
+
+  icc <- withSE(object@params$icc, object@params$icc.se)
+  rsd <- withSE(object@params$rsd, object@params$rsd.se)
   rslopes <- info$rslopes
 
   if (length(rsd)) {
@@ -56,9 +61,10 @@ setMethod("summary", "PlsMultilevelModel", function(object, ...) {
       link       = if (length(info$ordered)) "PROBIT" else "LINEAR",
       n          = info$n,
       nclusters  = info$nclusters,
-      iterations = object@status$iterations
+      iterations = object@status$iterations,
+      se         = if (length(object@boot)) "Delta (cluster bootstrap)" else "None"
     ),
-    icc        = object@params$icc,
+    icc        = icc,
     rsd        = rsd
   )
 
@@ -80,11 +86,13 @@ print.SummaryPlsMultilevel <- function(x, ...) {
   printMultilevelStatusHeader(x$fit)
 
   printSummarySection(width.out = width.out, values = stats::setNames(
-    c(x$info$estimator, x$info$link, "", x$info$n, x$info$nclusters, x$info$iterations),
-    nm = c("Estimator", "Link", "", "Number of observations", "Number of clusters",
-           "Number of iterations")
+    c(x$info$estimator, x$info$link, x$info$se, "", x$info$n, x$info$nclusters,
+      x$info$iterations),
+    nm = c("Estimator", "Link", "Standard errors", "", "Number of observations",
+           "Number of clusters", "Number of iterations")
   ))
 
+  if (length(x$icc) && is.character(x$icc)) cat("Standard errors in parentheses.\n\n")
   printSummarySection(x$icc, title = "Intraclass correlations:", width.out = width.out)
   printSummarySection(x$rsd, title = "Random slopes (standard deviations):", width.out = width.out)
 
@@ -138,6 +146,20 @@ setMethod("coef", "PlsMultilevelModel", function(object, ...) {
 #' @export
 setMethod("coefficients", "PlsMultilevelModel", function(object, ...) {
   plssemVector(object@params$values, is.public = TRUE)
+})
+
+
+#' Extract the variance-covariance matrix from a \code{PlsMultilevelModel} model
+#'
+#' Delta-method (co-)variances, see the \code{bootstrap} argument of \code{mpls()}.
+#' Parameters at the between level (level 2) are suffixed with \code{.l2}.
+#'
+#' @param object A \code{PlsMultilevelModel} object.
+#' @param ... Currently unused.
+#' @return A \code{PlsSemMatrix}, or \code{NULL} if no standard errors were computed.
+#' @export
+setMethod("vcov", "PlsMultilevelModel", function(object, ...) {
+  object@params$vcov
 })
 
 

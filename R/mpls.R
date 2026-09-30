@@ -16,12 +16,20 @@ mpls <- function(syntax,
                  small.sample.point.estimate = c("mean", "median"),
                  mc.reps = 50000,
                  rng.seed = NULL,
+                 bootstrap = FALSE,
+                 boot.R = 500L,
+                 boot.parallel = c("no", "multicore", "multisession"),
+                 boot.ncores = 1L,
+                 boot.iseed = NULL,
+                 delta.jacobian.k = 1L,
+                 delta.eps = 5e-3,
                  ...) {
   pls_stopif(length(cluster) != 1 || !is.character(cluster),
     "cluster must be a character string of length 1!"
   )
 
   small.sample.point.estimate <- match.arg(small.sample.point.estimate)
+  boot.parallel <- match.arg(boot.parallel)
 
   parsed <- parseMultilevelModelArguments(
     syntax  = syntax,
@@ -125,6 +133,13 @@ mpls <- function(syntax,
     rsd0
   )
 
+  # (naive) statistics of the auxiliary fits, which are matched to `target`
+  .stats <- function(refit) {
+    par2L1 <- getFreeParamsTable(combinedModel(refit$level.1))
+    par2L2 <- getFreeParamsTable(combinedModel(refit$level.2))
+    c(par2L1[freeL1, "est"], par2L2[freeL2, "est"], refit$icc, refit$rsd)
+  }
+
   # starting parameters
   start <- c(par1L1[par1L1$is.free, "est"], par1L2[par1L2$is.free, "est"], start.icc, rsd0)
   lower <- c(getMcLowerBounds(par1L1), getMcLowerBounds(par1L2), lower.icc, lower.rsd)
@@ -150,16 +165,15 @@ mpls <- function(syntax,
 
   # The levels must use different seeds, otherwise a fixed seed yields
   # identical draws (and thus correlated components) at both levels.
-  rng.seed.l1 <- if (is.null(rng.seed)) NULL else rng.seed + 1L
-
-  .simulate <- function(p) {
+  .simulate <- function(p, seed = rng.seed) {
+    seed.l1   <- if (is.null(seed)) NULL else seed + 1L
     parStruct <- .parStruct(p)
     icc <- parStruct$icc
 
     simL2 <- simulateDataParTable(
       parTable     = parStruct$level.2,
       N            = mc.reps.l2,
-      seed         = rng.seed,
+      seed         = seed,
       check.hi.ord = is.hi.ord.l2,
       full         = use.full.rescov.l2
     )
@@ -187,7 +201,7 @@ mpls <- function(syntax,
     simL1 <- simulateDataParTable(
       parTable     = parTableSimL1,
       N            = mc.reps.l1,
-      seed         = rng.seed.l1,
+      seed         = seed.l1,
       check.hi.ord = is.hi.ord.l1,
       full         = use.full.rescov.l1,
       exogenous    = exogenous
@@ -244,10 +258,7 @@ mpls <- function(syntax,
         clusterIdx.sim = clusterIdx.sim[rows] - offset
       )
 
-      par2L1 <- getFreeParamsTable(combinedModel(refit$level.1))
-      par2L2 <- getFreeParamsTable(combinedModel(refit$level.2))
-
-      c(par2L1[freeL1, "est"], par2L2[freeL2, "est"], refit$icc, refit$rsd)
+      .stats(refit)
     }
 
     if (small.sample) {
@@ -369,7 +380,175 @@ mpls <- function(syntax,
 
   model@parTable <- getParTableMultilevel(model)
   model@params$values <- getCoefsMultilevel(model)
+
+  if (!bootstrap)
+    return(model)
+
+  # Standard errors (delta method) --------------------------------------------
+  # The estimates solve E[t(theta)] = t0, where t are the (naive) statistics of
+  # the auxiliary fits. Thus Var(theta) ~= J0^-1 Var(t0) J0^-T, where
+  # J0 = dE[t(theta)]/dtheta. Var(t0) is estimated using a (cheap) cluster
+  # bootstrap of the auxiliary fits, and J0 using finite differences at the
+  # root. The (co-)variances of all the reported parameters are obtained
+  # using J1 = dvalues(theta)/dtheta, i.e., vcov = J1 J0^-1 Var(t0) J0^-T J1^T.
+  .values <- function(p, sim) {
+    parStruct <- .parStruct(p)
+
+    l1 <- finalizeMultilevelLevel(baseFits$level.1, parStruct$level.1, sim$sim.l1, iterations = 0L)
+    l2 <- finalizeMultilevelLevel(baseFits$level.2, parStruct$level.2, sim$sim.l2, iterations = 0L)
+
+    c(
+      getLevelParamValues(l1, l2),
+      prefixNames(parStruct$icc, prefix = "icc."),
+      prefixNames(parStruct$rsd, prefix = "rsd.")
+    )
+  }
+
+  .bootstrap <- function(b) {
+    tryCatch({
+      idx  <- sample(nclusters, size = nclusters, replace = TRUE)
+      rows <- unlist(split(seq_len(n), clusterIdx)[idx], use.names = FALSE)
+      cl   <- rep(seq_along(idx), times = clusterSizes[idx])
+
+      Xb <- data[rows, , drop = FALSE]
+      Xb[, cluster] <- cl
+      Xb[, parsed$ovs.all] <- Rfast::standardise(Xb[, parsed$ovs.all, drop = FALSE])
+
+      .stats(refitAuxiliaryMLM_PLS(
+        fits           = baseFits,
+        parsed         = parsed,
+        data.sim       = Xb,
+        rpar           = parsed$rpar,
+        cluster        = cluster,
+        clusterIdx.sim = cl
+      ))
+
+    }, error = \(e) rep(NA_real_, length(target)))
+  }
+
+  .jacobian <- function(task) {
+    points <- boundedParameterFiniteDiffPoints(
+      x = root, i = task$index, eps = delta.eps, lower = lower, upper = upper
+    )
+
+    sim.p <- .simulate(points$plus,  seed = task$seed)
+    sim.m <- .simulate(points$minus, seed = task$seed)
+
+    list(
+      J0 = (c(.f(points$plus, sim = sim.p)) - c(.f(points$minus, sim = sim.m))) /
+        points$denominator,
+      J1 = (.values(points$plus, sim = sim.p) - .values(points$minus, sim = sim.m)) /
+        points$denominator
+    )
+  }
+
+  if (is.null(boot.iseed)) boot.iseed <- floor(stats::runif(1L, min = 0, max = 999999999))
+  if (boot.parallel == "no" || boot.ncores <= 1L) set.seed(boot.iseed)
+
+  if (verbose) pls_msg_note("Bootstrapping auxiliary models...")
+  T0 <- do.call(rbind, plapply(
+    X        = seq_len(boot.R),
+    FUN      = .bootstrap,
+    parallel = boot.parallel,
+    ncores   = boot.ncores,
+    verbose  = verbose,
+    iseed    = boot.iseed,
+    label    = "Bootstrap"
+  ))
+
+  n.failed <- sum(!stats::complete.cases(T0))
+  pls_warnif(n.failed > 0L,
+    sprintf("%d (out of %d) bootstrap replicate(s) failed!", n.failed, boot.R)
+  )
+
+  V0 <- stats::cov(T0, use = "complete.obs")
+
+  if (verbose) pls_msg_note("Calculating Jacobian...")
+  seeds <- floor(stats::runif(delta.jacobian.k, min = 0, max = 9999999))
+  tasks <- unlist(lapply(seeds, FUN = \(seed) lapply(
+    seq_along(root), FUN = \(i) list(index = i, seed = seed)
+  )), recursive = FALSE)
+
+  results <- plapply(
+    X        = tasks,
+    FUN      = .jacobian,
+    parallel = boot.parallel,
+    ncores   = boot.ncores,
+    verbose  = verbose,
+    iseed    = boot.iseed,
+    label    = "Jacobian"
+  )
+
+  values <- .values(root, sim = simRoot)
+  J0 <- matrix(0, nrow = length(root),   ncol = length(root))
+  J1 <- matrix(0, nrow = length(values), ncol = length(root),
+               dimnames = list(names(values), NULL))
+
+  for (j in seq_along(tasks)) {
+    i <- tasks[[j]]$index
+    J0[, i] <- J0[, i] + results[[j]]$J0 / delta.jacobian.k
+    J1[, i] <- J1[, i] + results[[j]]$J1[names(values)] / delta.jacobian.k
+  }
+
+  D    <- J1 %*% invertMcJacobian(J0)
+  vcov <- D %*% V0 %*% t(D)
+  se   <- sqrt(pmax(diag(vcov), 0))
+  se[se <= 1e-10] <- NA_real_ # fixed/constant parameters
+
+  isIcc <- startsWith(names(se), "icc.")
+  isRsd <- startsWith(names(se), "rsd.")
+  isPar <- !isIcc & !isRsd
+
+  model@params$vcov   <- plssemMatrix(vcov[isPar, isPar, drop = FALSE], is.public = TRUE)
+  model@params$se     <- se[isPar]
+  model@params$icc.se <- stats::setNames(se[isIcc], names(parStruct$icc))
+  model@params$rsd.se <- stats::setNames(se[isRsd], names(parStruct$rsd))
+  model@parTable      <- setParTableMultilevelSE(model@parTable, se = se[isPar])
+
+  model@boot <- list(
+    R         = boot.R,
+    iseed     = boot.iseed,
+    naive     = T0,
+    vcov.naive = V0,
+    J0        = J0,
+    J1        = J1
+  )
+
   model
+}
+
+
+prefixNames <- function(x, prefix) {
+  if (!length(x)) return(numeric(0L))
+  stats::setNames(x, paste0(prefix, names(x)))
+}
+
+
+# Named values of the parameters at both levels (level 2 names are suffixed by
+# `.l2`), in the same order as `getCoefsMultilevel()`.
+getLevelParamValues <- function(level.1, level.2) {
+  pt1 <- parameter_estimates(level.1)
+  pt2 <- parameter_estimates(level.2)
+
+  c(
+    stats::setNames(pt1$est, paste0(pt1$lhs, pt1$op, pt1$rhs)),
+    stats::setNames(pt2$est, paste0(pt2$lhs, pt2$op, pt2$rhs, ".l2"))
+  )
+}
+
+
+setParTableMultilevelSE <- function(parTable, se) {
+  nm <- paste0(parTable$lhs, parTable$op, parTable$rhs)
+  l2 <- which(parTable$level == 2L)
+  nm[l2] <- paste0(nm[l2], ".l2")
+
+  parTable$se       <- unname(se[nm]) # NA for thresholds (not included)
+  parTable$z        <- parTable$est / parTable$se
+  parTable$pvalue   <- 2 * stats::pnorm(-abs(parTable$z))
+  parTable$ci.lower <- parTable$est - CI_QUANTILE * parTable$se
+  parTable$ci.upper <- parTable$est + CI_QUANTILE * parTable$se
+
+  plssemParTable(parTable)
 }
 
 

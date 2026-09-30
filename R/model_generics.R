@@ -1,8 +1,3 @@
-# S4 generics and methods for the PlsModel class.
-# Internal generics follow camelCase, whilst public ones follow snake_case
-# Replaces the former S3 methods (summary.plssem, print.plssem, coef.plssem, …).
-
-
 # Shared helpers (also used for PlsMultilevelModel, see R/model_generics_multilevel.R)
 printStatusHeader <- function(admissible, iterations) {
   printf(

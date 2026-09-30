@@ -11,10 +11,17 @@ mpls <- function(syntax,
                  verbose = interactive(),
                  ordered = NULL,
                  consistent = FALSE,
+                 small.sample = TRUE,
+                 small.sample.max.k = 100L,
+                 small.sample.point.estimate = c("mean", "median"),
+                 mc.reps = 50000,
+                 rng.seed = NULL,
                  ...) {
   pls_stopif(length(cluster) != 1 || !is.character(cluster),
     "cluster must be a character string of length 1!"
   )
+
+  small.sample.point.estimate <- match.arg(small.sample.point.estimate)
 
   parsed <- parseMultilevelModelArguments(
     syntax  = syntax,
@@ -63,19 +70,26 @@ mpls <- function(syntax,
     ...
   )
 
-  # for now
   is.hi.ord.l1 <- isTRUE(combinedModel(baseFits$level.1)@info$is.high.ord)
   is.hi.ord.l2 <- isTRUE(combinedModel(baseFits$level.2)@info$is.high.ord)
   use.full.rescov.l1 <- combinedModel(baseFits$level.1)@info$path.estimator == "gls"
   use.full.rescov.l2 <- combinedModel(baseFits$level.2)@info$path.estimator == "gls"
-  mc.reps <- 20000
-  rng.seed <- NULL
 
-  # calibrate mc.reps
+  # The simulated data consists of `times` replicates of the
+  # observed cluster structure, stacked on top of each other. With
+  # `small.sample = TRUE`, each replicate is refitted separately, with the
+  # same sample size and number of clusters as the observed data
   clusterSizes <- table(clusterIdx)
-  mc.reps.l1 <- max(mc.reps - mc.reps %% n, n) # must be a multiple of n
-  times <- max(floor(mc.reps.l1 / n), 1)
-  mc.reps.l2 <- length(clusterSizes) * times
+  nclusters    <- length(clusterSizes)
+  mc.reps.l1   <- max(mc.reps - mc.reps %% n, n) # must be a multiple of n
+  times        <- max(floor(mc.reps.l1 / n), 1)
+
+  if (small.sample) {
+    times      <- min(times, max(round(small.sample.max.k), 1))
+    mc.reps.l1 <- times * n
+  }
+
+  mc.reps.l2 <- nclusters * times
 
   clusterSizes.sim <- rep(clusterSizes, times)
   clusterIdx.sim <- rep(seq_along(clusterSizes.sim), clusterSizes.sim)
@@ -103,6 +117,13 @@ mpls <- function(syntax,
   rsd0      <- baseFits$rsd
   lower.rsd <- rep(0, length(rsd0))
   upper.rsd <- rep(1, length(rsd0))
+
+  target <- c(
+    par0L1[freeL1, "est"],
+    par0L2[freeL2, "est"],
+    icc0,
+    rsd0
+  )
 
   # starting parameters
   start <- c(par1L1[par1L1$is.free, "est"], par1L2[par1L2$is.free, "est"], start.icc, rsd0)
@@ -209,24 +230,42 @@ mpls <- function(syntax,
       sim.ov <- sim$ov
     }
 
-    refit <- refitAuxiliaryMLM_PLS(
-      fits           = baseFits,
-      parsed         = parsed,
-      data.sim       = sim.ov,
-      rpar           = parsed$rpar,
-      cluster        = cluster,
-      clusterIdx.sim = clusterIdx.sim
-    )
+    .estimates <- function(rows = seq_len(NROW(sim.ov)), offset = 0L) {
+      refit <- refitAuxiliaryMLM_PLS(
+        fits           = baseFits,
+        parsed         = parsed,
+        data.sim       = sim.ov[rows, , drop = FALSE],
+        rpar           = parsed$rpar,
+        cluster        = cluster,
+        clusterIdx.sim = clusterIdx.sim[rows] - offset
+      )
 
-    par2L1 <- getFreeParamsTable(combinedModel(refit$level.1))
-    par2L2 <- getFreeParamsTable(combinedModel(refit$level.2))
+      par2L1 <- getFreeParamsTable(combinedModel(refit$level.1))
+      par2L2 <- getFreeParamsTable(combinedModel(refit$level.2))
 
-    out <- c(
-      par2L1[freeL1, "est"] - par0L1[freeL1, "est"],
-      par2L2[freeL2, "est"] - par0L2[freeL2, "est"],
-      refit$icc - icc0,
-      refit$rsd - rsd0
-    )
+      c(par2L1[freeL1, "est"], par2L2[freeL2, "est"], refit$icc, refit$rsd)
+    }
+
+    if (small.sample) {
+      THETA <- matrix(NA_real_, nrow = times, ncol = length(target))
+
+      for (i in seq_len(times)) {
+        THETA[i, ] <- tryCatch(
+          .estimates(rows = (i - 1L) * n + seq_len(n), offset = (i - 1L) * nclusters),
+          error = \(e) NA_real_
+        )
+      }
+
+      est <- switch(small.sample.point.estimate,
+        mean   = colMeans(THETA, na.rm = TRUE),
+        median = colMedians(THETA, na.rm = TRUE)
+      )
+
+    } else {
+      est <- .estimates()
+    }
+
+    out <- est - target
 
     attr(out, "lower") <- sim$lower
     attr(out, "upper") <- sim$upper

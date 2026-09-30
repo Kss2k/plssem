@@ -7,7 +7,8 @@ simulateDataParTable <- function(parTable,
                                  check.hi.ord = FALSE,
                                  standardize  = FALSE,
                                  full         = FALSE,
-                                 cut          = FALSE) {
+                                 cut          = FALSE,
+                                 exogenous    = NULL) {
   if (!is.null(seed) && exists(".Random.seed")) .Random.seed.orig <- .Random.seed
   else                                          .Random.seed.orig <- NULL
 
@@ -68,6 +69,11 @@ simulateDataParTable <- function(parTable,
 
   Xi <- as.data.frame(Rfast::standardise(xiDraw$x))
   colnames(Xi) <- xis
+
+  # Exogenous variables which are simulated elsewhere (e.g., random slopes
+  # simulated at level 2), and only enter through (interaction) terms here.
+  if (!is.null(exogenous))
+    Xi[colnames(exogenous)] <- exogenous
 
   # Full mode: track the realised disturbances (including exogenous lvs) and,
   # as they are drawn, so each disturbance can be drawn conditional on the

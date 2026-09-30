@@ -129,7 +129,8 @@ initModelInfo <- function(baseInfo,
                           is.lower.order,
                           mc.args,
                           boot,
-                          scale) {
+                          scale,
+                          cluster = NULL) {
   stopifnot(is.list(baseInfo), is.list(parsed))
 
   info <- baseInfo
@@ -142,6 +143,7 @@ initModelInfo <- function(baseInfo,
 
   info$is.mcpls       <- parsed$is.mcpls
   info$is.probit      <- parsed$is.probit
+  info$cluster        <- cluster
   info$consistent     <- consistent
   info$ordered        <- ordered
   info$ordered.x      <- ordered.x

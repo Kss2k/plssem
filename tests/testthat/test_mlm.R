@@ -2,20 +2,40 @@ devtools::load_all()
 
 model <- '
     level: 1
-        X1 <~ x1
-        X2 <~ x2
-        X3 <~ x3
         fw =~ y1 + y2 + y3
-        fw ~ X1 + X2 + X3
+        fw ~ x1 + x2 + x3
     level: 2
-        W1 <~ w1
-        W2 <~ w2
         fb =~ y1 + y2 + y3
-        fb ~ W1 + W2
+        fb ~ w1 + w2
 '
 
 fit <- mpls(model, data = lavaan::Demo.twolevel, cluster = "cluster")
 
 fit.lav <- lavaan::sem(model, data = lavaan::Demo.twolevel, cluster = "cluster")
+lavaan::summary(fit.lav, standardized = TRUE)
+lavaan::lavInspect(fit.lav, "icc")
+
+lmerEstimateParameters(
+  modsem::modsemify("y1 ~ rv(s) * x1"),
+  data = randomSlopes,
+  cluster = "cluster"
+)
+
+model <- '
+    level: 1
+        fw =~ y1 + y2 + y3
+        fw ~ rv("s1")*x1 + rv("s2")*x2 + x3
+    level: 2
+        fb =~ y1 + y2 + y3
+        fb ~ w1 + w2
+        # the random slopes are latent variables at the between level
+        s1 + s2 ~ w1 + w2
+'
+
+set.seed(23984)
+fit.pls <- mpls(model, data = lavaan::Demo.twolevel, cluster = "cluster")
+fit.pls
+
+fit.lav <- lavaan::sem(model = model, data = lavaan::Demo.twolevel, cluster = "cluster")
 lavaan::summary(fit.lav, standardized = TRUE)
 lavaan::lavInspect(fit.lav, "icc")

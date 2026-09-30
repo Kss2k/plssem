@@ -46,6 +46,7 @@ pls(
     pj.extrapolate = FALSE, verbose = FALSE, fixed.seed = TRUE, reuse.p.start = TRUE),
   reliabilities = NULL,
   default.path.estimator = c("ols", "gls"),
+  cluster = NULL,
   ...
 )
 }
@@ -77,7 +78,8 @@ with more than two categories, and the mode for binary ordered variables (two
 categories) or nominal variables.
 \code{"kNN"} (or \code{"knn"}) imputes missing indicator values using
 k-nearest neighbors imputation (kNN). When \code{missing = "kNN"}, rows with
-all indicators missing are removed prior to imputation.}
+all indicators missing are removed prior to imputation. Rows with missing
+\code{cluster} values are always removed.}
 
 \item{knn.k}{Integer specifying the number of neighbors (\code{k}) used when
 \code{missing = "kNN"}.}
@@ -216,6 +218,10 @@ possible, falling back to GLS automatically when the model contains residual
 covariances. Setting \code{default.path.estimator = "gls"}
 forces GLS estimation of the structural model even when OLS would otherwise be
 used.}
+
+\item{cluster}{Optional character vector naming the cluster variable(s) in
+\code{data}. The cluster variables are stored alongside the (standardized)
+indicators, and bootstrapping resamples whole clusters instead of rows.}
 
 \item{...}{Internal arguments. For advanced users only.}
 }

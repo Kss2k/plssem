@@ -68,6 +68,8 @@ estimatePLS_Step6 <- function(model, cpp = TRUE) {
     colnames(F) <- colnames(model@matrices$C)
     dimnames(C) <- dimnames(model@matrices$C)
 
+    attr(F, "cluster") <- attr(model@data, "cluster")
+
     model@factorScores          <- F
     model@matrices$C[par, par]  <- C
     model@matrices$SC[par, par] <- C

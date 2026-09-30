@@ -226,3 +226,22 @@ parTableInputRows <- function(lhs = "", op = "", rhs = "", mod = "",
     start = start
   )
 }
+
+
+isRandomEffectMod <- function(mod) {
+  substr(mod, 1, 3) == "rv("
+}
+
+
+extractRandomEffectName <- function(rv) {
+  stringr::str_extract(
+    rv, pattern = 'rv\\(\\"*([._A-Za-z][._A-Za-z0-9]*)\\"*\\)', group = 1
+  )
+}
+
+
+getRandomEffectsParTable <- function(parTable) {
+  mod <- parTable$mod
+  rand <- extractRandomEffectName(mod[isRandomEffectMod(mod)])
+  rand[!is.na(rand)]
+}

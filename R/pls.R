@@ -35,7 +35,8 @@ SE_NON_LINEAR_PROBIT_CORR_MAT <- FALSE
 #'   categories) or nominal variables.
 #'   \code{"kNN"} (or \code{"knn"}) imputes missing indicator values using
 #'   k-nearest neighbors imputation (kNN). When \code{missing = "kNN"}, rows with
-#'   all indicators missing are removed prior to imputation.
+#'   all indicators missing are removed prior to imputation. Rows with missing
+#'   \code{cluster} values are always removed.
 #'
 #' @param knn.k Integer specifying the number of neighbors (\code{k}) used when
 #'   \code{missing = "kNN"}.
@@ -170,11 +171,16 @@ SE_NON_LINEAR_PROBIT_CORR_MAT <- FALSE
 #'
 #' @param default.path.estimator Character string selecting the estimator used for
 #'   the structural (path) model when the model does not require Generalized Least
-#'   Squares (GLS). The default \code{"ols"} uses Ordinary Least Squares whenever
+#'   Squares (GLS), or Linear Mixed-Effects Regression (LMER).
+#'   The default \code{"ols"} uses Ordinary Least Squares whenever
 #'   possible, falling back to GLS automatically when the model contains residual
 #'   covariances. Setting \code{default.path.estimator = "gls"}
 #'   forces GLS estimation of the structural model even when OLS would otherwise be
 #'   used.
+#'
+#' @param cluster Optional character vector naming the cluster variable(s) in
+#'   \code{data}. The cluster variables are stored alongside the (standardized)
+#'   indicators, and bootstrapping resamples whole clusters instead of rows.
 #'
 #' @param ... Internal arguments. For advanced users only.
 #'
@@ -252,12 +258,13 @@ pls <- function(syntax,
                   reuse.p.start   = TRUE
                 ),
                 reliabilities = NULL,
-                default.path.estimator = c("ols", "gls"),
+                default.path.estimator = c("ols", "gls", "lmer"),
+                cluster = NULL,
                 ...) {
 
   missing       <- match.arg(tolower(missing), c("listwise", "mean", "knn"))
   boot.parallel <- match.arg(tolower(boot.parallel), c("no", "multicore", "multisession", "snow"))
-  default.path.estimator <- match.arg(tolower(default.path.estimator), c("ols", "gls"))
+  default.path.estimator <- match.arg(tolower(default.path.estimator), c("ols", "gls", "lmer"))
   mc.small.sample.point.estimate <- match.arg(tolower(mc.small.sample.point.estimate), c("median", "mean"))
 
   if (!is.null(boot.ncpus)) {
@@ -310,6 +317,7 @@ pls <- function(syntax,
     knn.k                          = knn.k,
     reliabilities                  = reliabilities,
     default.path.estimator         = default.path.estimator,
+    cluster                        = cluster,
     ...
   )
 

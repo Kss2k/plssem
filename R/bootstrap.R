@@ -12,6 +12,7 @@ bootstrap <- function(model,
   if (parallel == "snow") parallel <- "multisession"
 
   data        <- model@data
+  cluster     <- model@info$cluster
   is.probit   <- model@info$is.probit
   is.mcpls    <- model@info$is.mcpls
   ordered     <- model@info$ordered
@@ -74,7 +75,7 @@ bootstrap <- function(model,
 
   .bootf <- function(i) {
     tryCatch({
-      sampleData <- resample(data)
+      sampleData <- resample(data, cluster = cluster)
       sampleS    <- getCorrMat(sampleData, ordered = ordered, probit = is.probit)
       model.b    <- baseModel
 
@@ -356,9 +357,36 @@ invertMcJacobian <- function(J, rcond.tol = 1e-10) {
 }
 
 
-resample <- function(X, n.out = NROW(X), replace = TRUE) {
-  idx <- sample(NROW(X), size = n.out, replace = replace)
-  X[idx, , drop = FALSE]
+resample <- function(X, n.out = NROW(X), cluster = NULL, replace = TRUE) {
+  if (is.null(cluster)) {
+    idx <- sample(NROW(X), size = n.out, replace = replace)
+    return(X[idx, , drop = FALSE])
+  }
+
+  pls_stopif(length(cluster) > 1L, "bootstrapping of multiple cluster variables is not implemented (yet)!")
+
+  cluster.vals <- attr(X, "cluster")[, cluster, drop = TRUE]
+  pls_stopif(NROW(cluster.vals) != NROW(X), "Cluster must be of same length as data!")
+
+  clusters <- unique(cluster.vals)
+  G <- length(clusters)
+
+  clusters.sample <- sample(clusters, size = G, replace = replace)
+
+  cluster.list <- lapply(clusters.sample, FUN = \(ci) X[cluster.vals==ci, , drop=FALSE])
+  # create new (fresh) cluster indices
+  # if we sample the same cluster twice, we want the model to treat them
+  # as different clusters
+  indices.list <- lapply(
+    X = seq_along(cluster.list),
+    FUN = \(idx) matrix(idx, nrow = NROW(cluster.list[[idx]]), ncol = 1L,
+                        dimnames = list(NULL, cluster))
+  )
+
+  Y <- do.call(rbind, cluster.list)
+  attr(Y, "cluster") <- do.call(rbind, indices.list)
+
+  Y
 }
 
 

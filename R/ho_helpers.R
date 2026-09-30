@@ -274,6 +274,7 @@ computeCombinedModel <- function(model, lowerOrderAsEta = FALSE) {
     inds.x       = inds.x,
     inds.y       = inds.y,
     indsLvs      = namedListUnion(info1$indsLvs, info2$indsLvs),
+    cluster      = info1$cluster,
     ordered      = ordered.base,
     is.mcpls     = is.mcpls,
     is.probit    = is.probit,
@@ -401,7 +402,14 @@ getSecondOrderInputData <- function(firstOrder) {
   if (is.null(firstOrder))
     return(data.frame())
 
-  as.data.frame(firstOrder@data %*% firstOrder@matrices$lambda)
+  secOrdData  <- as.data.frame(firstOrder@data %*% firstOrder@matrices$lambda)
+  clusterVals <- attr(firstOrder@data, "cluster")
+  clusterName <- firstOrder@info$cluster
+
+  if (!is.null(clusterName) && !is.null(clusterVals))
+    secOrdData[, clusterName] <- clusterVals
+
+  secOrdData
 }
 
 
@@ -445,7 +453,10 @@ getSecondOrderDataMatrix <- function(firstOrder, secondOrder) {
   # Finalize
   checkMissingConstructScores(have = colnames(Scores), want = want)
 
-  Scores[, want, drop = FALSE]
+  newdata <- Scores[, want, drop = FALSE]
+  attr(newdata, "cluster") <- attr(modelData(firstOrder), "cluster")
+
+  newdata
 }
 
 

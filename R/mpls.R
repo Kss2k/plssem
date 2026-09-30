@@ -10,22 +10,20 @@ mpls <- function(syntax,
                  min.iter = 50L,
                  verbose = interactive(),
                  ordered = NULL,
-                 ...,
-                 consistent = NULL # capture
-                 ) {
+                 consistent = FALSE,
+                 ...) {
   pls_stopif(length(cluster) != 1 || !is.character(cluster),
     "cluster must be a character string of length 1!"
   )
 
-  parsed <- parseMultilevelModelArguments(syntax, data)
-  
-  data <- as.data.frame(data)
-  all.vars <- c(cluster, parsed$ovs.all)
-  missing <- setdiff(all.vars, colnames(data))
-  pls_stopif(length(missing),
-    "Missing variables in `data`:", paste0(missing, ", ")
+  parsed <- parseMultilevelModelArguments(
+    syntax  = syntax,
+    data    = data,
+    cluster = cluster
   )
 
+  data       <- parsed$data
+  vars.all   <- parsed$vars.all
   parTableL1 <- parsed$level.1 
   parTableL2 <- parsed$level.2
 
@@ -48,7 +46,7 @@ mpls <- function(syntax,
     data[[ord]] <- as.integer(as.ordered(data[[ord]]))
 
   # data must be sorted by the clusters
-  data <- as.matrix(data[order(clusterIdx), all.vars,drop=FALSE])
+  data <- as.matrix(data[order(clusterIdx), vars.all,drop=FALSE])
   thresholdStruct0 <- ThresholdStruct(data, ordered = ordered)
   data[,parsed$ovs.all] <- Rfast::standardise(data[,parsed$ovs.all])
   clusterIdx <- data[,cluster, drop=TRUE]
@@ -58,7 +56,10 @@ mpls <- function(syntax,
   baseFits <- fitAuxiliaryMLM_PLS(
     parsed     = parsed,
     data       = data,
+    rpar       = parsed$rpar,
+    cluster    = cluster,
     clusterIdx = clusterIdx,
+    consistent = consistent,
     ...
   )
 
@@ -97,37 +98,38 @@ mpls <- function(syntax,
   upper.icc <- rep(1, length(icc0))
   start.icc <- pmin(pmax((icc0^2 - 1 / nbar) / (1 - 1 / nbar), 0.01), 0.99)
 
+  # random slopes (standard deviations)
+  rslopes   <- parsed$rslopes
+  rsd0      <- baseFits$rsd
+  lower.rsd <- rep(0, length(rsd0))
+  upper.rsd <- rep(1, length(rsd0))
+
   # starting parameters
-  start <- c(par1L1[par1L1$is.free, "est"], par1L2[par1L2$is.free, "est"], start.icc)
-  lower <- c(getMcLowerBounds(par1L1), getMcLowerBounds(par1L2), lower.icc)
-  upper <- c(getMcUpperBounds(par1L1), getMcUpperBounds(par1L2), upper.icc)
+  start <- c(par1L1[par1L1$is.free, "est"], par1L2[par1L2$is.free, "est"], start.icc, rsd0)
+  lower <- c(getMcLowerBounds(par1L1), getMcLowerBounds(par1L2), lower.icc, lower.rsd)
+  upper <- c(getMcUpperBounds(par1L1), getMcUpperBounds(par1L2), upper.icc, upper.rsd)
 
   .parStruct <- function(p) {
     parxL1 <- par1L1
     parxL2 <- par1L2
     iccx   <- icc0
+    rsdx   <- rsd0
 
     n0 <- sum(parxL1$is.free)
     n1 <- sum(parxL2$is.free)
+    n2 <- length(icc0)
 
     parxL1[parxL1$is.free, "est"] <- p[seq_len(n0)]
     parxL2[parxL2$is.free, "est"] <- p[n0 + seq_len(n1)]
     iccx[] <- p[n0 + n1 + seq_along(icc0)]
+    rsdx[] <- p[n0 + n1 + n2 + seq_along(rsd0)]
 
-    list(level.1 = parxL1, level.2 = parxL2, icc = iccx)
+    list(level.1 = parxL1, level.2 = parxL2, icc = iccx, rsd = rsdx)
   }
 
   .simulate <- function(p) {
     parStruct <- .parStruct(p)
     icc <- parStruct$icc
-
-    simL1 <- simulateDataParTable(
-      parTable     = parStruct$level.1,
-      N            = mc.reps.l1,
-      seed         = rng.seed,
-      check.hi.ord = is.hi.ord.l1,
-      full         = use.full.rescov.l1
-    )
 
     simL2 <- simulateDataParTable(
       parTable     = parStruct$level.2,
@@ -135,6 +137,35 @@ mpls <- function(syntax,
       seed         = rng.seed,
       check.hi.ord = is.hi.ord.l2,
       full         = use.full.rescov.l2
+    )
+
+    parTableSimL1 <- parStruct$level.1
+    exogenous     <- NULL
+
+    if (NROW(rslopes)) {
+
+      # treat the random effect as an interaction term, where the coefficient
+      # is the standard deviation of the random effect
+      parTableSimL1 <- rbind(parTableSimL1, data.frame(
+        lhs     = rslopes$lhs,
+        op      = "~",
+        rhs     = paste0(rslopes$name, ":", rslopes$rhs),
+        est     = unname(parStruct$rsd[rslopes$name]),
+        is.free = FALSE
+      ))
+
+      exogenous <- as.data.frame(
+        simL2$all[clusterIdx.sim, rslopes$name, drop = FALSE]
+      )
+    }
+
+    simL1 <- simulateDataParTable(
+      parTable     = parTableSimL1,
+      N            = mc.reps.l1,
+      seed         = rng.seed,
+      check.hi.ord = is.hi.ord.l1,
+      full         = use.full.rescov.l1,
+      exogenous    = exogenous
     )
 
     sim.ov.l1 <- toOriginalNames(simL1$ov)
@@ -148,11 +179,22 @@ mpls <- function(syntax,
       sweep(sim.ov.l2[,mix,drop=FALSE], MARGIN = 2, STATS = sqrt(icc), FUN = "*")
     )
 
-    list(
-      ov    = ov,
-      lower = c(simL1$lower[freeL1], simL2$lower[freeL2], lower.icc),
-      upper = c(simL1$upper[freeL1], simL2$upper[freeL2], upper.icc)
+    # the random slope rows are appended after the level 1 parameters
+    nL1   <- NROW(parStruct$level.1)
+    idxL1 <- seq_len(nL1)
+    idxR  <- nL1 + seq_len(NROW(rslopes))
+
+    lower <- c(
+      simL1$lower[idxL1][freeL1], simL2$lower[freeL2], lower.icc,
+      pmax(simL1$lower[idxR], lower.rsd)
     )
+
+    upper <- c(
+      simL1$upper[idxL1][freeL1], simL2$upper[freeL2], upper.icc,
+      pmin(simL1$upper[idxR], upper.rsd)
+    )
+
+    list(ov = ov, lower = lower, upper = upper)
   }
 
   .f <- function(p, sim = NULL) {
@@ -168,9 +210,11 @@ mpls <- function(syntax,
     }
 
     refit <- refitAuxiliaryMLM_PLS(
-      fits = baseFits,
-      parsed = parsed,
-      data.sim = sim.ov,
+      fits           = baseFits,
+      parsed         = parsed,
+      data.sim       = sim.ov,
+      rpar           = parsed$rpar,
+      cluster        = cluster,
       clusterIdx.sim = clusterIdx.sim
     )
 
@@ -180,7 +224,8 @@ mpls <- function(syntax,
     out <- c(
       par2L1[freeL1, "est"] - par0L1[freeL1, "est"],
       par2L2[freeL2, "est"] - par0L2[freeL2, "est"],
-      refit$icc - icc0
+      refit$icc - icc0,
+      refit$rsd - rsd0
     )
 
     attr(out, "lower") <- sim$lower
@@ -217,7 +262,7 @@ mpls <- function(syntax,
 }
 
 
-parseMultilevelModelArguments <- function(syntax, data) {
+parseMultilevelModelArguments <- function(syntax, data, cluster) {
   lines <- stringr::str_split_1(syntax, pattern = "\n|;")
   lines <- stringr::str_trim(lines)
   lines <- lines[lines != ""]
@@ -236,8 +281,40 @@ parseMultilevelModelArguments <- function(syntax, data) {
   parTableL1 <- modsem::modsemify(s1)
   parTableL2 <- modsem::modsemify(s2)
 
+  # Random slopes are defined at level 1 (e.g., fw ~ rv(s1)*x1), and enter
+  # the level 2 model as (observed) variables (approximated in level 1)
+  isRand  <- isRandomEffectMod(parTableL1$mod)
+  rslopes <- data.frame(
+    name = extractRandomEffectName(parTableL1$mod[isRand]),
+    lhs  = parTableL1$lhs[isRand],
+    rhs  = parTableL1$rhs[isRand]
+  )
+  rpar <- rslopes$name
+
+  pls_stopif(any(rpar %in% c(parTableL1$lhs, parTableL1$rhs)),
+    "Random slopes cannot share names with variables at level 1!",
+    "Random slopes:", paste0(rpar, collapse = ", ")
+  )
+
+  # TODO: random slopes which don't appear in the level 2 model should be
+  # treated as exogenous variables, correlated with the other exogenous
+  # variables at level 2.
+  missingL2 <- setdiff(rpar, c(parTableL2$lhs, parTableL2$rhs))
+  pls_stopif(length(missingL2),
+    "Random slopes must (currently) be part of the level 2 model!",
+    "Missing:", paste0(missingL2, collapse = ", ")
+  )
+
   ovsL1 <- getOVs(parTableL1)
-  ovsL2 <- getOVs(parTableL2)
+  ovsL2 <- setdiff(getOVs(parTableL2), rpar)
+
+  data <- as.data.frame(data)
+
+  vars.all <- c(cluster, union(ovsL1, ovsL2))
+  missing <- setdiff(vars.all, colnames(data))
+  pls_stopif(length(missing),
+    "Missing variables in `data`:", paste0(missing, ", ")
+  )
 
   list(
     level.1    = parTableL1,
@@ -249,7 +326,11 @@ parseMultilevelModelArguments <- function(syntax, data) {
     ovs.only.1 = setdiff(ovsL1, ovsL2),
     ovs.only.2 = setdiff(ovsL2, ovsL1),
     ovs.both   = intersect(ovsL1, ovsL2),
-    ovs.all    = union(ovsL1, ovsL2)
+    ovs.all    = union(ovsL1, ovsL2),
+    vars.all   = vars.all,
+    rpar       = rpar,
+    rslopes    = rslopes,
+    data       = data
   )
 }
 
@@ -259,14 +340,15 @@ groupMean <- function(x, g) {
 }
 
 
-decompData <- function(data, ovs.1, ovs.2, clusterIdx) {
+decompData <- function(data, ovs.1, ovs.2, cluster, clusterIdx) {
   k <- length(unique(clusterIdx))
   n <- NROW(data)
 
   dataL1 <- matrix(
-    NA_real_, nrow = n, ncol = length(ovs.1),
-    dimnames = list(NULL, ovs.1)
+    NA_real_, nrow = n, ncol = length(ovs.1) + 1L,
+    dimnames = list(NULL, c(ovs.1, cluster))
   )
+  dataL1[,cluster] <- clusterIdx
 
   dataL2 <- matrix(
     NA_real_, nrow = k, ncol = length(ovs.2),
@@ -301,33 +383,65 @@ decompData <- function(data, ovs.1, ovs.2, clusterIdx) {
     }
   }
 
-  list(level.1 = dataL1, level.2 = dataL2, icc = icc)
+  list(
+    level.1 = dataL1,
+    level.2 = dataL2,
+    icc     = icc
+  )
 }
 
 
-fitAuxiliaryMLM_PLS <- function(parsed, data, clusterIdx, ...) {
+fitAuxiliaryMLM_PLS <- function(parsed,
+                                data,
+                                cluster,
+                                clusterIdx,
+                                rpar,
+                                consistent = FALSE,
+                                ...) {
   decomp <- decompData(
-    data = data,
-    ovs.1 = parsed$ovs.1,
-    ovs.2 = parsed$ovs.2,
+    data       = data,
+    ovs.1      = parsed$ovs.1,
+    ovs.2      = parsed$ovs.2,
+    cluster    = cluster,
     clusterIdx = clusterIdx
   )
 
   dataL1 <- decomp$level.1
   dataL2 <- decomp$level.2
 
-  fit0L1 <- pls(parsed$syntax.1, data = dataL1, consistent = FALSE, ...)
-  fit0L2 <- pls(parsed$syntax.2, data = dataL2, consistent = FALSE, ...)
+  fit0L1 <- pls(
+    syntax     = parsed$syntax.1,
+    data       = dataL1,
+    consistent = consistent,
+    cluster    = cluster,
+    ...
+  )
 
-  list(level.1 = fit0L1, level.2 = fit0L2, icc = decomp$icc)
+  slopes <- getRandomSlopes(fit0L1, rpar = rpar, k = NROW(dataL2))
+  dataL2 <- cbind(dataL2, slopes)
+
+  fit0L2 <- pls(
+    syntax     = parsed$syntax.2,
+    data       = dataL2,
+    consistent = consistent,
+    ...
+  )
+
+  list(
+    level.1 = fit0L1,
+    level.2 = fit0L2,
+    icc     = decomp$icc,
+    rsd     = slopeSDs(slopes, rpar = rpar)
+  )
 }
 
 
-refitAuxiliaryMLM_PLS <- function(fits, parsed, data.sim, clusterIdx.sim) {
+refitAuxiliaryMLM_PLS <- function(fits, parsed, data.sim, rpar, cluster, clusterIdx.sim) {
   decomp <- decompData(
-    data = data.sim,
-    ovs.1 = parsed$ovs.1,
-    ovs.2 = parsed$ovs.2,
+    data       = data.sim,
+    ovs.1      = parsed$ovs.1,
+    ovs.2      = parsed$ovs.2,
+    cluster    = cluster,
     clusterIdx = clusterIdx.sim
   )
 
@@ -340,29 +454,52 @@ refitAuxiliaryMLM_PLS <- function(fits, parsed, data.sim, clusterIdx.sim) {
   fit1 <- fits$level.1
   fit2 <- fits$level.2
 
-  # Convert to internal names
-  X1 <- toInternalNames(dataL1, vars = varsL1)
-  X2 <- toInternalNames(dataL2, vars = varsL2)
+  # Level 1. The cluster is needed for the random slopes (lmer)
+  X1 <- Rfast::standardise(toInternalNames(dataL1, vars = varsL1))
+  colnames(X1) <- varsL1
+  attr(X1, "cluster") <- as.data.frame(dataL1[, cluster, drop = FALSE])
 
-  # Standardise
-  X1 <- Rfast::standardise(X1)
-  X2 <- Rfast::standardise(X2)
-
-  S1 <- Rfast::cova(X1)
-  S2 <- Rfast::cova(X2)
-    
-  # Update observed-data (lowest-order) model input
-  modelData(fit1) <- X1
-  modelData(fit2) <- X2
-
-  indCorrMatrix(fit1) <- S1
-  indCorrMatrix(fit2) <- S2
-
-  # Update fits
+  modelData(fit1)     <- X1
+  indCorrMatrix(fit1) <- Rfast::cova(X1)
   fit1 <- estimatePLS_Inner(fit1)
+
+  # Level 2. The (estimated) random slopes from level 1 enter as variables
+  slopes <- getRandomSlopes(fit1, rpar = rpar, k = NROW(dataL2))
+  dataL2 <- cbind(dataL2, slopes)
+
+  X2 <- Rfast::standardise(toInternalNames(dataL2, vars = varsL2))
+  colnames(X2) <- varsL2
+
+  modelData(fit2)     <- X2
+  indCorrMatrix(fit2) <- Rfast::cova(X2)
   fit2 <- estimatePLS_Inner(fit2)
 
-  list(level.1 = fit1, level.2 = fit2, icc = decomp$icc)
+  list(
+    level.1 = fit1,
+    level.2 = fit2,
+    icc     = decomp$icc,
+    rsd     = slopeSDs(slopes, rpar = rpar)
+  )
+}
+
+
+# cluster specific slopes (fixed + random effects), ordered by cluster index
+getRandomSlopes <- function(fit, rpar, k) {
+  if (!length(rpar))
+    return(NULL)
+
+  randef <- modelFit(fit)$randef
+  pls_stopif(is.null(randef), "Random slopes were not estimated at level 1!")
+
+  randef[as.character(seq_len(k)), rpar, drop = FALSE]
+}
+
+
+slopeSDs <- function(slopes, rpar) {
+  if (is.null(slopes))
+    return(stats::setNames(numeric(0), character(0)))
+
+  apply(slopes[, rpar, drop = FALSE], MARGIN = 2L, FUN = stats::sd)
 }
 
 

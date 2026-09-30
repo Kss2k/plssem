@@ -1,5 +1,6 @@
 getPLS_Data <- function(data,
                         indicators,
+                        cluster = NULL,
                         consistent = TRUE,
                         standardize = TRUE,
                         ordered = NULL,
@@ -10,13 +11,26 @@ getPLS_Data <- function(data,
 
   missing <- match.arg(tolower(missing), c("listwise", "mean", "knn"))
 
-  vars <- indicators
+  pls_stopif(!is.null(cluster) && !is.character(cluster),
+    "`cluster` must be a character vector!"
+  )
+
+  vars <- c(indicators, cluster)
   varIsMissing <- !vars %in% colnames(data)
 
   pls_stopif(any(varIsMissing),
              "Missing variables: ", paste0(vars[varIsMissing], collapse = ", "))
 
   data <- asDataFrame(data)[vars]
+
+  if (!is.null(cluster)) {
+    clusterMissing <- !stats::complete.cases(data[, cluster, drop = FALSE])
+
+    if (any(clusterMissing)) {
+      pls_msg_note("Removing rows with missing `cluster`...")
+      data <- data[!clusterMissing, , drop = FALSE]
+    }
+  }
 
   missingCases <- !stats::complete.cases(data)
   anyMissing <- any(missingCases)
@@ -54,7 +68,10 @@ getPLS_Data <- function(data,
   }
 
   if (standardize) {
-    data <- standardizeDataFrame(data = data)
+    data <- standardizeDataFrame(
+      data    = data,
+      cluster = cluster
+    )
 
     # sd's are a natural byproduct of standardizing
     scale <- attr(data, "sigma")
@@ -74,6 +91,9 @@ getPLS_Data <- function(data,
 
   S <- getCorrMat(data[indicators], probit = is.probit, ordered = ordered)
   X <- as.matrix(data[indicators])
+
+  if (!is.null(cluster))
+    attr(X, "cluster") <- data[, cluster, drop = FALSE]
 
   list(X = X, S = S, scale = scale)
 }
@@ -115,7 +135,9 @@ is.nominal <- function(x) {
 }
 
 
-standardizeDataFrame <- function(data, subset = colnames(data)) {
+standardizeDataFrame <- function(data, cluster = NULL, subset = colnames(data)) {
+  subset <- setdiff(subset, cluster)
+
   Z <- lapply(data[subset], FUN = standardizeAtomic)
   data[subset] <- Z
 

@@ -111,6 +111,7 @@ specifySubModel <- function(parTable,
                             knn.k                          = 5,
                             reliabilities                  = NULL,
                             default.path.estimator         = "ols",
+                            cluster                        = NULL,
                             higherOrderLVs                 = NULL) {
   if (is.null(parTable))
     return(NULL)
@@ -137,6 +138,7 @@ specifySubModel <- function(parTable,
     data        = parsed$data,
     indicators  = matricesAndInfo$info$allInds,
     consistent  = consistent,
+    cluster     = cluster,
     standardize = standardize,
     ordered     = ordered,
     is.probit   = parsed$is.probit,
@@ -187,7 +189,8 @@ specifySubModel <- function(parTable,
     is.lower.order = is.lower.order,
     mc.args        = mc.args,
     boot           = boot.info,
-    scale          = preppedData$scale
+    scale          = preppedData$scale,
+    cluster        = cluster
   )
 
   thresholdStruct <- ThresholdStruct( # holds information about thresholds and
@@ -195,20 +198,34 @@ specifySubModel <- function(parTable,
     ordered = ordered
   )
 
-  # GLS is used automatically whenever the model contains residual covariances
-  # (which the OLS path estimator cannot handle). The user may also force GLS via
-  # `default.path.estimator = "gls"`, even when OLS would otherwise suffice.
-  gls.default <- tolower(default.path.estimator) == "gls"
+  path.default <- tolower(default.path.estimator)
+  has.rescov <- hasResidualCovariances(parTable)
+  has.randef <- any(isRandomEffectMod(parTable$mod))
 
-  if (gls.default || hasResidualCovariances(parTable)) {
+  if (path.default == "lmer" || has.randef) {
+    info$path.estimator <- "lmer"
+    glsPathModel <- GlsPathModel()
+
+    pls_warnif(has.rescov,
+      "Residual covariance structures is (currently) not supported",
+      "with random slope models!"
+    )
+
+    pls_stopif(!length(cluster),
+      "`cluster` must be specified for random slopes estimation!"
+    )
+
+  } else if (path.default == "gls" || has.rescov) {
     info$path.estimator <- "gls"
     glsPathModel <- GlsPathModel(
       parTable = pt,
       data.cov = NULL
     )
+
   } else {
     info$path.estimator <- "ols"
     glsPathModel <- GlsPathModel()
+
   }
 
   pls_warnif(!info$is.mcpls && any(!is.na(pt$start)),

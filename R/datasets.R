@@ -3,22 +3,17 @@
 #' @name randomSlopes
 #' @docType data
 #' @description A simulated dataset.
-NULL
-
-
-#' randomIntercepts
+#' @examples
 #'
-#' @name randomIntercepts
-#' @docType data
-#' @description A simulated dataset.
-NULL
-
-
-#' randomInterceptsOrdered
+#' \donttest{
+#' syntax <- '
+#'   f =~ y1 + y2 + y3
+#'   f ~ rv(s1)*x1 + rv(s2)*x2 + x3
+#' '
 #'
-#' @name randomInterceptsOrdered
-#' @docType data
-#' @description A simulated dataset.
+#' fit <- pls(syntax, data = randomSlopes, cluster = "cluster")
+#' summary(fit)
+#' }
 NULL
 
 
@@ -27,6 +22,17 @@ NULL
 #' @name randomSlopesOrdered
 #' @docType data
 #' @description A simulated dataset.
+#' @examples
+#'
+#' \donttest{
+#' syntax <- '
+#'   f =~ y1 + y2 + y3
+#'   f ~ rv(s1)*x1 + rv(s2)*x2 + x3
+#' '
+#'
+#' fit <- pls(syntax, data = randomSlopesOrdered, cluster = "cluster")
+#' summary(fit)
+#' }
 NULL
 
 

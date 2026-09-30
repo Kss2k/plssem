@@ -9,19 +9,14 @@ model <- '
         fb ~ w1 + w2
 '
 
-fit <- mpls(model, data = lavaan::Demo.twolevel, cluster = "cluster")
+fit.pls <- mpls(model, data = randomSlopes, cluster = "cluster")
+fit.pls
 
-fit.lav <- lavaan::sem(model, data = lavaan::Demo.twolevel, cluster = "cluster")
+fit.lav <- lavaan::sem(model, data = randomSlopes, cluster = "cluster")
 lavaan::summary(fit.lav, standardized = TRUE)
 lavaan::lavInspect(fit.lav, "icc")
 
-lmerEstimateParameters(
-  modsem::modsemify("y1 ~ rv(s) * x1"),
-  data = randomSlopes,
-  cluster = "cluster"
-)
-
-model <- '
+modelr <- '
     level: 1
         fw =~ y1 + y2 + y3
         fw ~ rv("s1")*x1 + rv("s2")*x2 + x3
@@ -33,9 +28,9 @@ model <- '
 '
 
 set.seed(23984)
-fit.pls <- mpls(model, data = lavaan::Demo.twolevel, cluster = "cluster")
+fit.pls <- mpls(modelr, data = randomSlopes, cluster = "cluster")
 fit.pls
 
-fit.lav <- lavaan::sem(model = model, data = lavaan::Demo.twolevel, cluster = "cluster")
+fit.lav <- lavaan::sem(model = modelr, data = randomSlopes, cluster = "cluster")
 lavaan::summary(fit.lav, standardized = TRUE)
 lavaan::lavInspect(fit.lav, "icc")

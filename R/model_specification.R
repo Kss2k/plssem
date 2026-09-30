@@ -360,6 +360,15 @@ initMatrices <- function(pt, higherOrderLVs = NULL) {
   preds.cfa[, is.nlin]   <- FALSE
   succs.cfa              <- t(preds.cfa)
 
+  # Constructs without any structural relations (e.g., exogenous variables which
+  # only covary with the other constructs) would get a zero inner proxy. Their
+  # inner proxy is instead formed from the correlations with all the other
+  # (linear) constructs. The links are one-directional (only their own column is set)
+  isolated <- !is.nlin & !colSums(preds.linear) & !rowSums(preds.linear)
+
+  for (lv in lvs[isolated])
+    succs.linear[setdiff(lvs[!is.nlin], lv), lv] <- TRUE
+
   # Covariances (lvs) ----------------------------------------------------------
   xis <- lvs[!lvs %in% pt[pt$op == "~", "lhs"]]
   selectCov <- matrix(

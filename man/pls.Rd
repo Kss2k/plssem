@@ -45,7 +45,7 @@ pls(
     floor(0.5 * mc.reps), tol = mc.tol, polyak.juditsky = mc.polyak.juditsky,
     pj.extrapolate = FALSE, verbose = FALSE, fixed.seed = TRUE, reuse.p.start = TRUE),
   reliabilities = NULL,
-  default.path.estimator = c("ols", "gls"),
+  default.path.estimator = c("ols", "gls", "lmer"),
   cluster = NULL,
   ...
 )
@@ -213,7 +213,8 @@ used for the PLSc consistency correction.}
 
 \item{default.path.estimator}{Character string selecting the estimator used for
 the structural (path) model when the model does not require Generalized Least
-Squares (GLS). The default \code{"ols"} uses Ordinary Least Squares whenever
+Squares (GLS), or Linear Mixed-Effects Regression (LMER).
+The default \code{"ols"} uses Ordinary Least Squares whenever
 possible, falling back to GLS automatically when the model contains residual
 covariances. Setting \code{default.path.estimator = "gls"}
 forces GLS estimation of the structural model even when OLS would otherwise be

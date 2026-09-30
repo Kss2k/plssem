@@ -7,3 +7,15 @@
 \description{
 A simulated dataset.
 }
+\examples{
+
+\donttest{
+syntax <- '
+  f =~ y1 + y2 + y3
+  f ~ rv(s1)*x1 + rv(s2)*x2 + x3
+'
+
+fit <- pls(syntax, data = randomSlopesOrdered, cluster = "cluster")
+summary(fit)
+}
+}

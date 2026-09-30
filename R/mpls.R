@@ -323,6 +323,20 @@ parseMultilevelModelArguments <- function(syntax, data, cluster) {
   parTableL1 <- modsem::modsemify(s1)
   parTableL2 <- modsem::modsemify(s2)
 
+  # The level 2 model is fitted with `strict = FALSE` (see below), so we do
+  # the checks of `specifyModel()` here instead.
+  nm <- unique(c(parTableL1$lhs, parTableL1$rhs, parTableL2$lhs, parTableL2$rhs))
+  pls_stopif(any(hasTempAffixes(nm)),
+    "Some variables have reserved keywords/patterns!",
+    "Variables:", paste0(nm[hasTempAffixes(nm)], collapse = ", ")
+  )
+
+  hasIntr <- c(parTableL1$op, parTableL2$op) == "~1"
+  pls_stopif(any(hasIntr),
+    "Estimation of intercepts is not available!",
+    "Intercepts:", paste0(c(parTableL1$lhs, parTableL2$lhs)[hasIntr], "~1", collapse = ", ")
+  )
+
   # Random slopes are defined at level 1 (e.g., fw ~ rv(s1)*x1), and enter
   # the level 2 model as (observed) variables (approximated in level 1)
   isRand  <- isRandomEffectMod(parTableL1$mod)
@@ -338,14 +352,15 @@ parseMultilevelModelArguments <- function(syntax, data, cluster) {
     "Random slopes:", paste0(rpar, collapse = ", ")
   )
 
-  # TODO: random slopes which don't appear in the level 2 model should be
-  # treated as exogenous variables, correlated with the other exogenous
-  # variables at level 2.
+  # Random slopes which don't appear in the level 2 model are declared as
+  # (observed) exogenous variables (`s ~ 1`), such that they covary with the
+  # other exogenous variables at level 2.
   missingL2 <- setdiff(rpar, c(parTableL2$lhs, parTableL2$rhs))
-  pls_stopif(length(missingL2),
-    "Random slopes must (currently) be part of the level 2 model!",
-    "Missing:", paste0(missingL2, collapse = ", ")
-  )
+
+  if (length(missingL2)) {
+    s2 <- paste0(c(s2, paste0(missingL2, " ~ 1")), collapse = "\n")
+    parTableL2 <- modsem::modsemify(s2)
+  }
 
   ovsL1 <- getOVs(parTableL1)
   ovsL2 <- setdiff(getOVs(parTableL2), rpar)
@@ -462,10 +477,12 @@ fitAuxiliaryMLM_PLS <- function(parsed,
   slopes <- getRandomSlopes(fit0L1, rpar = rpar, k = NROW(dataL2))
   dataL2 <- cbind(dataL2, slopes)
 
+  # `strict = FALSE` allows the `s ~ 1` declarations of random slopes
   fit0L2 <- pls(
     syntax     = parsed$syntax.2,
     data       = dataL2,
     consistent = consistent,
+    strict     = FALSE,
     ...
   )
 

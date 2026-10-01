@@ -266,18 +266,14 @@ mpls <- function(syntax,
     }
 
     if (small.sample) {
-      THETA <- matrix(NA_real_, nrow = times, ncol = length(target))
-
-      for (i in seq_len(times)) {
-        THETA[i, ] <- tryCatch(
-          .estimates(rows = (i - 1L) * n + seq_len(n), offset = (i - 1L) * nclusters),
-          error = \(e) NA_real_
+      est <- averageMcReplicates(
+        k              = times,
+        point.estimate = small.sample.point.estimate,
+        catch          = TRUE,
+        fun            = \(i) .estimates(
+          rows   = (i - 1L) * n + seq_len(n),
+          offset = (i - 1L) * nclusters
         )
-      }
-
-      est <- switch(small.sample.point.estimate,
-        mean   = colMeans(THETA, na.rm = TRUE),
-        median = colMedians(THETA, na.rm = TRUE)
       )
 
     } else {

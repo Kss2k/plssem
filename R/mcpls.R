@@ -136,9 +136,8 @@ mcpls <- function(
 
     free <- par0$is.free
     nk <- max(floor(NROW(sim$ov) / mc.reps.k), 1)
-    THETA <- matrix(NA_real_, nrow = mc.reps.k, ncol = sum(free))
 
-    for (i in seq_len(mc.reps.k)) {
+    .estimate <- function(i) {
       offset <- (i - 1) * nk
       idx <- (offset+1):(offset+nk)
 
@@ -161,14 +160,13 @@ mcpls <- function(
       par2 <- getFreeParamsTable(combinedModel(fit2))
 
       eps <- par2$est - par0$est
-      THETA[i, ] <- eps[free]
+      eps[free]
     }
 
-    # which point estimate should we use?
-    out <- switch(small.sample.point.estimate,
-      mean   = colMeans(THETA, na.rm = TRUE),
-      median = colMedians(THETA, na.rm = TRUE),
-      colMeans(THETA, na.rm = TRUE) 
+    out <- averageMcReplicates(
+      k = mc.reps.k,
+      point.estimate = small.sample.point.estimate,
+      fun = .estimate
     )
 
     attr(out, "lower") <- sim$lower[free]
@@ -408,6 +406,34 @@ mcpls <- function(
   fit0.base@status$iterations    <- mcfit$iter
   fit0.base@info$mc.args$p.start <- as.vector(mcfit$root)
   fit0.base
+}
+
+
+averageMcReplicates <- function(k, fun, point.estimate = "mean", catch = FALSE) {
+  results <- vector("list", k)
+  error   <- NULL
+
+  for (i in seq_len(k)) {
+    results[[i]] <- if (!catch) fun(i) else tryCatch(fun(i), error = \(e) {
+      if (is.null(error)) error <<- conditionMessage(e)
+      NULL
+    })
+  }
+
+  failed <- vapply(results, FUN.VALUE = logical(1L), FUN = is.null)
+  pls_stopif(all(failed),
+    "The estimation failed for all the simulated data sets!",
+    "Message (first failure):", error
+  )
+
+  THETA <- matrix(NA_real_, nrow = k, ncol = length(results[[which(!failed)[1L]]]))
+  for (i in which(!failed))
+    THETA[i, ] <- results[[i]]
+
+  switch(point.estimate,
+    median = colMedians(THETA, na.rm = TRUE),
+    colMeans(THETA, na.rm = TRUE) # mean (default)
+  )
 }
 
 

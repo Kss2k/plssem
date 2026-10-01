@@ -37,6 +37,6 @@ fit.pls <- pls(modelr, data = randomSlopesOrdered,
 fit.pls
   
 
-fit.lav <- lavaan::sam(model = modelr, data = randomSlopes, cluster = "cluster")
+fit.lav <- lavaan::sem(model = modelr, data = randomSlopes, cluster = "cluster")
 lavaan::summary(fit.lav, standardized = TRUE)
 lavaan::lavInspect(fit.lav, "icc")

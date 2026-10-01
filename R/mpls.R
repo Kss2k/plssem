@@ -631,6 +631,7 @@ getCoefsMultilevel <- function(model) {
 
 parseMultilevelModelArguments <- function(syntax, data, cluster) {
   lines <- stringr::str_split_1(syntax, pattern = "\n|;")
+  lines <- stringr::str_remove(lines, pattern = "#.*$") # comments
   lines <- stringr::str_trim(lines)
   lines <- lines[lines != ""]
 

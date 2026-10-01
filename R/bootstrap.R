@@ -79,13 +79,19 @@ bootstrap <- function(model,
       sampleS    <- getCorrMat(sampleData, ordered = ordered, probit = is.probit)
       model.b    <- baseModel
 
-      model.b@data       <- sampleData
-      model.b@matrices$S <- sampleS
-
+      # The proportions must be computed before re-standardizing the data
       model.b@thresholdStruct <- updateThresholds(updateProportions(
         thr  = baseModel@thresholdStruct,
         data = sampleData
       ))
+
+      # The resampled data is not standardized itself, so we re-standardize it,
+      # like the observed data (the correlation matrix is unaffected)
+      if (isTRUE(baseModel@info$standardized))
+        sampleData <- restandardizeDataMatrix(sampleData)
+
+      model.b@data       <- sampleData
+      model.b@matrices$S <- sampleS
 
       boot.fixed.seed     <- mc.boot.control$fixed.seed
       boot.polyak         <- mc.boot.control$polyak.juditsky
@@ -373,6 +379,14 @@ invertMcJacobian <- function(J, rcond.tol = 1e-10) {
       MASS::ginv(J)
     }
   )
+}
+
+
+restandardizeDataMatrix <- function(X) {
+  Y <- Rfast::standardise(X)
+  dimnames(Y) <- dimnames(X)
+  attr(Y, "cluster") <- attr(X, "cluster")
+  Y
 }
 
 

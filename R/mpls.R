@@ -11,10 +11,10 @@ mpls <- function(syntax,
                  verbose = interactive(),
                  ordered = NULL,
                  consistent = FALSE,
-                 small.sample = TRUE,
+                 small.sample = FALSE,
                  small.sample.max.k = 100L,
                  small.sample.point.estimate = c("mean", "median"),
-                 mc.reps = 50000,
+                 mc.reps = 20000,
                  rng.seed = NULL,
                  bootstrap = FALSE,
                  boot.R = 500L,
@@ -222,12 +222,20 @@ mpls <- function(syntax,
     sim.ov.l2 <- toOriginalNames(simL2$ov)[clusterIdx.sim,,drop=FALSE]
     mix <- parsed$ovs.both
 
-    ov <- cbind(
-      sim.ov.l1[,parsed$ovs.only.1,drop=FALSE],
-      sim.ov.l2[,parsed$ovs.only.2,drop=FALSE],
-      sweep(sim.ov.l1[,mix,drop=FALSE], MARGIN = 2, STATS = sqrt(1 - icc), FUN = "*") +
-      sweep(sim.ov.l2[,mix,drop=FALSE], MARGIN = 2, STATS = sqrt(icc), FUN = "*")
-    )
+    if (length(mix)) {
+      ov <- cbind(
+        sim.ov.l1[,parsed$ovs.only.1,drop=FALSE],
+        sim.ov.l2[,parsed$ovs.only.2,drop=FALSE],
+        sweep(sim.ov.l1[,mix,drop=FALSE], MARGIN = 2, STATS = sqrt(1 - icc), FUN = "*") +
+        sweep(sim.ov.l2[,mix,drop=FALSE], MARGIN = 2, STATS = sqrt(icc), FUN = "*")
+      )
+
+    } else { # no variables with both a within and a between component
+      ov <- cbind(
+        sim.ov.l1[,parsed$ovs.only.1,drop=FALSE],
+        sim.ov.l2[,parsed$ovs.only.2,drop=FALSE]
+      )
+    }
 
     # the random slope rows are appended after the level 1 parameters
     nL1   <- NROW(parStruct$level.1)

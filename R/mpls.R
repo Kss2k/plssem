@@ -407,7 +407,7 @@ mpls <- function(syntax,
         level2.cov     = level2.cov
       ))
 
-    }, error = \(e) rep(NA_real_, length(target)))
+    }, error = \(e) structure(rep(NA_real_, length(target)), error = conditionMessage(e)))
   }
 
   .fg <- function(p, seed) {
@@ -416,22 +416,30 @@ mpls <- function(syntax,
   }
 
   if (is.null(boot.iseed)) boot.iseed <- floor(stats::runif(1L, min = 0, max = 999999999))
-  if (boot.parallel == "no" || boot.ncores <= 1L) set.seed(boot.iseed)
 
   if (verbose) pls_msg_note("Bootstrapping auxiliary models...")
-  T0 <- do.call(rbind, plapply(
-    X        = seq_len(boot.R),
-    FUN      = .bootstrap,
+  results <- runMcReplicates(
+    R        = boot.R,
+    fun      = .bootstrap,
     parallel = boot.parallel,
     ncores   = boot.ncores,
     verbose  = verbose,
     iseed    = boot.iseed,
     label    = "Bootstrap"
-  ))
+  )
+
+  errors <- unlist(lapply(results, FUN = attr, which = "error"))
+  T0     <- do.call(rbind, results)
 
   n.failed <- sum(!stats::complete.cases(T0))
+  pls_stopif(n.failed >= boot.R - 1L, # at least two replicates are needed
+    sprintf("%d (out of %d) bootstrap replicate(s) failed!", n.failed, boot.R),
+    if (length(errors)) paste("First error:", errors[[1L]])
+  )
+
   pls_warnif(n.failed > 0L,
-    sprintf("%d (out of %d) bootstrap replicate(s) failed!", n.failed, boot.R)
+    sprintf("%d (out of %d) bootstrap replicate(s) failed!", n.failed, boot.R),
+    if (length(errors)) paste("First error:", errors[[1L]])
   )
 
   V0 <- stats::cov(T0, use = "complete.obs")
@@ -457,8 +465,7 @@ mpls <- function(syntax,
   J0 <- JAC$J0
   J1 <- JAC$J1
 
-  D    <- J1 %*% invertMcJacobian(J0)
-  vcov <- D %*% V0 %*% t(D)
+  vcov <- deltaMcVcov(invertMcJacobian(J0), V = V0, J1 = J1)
   se   <- sqrt(pmax(diag(vcov), 0))
   se[se <= 1e-10] <- NA_real_ # fixed/constant parameters
 

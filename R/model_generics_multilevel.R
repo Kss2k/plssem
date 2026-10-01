@@ -35,18 +35,11 @@ setMethod("summary", "PlsMultilevelModel", function(object, ...) {
     )
   })
 
-  # `estimate (std.error)`, if standard errors are available
-  withSE <- function(est, se) {
-    if (!length(est) || is.null(se)) return(est)
-    stats::setNames(paste0(formatNumeric(est), " (", formatNumeric(se[names(est)]), ")"),
-                    nm = names(est))
-  }
-
   icc <- object@params$icc
   rsd <- object@params$rsd
 
   icc <- stats::setNames(formatNumeric(icc), nm = names(icc))
-  icc <- stats::setNames(formatNumeric(rsd), nm = names(rsd))
+  rsd <- stats::setNames(formatNumeric(rsd), nm = names(rsd))
   rslopes <- info$rslopes
 
   if (length(rsd)) {
@@ -95,7 +88,6 @@ print.SummaryPlsMultilevel <- function(x, ...) {
            "Number of clusters", "Number of iterations")
   ))
 
-  if (length(x$icc) && is.character(x$icc)) cat("Standard errors in parentheses.\n\n")
   printSummarySection(x$icc, title = "Intraclass correlations:", width.out = width.out)
   printSummarySection(x$rsd, title = "Random slopes (standard deviations):", width.out = width.out)
 

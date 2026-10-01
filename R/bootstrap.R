@@ -403,7 +403,7 @@ resample <- function(X, n.out = NROW(X), cluster = NULL, replace = TRUE) {
   )
 
   Y <- do.call(rbind, cluster.list)
-  attr(Y, "cluster") <- do.call(rbind, indices.list)
+  attr(Y, "cluster") <- as.data.frame(do.call(rbind, indices.list))
 
   Y
 }

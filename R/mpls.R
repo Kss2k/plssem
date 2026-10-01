@@ -356,7 +356,7 @@ mpls <- function(syntax,
   )
 
   is.ord    <- length(ordered) > 0L
-  estimator <- paste0("MC", if (is.ord) "Ord" else "", "PLSc-MLM")
+  estimator <- paste0("MC-", if (is.ord) "Ord" else "", "PLSc-MLM")
 
   converged  <- mcfit$ok
   admissible <- converged && isAdmissible(level.1) && isAdmissible(level.2)
@@ -988,6 +988,7 @@ isMultilevelSyntax <- function(syntax) {
 
 
 MLM_PLS_ARGS <- c(
+  consistent                     = "consistent",
   missing                        = "missing",
   knn.k                          = "knn.k",
   mc.max.iter                    = "max.iter",
@@ -1011,7 +1012,7 @@ MLM_PLS_ARGS <- c(
 
 
 MLM_UNSUPPORTED_ARGS <- c(
-  "standardize", "consistent", "mcpls", "probit",
+  "standardize", "mcpls", "probit",
   "reliabilities", "mc.rescov", "mc.delta.se", "boot.optimize",
   "boot.drop.inadmissible", "mc.boot.control"
 )

@@ -69,8 +69,7 @@ lmerEstimateParameters <- function(parTable, data, cluster, control = lmerFastCo
         var.i <- stats::var(randef.eta[,i,drop=TRUE])
 
         if (is.na(var.i) || var.i <= vtol) {
-          nm <- colnames(randef.eta)
-          fixed <- tryCatch(coef[[nm]], error = \(e) 0)
+          fixed <- tryCatch(coef[[names(randef.map)[i]]], error = \(e) 0)
           randef.eta[,i] <- stats::rnorm(NROW(randef.eta), mean = fixed, sd = sqrt(vtol*10))
         }
       }

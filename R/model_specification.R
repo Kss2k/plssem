@@ -230,6 +230,18 @@ specifySubModel <- function(parTable,
       "MC-PLS (`mcpls = TRUE`) is (currently) not supported with random slopes!"
     )
 
+    # lmer estimates the paths from the (uncorrected) factor scores, such that the
+    # consistency correction isn't available
+    if (info$consistent) {
+      pls_msg_warn(
+        "`consistent = TRUE` is not available with `lmer` as the path estimator!",
+        "Using `consistent = FALSE` instead."
+      )
+
+      info$consistent <- FALSE
+      info$estimator  <- getEstimatorFromInfo(info)
+    }
+
   } else if (path.default == "gls" || has.rescov) {
     info$path.estimator <- "gls"
     glsPathModel <- GlsPathModel(

@@ -488,7 +488,7 @@ getEstimatorFromInfo <- function(info) {
   estimator <- "PLS"
   if (consistent || is.mcpls) estimator <- paste0(estimator, "c")
   if (is.ord)                 estimator <- paste0("Ord", estimator)
-  if (is.mcpls)               estimator <- paste0("MC", estimator)
+  if (is.mcpls)               estimator <- paste0("MC-", estimator)
 
   estimator
 }

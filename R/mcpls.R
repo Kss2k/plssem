@@ -356,13 +356,19 @@ mcpls <- function(
     jac.iseed <- floor(stats::runif(1L, min = 0, max = 9999999))
 
     JAC <- calcMcJacobians(
-      .fg             = .fg,
-      .f              = .f,
-      .simulate       = .simulate,
+      .fg             = \(p, seed) .fg(p, thresholdStruct = thresholdStruct0, seed = seed),
+      .probs          = \(seed) calcMcThresholdJacobians(
+        .f              = .f,
+        .simulate       = .simulate,
+        p0              = p0,
+        p1              = p1,
+        thresholdStruct = thresholdStruct0,
+        seed            = seed
+      ),
+      probs.names     = names(thresholdStruct0@proportions),
       seeds           = seeds,
       p0              = p0,
       p1              = p1,
-      thresholdStruct = thresholdStruct0,
       lower           = lower,
       upper           = upper,
       verbose         = verbose,
@@ -712,32 +718,27 @@ thresholdJacobian <- function(thresholdStruct, sim.cont = NULL, eps = 1e-3,
 }
 
 
-# Estimates the Jacobians used for the (implicit) delta-method standard errors.
+# Estimates the Jacobians used for the (implicit) delta-method standard errors
+#   J0 = df/dp, where f(p) are the (naive) statistics of the root equation
+#   J1 = dg/dp, where g(p) are the values of all the reported parameters
 #
-# `seeds` holds one RNG seed per replicate, which is passed on to `.fg()` and
-# `.simulate()` (see `mcpls()`). The replicates are averaged.
-#
-# Each finite-difference column is independent of the others, so all of them
-# are evaluated through a single (optionally parallel) `plapply()` call. The
-# threshold-probability columns of a replicate share a single simulated data
-# set, so they are kept together in one task.
+# Optionally, `.probs(seed)` returns the Jacobians w.r.t. the threshold
+# proportions
 calcMcJacobians <- function(.fg,
-                            .f,
-                            .simulate,
                             seeds,
                             p0,
                             p1,
-                            thresholdStruct,
                             parallel,
                             ncores,
                             verbose,
                             iseed,
-                            lower = -Inf,
-                            upper = Inf,
-                            eps   = 5e-3) {
+                            lower       = -Inf,
+                            upper       = Inf,
+                            eps         = 5e-3,
+                            .probs      = NULL,
+                            probs.names = NULL) {
 
-  probs0 <- thresholdStruct@proportions
-  k      <- length(seeds)
+  k <- length(seeds)
 
   J0 <- matrix(
     0,
@@ -753,14 +754,14 @@ calcMcJacobians <- function(.fg,
 
   Jp <- matrix(
     0,
-    nrow = length(p0), ncol = length(probs0),
-    dimnames = list(names(p0), names(probs0))
+    nrow = length(p0), ncol = length(probs.names),
+    dimnames = list(names(p0), probs.names)
   )
 
   Gp <- matrix(
     0,
-    nrow = length(p1), ncol = length(probs0),
-    dimnames = list(names(p1), names(probs0))
+    nrow = length(p1), ncol = length(probs.names),
+    dimnames = list(names(p1), probs.names)
   )
 
   tasks.k <- function(k) {
@@ -769,7 +770,7 @@ calcMcJacobians <- function(.fg,
       FUN = \(i) list(k = k, type = "par", index = i)
     )
 
-    if (!length(probs0)) par.tasks
+    if (is.null(.probs) || !length(probs.names)) par.tasks
     else c(par.tasks, list(list(k = k, type = "probs")))
   }
 
@@ -781,24 +782,15 @@ calcMcJacobians <- function(.fg,
   do.task <- function(task) {
     seed <- seeds[[task$k]]
 
-    if (task$type == "probs") {
-      return(calcMcThresholdJacobians(
-        .f              = .f,
-        .simulate       = .simulate,
-        p0              = p0,
-        p1              = p1,
-        thresholdStruct = thresholdStruct,
-        eps             = eps,
-        seed            = seed
-      ))
-    }
+    if (task$type == "probs")
+      return(.probs(seed))
 
     points <- boundedParameterFiniteDiffPoints(
       x = p0, i = task$index, eps = eps, lower = lower, upper = upper
     )
 
-    fg.p <- .fg(points$plus,  thresholdStruct = thresholdStruct, seed = seed)
-    fg.m <- .fg(points$minus, thresholdStruct = thresholdStruct, seed = seed)
+    fg.p <- .fg(points$plus,  seed = seed)
+    fg.m <- .fg(points$minus, seed = seed)
 
     list(
       J0 = (fg.p$f - fg.m$f) / points$denominator,
@@ -835,9 +827,6 @@ calcMcJacobians <- function(.fg,
 }
 
 
-# Derivatives of the root equation (`Jp`) and of the thresholds (`Gp`) with
-# respect to the category proportions, for a single replicate. All columns
-# reuse the same simulated data set.
 calcMcThresholdJacobians <- function(.f, .simulate, p0, p1, thresholdStruct,
                                      eps = 5e-3, seed = NULL) {
   probs0 <- thresholdStruct@proportions

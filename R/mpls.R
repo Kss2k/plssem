@@ -410,20 +410,9 @@ mpls <- function(syntax,
     }, error = \(e) rep(NA_real_, length(target)))
   }
 
-  .jacobian <- function(task) {
-    points <- boundedParameterFiniteDiffPoints(
-      x = root, i = task$index, eps = delta.eps, lower = lower, upper = upper
-    )
-
-    sim.p <- .simulate(points$plus,  seed = task$seed)
-    sim.m <- .simulate(points$minus, seed = task$seed)
-
-    list(
-      J0 = (c(.f(points$plus, sim = sim.p)) - c(.f(points$minus, sim = sim.m))) /
-        points$denominator,
-      J1 = (.values(points$plus, sim = sim.p) - .values(points$minus, sim = sim.m)) /
-        points$denominator
-    )
+  .fg <- function(p, seed) {
+    sim <- .simulate(p, seed = seed)
+    list(f = c(.f(p, sim = sim)), g = .values(p, sim = sim))
   }
 
   if (is.null(boot.iseed)) boot.iseed <- floor(stats::runif(1L, min = 0, max = 999999999))
@@ -448,31 +437,25 @@ mpls <- function(syntax,
   V0 <- stats::cov(T0, use = "complete.obs")
 
   if (verbose) pls_msg_note("Calculating Jacobian...")
-  seeds <- floor(stats::runif(delta.jacobian.k, min = 0, max = 9999999))
-  tasks <- unlist(lapply(seeds, FUN = \(seed) lapply(
-    seq_along(root), FUN = \(i) list(index = i, seed = seed)
-  )), recursive = FALSE)
+  seeds  <- floor(stats::runif(delta.jacobian.k, min = 0, max = 9999999))
+  values <- .values(root, sim = simRoot)
 
-  results <- plapply(
-    X        = tasks,
-    FUN      = .jacobian,
+  JAC <- calcMcJacobians(
+    .fg      = .fg,
+    seeds    = seeds,
+    p0       = unname(root), # the names of the root are empty
+    p1       = values,
+    lower    = lower,
+    upper    = upper,
+    eps      = delta.eps,
     parallel = boot.parallel,
     ncores   = boot.ncores,
     verbose  = verbose,
-    iseed    = boot.iseed,
-    label    = "Jacobian"
+    iseed    = boot.iseed
   )
 
-  values <- .values(root, sim = simRoot)
-  J0 <- matrix(0, nrow = length(root),   ncol = length(root))
-  J1 <- matrix(0, nrow = length(values), ncol = length(root),
-               dimnames = list(names(values), NULL))
-
-  for (j in seq_along(tasks)) {
-    i <- tasks[[j]]$index
-    J0[, i] <- J0[, i] + results[[j]]$J0 / delta.jacobian.k
-    J1[, i] <- J1[, i] + results[[j]]$J1[names(values)] / delta.jacobian.k
-  }
+  J0 <- JAC$J0
+  J1 <- JAC$J1
 
   D    <- J1 %*% invertMcJacobian(J0)
   vcov <- D %*% V0 %*% t(D)

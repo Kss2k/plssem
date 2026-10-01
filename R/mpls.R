@@ -292,32 +292,20 @@ mpls <- function(syntax,
     out
   }
   
-  mcfit <- robbinsMonro1951(
-    p                = start,
-    f                = .f,
-    tol              = tol,
-    min.iter         = min.iter,
-    max.iter         = max.iter,
-    verbose          = verbose,
-    polyak.juditsky  = polyak.juditsky,
-    fn.args          = fn.args,
-    pj.extrapolate   = pj.extrapolate,
-    lower            = lower,
-    upper            = upper,
-    diag.secant      = diag.secant
+  mcfit <- solveMcRoot(
+    p               = start,
+    f               = .f,
+    lower           = lower,
+    upper           = upper,
+    tol             = tol,
+    min.iter        = min.iter,
+    max.iter        = max.iter,
+    verbose         = verbose,
+    polyak.juditsky = polyak.juditsky,
+    pj.extrapolate  = pj.extrapolate,
+    fn.args         = fn.args,
+    diag.secant     = diag.secant
   )
-
-  if (mcfit$diverged) {
-    pls_msg_warn(
-      "The root-finding algorithm diverged and did not recover!\n",
-      "Parameter estimates might be unreliable!"
-    )
-  } else if (mcfit$iter >= max.iter) {
-    pls_msg_warn(
-      "Maximum number of iterations reached!\n",
-      "Parameter estimates might be unreliable!"
-    )
-  }
 
   root      <- c(mcfit$root)
   parStruct <- .parStruct(root)
@@ -344,7 +332,7 @@ mpls <- function(syntax,
   is.ord    <- length(ordered) > 0L
   estimator <- paste0("MC", if (is.ord) "Ord" else "", "PLSc-MLM")
 
-  converged  <- !mcfit$diverged && mcfit$iter < max.iter
+  converged  <- mcfit$ok
   admissible <- converged && isAdmissible(level.1) && isAdmissible(level.2)
 
   model <- PlsMultilevelModel(
@@ -389,13 +377,7 @@ mpls <- function(syntax,
   if (!bootstrap)
     return(model)
 
-  # Standard errors (delta method) --------------------------------------------
-  # The estimates solve E[t(theta)] = t0, where t are the (naive) statistics of
-  # the auxiliary fits. Thus Var(theta) ~= J0^-1 Var(t0) J0^-T, where
-  # J0 = dE[t(theta)]/dtheta. Var(t0) is estimated using a (cheap) cluster
-  # bootstrap of the auxiliary fits, and J0 using finite differences at the
-  # root. The (co-)variances of all the reported parameters are obtained
-  # using J1 = dvalues(theta)/dtheta, i.e., vcov = J1 J0^-1 Var(t0) J0^-T J1^T.
+  # Standard errors (delta method)
   .values <- function(p, sim) {
     parStruct <- .parStruct(p)
 

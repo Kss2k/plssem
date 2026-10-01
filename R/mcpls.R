@@ -247,107 +247,24 @@ mcpls <- function(
   lower <- getMcLowerBounds(par1)
   upper <- getMcUpperBounds(par1)
 
-  if (polyak.juditsky && !pj.extrapolate) {
-    # If we're not using a Nonlinear Regression to solve for the convergence
-    # point, we will get a biased root with Polyak-Juditsky averaging, if
-    # we have no warmup
-    if (verbose) pls_msg_note("Warming up...")
-
-    mcfit <- robbinsMonro1951(
-      p                = p,
-      f                = .f,
-      tol              = 10 * tol,
-      min.iter         = 5L,
-      max.iter         = 20L,
-      verbose          = verbose,
-      polyak.juditsky  = FALSE,
-      fn.args          = fn.args,
-      lower            = lower,
-      upper            = upper,
-      diag.secant      = diag.secant,
-      ...
-    )
-
-    p <- mcfit$root # keep names - `robbinsMonro1951()` relies on them for `history.f`
-  }
-
-  mcfit <- robbinsMonro1951(
-    p                = p,
-    f                = .f,
-    tol              = tol,
-    min.iter         = min.iter,
-    max.iter         = max.iter,
-    verbose          = verbose,
-    polyak.juditsky  = polyak.juditsky,
-    fn.args          = fn.args,
-    pj.extrapolate   = pj.extrapolate,
-    lower            = lower,
-    upper            = upper,
-    diag.secant      = diag.secant,
+  mcfit <- solveMcRoot(
+    p               = p,
+    f               = .f,
+    lower           = lower,
+    upper           = upper,
+    tol             = tol,
+    min.iter        = min.iter,
+    max.iter        = max.iter,
+    verbose         = verbose,
+    polyak.juditsky = polyak.juditsky,
+    pj.extrapolate  = pj.extrapolate,
+    fn.args         = fn.args,
+    diag.secant     = diag.secant,
     ...
   )
 
-  iter <- mcfit$iter
-  diverged <- mcfit$diverged
-  if ((iter >= max.iter && !polyak.juditsky) || diverged) {
-
-    if (diverged) {
-      # Might signal a non-monotone .f(). Try switching to diag.secant,
-      # which actually can account for a non-monotone .f()
-      retry.ds <- !diag.secant
-
-      pls_msg_warn(
-        "The root-finding algorithm appears to be diverging!\n",
-        "Restarting from the best point found so far, with",
-        if (retry.ds) "the diagonal-secant step method..." else "Polyak Juditsky averaging..."
-      )
-
-    } else {
-      retry.ds <- diag.secant
-
-      pls_msg_warn(
-        "Maximum number of (initial) iterations reached!\n",
-        sprintf("Attempting to use Polyak Juditsky averaging...")
-      )
-    }
-
-    start.p <- if (retry.ds) mcfit$best.p else mcfit$root
-    mcfit <- robbinsMonro1951(
-      p                = start.p, # keep names - see the warmup retry above
-      f                = .f,
-      tol              = tol,
-      min.iter         = min.iter,
-      max.iter         = max.iter,
-      verbose          = verbose,
-      polyak.juditsky  = TRUE,
-      fn.args          = fn.args,
-      pj.extrapolate   = pj.extrapolate,
-      lower            = lower,
-      upper            = upper,
-      diag.secant      = retry.ds,
-      ...
-    )
-
-    iter <- iter + mcfit$iter
-  }
-
-  # Check status of (last) mcfit
-  if (mcfit$diverged) {
-    pls_msg_warn(
-      "The root-finding algorithm diverged and did not recover!\n",
-      "Parameter estimates might be unreliable!"
-    )
-
+  if (!mcfit$ok)
     modelStatus(fit0.combined)$is.admissible <- FALSE
-
-  } else if (mcfit$iter >= max.iter) {
-    pls_msg_warn(
-      "Maximum number of iterations reached!\n",
-      "Parameter estimates might be unreliable!"
-    )
-
-    modelStatus(fit0.combined)$is.admissible <- FALSE
-  }
 
   par1[par1$is.free, "est"] <- as.vector(mcfit$root)
 

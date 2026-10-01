@@ -46,7 +46,6 @@ Imports:
     Rfast,
     collapse,
     mvnfast,
-    reformulas,
     future,
     future.apply,
     progressr,

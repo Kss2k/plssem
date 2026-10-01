@@ -765,7 +765,7 @@ decompData <- function(data, ovs.1, ovs.2, cluster, clusterIdx) {
       x.l2.full <- x.l2[clusterIdx]
       x.l1 <- x - x.l2.full # currently not alligned
       dataL1[,nm] <- x.l1
-      icc[[nm]] <- cor(x, x.l2.full)
+      icc[[nm]] <- stats::cor(x, x.l2.full)
 
     } else if (is.l1) {
       # exists only at level 1

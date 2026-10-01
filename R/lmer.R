@@ -17,7 +17,16 @@ lmerEstimateParameters <- function(parTable, data, cluster, control = lmerFastCo
   if (!is.null(clusterData))
     data[cluster] <- clusterData[cluster]
 
-  etas <- getEtas(parTable)
+  etas <- getEtas(parTable, checkAny = FALSE)
+
+  if (!length(etas)) { # no structural model (e.g., a CFA model)
+    return(list(
+      pars   = data.frame(lhs = character(0L), op = character(0L), rhs = character(0L),
+                          est = numeric(0L), mod = character(0L)),
+      randef = NULL,
+      resvar = numeric(0L)
+    ))
+  }
 
   parTable$lhs <- stringr::str_replace_all(
     parTable$lhs, pattern = ":", replacement = MOD_OP_ALIAS

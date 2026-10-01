@@ -23,6 +23,7 @@ mpls <- function(syntax,
                  boot.iseed = NULL,
                  delta.jacobian.k = 1L,
                  delta.eps = 5e-3,
+                 level2.cov = c("means", "muml"),
                  ...) {
   pls_stopif(length(cluster) != 1 || !is.character(cluster),
     "cluster must be a character string of length 1!"
@@ -30,6 +31,7 @@ mpls <- function(syntax,
 
   small.sample.point.estimate <- match.arg(small.sample.point.estimate)
   boot.parallel <- match.arg(boot.parallel)
+  level2.cov    <- match.arg(level2.cov)
 
   parsed <- parseMultilevelModelArguments(
     syntax  = syntax,
@@ -75,6 +77,7 @@ mpls <- function(syntax,
     cluster    = cluster,
     clusterIdx = clusterIdx,
     consistent = consistent,
+    level2.cov = level2.cov,
     ...
   )
 
@@ -255,7 +258,8 @@ mpls <- function(syntax,
         data.sim       = sim.ov[rows, , drop = FALSE],
         rpar           = parsed$rpar,
         cluster        = cluster,
-        clusterIdx.sim = clusterIdx.sim[rows] - offset
+        clusterIdx.sim = clusterIdx.sim[rows] - offset,
+        level2.cov     = level2.cov
       )
 
       .stats(refit)
@@ -354,6 +358,7 @@ mpls <- function(syntax,
       ordered      = ordered,
       rslopes      = rslopes,
       small.sample = small.sample,
+      level2.cov   = level2.cov,
       mc.reps      = mc.reps,
       rng.seed     = rng.seed
     ),
@@ -420,7 +425,8 @@ mpls <- function(syntax,
         data.sim       = Xb,
         rpar           = parsed$rpar,
         cluster        = cluster,
-        clusterIdx.sim = cl
+        clusterIdx.sim = cl,
+        level2.cov     = level2.cov
       ))
 
     }, error = \(e) rep(NA_real_, length(target)))
@@ -772,6 +778,7 @@ fitAuxiliaryMLM_PLS <- function(parsed,
                                 clusterIdx,
                                 rpar,
                                 consistent = FALSE,
+                                level2.cov = "means",
                                 ...) {
   decomp <- decompData(
     data       = data,
@@ -804,6 +811,19 @@ fitAuxiliaryMLM_PLS <- function(parsed,
     ...
   )
 
+  if (level2.cov != "means") {
+    indCorrMatrix(fit0L2) <- getLevel2CorMat(
+      dataL1     = dataL1,
+      dataL2     = dataL2,
+      clusterIdx = clusterIdx,
+      ovs.both   = intersect(parsed$ovs.1, parsed$ovs.2),
+      vars       = colnames(fit0L2@data),
+      level2.cov = level2.cov
+    )
+
+    fit0L2 <- estimatePLS_Inner(fit0L2)
+  }
+
   list(
     level.1 = fit0L1,
     level.2 = fit0L2,
@@ -813,7 +833,8 @@ fitAuxiliaryMLM_PLS <- function(parsed,
 }
 
 
-refitAuxiliaryMLM_PLS <- function(fits, parsed, data.sim, rpar, cluster, clusterIdx.sim) {
+refitAuxiliaryMLM_PLS <- function(fits, parsed, data.sim, rpar, cluster, clusterIdx.sim,
+                                  level2.cov = "means") {
   decomp <- decompData(
     data       = data.sim,
     ovs.1      = parsed$ovs.1,
@@ -847,8 +868,21 @@ refitAuxiliaryMLM_PLS <- function(fits, parsed, data.sim, rpar, cluster, cluster
   X2 <- Rfast::standardise(toInternalNames(dataL2, vars = varsL2))
   colnames(X2) <- varsL2
 
-  modelData(fit2)     <- X2
-  indCorrMatrix(fit2) <- Rfast::cova(X2)
+  modelData(fit2) <- X2
+
+  if (level2.cov == "means") {
+    indCorrMatrix(fit2) <- Rfast::cova(X2)
+  } else {
+    indCorrMatrix(fit2) <- getLevel2CorMat(
+      dataL1     = dataL1,
+      dataL2     = dataL2,
+      clusterIdx = clusterIdx.sim,
+      ovs.both   = intersect(parsed$ovs.1, parsed$ovs.2),
+      vars       = varsL2,
+      level2.cov = level2.cov
+    )
+  }
+
   fit2 <- estimatePLS_Inner(fit2)
 
   list(
@@ -857,6 +891,39 @@ refitAuxiliaryMLM_PLS <- function(fits, parsed, data.sim, rpar, cluster, cluster
     icc     = decomp$icc,
     rsd     = slopeSDs(slopes, rpar = rpar)
   )
+}
+
+
+getLevel2CorMat <- function(dataL1, dataL2, clusterIdx, ovs.both, vars,
+                            level2.cov = "muml") {
+  S <- stats::cov(dataL2)
+
+  if (level2.cov == "muml" && length(ovs.both)) {
+    # Muthen, 1994. Also used for the starting values of two-level models in lavaan
+    #  S_PW    = sum_j sum_i (y_ij - ybar_j)(y_ij - ybar_j)' / (N - G)
+    #  S_B     = sum_j n_j (ybar_j - ybar)(ybar_j - ybar)' / (G - 1)
+    #  Sigma_B = (S_B - S_PW) / c,   c = (N - sum_j n_j^2 / N) / (G - 1)
+    n  <- NROW(dataL1)
+    G  <- NROW(dataL2)
+    nj <- tabulate(clusterIdx, nbins = G)
+
+    W <- dataL1[, ovs.both, drop = FALSE] # within deviations
+    M <- dataL2[, ovs.both, drop = FALSE] # cluster means
+    D <- sweep(M, MARGIN = 2L, STATS = colSums(M * nj) / n) # deviations from the grand mean
+
+    S.PW <- crossprod(W) / (n - G)
+    S.B  <- crossprod(D * sqrt(nj)) / (G - 1)
+    c    <- (n - sum(nj^2) / n) / (G - 1)
+
+    S[ovs.both, ovs.both] <- (S.B - S.PW) / c
+    S <- clipEigenvalues(S)
+  }
+
+  original <- removeTempAffixes(vars)
+  S <- stats::cov2cor(S[original, original, drop = FALSE])
+  dimnames(S) <- list(vars, vars)
+
+  S
 }
 
 

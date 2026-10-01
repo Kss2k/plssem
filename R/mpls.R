@@ -24,6 +24,10 @@ mpls <- function(syntax,
                  delta.jacobian.k = 1L,
                  delta.eps = 5e-3,
                  level2.cov = c("means", "muml"),
+                 approach.weights = c("pls", "pca"),
+                 level2.approach.weights = c("pca", "pls"),
+                 missing = c("listwise", "mean", "kNN"),
+                 knn.k = 5,
                  ...) {
   pls_stopif(length(cluster) != 1 || !is.character(cluster),
     "cluster must be a character string of length 1!"
@@ -31,7 +35,10 @@ mpls <- function(syntax,
 
   small.sample.point.estimate <- match.arg(small.sample.point.estimate)
   boot.parallel <- match.arg(boot.parallel)
-  level2.cov    <- match.arg(level2.cov)
+  level2.cov <- match.arg(level2.cov)
+  missing <- match.arg(tolower(missing), c("listwise", "mean", "knn"))
+  approach.weights <- match.arg(tolower(approach.weights), c("pls", "pca"))
+  level2.approach.weights <- match.arg(tolower(level2.approach.weights), c("pca", "pls"))
 
   parsed <- parseMultilevelModelArguments(
     syntax  = syntax,
@@ -44,16 +51,7 @@ mpls <- function(syntax,
   parTableL1 <- parsed$level.1 
   parTableL2 <- parsed$level.2
 
-  data[[cluster]] <- as.integer(as.factor(data[[cluster]]))
-  clusterIdx <- data[[cluster]]
-
-  if (anyNA(clusterIdx)) {
-    pls_stopif(all(is.na(clusterIdx)), "cluster is all NA!")
-    pls_msg_warn("removing missing values in `cluster`!")
-
-    data <- data[!is.na(clusterIdx),, drop = FALSE]
-    clusterIdx <- data[[cluster]]
-  }
+  pls_stopif(all(is.na(data[[cluster]])), "cluster is all NA!")
 
   # ordered variables
   is.ord  <- vapply(data[parsed$ovs.all], FUN.VALUE = logical(1L), FUN = is.ordered)
@@ -61,6 +59,20 @@ mpls <- function(syntax,
 
   for (ord in ordered)
     data[[ord]] <- as.integer(as.ordered(data[[ord]]))
+
+  # missing data, including missing clusters
+  data <- handleMissingData(
+    data       = data[vars.all],
+    indicators = parsed$ovs.all,
+    cluster    = cluster,
+    missing    = missing,
+    knn.k      = knn.k,
+    ordered    = ordered
+  )
+
+  # index the clusters as 1, ..., G (rows, or whole clusters, might be removed)
+  data[[cluster]] <- as.integer(as.factor(data[[cluster]]))
+  clusterIdx      <- data[[cluster]]
 
   # data must be sorted by the clusters
   data <- as.matrix(data[order(clusterIdx), vars.all,drop=FALSE])
@@ -71,13 +83,15 @@ mpls <- function(syntax,
 
   # fit auxiliary models
   baseFits <- fitAuxiliaryMLM_PLS(
-    parsed     = parsed,
-    data       = data,
-    rpar       = parsed$rpar,
-    cluster    = cluster,
-    clusterIdx = clusterIdx,
-    consistent = consistent,
-    level2.cov = level2.cov,
+    parsed                  = parsed,
+    data                    = data,
+    rpar                    = parsed$rpar,
+    cluster                 = cluster,
+    clusterIdx              = clusterIdx,
+    consistent              = consistent,
+    level2.cov              = level2.cov,
+    approach.weights        = approach.weights,
+    level2.approach.weights = level2.approach.weights,
     ...
   )
 
@@ -351,16 +365,19 @@ mpls <- function(syntax,
     level.1         = level.1,
     level.2         = level.2,
     info            = list(
-      estimator    = estimator,
-      cluster      = cluster,
-      n            = n,
-      nclusters    = nclusters,
-      ordered      = ordered,
-      rslopes      = rslopes,
-      small.sample = small.sample,
-      level2.cov   = level2.cov,
-      mc.reps      = mc.reps,
-      rng.seed     = rng.seed
+      estimator               = estimator,
+      cluster                 = cluster,
+      n                       = n,
+      nclusters               = nclusters,
+      ordered                 = ordered,
+      rslopes                 = rslopes,
+      small.sample            = small.sample,
+      level2.cov              = level2.cov,
+      approach.weights        = approach.weights,
+      level2.approach.weights = level2.approach.weights,
+      missing                 = missing,
+      mc.reps                 = mc.reps,
+      rng.seed                = rng.seed
     ),
     data            = data,
     thresholdStruct = thresholdStruct,
@@ -771,6 +788,8 @@ fitAuxiliaryMLM_PLS <- function(parsed,
                                 rpar,
                                 consistent = FALSE,
                                 level2.cov = "means",
+                                approach.weights = "pls",
+                                level2.approach.weights = "pca",
                                 ...) {
   decomp <- decompData(
     data       = data,
@@ -784,10 +803,11 @@ fitAuxiliaryMLM_PLS <- function(parsed,
   dataL2 <- decomp$level.2
 
   fit0L1 <- pls(
-    syntax     = parsed$syntax.1,
-    data       = dataL1,
-    consistent = consistent,
-    cluster    = cluster,
+    syntax           = parsed$syntax.1,
+    data             = dataL1,
+    consistent       = consistent,
+    cluster          = cluster,
+    approach.weights = approach.weights,
     ...
   )
 
@@ -796,10 +816,11 @@ fitAuxiliaryMLM_PLS <- function(parsed,
 
   # `strict = FALSE` allows the `s ~ 1` declarations of random slopes
   fit0L2 <- pls(
-    syntax     = parsed$syntax.2,
-    data       = dataL2,
-    consistent = consistent,
-    strict     = FALSE,
+    syntax           = parsed$syntax.2,
+    data             = dataL2,
+    consistent       = consistent,
+    strict           = FALSE,
+    approach.weights = level2.approach.weights,
     ...
   )
 
@@ -967,6 +988,8 @@ isMultilevelSyntax <- function(syntax) {
 
 
 MLM_PLS_ARGS <- c(
+  missing                        = "missing",
+  knn.k                          = "knn.k",
   mc.max.iter                    = "max.iter",
   mc.min.iter                    = "min.iter",
   mc.tol                         = "tol",
@@ -988,7 +1011,7 @@ MLM_PLS_ARGS <- c(
 
 
 MLM_UNSUPPORTED_ARGS <- c(
-  "standardize", "consistent", "missing", "knn.k", "mcpls", "probit",
+  "standardize", "consistent", "mcpls", "probit",
   "reliabilities", "mc.rescov", "mc.delta.se", "boot.optimize",
   "boot.drop.inadmissible", "mc.boot.control"
 )

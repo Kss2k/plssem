@@ -203,9 +203,19 @@ SE_NON_LINEAR_PROBIT_CORR_MAT <- FALSE
 #'   it has \code{level: 1} and \code{level: 2} blocks. Two-level models are
 #'   estimated using an extension of the MC-PLSc estimator.
 #'   The \code{mc.*} arguments (e.g., \code{mc.max.iter}, \code{mc.reps}) are used when they are
-#'   specified, whereas arguments like \code{missing}, \code{standardize} and
-#'   \code{consistent} are (currently) not supported. Standard errors
-#'   (\code{bootstrap = TRUE}) are computed using the delta method.
+#'   specified, whereas arguments like \code{standardize} and \code{consistent}
+#'   are (currently) not supported. Standard errors (\code{bootstrap = TRUE})
+#'   are computed using the delta method.
+#'
+#' @param level2.cov Two-level models only. How the (co-)variances of the
+#'   variables at level 2 are computed. \code{"means"} uses the
+#'   covariances of the cluster means. \code{"muml"} (default) uses Muthen's (1994)
+#'   estimator of the between-cluster covariance matrix, which corrects for the
+#'   within-cluster variation in the cluster means.
+#'
+#' @param level2.approach.weights Two-level models only. The approach used to
+#'   estimate the outer weights of the level 2 model (\code{approach.weights}
+#'   applies to the level 1 model). Defaults to \code{"pca"}.
 #'
 #' @param ... Internal arguments. For advanced users only.
 #'
@@ -289,6 +299,8 @@ pls <- function(syntax,
                 inner.weights = c("path", "centroid", "factorial"),
                 approach.weights = c("pls", "pca"),
                 mlm = NULL,
+                level2.cov = c("muml", "means"),
+                level2.approach.weights = c("pca", "pls"),
                 ...) {
 
   missing       <- match.arg(tolower(missing), c("listwise", "mean", "knn"))
@@ -296,6 +308,8 @@ pls <- function(syntax,
   default.path.estimator <- match.arg(tolower(default.path.estimator), c("ols", "gls", "lmer"))
   inner.weights    <- match.arg(tolower(inner.weights), c("path", "centroid", "factorial"))
   approach.weights <- match.arg(tolower(approach.weights), c("pls", "pca"))
+  level2.cov       <- match.arg(tolower(level2.cov), c("muml", "means"))
+  level2.approach.weights <- match.arg(tolower(level2.approach.weights), c("pca", "pls"))
   mc.small.sample.point.estimate <- match.arg(tolower(mc.small.sample.point.estimate), c("median", "mean"))
 
   if (!is.null(boot.ncpus)) {
@@ -347,7 +361,9 @@ pls <- function(syntax,
       boot.R        = boot.R,
       boot.parallel = boot.parallel,
       boot.ncores   = boot.ncores,
-      boot.iseed    = boot.iseed
+      boot.iseed    = boot.iseed,
+      level2.cov    = level2.cov,
+      level2.approach.weights = level2.approach.weights
     )
 
     for (arg in intersect(supplied, names(MLM_PLS_ARGS)))

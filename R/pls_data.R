@@ -23,49 +23,14 @@ getPLS_Data <- function(data,
 
   data <- asDataFrame(data)[vars]
 
-  if (!is.null(cluster)) {
-    clusterMissing <- !stats::complete.cases(data[, cluster, drop = FALSE])
-
-    if (any(clusterMissing)) {
-      pls_msg_note("Removing rows with missing `cluster`...")
-      data <- data[!clusterMissing, , drop = FALSE]
-    }
-  }
-
-  missingCases <- !stats::complete.cases(data)
-  anyMissing <- any(missingCases)
-
-  if (anyMissing) {
-    isMissingAll <- apply(data, MARGIN = 2L, FUN = \(x) all(is.na(x)))
-    pls_stopif(any(isMissingAll), paste0("Some variables have all missing values!\n",
-               "Variables: ", paste0(colnames(data)[isMissingAll], collapse = ", ")))
-  }
-
-  if (anyMissing && missing == "listwise") {
-    pls_msg_note("Removing missing data using listwise deletion...")
-    data <- data[!missingCases, , drop = FALSE]
-
-  } else if (anyMissing && missing == "knn") {
-    pls_msg_note(paste0("Imputing missing data using k-Nearest Neighbors (kNN), k = ", knn.k, "..."))
-
-    # Remove rows where all indicators are missing
-    allMissing <- as.logical(Rfast::rowprods(
-      apply(data[indicators], MARGIN = 2L, FUN = is.na)
-    ))
-
-    data <- data[!allMissing, , drop = FALSE]
-
-    data[indicators] <- kNN_ImputeMissing(
-      data    = data[indicators],
-      k       = knn.k,
-      ordered = ordered
-    )
-
-  } else if (anyMissing && missing == "mean") {
-    pls_msg_note("Imputing missing data using mean imputation...")
-
-    data[indicators] <- meanImputeMissing(data[indicators], ordered = ordered)
-  }
+  data <- handleMissingData(
+    data       = data,
+    indicators = indicators,
+    cluster    = cluster,
+    missing    = missing,
+    knn.k      = knn.k,
+    ordered    = ordered
+  )
 
   if (standardize) {
     data <- standardizeDataFrame(
@@ -127,6 +92,60 @@ checkAndFixDTypesPLS_Data <- function(X, check = colnames(X)) {
   )
 
   X
+}
+
+
+handleMissingData <- function(data,
+                              indicators,
+                              cluster = NULL,
+                              missing = "listwise",
+                              knn.k = 5,
+                              ordered = NULL) {
+  if (!is.null(cluster)) {
+    clusterMissing <- !stats::complete.cases(data[, cluster, drop = FALSE])
+
+    if (any(clusterMissing)) {
+      pls_msg_note("Removing rows with missing `cluster`...")
+      data <- data[!clusterMissing, , drop = FALSE]
+    }
+  }
+
+  missingCases <- !stats::complete.cases(data)
+  anyMissing <- any(missingCases)
+
+  if (anyMissing) {
+    isMissingAll <- apply(data, MARGIN = 2L, FUN = \(x) all(is.na(x)))
+    pls_stopif(any(isMissingAll), paste0("Some variables have all missing values!\n",
+               "Variables: ", paste0(colnames(data)[isMissingAll], collapse = ", ")))
+  }
+
+  if (anyMissing && missing == "listwise") {
+    pls_msg_note("Removing missing data using listwise deletion...")
+    data <- data[!missingCases, , drop = FALSE]
+
+  } else if (anyMissing && missing == "knn") {
+    pls_msg_note(paste0("Imputing missing data using k-Nearest Neighbors (kNN), k = ", knn.k, "..."))
+
+    # Remove rows where all indicators are missing
+    allMissing <- as.logical(Rfast::rowprods(
+      apply(data[indicators], MARGIN = 2L, FUN = is.na)
+    ))
+
+    data <- data[!allMissing, , drop = FALSE]
+
+    data[indicators] <- kNN_ImputeMissing(
+      data    = data[indicators],
+      k       = knn.k,
+      ordered = ordered
+    )
+
+  } else if (anyMissing && missing == "mean") {
+    pls_msg_note("Imputing missing data using mean imputation...")
+
+    data[indicators] <- meanImputeMissing(data[indicators], ordered = ordered)
+  }
+
+  data
 }
 
 

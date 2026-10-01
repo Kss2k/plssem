@@ -112,6 +112,8 @@ specifySubModel <- function(parTable,
                             reliabilities                  = NULL,
                             default.path.estimator         = "ols",
                             cluster                        = NULL,
+                            inner.weights                  = "path",
+                            approach.weights               = "pls",
                             higherOrderLVs                 = NULL) {
   if (is.null(parTable))
     return(NULL)
@@ -196,6 +198,14 @@ specifySubModel <- function(parTable,
   thresholdStruct <- ThresholdStruct( # holds information about thresholds and
     data = preppedData$X,             # category proportions
     ordered = ordered
+  )
+
+  info$inner.weights    <- inner.weights
+  info$approach.weights <- approach.weights
+
+  pls_warnif(approach.weights == "pca" && any(lengths(info$indsLvs[info$mode.b]) > 1L),
+    "Mode B composites keep equal weights with `approach.weights = \"pca\"`,",
+    "as their inner proxy is the composite itself."
   )
 
   path.default <- tolower(default.path.estimator)
@@ -369,6 +379,22 @@ initMatrices <- function(pt, higherOrderLVs = NULL) {
   for (lv in lvs[isolated])
     succs.linear[setdiff(lvs[!is.nlin], lv), lv] <- TRUE
 
+  # Factorial and centroid schemes: all (linear) neighbours in the structural
+  # model are weighted by their correlations (or the signs of the correlations),
+  # regardless of the direction of the paths.
+  preds.factorial <- preds.linear
+  preds.factorial[TRUE] <- FALSE
+  succs.factorial <- preds.linear | succs.linear
+
+  # PCA weights (`approach.weights = "pca"`): the inner proxy of each (linear)
+  # construct is the construct itself, such that the outer weights only depend on
+  # its own block of indicators.
+  preds.pca <- succs.pca <- matrix(
+    FALSE, nrow = length(lvs), ncol = length(lvs),
+    dimnames = list(lvs, lvs)
+  )
+  diag(succs.pca)[!is.nlin] <- TRUE
+
   # Covariances (lvs) ----------------------------------------------------------
   xis <- lvs[!lvs %in% pt[pt$op == "~", "lhs"]]
   selectCov <- matrix(
@@ -462,6 +488,10 @@ initMatrices <- function(pt, higherOrderLVs = NULL) {
     preds.linear = preds.linear,
     preds.cfa    = preds.cfa,
     succs.cfa    = succs.cfa,
+    preds.factorial = preds.factorial,
+    succs.factorial = succs.factorial,
+    preds.pca    = preds.pca,
+    succs.pca    = succs.pca,
     outerWeights = getNonZeroElems(lambda),
     Ip           = Ip,
     C            = C,

@@ -182,6 +182,16 @@ SE_NON_LINEAR_PROBIT_CORR_MAT <- FALSE
 #'   \code{data}. The cluster variables are stored alongside the (standardized)
 #'   indicators, and bootstrapping resamples whole clusters instead of rows.
 #'
+#' @param inner.weights Character string selecting the inner weighting scheme
+#'   used with \code{approach.weights = "pls"}. One of: \code{"centroid"},
+#'   \code{"factorial"}, or \code{"path"}. Defaults to \code{"path"}.
+#'
+#' @param approach.weights Character string selecting the approach used to
+#'   estimate the outer weights. \code{"pls"} (default) uses the PLS algorithm,
+#'   with the inner weighting scheme given by \code{inner.weights}. \code{"pca"}
+#'   forms the weights from each construct's own indicators only, ignoring the
+#'   structural.
+#'
 #' @param ... Internal arguments. For advanced users only.
 #'
 #' @return A \code{Plssem} object containing the estimated parameters, fit measures,
@@ -260,11 +270,15 @@ pls <- function(syntax,
                 reliabilities = NULL,
                 default.path.estimator = c("ols", "gls", "lmer"),
                 cluster = NULL,
+                inner.weights = c("path", "centroid", "factorial"),
+                approach.weights = c("pls", "pca"),
                 ...) {
 
   missing       <- match.arg(tolower(missing), c("listwise", "mean", "knn"))
   boot.parallel <- match.arg(tolower(boot.parallel), c("no", "multicore", "multisession", "snow"))
   default.path.estimator <- match.arg(tolower(default.path.estimator), c("ols", "gls", "lmer"))
+  inner.weights    <- match.arg(tolower(inner.weights), c("path", "centroid", "factorial"))
+  approach.weights <- match.arg(tolower(approach.weights), c("pls", "pca"))
   mc.small.sample.point.estimate <- match.arg(tolower(mc.small.sample.point.estimate), c("median", "mean"))
 
   if (!is.null(boot.ncpus)) {
@@ -318,6 +332,8 @@ pls <- function(syntax,
     reliabilities                  = reliabilities,
     default.path.estimator         = default.path.estimator,
     cluster                        = cluster,
+    inner.weights                  = inner.weights,
+    approach.weights               = approach.weights,
     ...
   )
 

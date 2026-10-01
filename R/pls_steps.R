@@ -5,7 +5,18 @@ estimatePLS_Step0_5 <- function(model) {
 
   matrices <- model@matrices
 
-  if (model@info$is.cfa) {
+  approach <- model@info$approach.weights
+  scheme   <- model@info$inner.weights
+  centroid <- FALSE
+
+  if (identical(approach, "pca")) {
+    succs <- matrices$succs.pca
+    preds <- matrices$preds.pca
+  } else if (scheme %in% c("centroid", "factorial")) {
+    succs    <- matrices$succs.factorial
+    preds    <- matrices$preds.factorial
+    centroid <- scheme == "centroid"
+  } else if (model@info$is.cfa) {
     succs <- matrices$succs.cfa
     preds <- matrices$preds.cfa
   } else {
@@ -25,7 +36,8 @@ estimatePLS_Step0_5 <- function(model) {
     preds        = preds,
     succs        = succs,
     tolerance    = model@status$tolerance,
-    maxiter      = model@status$max.iter.0_5
+    maxiter      = model@status$max.iter.0_5,
+    centroid     = centroid
   )
 
   if (!result$convergence) {

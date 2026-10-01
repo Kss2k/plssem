@@ -47,6 +47,8 @@ pls(
   reliabilities = NULL,
   default.path.estimator = c("ols", "gls", "lmer"),
   cluster = NULL,
+  inner.weights = c("path", "centroid", "factorial"),
+  approach.weights = c("pls", "pca"),
   ...
 )
 }
@@ -223,6 +225,16 @@ used.}
 \item{cluster}{Optional character vector naming the cluster variable(s) in
 \code{data}. The cluster variables are stored alongside the (standardized)
 indicators, and bootstrapping resamples whole clusters instead of rows.}
+
+\item{inner.weights}{Character string selecting the inner weighting scheme
+used with \code{approach.weights = "pls"}. One of: \code{"centroid"},
+\code{"factorial"}, or \code{"path"}. Defaults to \code{"path"}.}
+
+\item{approach.weights}{Character string selecting the approach used to
+estimate the outer weights. \code{"pls"} (default) uses the PLS algorithm,
+with the inner weighting scheme given by \code{inner.weights}. \code{"pca"}
+forms the weights from each construct's own indicators only, ignoring the
+structural.}
 
 \item{...}{Internal arguments. For advanced users only.}
 }

@@ -625,6 +625,14 @@ parseMultilevelModelArguments <- function(syntax, data, cluster) {
   pls_stopif(idxl2 <= 2, "level: 1 must have more than one line")
   pls_stopif(idxl2 == length(lines), "level: 2 must have more than one line")
 
+  # currently only two-level models are supported
+  idxln <- setdiff(which(grepl("^level\\s*:\\s*.*$", lines)), c(1, idxl2))
+  pls_stopif(length(idxln),
+    "Currently only two-level models are supported!",
+    "I.e., only `level: 1` and `level: 2`. Found the following",
+    "statements: ", paste0("`", lines[idxln], "`", collapse = ", ")
+  )
+
   s1 <- paste0(lines[2:(idxl2-1)], collapse = "\n")
   s2 <- paste0(lines[(idxl2+1):length(lines)], collapse = "\n")
 
@@ -946,3 +954,42 @@ toInternalNames <- function(X, vars) {
   colnames(X) <- vars
   X
 }
+
+
+# Does the model syntax define a multilevel model (`level: 1`, `level: 2` blocks)?
+isMultilevelSyntax <- function(syntax) {
+  if (!is.character(syntax) || !length(syntax))
+    return(FALSE)
+
+  lines <- stringr::str_split_1(paste0(syntax, collapse = "\n"), pattern = "\n|;")
+  any(grepl("^level\\s*:", stringr::str_trim(lines)))
+}
+
+
+MLM_PLS_ARGS <- c(
+  mc.max.iter                    = "max.iter",
+  mc.min.iter                    = "min.iter",
+  mc.tol                         = "tol",
+  mc.polyak.juditsky             = "polyak.juditsky",
+  mc.pj.extrapolate              = "pj.extrapolate",
+  mc.fn.args                     = "fn.args",
+  mc.diag.secant                 = "diag.secant",
+  mc.reps                        = "mc.reps",
+  mc.small.sample                = "small.sample",
+  mc.small.sample.max.k          = "small.sample.max.k",
+  mc.small.sample.point.estimate = "small.sample.point.estimate",
+  mc.delta.jacobian.k            = "delta.jacobian.k",
+  tolerance                      = "tolerance",
+  max.iter.0_5                   = "max.iter.0_5",
+  inner.weights                  = "inner.weights",
+  approach.weights               = "approach.weights",
+  default.path.estimator         = "default.path.estimator"
+)
+
+
+MLM_UNSUPPORTED_ARGS <- c(
+  "standardize", "consistent", "missing", "knn.k", "mcpls", "probit",
+  "reliabilities", "mc.rescov", "mc.delta.se", "boot.optimize",
+  "boot.drop.inadmissible", "mc.boot.control"
+)
+

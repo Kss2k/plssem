@@ -58,7 +58,7 @@ pls_msg <- function(wat, txt_width = getOption("width", 80L),
       "^source$", "^withVisible$", "^tryCatch.W.E$", "^withCallingHandlers$",
       "^do.call$", "^paste", "^pls_stopif", "^pls_warnif", "^warn", "^stop",
       "^message", "\\.local", "^\\.f$", "^[0-9]+$", # anonymous functions
-      "^solveMcRoot$" # internal helpers, report the calling function instead
+      "^solveMcRoot$", "^parseMultilevelModelArguments$" # internal helpers, report the calling function instead
     )
     sc <- sys.calls()
     sc_i <- length(sc)

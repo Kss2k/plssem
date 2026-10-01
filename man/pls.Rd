@@ -49,12 +49,17 @@ pls(
   cluster = NULL,
   inner.weights = c("path", "centroid", "factorial"),
   approach.weights = c("pls", "pca"),
+  mlm = NULL,
   ...
 )
 }
 \arguments{
 \item{syntax}{Character string with \code{lavaan}-style model syntax describing
-both measurement (\code{=~}) and structural (\code{~}) relations.}
+both measurement (\code{=~}) and structural (\code{~}) relations. Two-level
+models are specified with \code{level: 1} and \code{level: 2} blocks (see
+\code{mlm}), where random slopes are specified with \code{rv()} modifiers at
+level 1 (e.g., \code{fw ~ rv(s1)*x1}). The random slopes (e.g., \code{s1})
+are variables at level 2.}
 
 \item{data}{A \code{data.frame} or coercible object containing the manifest
 indicators referenced in \code{syntax}. Ordered factors are automatically
@@ -224,7 +229,8 @@ used.}
 
 \item{cluster}{Optional character vector naming the cluster variable(s) in
 \code{data}. The cluster variables are stored alongside the (standardized)
-indicators, and bootstrapping resamples whole clusters instead of rows.}
+indicators, and bootstrapping resamples whole clusters instead of rows.
+Required for two-level models (a single cluster variable).}
 
 \item{inner.weights}{Character string selecting the inner weighting scheme
 used with \code{approach.weights = "pls"}. One of: \code{"centroid"},
@@ -236,18 +242,29 @@ with the inner weighting scheme given by \code{inner.weights}. \code{"pca"}
 forms the weights from each construct's own indicators only, ignoring the
 structural.}
 
+\item{mlm}{Should the model be estimated as a two-level (multilevel) model?
+If \code{NULL} (default), this is detected from \code{syntax}, i.e., whether
+it has \code{level: 1} and \code{level: 2} blocks. Two-level models are
+estimated using an extension of the MC-PLSc estimator.
+The \code{mc.*} arguments (e.g., \code{mc.max.iter}, \code{mc.reps}) are used when they are
+specified, whereas arguments like \code{missing}, \code{standardize} and
+\code{consistent} are (currently) not supported. Standard errors
+(\code{bootstrap = TRUE}) are computed using the delta method.}
+
 \item{...}{Internal arguments. For advanced users only.}
 }
 \value{
-A \code{Plssem} object containing the estimated parameters, fit measures,
-  factor scores, and any bootstrap results. Methods such as \code{summary()},
-  \code{coef()}, and \code{parameter_estimates()} can be applied to inspect the fit.
+A \code{PlsModel} object containing the estimated parameters, fit measures,
+  factor scores, and any bootstrap results (a \code{PlsMultilevelModel} object
+  for two-level models). Methods such as \code{summary()}, \code{coef()}, and
+  \code{parameter_estimates()} can be applied to inspect the fit.
 }
 \description{
 \code{pls()} estimates Partial Least Squares Structural Equation Models (PLS-SEM)
 and their consistent (PLSc) variants. The function accepts \code{lavaan}-style
 syntax, handles ordered indicators through polychoric correlations and probit
-factor scores.
+factor scores, and estimates two-level (multilevel) models, with separate
+models for the within (\code{level: 1}) and between (\code{level: 2}) levels.
 }
 \examples{
 \donttest{

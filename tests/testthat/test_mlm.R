@@ -9,7 +9,8 @@ model <- '
         fb ~ w1 + w2
 '
 
-fit.pls <- mpls(model, data = randomSlopes, cluster = "cluster")
+fit.pls <- pls(model, data = randomSlopes, cluster = "cluster", bootstrap = TRUE, approach.weights = "pca",
+               boot.R = 500, mc.delta.jacobian.k = 5, boot.ncores = 4, level2.cov = "muml", small.sample = FALSE, mc.reps = 20000)
 fit.pls
 
 fit.lav <- lavaan::sem(model, data = randomSlopes, cluster = "cluster")
@@ -28,9 +29,14 @@ modelr <- '
 '
 
 set.seed(23984)
-fit.pls <- mpls(modelr, data = randomSlopes, cluster = "cluster")
+fit.pls <- pls(modelr, data = randomSlopesOrdered,
+               ordered = colnames(randomSlopesOrdered),
+               cluster = "cluster", boot.R = 5000, boot.ncores = 5,
+               mc.delta.jacobian.k = 5, boot.parallel = "multisession", level2.cov = "muml",
+               bootstrap = TRUE, approach.weights = "pca")
 fit.pls
+  
 
-fit.lav <- lavaan::sem(model = modelr, data = randomSlopes, cluster = "cluster")
+fit.lav <- lavaan::sam(model = modelr, data = randomSlopes, cluster = "cluster")
 lavaan::summary(fit.lav, standardized = TRUE)
 lavaan::lavInspect(fit.lav, "icc")

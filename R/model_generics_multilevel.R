@@ -42,8 +42,11 @@ setMethod("summary", "PlsMultilevelModel", function(object, ...) {
                     nm = names(est))
   }
 
-  icc <- withSE(object@params$icc, object@params$icc.se)
-  rsd <- withSE(object@params$rsd, object@params$rsd.se)
+  icc <- object@params$icc
+  rsd <- object@params$rsd
+
+  icc <- stats::setNames(formatNumeric(icc), nm = names(icc))
+  icc <- stats::setNames(formatNumeric(rsd), nm = names(rsd))
   rslopes <- info$rslopes
 
   if (length(rsd)) {

@@ -72,6 +72,70 @@ fit <- pls(tpb, TPB_Ordered, bootstrap = TRUE)
 summary(fit)
 ```
 
+### Multilevel Model with Continuous Data
+```r
+syntax <- '
+  level: 1
+    fw =~ y1 + y2 + y3
+    fw ~ x1 + x2 + x3
+  level: 2
+    fb =~ y1 + y2 + y3
+    fb ~ w1 + w2
+'
+
+fit <- pls(syntax, data = randomSlopes, cluster = "cluster", bootstrap = TRUE)
+summary(fit)
+```
+
+### Multilevel Model with Ordered Data
+```r
+syntax <- '
+  level: 1
+    fw =~ y1 + y2 + y3
+    fw ~ x1 + x2 + x3
+  level: 2
+    fb =~ y1 + y2 + y3
+    fb ~ w1 + w2
+'
+
+fit <- pls(syntax, data = randomSlopesOrdered, cluster = "cluster", bootstrap = TRUE)
+summary(fit)
+```
+
+### Multilevel Random Slopes Model with Continuous Data
+```r
+syntax <- '
+  level: 1
+    fw =~ y1 + y2 + y3
+    fw ~ rv("s1")*x1 + rv("s2")*x2 + x3
+  level: 2
+    fb =~ y1 + y2 + y3
+    fb ~ w1 + w2
+    # the random slopes are latent variables at the between level
+    s1 + s2 ~ w1 + w2
+'
+
+fit <- pls(syntax, data = randomSlopes, cluster = "cluster", bootstrap = TRUE)
+summary(fit)
+```
+
+### Multilevel Random Slopes Model with Ordered Data
+```r
+syntax <- '
+  level: 1
+    fw =~ y1 + y2 + y3
+    fw ~ rv("s1")*x1 + rv("s2")*x2 + x3
+  level: 2
+    fb =~ y1 + y2 + y3
+    fb ~ w1 + w2
+    # the random slopes are latent variables at the between level
+    s1 + s2 ~ w1 + w2
+'
+
+fit <- pls(syntax, data = randomSlopesOrdered, cluster = "cluster", bootstrap = TRUE)
+summary(fit)
+```
+
 ### Interaction Model with Continuous Data
 ```r
 m <- '

@@ -145,6 +145,14 @@ mpls <- function(syntax,
 
   # starting parameters
   start <- c(par1L1[par1L1$is.free, "est"], par1L2[par1L2$is.free, "est"], start.icc, rsd0)
+
+  # names of the calibrated parameters (as in the reported values, see `.values()`)
+  names(start) <- c(
+    getParNamesFromParTable(par1L1)[par1L1$is.free],
+    paste0(getParNamesFromParTable(par1L2)[par1L2$is.free], ".l2"),
+    names(prefixNames(icc0, prefix = "icc.")),
+    names(prefixNames(rsd0, prefix = "rsd."))
+  )
   lower <- c(getMcLowerBounds(par1L1), getMcLowerBounds(par1L2), lower.icc, lower.rsd)
   upper <- c(getMcUpperBounds(par1L1), getMcUpperBounds(par1L2), upper.icc, upper.rsd)
 
@@ -451,7 +459,7 @@ mpls <- function(syntax,
   JAC <- calcMcJacobians(
     .fg      = .fg,
     seeds    = seeds,
-    p0       = unname(root), # the names of the root are empty
+    p0       = root,
     p1       = values,
     lower    = lower,
     upper    = upper,

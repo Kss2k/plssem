@@ -692,15 +692,27 @@ thresholdJacobian <- function(thresholdStruct, sim.cont = NULL, eps = 1e-3,
     return(out)
   }
 
-  # Get empirical finite difference jacobian
+  # Get empirical finite difference jacobian. Each threshold only depends on
+  # its own (cumulative) proportion, so all of the proportions can be perturbed
+  # at once. The steps are bounded by the neighbouring proportions of the same
+  # variable (and 0 and 1), such that the perturbed proportions are still
+  # increasing (a requirement for computing the quantiles).
   probs <- thresholdStruct@proportions
+  step  <- rep(eps, length(probs))
 
-  p0 <- probs - eps
-  p1 <- probs + eps
+  for (ord in thresholdStruct@ordered) {
+    idx  <- thresholdStruct@indices[[ord]]
+    gaps <- diff(c(0, probs[idx], 1))
 
-  # check bounds
-  p0[p0 < 0] <- probs[p0 < 0]
-  p1[p1 > 1] <- probs[p1 > 1]
+    step[idx] <- pmin(eps, 0.45 * gaps[-length(gaps)], 0.45 * gaps[-1L])
+  }
+
+  # no stable finite-difference step (e.g., an empty category)
+  unstable <- step <= zero.tol
+  step[unstable] <- 0
+
+  p0 <- probs - step
+  p1 <- probs + step
 
   # update thresholdStruct
   T0 <- T1 <- thresholdStruct
@@ -710,8 +722,10 @@ thresholdJacobian <- function(thresholdStruct, sim.cont = NULL, eps = 1e-3,
   t0 <- updateThresholds(T0, sim.cont = sim.cont)@thresholds
   t1 <- updateThresholds(T1, sim.cont = sim.cont)@thresholds
 
-  # get step sizes (potentially affected by clamping above) from p1 and p0
-  out <- diag((t1 - t0) / (p1 - p0), nrow = length(t1))
+  d <- (t1 - t0) / (p1 - p0)
+  d[unstable] <- 0
+
+  out <- diag(d, nrow = length(t1))
   dimnames(out) <- list(names(t0), names(p0))
 
   out

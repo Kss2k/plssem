@@ -48,7 +48,7 @@ simulateDataParTable <- function(parTable,
 
   # info
   xis     <- getXis(parTable, isLV = !check.hi.ord)
-  etas    <- getSortedEtas(parTable)
+  etas    <- getSortedEtas(parTable, checkAny = FALSE) # none for CFA models
   mode.a  <- getReflectiveLVs(parTable)
   mode.b  <- getFormativeLVs(parTable)
   lvs     <- unique(c(mode.a, mode.b))

@@ -695,7 +695,7 @@ updateModelFromFreeParTableMC <- function(parTable,
   }
 
   k          <- NCOL(fitCov)
-  C          <- SC[colnames(fitStructural), colnames(fitStructural)]
+  C          <- SC[colnames(fitStructural), colnames(fitStructural), drop = FALSE]
   projCov.mc <- t(fitStructural) %*% C %*% fitStructural
   diag(C)    <- diag(C) - diag(projCov.mc)
 

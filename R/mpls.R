@@ -239,9 +239,9 @@ mpls <- function(syntax,
     list(ov = ov, lower = lower, upper = upper, sim.l1 = simL1, sim.l2 = simL2)
   }
 
-  .f <- function(p, sim = NULL) {
+  .f <- function(p, sim = NULL, seed = rng.seed) {
     if (is.null(sim))
-      sim <- .simulate(p)
+      sim <- .simulate(p, seed = seed)
 
     if (length(ordered)) {
       sim.ov <- ordinalizeDataFrame(

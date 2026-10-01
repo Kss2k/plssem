@@ -102,25 +102,27 @@ mcpls <- function(
     parx
   }
 
-  .simulate <- function(p, standardize = FALSE) {
+  # `seed` defaults to `rng.seed`, but the Jacobian replicates (see
+  # `calcMcJacobians()`) each use their own seed
+  .simulate <- function(p, standardize = FALSE, seed = rng.seed) {
     simulateDataParTable(
       parTable     = .parTable(p),
       N            = mc.reps,
-      seed         = rng.seed,
+      seed         = seed,
       check.hi.ord = is.hi.ord,
       standardize  = standardize,
       full         = use.full.rescov
     )
   }
 
-  .f <- function(p, thresholdStruct = thresholdStruct0, sim = NULL) {
+  .f <- function(p, thresholdStruct = thresholdStruct0, sim = NULL, seed = rng.seed) {
 
     if (is.null(sim)) {
       par1[par1$is.free, "est"] <- p
       sim <- simulateDataParTable(
         parTable     = par1,
         N            = mc.reps,
-        seed         = rng.seed,
+        seed         = seed,
         check.hi.ord = is.hi.ord,
         full         = use.full.rescov
       )
@@ -174,14 +176,14 @@ mcpls <- function(
     out
   }
 
-  .g <- function(p, thresholdStruct = thresholdStruct0, sim = NULL) {
+  .g <- function(p, thresholdStruct = thresholdStruct0, sim = NULL, seed = rng.seed) {
     fit <- updateModelFromFreeParTableMC(
       parTable         = .parTable(p),
       model            = fit0.combined,
       mc.reps          = mc.reps,
       thresholdStruct  = thresholdStruct,
       ordered          = ordered,
-      seed             = rng.seed,
+      seed             = seed,
       sim              = sim,
       params.only      = TRUE,
       full             = use.full.rescov
@@ -190,33 +192,12 @@ mcpls <- function(
     fit@params$values
   }
 
-  .fg <- function(p, thresholdStruct = thresholdStruct0, sim = NULL) {
+  .fg <- function(p, thresholdStruct = thresholdStruct0, sim = NULL, seed = rng.seed) {
     if (is.null(sim))
-      sim <- .simulate(p, standardize = TRUE)
+      sim <- .simulate(p, standardize = TRUE, seed = seed)
 
-    list(f = .f(p, thresholdStruct = thresholdStruct, sim = sim),
-         g = .g(p, thresholdStruct = thresholdStruct, sim = sim))
-  }
-
-  # `.simulate()`, `.f()` and `.g()` read `rng.seed` from this frame. The
-  # Jacobian replicates each need their own seed, so instead of overwriting
-  # `rng.seed` here (which would not carry over to a parallel worker) we
-  # rebind the closures in a child environment holding the replicate's seed
-  mc.env <- environment()
-
-  .seedContext <- function(seed) {
-    env <- new.env(parent = mc.env)
-    env$rng.seed <- seed
-
-    for (nm in c(".simulate", ".f", ".g", ".fg")) {
-      fn <- get(nm, envir = mc.env)
-
-      # replace environment of fn before assigning it to env
-      environment(fn) <- env
-      assign(nm, fn, envir = env)
-    }
-
-    env
+    list(f = .f(p, thresholdStruct = thresholdStruct, sim = sim, seed = seed),
+         g = .g(p, thresholdStruct = thresholdStruct, sim = sim, seed = seed))
   }
 
   # Starting parameters
@@ -375,7 +356,9 @@ mcpls <- function(
     jac.iseed <- floor(stats::runif(1L, min = 0, max = 9999999))
 
     JAC <- calcMcJacobians(
-      seedContext     = .seedContext,
+      .fg             = .fg,
+      .f              = .f,
+      .simulate       = .simulate,
       seeds           = seeds,
       p0              = p0,
       p1              = p1,
@@ -731,15 +714,16 @@ thresholdJacobian <- function(thresholdStruct, sim.cont = NULL, eps = 1e-3,
 
 # Estimates the Jacobians used for the (implicit) delta-method standard errors.
 #
-# `seeds` holds one RNG seed per replicate, and `seedContext(seed)` returns an
-# environment with `.simulate()`, `.f()`, `.g()` and `.fg()` bound to that seed
-# (see `mcpls()`). The replicates are averaged.
+# `seeds` holds one RNG seed per replicate, which is passed on to `.fg()` and
+# `.simulate()` (see `mcpls()`). The replicates are averaged.
 #
 # Each finite-difference column is independent of the others, so all of them
 # are evaluated through a single (optionally parallel) `plapply()` call. The
 # threshold-probability columns of a replicate share a single simulated data
 # set, so they are kept together in one task.
-calcMcJacobians <- function(seedContext,
+calcMcJacobians <- function(.fg,
+                            .f,
+                            .simulate,
                             seeds,
                             p0,
                             p1,
@@ -795,16 +779,17 @@ calcMcJacobians <- function(seedContext,
   )
 
   do.task <- function(task) {
-    env <- seedContext(seeds[[task$k]])
+    seed <- seeds[[task$k]]
 
     if (task$type == "probs") {
       return(calcMcThresholdJacobians(
-        .f              = env$.f,
-        .simulate       = env$.simulate,
+        .f              = .f,
+        .simulate       = .simulate,
         p0              = p0,
         p1              = p1,
         thresholdStruct = thresholdStruct,
-        eps             = eps
+        eps             = eps,
+        seed            = seed
       ))
     }
 
@@ -812,8 +797,8 @@ calcMcJacobians <- function(seedContext,
       x = p0, i = task$index, eps = eps, lower = lower, upper = upper
     )
 
-    fg.p <- env$.fg(points$plus, thresholdStruct = thresholdStruct)
-    fg.m <- env$.fg(points$minus, thresholdStruct = thresholdStruct)
+    fg.p <- .fg(points$plus,  thresholdStruct = thresholdStruct, seed = seed)
+    fg.m <- .fg(points$minus, thresholdStruct = thresholdStruct, seed = seed)
 
     list(
       J0 = (fg.p$f - fg.m$f) / points$denominator,
@@ -854,7 +839,7 @@ calcMcJacobians <- function(seedContext,
 # respect to the category proportions, for a single replicate. All columns
 # reuse the same simulated data set.
 calcMcThresholdJacobians <- function(.f, .simulate, p0, p1, thresholdStruct,
-                                     eps = 5e-3) {
+                                     eps = 5e-3, seed = NULL) {
   probs0 <- thresholdStruct@proportions
 
   Jp <- matrix(
@@ -869,7 +854,7 @@ calcMcThresholdJacobians <- function(.f, .simulate, p0, p1, thresholdStruct,
     dimnames = list(names(p1), names(probs0))
   )
 
-  sim0 <- .simulate(p0, standardize = TRUE)
+  sim0 <- .simulate(p0, standardize = TRUE, seed = seed)
 
   for (i in seq_along(probs0)) {
     points <- boundedProbabilityFiniteDiffPoints(probs0, i = i, eps = eps)

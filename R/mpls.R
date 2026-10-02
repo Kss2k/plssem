@@ -191,7 +191,7 @@ mpls <- function(syntax,
 
   # The levels must use different seeds, otherwise a fixed seed yields
   # identical draws (and thus correlated components) at both levels.
-  .simulate <- function(p, seed = rng.seed) {
+  .simulate <- function(p, standardize = FALSE, seed = rng.seed) {
     seed.l1   <- if (is.null(seed)) NULL else seed + 1L
     parStruct <- .parStruct(p)
     icc <- parStruct$icc
@@ -201,6 +201,7 @@ mpls <- function(syntax,
       N            = mc.reps.l2,
       seed         = seed,
       check.hi.ord = is.hi.ord.l2,
+      standardize  = standardize,
       full         = use.full.rescov.l2
     )
 
@@ -229,6 +230,7 @@ mpls <- function(syntax,
       N            = mc.reps.l1,
       seed         = seed.l1,
       check.hi.ord = is.hi.ord.l1,
+      standardize  = standardize,
       full         = use.full.rescov.l1,
       exogenous    = exogenous
     )
@@ -336,7 +338,7 @@ mpls <- function(syntax,
 
   root      <- c(mcfit$root)
   parStruct <- .parStruct(root)
-  simRoot   <- .simulate(root)
+  simRoot   <- .simulate(root, standardize = TRUE) # as in `mcpls()`
 
   level.1 <- finalizeMultilevelLevel(
     model = baseFits$level.1, parTable = parStruct$level.1,
@@ -445,7 +447,7 @@ mpls <- function(syntax,
   }
 
   .fg <- function(p, seed) {
-    sim <- .simulate(p, seed = seed)
+    sim <- .simulate(p, standardize = TRUE, seed = seed)
     list(f = c(.f(p, sim = sim)), g = .values(p, sim = sim))
   }
 

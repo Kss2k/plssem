@@ -689,8 +689,11 @@ parseMultilevelModelArguments <- function(syntax, data, cluster) {
 
   # Random slopes which don't appear in the level 2 model are declared as
   # (observed) exogenous variables (`s ~ 1`), such that they covary with the
-  # other exogenous variables at level 2.
-  missingL2 <- setdiff(rpar, c(parTableL2$lhs, parTableL2$rhs))
+  # other exogenous variables at level 2. This includes random slopes which
+  # only appear in (co-)variances (e.g., `s1 ~~ s2`), as `~~` doesn't declare
+  # structural variables.
+  isDeclL2  <- parTableL2$op %in% c("~", "=~", "<~")
+  missingL2 <- setdiff(rpar, c(parTableL2$lhs[isDeclL2], parTableL2$rhs[isDeclL2]))
 
   if (length(missingL2)) {
     s2 <- paste0(c(s2, paste0(missingL2, " ~ 1")), collapse = "\n")

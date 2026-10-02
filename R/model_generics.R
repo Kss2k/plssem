@@ -1,6 +1,48 @@
-# S4 generics and methods for the PlsModel class.
-# Internal generics follow camelCase, whilst public ones follow snake_case
-# Replaces the former S3 methods (summary.plssem, print.plssem, coef.plssem, …).
+# Shared helpers (also used for PlsMultilevelModel, see R/model_generics_multilevel.R)
+printStatusHeader <- function(admissible, iterations) {
+  printf(
+    "plssem (%s) %s after %i iterations\n",
+    PKG_INFO$version,
+    if (admissible) "ended normally" else "did NOT END NORMALLY",
+    iterations
+  )
+}
+
+
+# Print a block of aligned name/value pairs (numeric values are formatted),
+# optionally with a title.
+printSummarySection <- function(values, title = NULL, width.out) {
+  if (!length(values))
+    return(invisible(NULL))
+
+  rhs <- if (is.numeric(values)) formatNumeric(values) else values
+
+  if (!is.null(title)) cat(title, "\n", sep = "")
+  cat(allignLhsRhs(lhs = names(values), rhs = rhs, pad = "  ",
+                   width.out = width.out), "\n", sep = "")
+}
+
+
+getR2ParTable <- function(vars, parTable) {
+  vapply(vars, FUN.VALUE = numeric(1L), FUN = \(x) {
+    rvar <- parTable[parTable$lhs == x & parTable$op == "~~" & parTable$rhs == x, "est"]
+    if (!length(rvar)) 0 else 1 - rvar
+  })
+}
+
+
+coefPlsModel <- function(object, use.labels = TRUE) {
+  combined <- combinedModel(object)
+  out <- combined@params$values
+
+  if (use.labels && length(out)) {
+    params <- names(out)
+    labels <- combined@params$labels
+    names(out) <- paramsToLabels(params, labels)
+  }
+
+  plssemVector(out, is.public = TRUE)
+}
 
 
 #' Show a \code{PlsModel} object
@@ -78,13 +120,8 @@ setMethod("summary", "PlsModel", function(object, fit = TRUE, unstandardized = F
   is.ord <- is.probit || (length(ordered) && is.mcpls)
   link   <- if (is.ord) "PROBIT" else "LINEAR"
 
-  getR2 <- function(x, pt = parTable) {
-    rvar <- pt[pt$lhs == x & pt$op == "~~" & pt$rhs == x, "est"]
-    if (!length(rvar)) 0 else 1 - rvar
-  }
-
-  r2.etas <- vapply(etas,   FUN.VALUE = numeric(1L), FUN = getR2)
-  r2.inds <- vapply(inds.a, FUN.VALUE = numeric(1L), FUN = getR2)
+  r2.etas <- getR2ParTable(etas,   parTable = parTable)
+  r2.inds <- getR2ParTable(inds.a, parTable = parTable)
 
   out <- list(
     parTable = parTable,
@@ -132,55 +169,24 @@ print.SummaryPlsSem <- function(x, ...) {
 
   width.out <- x$print$width
 
-  headerNames <- c(
-    "Estimator",
-    "Link",
-    "",
-    "Number of observations",
-    "Number of iterations",
-    "Number of latent variables",
-    "Number of observed variables"
-  )
-
-  headerValues <- c(
-    x$info$estimator,
-    x$info$link,
-    "",
-    x$info$n,
-    x$info$iterations,
-    x$info$nlvs,
-    x$info$novs
-  )
-
-  cat(allignLhsRhs(lhs = headerNames, rhs = headerValues, pad = "  ",
-                   width.out = width.out), "\n", sep = "")
+  printSummarySection(width.out = width.out, values = stats::setNames(
+    c(x$info$estimator, x$info$link, "", x$info$n, x$info$iterations,
+      x$info$nlvs, x$info$novs),
+    nm = c("Estimator", "Link", "", "Number of observations", "Number of iterations",
+           "Number of latent variables", "Number of observed variables")
+  ))
 
   if (!is.null(x$fit.measures)) {
-    cat("Fit Measures:\n")
-    headerNames <- c("Chi-Square", "Degrees of Freedom", "SRMR", "RMSEA")
-    headerValues <- c(
-      sprintf("%.3f", x$fit.measures$chisq),
-      sprintf("%d",   x$fit.measures$chisq.df),
-      sprintf("%.3f", x$fit.measures$srmr),
-      sprintf("%.3f", x$fit.measures$rmsea)
-    )
-    cat(allignLhsRhs(lhs = headerNames, rhs = headerValues, pad = "  ",
-                     width.out = width.out), "\n", sep = "")
+    printSummarySection(title = "Fit Measures:", width.out = width.out, values = c(
+      "Chi-Square"         = sprintf("%.3f", x$fit.measures$chisq),
+      "Degrees of Freedom" = sprintf("%d",   x$fit.measures$chisq.df),
+      "SRMR"               = sprintf("%.3f", x$fit.measures$srmr),
+      "RMSEA"              = sprintf("%.3f", x$fit.measures$rmsea)
+    ))
   }
 
-  if (length(x$r2$inds)) {
-    cat("R-squared (indicators):\n")
-    cat(allignLhsRhs(lhs = names(x$r2$inds),
-                     rhs = formatNumeric(x$r2$inds), pad = "  ",
-                     width.out = width.out), "\n", sep = "")
-  }
-
-  if (length(x$r2$etas)) {
-    cat("R-squared (latents):\n")
-    cat(allignLhsRhs(lhs = names(x$r2$etas),
-                     rhs = formatNumeric(x$r2$etas), pad = "  ",
-                     width.out = width.out), "\n", sep = "")
-  }
+  printSummarySection(x$r2$inds, title = "R-squared (indicators):", width.out = width.out)
+  printSummarySection(x$r2$etas, title = "R-squared (latents):",    width.out = width.out)
 
   plsPrintParTable(x$parTable, extra.cols = x$print$extra.cols)
   invisible(x)
@@ -196,24 +202,15 @@ print.SummaryPlsSem <- function(x, ...) {
 #' @importFrom stats coef
 #' @export
 setMethod("coef", "PlsModel", function(object, use.labels = TRUE, ...) {
-  combined <- combinedModel(object)
-  out <- combined@params$values
-
-  if (use.labels && length(out)) {
-    params <- names(out)
-    labels <- combined@params$labels
-    names(out) <- paramsToLabels(params, labels)
-  }
-
-  plssemVector(out, is.public = TRUE)
+  coefPlsModel(object, use.labels = use.labels)
 })
 
 
 #' @rdname coef-PlsModel-method
 #' @importFrom stats coefficients
 #' @export
-setMethod("coefficients", "PlsModel", function(object, ...) {
-  coef(object, ...)
+setMethod("coefficients", "PlsModel", function(object, use.labels = TRUE, ...) {
+  coefPlsModel(object, use.labels = use.labels)
 })
 
 
@@ -567,15 +564,8 @@ setMethod("fit_measures", "PlsModel", function(object, saturated = FALSE, mc.rep
 
 
 printModelStatusHeader <- function(model) {
-  combined   <- combinedModel(model)
-  admissible <- isAdmissible(combined)
-
-  printf(
-    "plssem (%s) %s after %i iterations\n",
-    PKG_INFO$version,
-    if (admissible) "ended normally" else "did NOT END NORMALLY",
-    combined@status$iterations
-  )
+  combined <- combinedModel(model)
+  printStatusHeader(isAdmissible(combined), iterations = combined@status$iterations)
 }
 
 

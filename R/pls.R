@@ -6,12 +6,15 @@ SE_NON_LINEAR_PROBIT_CORR_MAT <- FALSE
 #' \code{pls()} estimates Partial Least Squares Structural Equation Models (PLS-SEM)
 #' and their consistent (PLSc) variants. The function accepts \code{lavaan}-style
 #' syntax, handles ordered indicators through polychoric correlations and probit
-#' factor scores, and supports multilevel specifications expressed with
-#' \code{lme4}-style random effects terms inside the structural model.
+#' factor scores, and estimates two-level (multilevel) models, with separate
+#' models for the within (\code{level: 1}) and between (\code{level: 2}) levels.
 #'
 #' @param syntax Character string with \code{lavaan}-style model syntax describing
-#'   both measurement (\code{=~}) and structural (\code{~}) relations. Random effects are
-#'   specified with \code{(term | cluster)} statements.
+#'   both measurement (\code{=~}) and structural (\code{~}) relations. Two-level
+#'   models are specified with \code{level: 1} and \code{level: 2} blocks (see
+#'   \code{mlm}), where random slopes are specified with \code{rv()} modifiers at
+#'   level 1 (e.g., \code{fw ~ rv(s1)*x1}). The random slopes (e.g., \code{s1})
+#'   are variables at level 2.
 #'
 #' @param data A \code{data.frame} or coercible object containing the manifest
 #'   indicators referenced in \code{syntax}. Ordered factors are automatically
@@ -21,7 +24,9 @@ SE_NON_LINEAR_PROBIT_CORR_MAT <- FALSE
 #'   estimation so that factor scores have comparable scales.
 #'
 #' @param consistent Logical; \code{TRUE} requests PLSc corrections, whereas \code{FALSE}
-#'   fits the traditional PLS model.
+#'   fits the traditional PLS model. If \code{NULL} (default), \code{FALSE} is
+#'   used for MC-PLS (including two-level models) and for models using \code{lmer}
+#'   as the path estimator, and \code{TRUE} otherwise.
 #'
 #' @param bootstrap Logical; if \code{TRUE}, nonparametric bootstrap standard errors
 #'   are computed with \code{boot.R} resamples.
@@ -37,17 +42,14 @@ SE_NON_LINEAR_PROBIT_CORR_MAT <- FALSE
 #'   categories) or nominal variables.
 #'   \code{"kNN"} (or \code{"knn"}) imputes missing indicator values using
 #'   k-nearest neighbors imputation (kNN). When \code{missing = "kNN"}, rows with
-#'   all indicators missing are removed prior to imputation, and rows with missing
-#'   \code{cluster} values are removed for multilevel models.
+#'   all indicators missing are removed prior to imputation. Rows with missing
+#'   \code{cluster} values are always removed.
 #'
 #' @param knn.k Integer specifying the number of neighbors (\code{k}) used when
 #'   \code{missing = "kNN"}.
 #'
 #' @param mcpls Should the model be estimated using the Monte-Carlo Consistent
 #'   Partial Least Squares (MC-PLSc) algorithm?
-#'
-#' @param mc.fast.lmer Should a faster (biased) GLS based estimator of the
-#'   Mixed-Effects model be used in conjunction with the MC-PLS algorithm?
 #'
 #' @param probit Logical; overrides the automatic choice of probit factor scores
 #'   that is based on whether ordered indicators are present.
@@ -176,17 +178,53 @@ SE_NON_LINEAR_PROBIT_CORR_MAT <- FALSE
 #'
 #' @param default.path.estimator Character string selecting the estimator used for
 #'   the structural (path) model when the model does not require Generalized Least
-#'   Squares (GLS). The default \code{"ols"} uses Ordinary Least Squares whenever
+#'   Squares (GLS), or Linear Mixed-Effects Regression (LMER).
+#'   The default \code{"ols"} uses Ordinary Least Squares whenever
 #'   possible, falling back to GLS automatically when the model contains residual
 #'   covariances. Setting \code{default.path.estimator = "gls"}
 #'   forces GLS estimation of the structural model even when OLS would otherwise be
 #'   used.
 #'
+#' @param cluster Optional character vector naming the cluster variable(s) in
+#'   \code{data}. The cluster variables are stored alongside the (standardized)
+#'   indicators, and bootstrapping resamples whole clusters instead of rows.
+#'   Required for two-level models (a single cluster variable).
+#'
+#' @param inner.weights Character string selecting the inner weighting scheme
+#'   used with \code{approach.weights = "pls"}. One of: \code{"centroid"},
+#'   \code{"factorial"}, or \code{"path"}. Defaults to \code{"path"}.
+#'
+#' @param approach.weights Character string selecting the approach used to
+#'   estimate the outer weights. \code{"pls"} (default) uses the PLS algorithm,
+#'   with the inner weighting scheme given by \code{inner.weights}. \code{"pca"}
+#'   forms the weights from each construct's own indicators only, ignoring the
+#'   structural.
+#'
+#' @param mlm Should the model be estimated as a two-level (multilevel) model?
+#'   If \code{NULL} (default), this is detected from \code{syntax}, i.e., whether
+#'   it has \code{level: 1} and \code{level: 2} blocks. Two-level models are
+#'   estimated using an extension of the MC-PLSc estimator.
+#'   The \code{mc.*} arguments (e.g., \code{mc.max.iter}, \code{mc.reps}) are used when they are
+#'   specified, whereas arguments like \code{standardize}
+#'   are (currently) not supported. Standard errors (\code{bootstrap = TRUE})
+#'   are computed using the delta method.
+#'
+#' @param level2.cov Two-level models only. How the (co-)variances of the
+#'   variables at level 2 are computed. \code{"means"} uses the
+#'   covariances of the cluster means. \code{"muml"} (default) uses Muthen's (1994)
+#'   estimator of the between-cluster covariance matrix, which corrects for the
+#'   within-cluster variation in the cluster means.
+#'
+#' @param level2.approach.weights Two-level models only. The approach used to
+#'   estimate the outer weights of the level 2 model (\code{approach.weights}
+#'   applies to the level 1 model). Defaults to \code{"pca"}.
+#'
 #' @param ... Internal arguments. For advanced users only.
 #'
-#' @return A \code{Plssem} object containing the estimated parameters, fit measures,
-#'   factor scores, and any bootstrap results. Methods such as \code{summary()},
-#'   \code{coef()}, and \code{parameter_estimates()} can be applied to inspect the fit.
+#' @return A \code{PlsModel} object containing the estimated parameters, fit measures,
+#'   factor scores, and any bootstrap results (a \code{PlsMultilevelModel} object
+#'   for two-level models). Methods such as \code{summary()}, \code{coef()}, and
+#'   \code{parameter_estimates()} can be applied to inspect the fit.
 #'
 #' @seealso \code{\link[=summary,PlsModel-method]{summary}},
 #'   \code{\link[=show,PlsModel-method]{show}}
@@ -213,13 +251,12 @@ SE_NON_LINEAR_PROBIT_CORR_MAT <- FALSE
 pls <- function(syntax,
                 data,
                 standardize = TRUE,
-                consistent = TRUE,
+                consistent = NULL,
                 bootstrap = FALSE,
                 ordered = NULL,
                 missing = c("listwise", "mean", "kNN"),
                 knn.k = 5,
                 mcpls = NULL,
-                mc.fast.lmer = mcpls,
                 probit = NULL,
                 tolerance = 1e-5,
                 max.iter.0_5 = 500L,
@@ -259,12 +296,22 @@ pls <- function(syntax,
                   reuse.p.start   = TRUE
                 ),
                 reliabilities = NULL,
-                default.path.estimator = c("ols", "gls"),
+                default.path.estimator = c("ols", "gls", "lmer"),
+                cluster = NULL,
+                inner.weights = c("path", "centroid", "factorial"),
+                approach.weights = c("pls", "pca"),
+                mlm = NULL,
+                level2.cov = c("muml", "means"),
+                level2.approach.weights = c("pca", "pls"),
                 ...) {
 
   missing       <- match.arg(tolower(missing), c("listwise", "mean", "knn"))
   boot.parallel <- match.arg(tolower(boot.parallel), c("no", "multicore", "multisession", "snow"))
-  default.path.estimator <- match.arg(tolower(default.path.estimator), c("ols", "gls"))
+  default.path.estimator <- match.arg(tolower(default.path.estimator), c("ols", "gls", "lmer"))
+  inner.weights    <- match.arg(tolower(inner.weights), c("path", "centroid", "factorial"))
+  approach.weights <- match.arg(tolower(approach.weights), c("pls", "pca"))
+  level2.cov       <- match.arg(tolower(level2.cov), c("muml", "means"))
+  level2.approach.weights <- match.arg(tolower(level2.approach.weights), c("pca", "pls"))
   mc.small.sample.point.estimate <- match.arg(tolower(mc.small.sample.point.estimate), c("median", "mean"))
 
   if (!is.null(boot.ncpus)) {
@@ -275,6 +322,62 @@ pls <- function(syntax,
   if (!is.null(sample)) {
     pls_msg_warn("The sample argument is deprecated, please use the boot.R argument instead!")
     boot.R <- sample
+  }
+
+  # Two-level (multilevel) models are estimated by `mpls()`
+  is.mlm.syntax <- isMultilevelSyntax(syntax)
+  if (is.null(mlm)) mlm <- is.mlm.syntax
+
+  pls_stopif(isTRUE(mlm) && !is.mlm.syntax,
+    "`mlm = TRUE` requires a two-level model syntax, with `level: 1` and",
+    "`level: 2` blocks!"
+  )
+
+  pls_stopif(!isTRUE(mlm) && is.mlm.syntax,
+    "The model syntax has `level:` blocks, which requires `mlm = TRUE`",
+    "(or `mlm = NULL`)!"
+  )
+
+  if (isTRUE(mlm)) {
+    pls_stopif(is.null(cluster),
+      "`cluster` must be specified for two-level (multilevel) models!"
+    )
+
+    supplied <- names(as.list(match.call()))[-1L]
+
+    unsupported <- intersect(supplied, MLM_UNSUPPORTED_ARGS)
+    pls_warnif(length(unsupported),
+      "The following arguments are (currently) ignored for two-level models:",
+      paste0("`", unsupported, "`", collapse = ", ")
+    )
+
+    boot.parallel <- if (boot.parallel == "snow") "multisession" else boot.parallel
+
+    args <- list(
+      syntax        = syntax,
+      data          = data,
+      cluster       = cluster,
+      ordered       = ordered,
+      verbose       = verbose,
+      bootstrap     = bootstrap,
+      boot.R        = boot.R,
+      boot.parallel = boot.parallel,
+      boot.ncores   = boot.ncores,
+      boot.iseed    = boot.iseed,
+      level2.cov    = level2.cov,
+      level2.approach.weights = level2.approach.weights
+    )
+
+    for (arg in intersect(supplied, names(MLM_PLS_ARGS)))
+      args[[MLM_PLS_ARGS[[arg]]]] <- get(arg)
+
+    if (isTRUE(mc.fixed.seed))
+      args$rng.seed <- floor(stats::runif(1L, min = 0, max = 9999999))
+
+    dots <- list(...) # e.g., `level2.cov`, or `rng.seed` (arguments of `mpls()`)
+    args[names(dots)] <- dots
+
+    return(do.call("mpls", args)) # by name, for the header of messages (see `pls_msg()`)
   }
 
   data <- asDataFrame(data)
@@ -288,7 +391,6 @@ pls <- function(syntax,
     ordered                        = ordered,
     probit                         = probit,
     mcpls                          = mcpls,
-    mc.fast.lmer                   = mc.fast.lmer,
     tolerance                      = tolerance,
     max.iter.0_5                   = max.iter.0_5,
     mc.min.iter                    = mc.min.iter,
@@ -318,6 +420,9 @@ pls <- function(syntax,
     knn.k                          = knn.k,
     reliabilities                  = reliabilities,
     default.path.estimator         = default.path.estimator,
+    cluster                        = cluster,
+    inner.weights                  = inner.weights,
+    approach.weights               = approach.weights,
     ...
   )
 

@@ -58,6 +58,22 @@ isPositiveDefinite <- function(X, tol = 1e-8) {
 }
 
 
+# Clip the eigenvalues of a symmetric matrix, such that it is positive definite
+clipEigenvalues <- function(X, tol = 1e-6) {
+  X <- (X + t(X)) / 2
+  e <- eigen(X, symmetric = TRUE)
+  floor <- tol * max(abs(e$values), 1)
+
+  if (min(e$values) > floor)
+    return(X)
+
+  values <- pmax(e$values, floor)
+  out <- e$vectors %*% diag(values, nrow = length(values)) %*% t(e$vectors)
+  dimnames(out) <- dimnames(X)
+  out
+}
+
+
 gradSymMat <- function(gX) {
   # gX is the gradient of a matrix X, assuming the matrix X is non-symmetric
   # here we return the gradient of X assuming X is symmetric

@@ -76,13 +76,12 @@ specifyModelParTable <- function(parTable, data, higherOrderLVs = NULL, ...) {
 specifySubModel <- function(parTable,
                             data,
                             is.lower.order                 = FALSE,
-                            consistent                     = TRUE,
+                            consistent                     = NULL,
                             missing                        = "listwise",
                             standardize                    = TRUE,
                             ordered                        = NULL,
                             probit                         = NULL,
                             mcpls                          = NULL,
-                            mc.fast.lmer                   = NULL,
                             tolerance                      = 1e-5,
                             max.iter.0_5                   = 100,
                             mc.max.iter                    = 250,
@@ -112,23 +111,26 @@ specifySubModel <- function(parTable,
                             knn.k                          = 5,
                             reliabilities                  = NULL,
                             default.path.estimator         = "ols",
+                            cluster                        = NULL,
+                            inner.weights                  = "path",
+                            approach.weights               = "pls",
                             higherOrderLVs                 = NULL) {
   if (is.null(parTable))
     return(NULL)
-      
+
+  consistent.explicit <- !is.null(consistent) # else chosen based on the model
+
   parsed <- parseModelArguments(
     parTable       = parTable,
     data           = data,
     ordered        = ordered,
     probit         = probit,
     mcpls          = mcpls,
-    mc.fast.lmer   = mc.fast.lmer,
     consistent     = consistent,
     is.lower.order = is.lower.order
   )
 
   pt         <- parsed$parTable.pls
-  cluster    <- parsed$cluster
   consistent <- parsed$consistent
   ordered    <- parsed$ordered
 
@@ -191,7 +193,8 @@ specifySubModel <- function(parTable,
     is.lower.order = is.lower.order,
     mc.args        = mc.args,
     boot           = boot.info,
-    scale          = preppedData$scale
+    scale          = preppedData$scale,
+    cluster        = cluster
   )
 
   thresholdStruct <- ThresholdStruct( # holds information about thresholds and
@@ -199,27 +202,59 @@ specifySubModel <- function(parTable,
     ordered = ordered
   )
 
-  # GLS is used automatically whenever the model contains residual covariances
-  # (which the OLS path estimator cannot handle). The user may also force GLS via
-  # `default.path.estimator = "gls"`, even when OLS would otherwise suffice.
-  gls.default <- tolower(default.path.estimator) == "gls"
+  info$inner.weights    <- inner.weights
+  info$approach.weights <- approach.weights
 
-  if (gls.default || hasResidualCovariances(parTable)) {
+  pls_warnif(approach.weights == "pca" && any(lengths(info$indsLvs[info$mode.b]) > 1L),
+    "Mode B composites keep equal weights with `approach.weights = \"pca\"`,",
+    "as their inner proxy is the composite itself."
+  )
+
+  path.default <- tolower(default.path.estimator)
+  has.rescov <- hasResidualCovariances(parTable)
+  has.randef <- any(isRandomEffectMod(parTable$mod))
+
+  if (path.default == "lmer" || has.randef) {
+    info$path.estimator <- "lmer"
+    glsPathModel <- GlsPathModel()
+
+    pls_warnif(has.rescov,
+      "Residual covariance structures is (currently) not supported",
+      "with random slope models!"
+    )
+
+    pls_stopif(!length(cluster),
+      "`cluster` must be specified for random slopes estimation!"
+    )
+
+    # MC-PLS simulates data without clusters and random slopes
+    pls_stopif(isTRUE(info$is.mcpls),
+      "MC-PLS (`mcpls = TRUE`) is (currently) not supported with random slopes!"
+    )
+
+    # lmer estimates the paths from the (uncorrected) factor scores, such that the
+    # consistency correction isn't available
+    if (info$consistent) {
+      pls_warnif(consistent.explicit,
+        "`consistent = TRUE` is not available with `lmer` as the path estimator!",
+        "Using `consistent = FALSE` instead."
+      )
+
+      info$consistent <- FALSE
+      info$estimator  <- getEstimatorFromInfo(info)
+    }
+
+  } else if (path.default == "gls" || has.rescov) {
     info$path.estimator <- "gls"
     glsPathModel <- GlsPathModel(
       parTable = pt,
       data.cov = NULL
     )
+
   } else {
     info$path.estimator <- "ols"
     glsPathModel <- GlsPathModel()
-  }
 
-  if (info$is.mlm && !info$is.mcpls) {
-    pls_msg_note(
-      "Multilevel/Mixed-Effects PLSc models are currently under development!\n",
-      "Consider passing `mcpls=TRUE` to yield more consistent results."
-    )
   }
 
   pls_warnif(!info$is.mcpls && any(!is.na(pt$start)),
@@ -349,6 +384,31 @@ initMatrices <- function(pt, higherOrderLVs = NULL) {
   preds.cfa[, is.nlin]   <- FALSE
   succs.cfa              <- t(preds.cfa)
 
+  # Constructs without any structural relations (e.g., exogenous variables which
+  # only covary with the other constructs) would get a zero inner proxy. Their
+  # inner proxy is instead formed from the correlations with all the other
+  # (linear) constructs. The links are one-directional (only their own column is set)
+  isolated <- !is.nlin & !colSums(preds.linear) & !rowSums(preds.linear)
+
+  for (lv in lvs[isolated])
+    succs.linear[setdiff(lvs[!is.nlin], lv), lv] <- TRUE
+
+  # Factorial and centroid schemes: all (linear) neighbours in the structural
+  # model are weighted by their correlations (or the signs of the correlations),
+  # regardless of the direction of the paths.
+  preds.factorial <- preds.linear
+  preds.factorial[TRUE] <- FALSE
+  succs.factorial <- preds.linear | succs.linear
+
+  # PCA weights (`approach.weights = "pca"`): the inner proxy of each (linear)
+  # construct is the construct itself, such that the outer weights only depend on
+  # its own block of indicators.
+  preds.pca <- succs.pca <- matrix(
+    FALSE, nrow = length(lvs), ncol = length(lvs),
+    dimnames = list(lvs, lvs)
+  )
+  diag(succs.pca)[!is.nlin] <- TRUE
+
   # Covariances (lvs) ----------------------------------------------------------
   xis <- lvs[!lvs %in% pt[pt$op == "~", "lhs"]]
   selectCov <- matrix(
@@ -442,6 +502,10 @@ initMatrices <- function(pt, higherOrderLVs = NULL) {
     preds.linear = preds.linear,
     preds.cfa    = preds.cfa,
     succs.cfa    = succs.cfa,
+    preds.factorial = preds.factorial,
+    succs.factorial = succs.factorial,
+    preds.pca    = preds.pca,
+    succs.pca    = succs.pca,
     outerWeights = getNonZeroElems(lambda),
     Ip           = Ip,
     C            = C,

@@ -136,7 +136,7 @@ getSortedEtas <- function(parTable, isLV = FALSE, checkAny = TRUE) {
 
 
 getXis <- function(parTable, etas = NULL, isLV = TRUE, checkAny = TRUE) {
-  if (is.null(etas)) etas <- getEtas(parTable, isLV = isLV)
+  if (is.null(etas)) etas <- getEtas(parTable, isLV = isLV, checkAny = FALSE) # none for CFA models
   # add all LVs which are not etas
   xis <- unique(parTable[parTable$op %in% c("=~", "<~") & !parTable$lhs %in% etas, "lhs"])
 
@@ -149,18 +149,6 @@ getXis <- function(parTable, etas = NULL, isLV = TRUE, checkAny = TRUE) {
 
   pls_stopif(checkAny && !length(xis), "No xis found")
   xis
-}
-
-
-getRandomEffectLabels <- function(parTable) {
-  lhs <- parTable$lhs
-  op  <- parTable$op
-  rhs <- parTable$rhs
-
-  rlhs <- lhs[grepl("~", lhs) & op == "~~"]
-  rrhs <- rhs[grepl("~", rhs) & op == "~~"]
-
-  union(rlhs, rrhs)
 }
 
 
@@ -237,4 +225,23 @@ parTableInputRows <- function(lhs = "", op = "", rhs = "", mod = "",
     label = label,
     start = start
   )
+}
+
+
+isRandomEffectMod <- function(mod) {
+  substr(mod, 1, 3) == "rv("
+}
+
+
+extractRandomEffectName <- function(rv) {
+  stringr::str_extract(
+    rv, pattern = 'rv\\(\\"*([._A-Za-z][._A-Za-z0-9]*)\\"*\\)', group = 1
+  )
+}
+
+
+getRandomEffectsParTable <- function(parTable) {
+  mod <- parTable$mod
+  rand <- extractRandomEffectName(mod[isRandomEffectMod(mod)])
+  rand[!is.na(rand)]
 }

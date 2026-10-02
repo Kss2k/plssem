@@ -1,7 +1,7 @@
 testthat::test_that("pls_predict works for continuous models", {
   set.seed(1)
 
-  data <- randomIntercepts[1:300, , drop = FALSE]
+  data <- lavaan::Demo.twolevel[1:300, , drop = FALSE]
 
   syntax <- "
     f =~ y1 + y2 + y3
@@ -45,8 +45,14 @@ testthat::test_that("pls_predict works for continuous models", {
 testthat::test_that("pls_predict works for ordinal (non-MCPLS) models", {
   set.seed(1)
 
-  data <- randomInterceptsOrdered[1:300, , drop = FALSE]
-  ordered <- colnames(data)
+  data <- lavaan::Demo.twolevel[1:300, , drop = FALSE]
+  ordered <- c("y1", "y2", "y3", "x1", "x2", "x3", "w1", "w2")
+
+  for (v in ordered) {
+    breaks  <- stats::quantile(data[[v]], probs = c(0, 0.2, 0.45, 0.7, 0.9, 1))
+    data[[v]] <- cut(data[[v]], breaks = unique(breaks), include.lowest = TRUE,
+                     ordered_result = TRUE)
+  }
 
   syntax <- "
     f =~ y1 + y2 + y3

@@ -79,13 +79,19 @@ bootstrap <- function(model,
       sampleS    <- getCorrMat(sampleData, ordered = ordered, probit = is.probit)
       model.b    <- baseModel
 
-      model.b@data       <- sampleData
-      model.b@matrices$S <- sampleS
-
+      # The proportions must be computed before re-standardizing the data
       model.b@thresholdStruct <- updateThresholds(updateProportions(
         thr  = baseModel@thresholdStruct,
         data = sampleData
       ))
+
+      # The resampled data is not standardized itself, so we re-standardize it,
+      # like the observed data (the correlation matrix is unaffected)
+      if (isTRUE(baseModel@info$standardized))
+        sampleData <- restandardizeDataMatrix(sampleData)
+
+      model.b@data       <- sampleData
+      model.b@matrices$S <- sampleS
 
       boot.fixed.seed     <- mc.boot.control$fixed.seed
       boot.polyak         <- mc.boot.control$polyak.juditsky
@@ -179,13 +185,9 @@ bootstrap <- function(model,
 
   if (verbose) pls_msg_note("Bootstrapping...")
 
-  workers <- if (parallel == "no") 1L else ncores
-  if (workers <= 1L) set.seed(iseed) # `iseed` is passed on as `future.seed`
-                                     # in the parallel case
-
-  results <- plapply(
-    X        = seq_len(R),
-    FUN      = .bootf,
+  results <- runMcReplicates(
+    R        = R,
+    fun      = .bootf,
     parallel = parallel,
     ncores   = ncores,
     verbose  = verbose,
@@ -253,27 +255,21 @@ bootstrap <- function(model,
           )
 
           J1 <- Jacobian1[pars.all, pars.free, drop = FALSE]
-          D.par <- J1 %*% J0.inv
           prob.names <- intersect(names(probsTemplate), colnames(vcov.joint))
 
           if (length(prob.names)) {
-            # Implicit delta method:
-            # dp = J0^-1 da - J0^-1 Jp dc
-            # dy = J1 dp + Gp dc
             Jp <- params$JacobianProbs0[pars.free, prob.names, drop = FALSE]
             Gp <- params$JacobianProbs1[pars.all, prob.names, drop = FALSE]
-            D.probs <- Gp - D.par %*% Jp
-            D <- cbind(D.par, D.probs)
             vcov.sub <- vcov.joint[
               c(pars.free, prob.names), c(pars.free, prob.names), drop = FALSE
             ]
 
           } else {
-            D <- D.par
+            Jp <- Gp <- NULL
             vcov.sub <- vcov.joint[pars.free, pars.free, drop = FALSE]
           }
 
-          vcov.mc.full <- D %*% vcov.sub %*% t(D)
+          vcov.mc.full <- deltaMcVcov(J0.inv, V = vcov.sub, J1 = J1, Jp = Jp, Gp = Gp)
 
           vcov[] <- 0
           vcov[pars.all, pars.all] <- vcov.mc.full[pars.all, pars.all]
@@ -281,7 +277,7 @@ bootstrap <- function(model,
         } else {
           # Just use standard errors for free parameters
           vcov.sub <- vcov.joint[pars.free, pars.free, drop = FALSE]
-          vcov.mc.free <- J0.inv %*% vcov.sub %*% t(J0.inv)
+          vcov.mc.free <- deltaMcVcov(J0.inv, V = vcov.sub)
           vcov[] <- 0
           vcov[pars.free, pars.free] <- vcov.mc.free[pars.free, pars.free]
 
@@ -313,8 +309,7 @@ bootstrap <- function(model,
 
       if (NROW(split)) {
         split.sub <- split[
-          !grepl("~", split[,1L]) & !grepl("~", split[,2L]) & # remove random effect variances
-          !is.na(split[,1L])      & !is.na(split[,2L]), , drop = FALSE
+          !is.na(split[,1L]) & !is.na(split[,2L]), , drop = FALSE
         ]
 
         if (NROW(split.sub)) {
@@ -331,6 +326,35 @@ bootstrap <- function(model,
   se[se <= zero.tol] <- NA_real_
 
   list(se = se, boot = resultsMat[, par.names, drop = FALSE], vcov = vcov)
+}
+
+
+deltaMcVcov <- function(J0.inv, V, J1 = NULL, Jp = NULL, Gp = NULL) {
+  # implicit delta method:
+  #   dp = J0^-1 da - J0^-1 Jp dc
+  #   dy = J1 dp + Gp dc
+  D <- if (is.null(J1)) J0.inv else J1 %*% J0.inv
+
+  if (!is.null(Jp))
+    D <- cbind(D, Gp - D %*% Jp)
+
+  D %*% V %*% t(D)
+}
+
+
+runMcReplicates <- function(R, fun, parallel, ncores, verbose, iseed, label = "Bootstrap") {
+  workers <- if (parallel == "no") 1L else ncores
+  if (workers <= 1L) set.seed(iseed)
+
+  plapply(
+    X        = seq_len(R),
+    FUN      = fun,
+    parallel = parallel,
+    ncores   = ncores,
+    verbose  = verbose,
+    iseed    = iseed,
+    label    = label
+  )
 }
 
 
@@ -355,6 +379,14 @@ invertMcJacobian <- function(J, rcond.tol = 1e-10) {
       MASS::ginv(J)
     }
   )
+}
+
+
+restandardizeDataMatrix <- function(X) {
+  Y <- Rfast::standardise(X)
+  dimnames(Y) <- dimnames(X)
+  attr(Y, "cluster") <- attr(X, "cluster")
+  Y
 }
 
 
@@ -385,7 +417,7 @@ resample <- function(X, n.out = NROW(X), cluster = NULL, replace = TRUE) {
   )
 
   Y <- do.call(rbind, cluster.list)
-  attr(Y, "cluster") <- do.call(rbind, indices.list)
+  attr(Y, "cluster") <- as.data.frame(do.call(rbind, indices.list))
 
   Y
 }

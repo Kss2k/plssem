@@ -129,7 +129,8 @@ initModelInfo <- function(baseInfo,
                           is.lower.order,
                           mc.args,
                           boot,
-                          scale) {
+                          scale,
+                          cluster = NULL) {
   stopifnot(is.list(baseInfo), is.list(parsed))
 
   info <- baseInfo
@@ -140,12 +141,9 @@ initModelInfo <- function(baseInfo,
   ordered.x <- intersect(inds.x, ordered)
   ordered.y <- intersect(inds.y, ordered)
 
-  info$lme4.syntax    <- parsed$lme4.syntax
-  info$is.mlm         <- parsed$is.mlm
   info$is.mcpls       <- parsed$is.mcpls
-  info$mc.fast.lmer   <- parsed$mc.fast.lmer
   info$is.probit      <- parsed$is.probit
-  info$cluster        <- parsed$cluster
+  info$cluster        <- cluster
   info$consistent     <- consistent
   info$ordered        <- ordered
   info$ordered.x      <- ordered.x

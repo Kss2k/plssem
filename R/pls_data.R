@@ -11,6 +11,10 @@ getPLS_Data <- function(data,
 
   missing <- match.arg(tolower(missing), c("listwise", "mean", "knn"))
 
+  pls_stopif(!is.null(cluster) && !is.character(cluster),
+    "`cluster` must be a character vector!"
+  )
+
   vars <- c(indicators, cluster)
   varIsMissing <- !vars %in% colnames(data)
 
@@ -19,6 +23,84 @@ getPLS_Data <- function(data,
 
   data <- asDataFrame(data)[vars]
 
+  data <- handleMissingData(
+    data       = data,
+    indicators = indicators,
+    cluster    = cluster,
+    missing    = missing,
+    knn.k      = knn.k,
+    ordered    = ordered
+  )
+
+  if (standardize) {
+    data <- standardizeDataFrame(
+      data    = data,
+      cluster = cluster
+    )
+
+    # sd's are a natural byproduct of standardizing
+    scale <- attr(data, "sigma")
+
+  } else {
+    pls_msg_warn(paste0(
+      "The `pls()` function usually assumes that the data is standardized!\n",
+      "Setting `standardized=FALSE` may have unexpected side effects!"
+    ))
+
+    scale <- stats::setNames(vapply(
+      X         = data[,indicators, drop = FALSE],
+      FUN.VALUE = numeric(1L),
+      FUN       = stats::sd, na.rm = TRUE
+    ), nm = indicators)
+  }
+
+  S <- getCorrMat(data[indicators], probit = is.probit, ordered = ordered)
+  X <- as.matrix(data[indicators])
+
+  if (!is.null(cluster))
+    attr(X, "cluster") <- data[, cluster, drop = FALSE]
+
+  list(X = X, S = S, scale = scale)
+}
+
+
+checkAndFixDTypesPLS_Data <- function(X, check = colnames(X)) {
+  if (!is.data.frame(X)) X <- asDataFrame(X)
+
+  varIsMissing <- !check %in% colnames(X)
+  pls_stopif(any(varIsMissing),
+    "Missing variables: ", paste0(check[varIsMissing], collapse = ", ")
+  )
+
+  isNominal <- vapply(X[check], FUN.VALUE = logical(1L), FUN = is.nominal)
+  factors <- check[isNominal]
+
+  if (any(isNominal)) {
+    ncatf <- vapply(factors, FUN.VALUE = numeric(1L), FUN = \(x) length(uniqueComplete(X[[x]])))
+
+    for (ord in factors[ncatf == 2])
+      X[[ord]] <- as.ordered(X[[ord]])
+
+    isNominal <- vapply(X[check], FUN.VALUE = logical(1L), FUN = is.nominal)
+    factors <- check[isNominal]
+  }
+
+  pls_stopif(any(isNominal),
+    "Please recode nominal categorical (e.g., 'factor' and 'character')\n",
+    "into dummy variables, and specify the dummy variables as ordered,\n",
+    "using the `ordered` argument!"
+  )
+
+  X
+}
+
+
+handleMissingData <- function(data,
+                              indicators,
+                              cluster = NULL,
+                              missing = "listwise",
+                              knn.k = 5,
+                              ordered = NULL) {
   if (!is.null(cluster)) {
     clusterMissing <- !stats::complete.cases(data[, cluster, drop = FALSE])
 
@@ -63,70 +145,7 @@ getPLS_Data <- function(data,
     data[indicators] <- meanImputeMissing(data[indicators], ordered = ordered)
   }
 
-  if (standardize) {
-    data <- standardizeDataFrame(
-      data    = data,
-      cluster = cluster
-    )
-
-    # sd's are a natural byproduct of standardizing
-    scale <- attr(data, "sigma")
-
-  } else {
-    pls_msg_warn(paste0(
-      "The `pls()` function usually assumes that the data is standardized!\n",
-      "Setting `standardized=FALSE` may have unexpected side effects!"
-    ))
-
-    scale <- stats::setNames(vapply(
-      X         = data[,indicators, drop = FALSE],
-      FUN.VALUE = numeric(1L),
-      FUN       = stats::sd, na.rm = TRUE
-    ), nm = indicators)
-  }
-
-  S <- getCorrMat(data[indicators], probit = is.probit, ordered = ordered)
-  X <- as.matrix(data[indicators])
-
-  if (!is.null(cluster)) {
-    if (!is.character(cluster))
-      pls_msg_stop("`cluster` must be a character string, if lme4.syntax is provided!")
-
-    attr(X, "cluster") <- data[, cluster, drop = FALSE]
-  }
-
-  list(X = X, S = S, scale = scale)
-}
-
-
-checkAndFixDTypesPLS_Data <- function(X, check = colnames(X)) {
-  if (!is.data.frame(X)) X <- asDataFrame(X)
-
-  varIsMissing <- !check %in% colnames(X)
-  pls_stopif(any(varIsMissing),
-    "Missing variables: ", paste0(check[varIsMissing], collapse = ", ")
-  )
-
-  isNominal <- vapply(X[check], FUN.VALUE = logical(1L), FUN = is.nominal)
-  factors <- check[isNominal]
-
-  if (any(isNominal)) {
-    ncatf <- vapply(factors, FUN.VALUE = numeric(1L), FUN = \(x) length(uniqueComplete(X[[x]])))
-
-    for (ord in factors[ncatf == 2])
-      X[[ord]] <- as.ordered(X[[ord]])
-
-    isNominal <- vapply(X[check], FUN.VALUE = logical(1L), FUN = is.nominal)
-    factors <- check[isNominal]
-  }
-
-  pls_stopif(any(isNominal),
-    "Please recode nominal categorical (e.g., 'factor' and 'character')\n",
-    "into dummy variables, and specify the dummy variables as ordered,\n",
-    "using the `ordered` argument!"
-  )
-
-  X
+  data
 }
 
 

@@ -39,6 +39,7 @@ mcpls <- function(
   is.hi.ord <- isTRUE(fit0.combined@info$is.high.ord)
   thresholdStruct0 <- fit0.combined@thresholdStruct
   estimator <- fit0.combined@info$path.estimator
+  compiled.info <- NULL
 
   # Residual-covariance handling:
   #   reduced: Residual covariances are treated as constrained parameters
@@ -105,14 +106,20 @@ mcpls <- function(
   # `seed` defaults to `rng.seed`, but the Jacobian replicates (see
   # `calcMcJacobians()`) each use their own seed
   .simulate <- function(p, standardize = FALSE, seed = rng.seed) {
-    simulateDataParTable(
-      parTable     = .parTable(p),
-      N            = mc.reps,
-      seed         = seed,
-      check.hi.ord = is.hi.ord,
-      standardize  = standardize,
-      full         = use.full.rescov
+    sim <- simulateDataParTable(
+      parTable      = .parTable(p),
+      N             = mc.reps,
+      seed          = seed,
+      check.hi.ord  = is.hi.ord,
+      standardize   = standardize,
+      full          = use.full.rescov,
+      compiled.info = compiled.info
     )
+
+    if (is.null(compiled.info))
+      compiled.info <<- sim$compiled.info
+
+    sim
   }
 
   .f <- function(p, thresholdStruct = thresholdStruct0, sim = NULL, seed = rng.seed) {
@@ -120,12 +127,16 @@ mcpls <- function(
     if (is.null(sim)) {
       par1[par1$is.free, "est"] <- p
       sim <- simulateDataParTable(
-        parTable     = par1,
-        N            = mc.reps,
-        seed         = seed,
-        check.hi.ord = is.hi.ord,
-        full         = use.full.rescov
+        parTable      = par1,
+        N             = mc.reps,
+        seed          = seed,
+        check.hi.ord  = is.hi.ord,
+        full          = use.full.rescov,
+        compiled.info = compiled.info
       )
+
+      if (is.null(compiled.info))
+        compiled.info <<- sim$compiled.info
     }
 
     # sim.ov  <- ordinalizeDataFrame(
@@ -426,23 +437,37 @@ averageMcReplicates <- function(k, fun, point.estimate = "mean", catch = FALSE) 
 }
 
 
-ordinalizeDataFrame <- function(df, thresholdStruct) {
+ordinalizeDataFrame <- function(df, thresholdStruct, return.thr = FALSE) {
   nm <- colnames(df)
   ordered <- thresholdStruct@ordered
   probs   <- thresholdStruct@proportions
   indices <- thresholdStruct@indices
 
-  quickdf(stats::setNames(
+  out <- quickdf(stats::setNames(
     lapply(nm, FUN = function(v) {
-      if (v %in% ordered) ordinalizeVectorCpp(df[[v]], probs = probs[indices[[v]]])
-      else df[[v]]
-    }),
-    nm = nm
+      if (v %in% ordered) {
+        z <- ordinalizeVectorCpp(df[[v]], probs = probs[indices[[v]]])
+
+        if (return.thr)
+          thresholdStruct@thresholds[indices[[v]]] <<- attr(z, "tau")
+
+        attr(z, "tau") <- NULL # remove before assigning to df
+        z
+      }
+      else {
+        df[[v]]
+      }
+    }), nm = nm
   ))
+
+  if (return.thr)
+    attr(out, "thresholdStruct") <- thresholdStruct
+
+  out
 }
 
 
-getFreeParamsTable <- function(model) {
+getFreeParamsTable <- function(model, exclude = c("~1", "|", ":=")) {
   model <- combinedModel(model)
   parTable <- getParTableEstimates(
     model, rm.tmp.ov = FALSE, clean.tmp.ind = FALSE
@@ -460,7 +485,7 @@ getFreeParamsTable <- function(model) {
 
   cond1 <- !(lhs == rhs & op == "~~" & !grepl("~", rhs))
   cond2 <- !((isIntTermVariable(lhs) | isIntTermVariable(rhs)) & op == "~~")
-  cond3 <- !op %in% c("~1", "|", ":=")
+  cond3 <- !op %in% exclude
   cond4 <- !(lhs %in% inds.b & op == "~~") & !(rhs %in% inds.b & op == "~~")
   cond  <- cond1 & cond2 & cond3 & cond4
 
@@ -955,4 +980,16 @@ getMcUpperBounds <- function(par, tol = 1e-3) {
   upper[parf$op == "=~"] <- 1 - tol
 
   upper
+}
+
+
+getEmpiricalVarParsParTable <- function(parTable,
+                                        full = hasResidualCovariances(parTable)) {
+  sim <- simulateDataParTable(
+    parTable = parTable,
+    N = 1000,
+    collect.empirical.vpars = TRUE,
+    full = full
+  )
+  names(sim$empirical.vpars)
 }

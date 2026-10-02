@@ -76,7 +76,7 @@ specifyModelParTable <- function(parTable, data, higherOrderLVs = NULL, ...) {
 specifySubModel <- function(parTable,
                             data,
                             is.lower.order                 = FALSE,
-                            consistent                     = TRUE,
+                            consistent                     = NULL,
                             missing                        = "listwise",
                             standardize                    = TRUE,
                             ordered                        = NULL,
@@ -117,7 +117,9 @@ specifySubModel <- function(parTable,
                             higherOrderLVs                 = NULL) {
   if (is.null(parTable))
     return(NULL)
-      
+
+  consistent.explicit <- !is.null(consistent) # else chosen based on the model
+
   parsed <- parseModelArguments(
     parTable       = parTable,
     data           = data,
@@ -233,7 +235,7 @@ specifySubModel <- function(parTable,
     # lmer estimates the paths from the (uncorrected) factor scores, such that the
     # consistency correction isn't available
     if (info$consistent) {
-      pls_msg_warn(
+      pls_warnif(consistent.explicit,
         "`consistent = TRUE` is not available with `lmer` as the path estimator!",
         "Using `consistent = FALSE` instead."
       )

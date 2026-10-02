@@ -53,7 +53,8 @@ mpls <- function(syntax,
 
   pls_stopif(all(is.na(data[[cluster]])), "cluster is all NA!")
 
-  # ordered variables
+  # ordered variables (binary factors are converted to ordered variables)
+  data    <- checkAndFixDTypesPLS_Data(data, check = parsed$ovs.all)
   is.ord  <- vapply(data[parsed$ovs.all], FUN.VALUE = logical(1L), FUN = is.ordered)
   ordered <- intersect(union(ordered, parsed$ovs.all[is.ord]), parsed$ovs.all)
 

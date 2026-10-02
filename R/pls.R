@@ -24,7 +24,9 @@ SE_NON_LINEAR_PROBIT_CORR_MAT <- FALSE
 #'   estimation so that factor scores have comparable scales.
 #'
 #' @param consistent Logical; \code{TRUE} requests PLSc corrections, whereas \code{FALSE}
-#'   fits the traditional PLS model.
+#'   fits the traditional PLS model. If \code{NULL} (default), \code{FALSE} is
+#'   used for MC-PLS (including two-level models) and for models using \code{lmer}
+#'   as the path estimator, and \code{TRUE} otherwise.
 #'
 #' @param bootstrap Logical; if \code{TRUE}, nonparametric bootstrap standard errors
 #'   are computed with \code{boot.R} resamples.
@@ -203,7 +205,7 @@ SE_NON_LINEAR_PROBIT_CORR_MAT <- FALSE
 #'   it has \code{level: 1} and \code{level: 2} blocks. Two-level models are
 #'   estimated using an extension of the MC-PLSc estimator.
 #'   The \code{mc.*} arguments (e.g., \code{mc.max.iter}, \code{mc.reps}) are used when they are
-#'   specified, whereas arguments like \code{standardize} and \code{consistent}
+#'   specified, whereas arguments like \code{standardize}
 #'   are (currently) not supported. Standard errors (\code{bootstrap = TRUE})
 #'   are computed using the delta method.
 #'
@@ -249,7 +251,7 @@ SE_NON_LINEAR_PROBIT_CORR_MAT <- FALSE
 pls <- function(syntax,
                 data,
                 standardize = TRUE,
-                consistent = TRUE,
+                consistent = NULL,
                 bootstrap = FALSE,
                 ordered = NULL,
                 missing = c("listwise", "mean", "kNN"),

@@ -18,7 +18,7 @@ parseModelArguments <- function(parTable,
                                 ordered = NULL,
                                 probit = NULL,
                                 mcpls = FALSE,
-                                consistent = TRUE,
+                                consistent = NULL,
                                 is.lower.order = FALSE,
                                 strict = TRUE) {
   # make sure we're working with a data.frame
@@ -168,7 +168,8 @@ parseModelArguments <- function(parTable,
     ordered      = ordered,
     is.probit    = is.probit,
     is.mcpls     = is.mcpls,
-    consistent   = consistent && !is.mcpls # Don't use consistency correction with MC-PLS
+    # By default, we don't use the consistency correction with MC-PLS
+    consistent   = if (is.null(consistent)) !is.mcpls else isTRUE(consistent)
   )
 }
 

@@ -17,6 +17,7 @@
 <url><loc>/reference/TPB_Ordered.html</loc></url>
 <url><loc>/reference/boot.html</loc></url>
 <url><loc>/reference/coef-PlsModel-method.html</loc></url>
+<url><loc>/reference/coef-PlsMultilevelModel-method.html</loc></url>
 <url><loc>/reference/fit_measures.html</loc></url>
 <url><loc>/reference/implied_construct_corr.html</loc></url>
 <url><loc>/reference/implied_indicator_corr.html</loc></url>
@@ -27,6 +28,7 @@
 <url><loc>/reference/mcpls_loglik.html</loc></url>
 <url><loc>/reference/oneIntOrdered.html</loc></url>
 <url><loc>/reference/parameter_estimates-PlsModel-method.html</loc></url>
+<url><loc>/reference/parameter_estimates-PlsMultilevelModel-method.html</loc></url>
 <url><loc>/reference/parameter_estimates.html</loc></url>
 <url><loc>/reference/parameter_estimates.plssem.html</loc></url>
 <url><loc>/reference/pls.html</loc></url>
@@ -45,6 +47,7 @@
 <url><loc>/reference/plssem-package.html</loc></url>
 <url><loc>/reference/predict-PlsModel-method.html</loc></url>
 <url><loc>/reference/print.PlsSemPredict.html</loc></url>
+<url><loc>/reference/print.SummaryPlsMultilevel.html</loc></url>
 <url><loc>/reference/print.SummaryPlsSem.html</loc></url>
 <url><loc>/reference/print.plssem.html</loc></url>
 <url><loc>/reference/randomIntercepts.html</loc></url>
@@ -52,10 +55,13 @@
 <url><loc>/reference/randomSlopes.html</loc></url>
 <url><loc>/reference/randomSlopesOrdered.html</loc></url>
 <url><loc>/reference/show-PlsModel-method.html</loc></url>
+<url><loc>/reference/show-PlsMultilevelModel-method.html</loc></url>
 <url><loc>/reference/summary-PlsModel-method.html</loc></url>
+<url><loc>/reference/summary-PlsMultilevelModel-method.html</loc></url>
 <url><loc>/reference/summary.plssem.html</loc></url>
 <url><loc>/reference/titanic.html</loc></url>
 <url><loc>/reference/unstandardized_estimates.html</loc></url>
 <url><loc>/reference/vcov-PlsModel-method.html</loc></url>
+<url><loc>/reference/vcov-PlsMultilevelModel-method.html</loc></url>
 </urlset>
 

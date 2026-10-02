@@ -33,7 +33,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="index.html">plssem</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.1.5</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.2.0</span>
       </span>
     </div>
 
@@ -166,59 +166,71 @@
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
-<h3 id="multilevel-random-slopes-model-with-continuous-data">Multilevel Random Slopes Model with Continuous Data<a class="anchor" aria-label="anchor" href="#multilevel-random-slopes-model-with-continuous-data"></a>
+<h3 id="multilevel-model-with-continuous-data">Multilevel Model with Continuous Data<a class="anchor" aria-label="anchor" href="#multilevel-model-with-continuous-data"></a>
 </h3>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">syntax</span> <span class="op">&lt;-</span> <span class="st">"</span></span>
-<span><span class="st">  X =~ x1 + x2 + x3</span></span>
-<span><span class="st">  Z =~ z1 + z2 + z3</span></span>
-<span><span class="st">  Y =~ y1 + y2 + y3</span></span>
-<span><span class="st">  W =~ w1 + w2 + w3</span></span>
-<span><span class="st">  Y ~ X + Z + (1 + X + Z | cluster)</span></span>
-<span><span class="st">  W ~ X + Z + (1 + X + Z | cluster)</span></span>
-<span><span class="st">"</span></span>
+<code class="sourceCode R"><span><span class="va">syntax</span> <span class="op">&lt;-</span> <span class="st">'</span></span>
+<span><span class="st">  level: 1</span></span>
+<span><span class="st">    fw =~ y1 + y2 + y3</span></span>
+<span><span class="st">    fw ~ x1 + x2 + x3</span></span>
+<span><span class="st">  level: 2</span></span>
+<span><span class="st">    fb =~ y1 + y2 + y3</span></span>
+<span><span class="st">    fb ~ w1 + w2</span></span>
+<span><span class="st">'</span></span>
 <span></span>
-<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/pls.html">pls</a></span><span class="op">(</span><span class="va">syntax</span>, data <span class="op">=</span> <span class="va">randomSlopes</span>, bootstrap <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/pls.html">pls</a></span><span class="op">(</span><span class="va">syntax</span>, data <span class="op">=</span> <span class="va">randomSlopes</span>, cluster <span class="op">=</span> <span class="st">"cluster"</span>, bootstrap <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="multilevel-model-with-ordered-data">Multilevel Model with Ordered Data<a class="anchor" aria-label="anchor" href="#multilevel-model-with-ordered-data"></a>
+</h3>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">syntax</span> <span class="op">&lt;-</span> <span class="st">'</span></span>
+<span><span class="st">  level: 1</span></span>
+<span><span class="st">    fw =~ y1 + y2 + y3</span></span>
+<span><span class="st">    fw ~ x1 + x2 + x3</span></span>
+<span><span class="st">  level: 2</span></span>
+<span><span class="st">    fb =~ y1 + y2 + y3</span></span>
+<span><span class="st">    fb ~ w1 + w2</span></span>
+<span><span class="st">'</span></span>
+<span></span>
+<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/pls.html">pls</a></span><span class="op">(</span><span class="va">syntax</span>, data <span class="op">=</span> <span class="va">randomSlopesOrdered</span>, cluster <span class="op">=</span> <span class="st">"cluster"</span>, bootstrap <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="multilevel-random-slopes-model-with-continuous-data">Multilevel Random Slopes Model with Continuous Data<a class="anchor" aria-label="anchor" href="#multilevel-random-slopes-model-with-continuous-data"></a>
+</h3>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">syntax</span> <span class="op">&lt;-</span> <span class="st">'</span></span>
+<span><span class="st">  level: 1</span></span>
+<span><span class="st">    fw =~ y1 + y2 + y3</span></span>
+<span><span class="st">    fw ~ rv("s1")*x1 + rv("s2")*x2 + x3</span></span>
+<span><span class="st">  level: 2</span></span>
+<span><span class="st">    fb =~ y1 + y2 + y3</span></span>
+<span><span class="st">    fb ~ w1 + w2</span></span>
+<span><span class="st">    # the random slopes are latent variables at the between level</span></span>
+<span><span class="st">    s1 + s2 ~ w1 + w2</span></span>
+<span><span class="st">'</span></span>
+<span></span>
+<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/pls.html">pls</a></span><span class="op">(</span><span class="va">syntax</span>, data <span class="op">=</span> <span class="va">randomSlopes</span>, cluster <span class="op">=</span> <span class="st">"cluster"</span>, bootstrap <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="multilevel-random-slopes-model-with-ordered-data">Multilevel Random Slopes Model with Ordered Data<a class="anchor" aria-label="anchor" href="#multilevel-random-slopes-model-with-ordered-data"></a>
 </h3>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">syntax</span> <span class="op">&lt;-</span> <span class="st">"</span></span>
-<span><span class="st">  X =~ x1 + x2 + x3</span></span>
-<span><span class="st">  Z =~ z1 + z2 + z3</span></span>
-<span><span class="st">  Y =~ y1 + y2 + y3</span></span>
-<span><span class="st">  W =~ w1 + w2 + w3</span></span>
-<span><span class="st">  Y ~ X + Z + (1 + X + Z | cluster)</span></span>
-<span><span class="st">  W ~ X + Z + (1 + X + Z | cluster)</span></span>
-<span><span class="st">"</span></span>
-<span></span>
-<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/pls.html">pls</a></span><span class="op">(</span><span class="va">syntax</span>, data <span class="op">=</span> <span class="va">randomSlopesOrdered</span>, bootstrap <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="multilevel-random-intercepts-model-with-continuous-data">Multilevel Random Intercepts Model with Continuous Data<a class="anchor" aria-label="anchor" href="#multilevel-random-intercepts-model-with-continuous-data"></a>
-</h3>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">syntax</span> <span class="op">&lt;-</span> <span class="st">'</span></span>
-<span><span class="st">  f =~ y1 + y2 + y3</span></span>
-<span><span class="st">  f ~ x1 + x2 + x3 + w1 + w2 + (1 | cluster)</span></span>
-<span><span class="st">'</span></span>
-<span></span>
-<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/pls.html">pls</a></span><span class="op">(</span><span class="va">syntax</span>, data <span class="op">=</span> <span class="va">randomIntercepts</span>, bootstrap <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="multilevel-random-intercepts-model-with-ordered-data">Multilevel Random Intercepts Model with Ordered Data<a class="anchor" aria-label="anchor" href="#multilevel-random-intercepts-model-with-ordered-data"></a>
-</h3>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">syntax</span> <span class="op">&lt;-</span> <span class="st">'</span></span>
-<span><span class="st">  f =~ y1 + y2 + y3</span></span>
-<span><span class="st">  f ~ x1 + x2 + x3 + w1 + w2 + (1 | cluster)</span></span>
+<span><span class="st">  level: 1</span></span>
+<span><span class="st">    fw =~ y1 + y2 + y3</span></span>
+<span><span class="st">    fw ~ rv("s1")*x1 + rv("s2")*x2 + x3</span></span>
+<span><span class="st">  level: 2</span></span>
+<span><span class="st">    fb =~ y1 + y2 + y3</span></span>
+<span><span class="st">    fb ~ w1 + w2</span></span>
+<span><span class="st">    # the random slopes are latent variables at the between level</span></span>
+<span><span class="st">    s1 + s2 ~ w1 + w2</span></span>
 <span><span class="st">'</span></span>
 <span></span>
-<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/pls.html">pls</a></span><span class="op">(</span><span class="va">syntax</span>, data <span class="op">=</span> <span class="va">randomInterceptsOrdered</span>, bootstrap <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/pls.html">pls</a></span><span class="op">(</span><span class="va">syntax</span>, data <span class="op">=</span> <span class="va">randomSlopesOrdered</span>, cluster <span class="op">=</span> <span class="st">"cluster"</span>, bootstrap <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
@@ -249,22 +261,6 @@
 <span><span class="st">'</span></span>
 <span></span>
 <span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/pls.html">pls</a></span><span class="op">(</span><span class="va">m</span>, <span class="va">oneIntOrdered</span>, bootstrap <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="multilevel-random-slopes-interaction-model-with-continuous-data">Multilevel Random Slopes Interaction Model with Continuous Data<a class="anchor" aria-label="anchor" href="#multilevel-random-slopes-interaction-model-with-continuous-data"></a>
-</h3>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">syntax</span> <span class="op">&lt;-</span> <span class="st">"</span></span>
-<span><span class="st">  X =~ x1 + x2 + x3</span></span>
-<span><span class="st">  Z =~ z1 + z2 + z3</span></span>
-<span><span class="st">  Y =~ y1 + y2 + y3</span></span>
-<span><span class="st">  W =~ w1 + w2 + w3</span></span>
-<span><span class="st">  Y ~ X + Z + X:Z + (1 + X + Z + X:Z | cluster)</span></span>
-<span><span class="st">  W ~ X + Z + X:Z + (1 + X + Z + X:Z | cluster)</span></span>
-<span><span class="st">"</span></span>
-<span></span>
-<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/pls.html">pls</a></span><span class="op">(</span><span class="va">m</span>, <span class="va">randomSlopes</span>, bootstrap <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></code></pre></div>
 </div>
 </div>

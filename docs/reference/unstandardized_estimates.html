@@ -19,7 +19,7 @@ remain on their standardized scales."><!-- mathjax --><script src="https://cdnjs
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">plssem</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.1.5</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.2.0</span>
       </span>
     </div>
 
@@ -191,63 +191,63 @@ should be cleaned from the returned parameter table.</p></dd>
 <span class="r-in"><span><span class="fu">unstandardized_estimates</span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>        lhs op     rhs label    est     se       z pvalue ci.lower ci.upper</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1      ATT &lt;~    att1        1.000     NA      NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2      ATT &lt;~    att2        0.918  0.612   1.499  0.134   -0.282    2.117</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3      ATT &lt;~    att3        1.085  0.631   1.718  0.086   -0.152    2.322</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4      ATT &lt;~    att4        0.788  0.469   1.679  0.093   -0.132    1.708</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5      ATT &lt;~    att5        1.272  0.481   2.644  0.008    0.329    2.215</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2      ATT &lt;~    att2        0.918  0.669   1.371  0.170   -0.394    2.229</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3      ATT &lt;~    att3        1.085  0.621   1.746  0.081   -0.133    2.302</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4      ATT &lt;~    att4        0.788  0.481   1.638  0.101   -0.155    1.731</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5      ATT &lt;~    att5        1.272  0.706   1.803  0.071   -0.111    2.655</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 6       SN =~     sn1        1.000     NA      NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 7       SN =~     sn2        0.921  0.022  41.408  0.000    0.877    0.965</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 7       SN =~     sn2        0.921  0.020  45.610  0.000    0.881    0.961</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 8      PBC =~    pbc1        1.000     NA      NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 9      PBC =~    pbc2        0.933  0.022  41.669  0.000    0.889    0.977</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 10     PBC =~    pbc3        0.801  0.021  37.844  0.000    0.759    0.842</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 9      PBC =~    pbc2        0.933  0.017  55.130  0.000    0.900    0.966</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 10     PBC =~    pbc3        0.801  0.017  46.240  0.000    0.767    0.835</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 11     INT =~    int1        1.000     NA      NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 12     INT =~    int2        0.936  0.024  39.307  0.000    0.890    0.983</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 13     INT =~    int3        0.809  0.023  35.896  0.000    0.765    0.854</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 12     INT =~    int2        0.936  0.016  57.181  0.000    0.904    0.968</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 13     INT =~    int3        0.809  0.018  45.259  0.000    0.774    0.844</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 14     BEH &lt;~      b1        1.000     NA      NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 15     BEH &lt;~      b2        1.476  0.416   3.550  0.000    0.661    2.291</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 16     INT  ~     ATT        0.045  0.013   3.370  0.001    0.019    0.071</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 17     INT  ~      SN        0.185  0.026   7.058  0.000    0.133    0.236</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 18     INT  ~     PBC        0.224  0.023   9.657  0.000    0.179    0.270</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 19     BEH  ~     PBC        0.558  0.088   6.374  0.000    0.386    0.729</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 20     BEH  ~     INT        0.471  0.112   4.193  0.000    0.251    0.692</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 21     BEH  ~ INT:PBC        0.506  0.092   5.503  0.000    0.326    0.686</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 22     ATT ~~     ATT       19.621 11.198   1.752  0.080   -2.327   41.569</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 23     ATT ~~      SN        2.682  0.770   3.483  0.000    1.173    4.191</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 24     ATT ~~     PBC        2.921  0.830   3.518  0.000    1.294    4.548</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 25     ATT ~~ INT:PBC        0.360  0.212   1.693  0.090   -0.057    0.776</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 26      SN ~~      SN        0.953  0.039  24.261  0.000    0.876    1.030</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 27      SN ~~     PBC        0.662  0.030  22.069  0.000    0.603    0.721</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 28      SN ~~ INT:PBC        0.054  0.039   1.404  0.160   -0.021    0.130</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 29     PBC ~~     PBC        0.948  0.043  22.112  0.000    0.864    1.032</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 30     PBC ~~ INT:PBC        0.084  0.046   1.830  0.067   -0.006    0.174</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 31     INT ~~     INT        0.484  0.025  19.364  0.000    0.435    0.533</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 32     BEH ~~     BEH        3.142  1.054   2.981  0.003    1.076    5.207</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 33 INT:PBC ~~ INT:PBC        0.957  0.100   9.542  0.000    0.760    1.153</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 15     BEH &lt;~      b2        1.476  0.399   3.698  0.000    0.694    2.259</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 16     INT  ~     ATT        0.045  0.017   2.703  0.007    0.012    0.077</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 17     INT  ~      SN        0.185  0.025   7.255  0.000    0.135    0.235</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 18     INT  ~     PBC        0.224  0.030   7.512  0.000    0.166    0.283</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 19     BEH  ~     PBC        0.558  0.101   5.549  0.000    0.361    0.755</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 20     BEH  ~     INT        0.471  0.098   4.787  0.000    0.278    0.665</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 21     BEH  ~ INT:PBC        0.506  0.085   5.951  0.000    0.339    0.672</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 22     ATT ~~     ATT       19.621 14.479   1.355  0.175   -8.757   47.999</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 23     ATT ~~      SN        2.682  0.997   2.691  0.007    0.729    4.635</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 24     ATT ~~     PBC        2.921  1.089   2.681  0.007    0.786    5.056</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 25     ATT ~~ INT:PBC        0.360  0.228   1.574  0.116   -0.088    0.807</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 26      SN ~~      SN        0.953  0.021  45.224  0.000    0.912    0.994</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 27      SN ~~     PBC        0.662  0.014  48.585  0.000    0.635    0.689</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 28      SN ~~ INT:PBC        0.054  0.041   1.330  0.184   -0.026    0.134</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 29     PBC ~~     PBC        0.948  0.022  43.846  0.000    0.906    0.990</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 30     PBC ~~ INT:PBC        0.084  0.050   1.672  0.095   -0.015    0.183</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 31     INT ~~     INT        0.484  0.014  34.573  0.000    0.456    0.511</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 32     BEH ~~     BEH        3.142  1.014   3.098  0.002    1.154    5.129</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 33 INT:PBC ~~ INT:PBC        0.957  0.073  13.099  0.000    0.813    1.100</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 34    att1 ~~    att1        1.166     NA      NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 35    att1 ~~    att2        0.878  0.006 143.788  0.000    0.866    0.890</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 36    att1 ~~    att3        0.788  0.007 119.399  0.000    0.775    0.801</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 37    att1 ~~    att4        0.693  0.007 101.539  0.000    0.679    0.706</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 38    att1 ~~    att5        0.885  0.007 121.286  0.000    0.870    0.899</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 35    att1 ~~    att2        0.878  0.007 133.745  0.000    0.865    0.891</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 36    att1 ~~    att3        0.788  0.007 111.950  0.000    0.774    0.802</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 37    att1 ~~    att4        0.693  0.008  82.777  0.000    0.676    0.709</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 38    att1 ~~    att5        0.885  0.007 131.571  0.000    0.872    0.898</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 39    att2 ~~    att2        0.920     NA      NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 40    att2 ~~    att3        0.692  0.007 104.521  0.000    0.679    0.705</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 41    att2 ~~    att4        0.609  0.007  85.831  0.000    0.595    0.623</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 42    att2 ~~    att5        0.778  0.006 121.014  0.000    0.765    0.790</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 40    att2 ~~    att3        0.692  0.007 101.308  0.000    0.678    0.705</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 41    att2 ~~    att4        0.609  0.006  99.906  0.000    0.597    0.621</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 42    att2 ~~    att5        0.778  0.007 118.603  0.000    0.765    0.790</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 43    att3 ~~    att3        0.781     NA      NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 44    att3 ~~    att4        0.547  0.006  87.246  0.000    0.535    0.560</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 45    att3 ~~    att5        0.698  0.007 105.895  0.000    0.685    0.711</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 44    att3 ~~    att4        0.547  0.007  78.426  0.000    0.534    0.561</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 45    att3 ~~    att5        0.698  0.008  89.632  0.000    0.682    0.713</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 46    att4 ~~    att4        0.645     NA      NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 47    att4 ~~    att5        0.616  0.006  94.742  0.000    0.603    0.629</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 47    att4 ~~    att5        0.616  0.007  88.164  0.000    0.602    0.629</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 48    att5 ~~    att5        0.944     NA      NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 49     sn1 ~~     sn1        0.213  0.025   8.374  0.000    0.163    0.263</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 50     sn2 ~~     sn2        0.128  0.020   6.439  0.000    0.089    0.167</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 51    pbc1 ~~    pbc1        0.159  0.028   5.733  0.000    0.105    0.214</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 52    pbc2 ~~    pbc2        0.136  0.023   5.922  0.000    0.091    0.181</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 53    pbc3 ~~    pbc3        0.164  0.019   8.868  0.000    0.128    0.201</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 54    int1 ~~    int1        0.171  0.026   6.615  0.000    0.120    0.222</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 55    int2 ~~    int2        0.140  0.018   7.893  0.000    0.105    0.174</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 56    int3 ~~    int3        0.174  0.015  11.633  0.000    0.145    0.204</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 49     sn1 ~~     sn1        0.213  0.021  10.111  0.000    0.172    0.254</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 50     sn2 ~~     sn2        0.128  0.020   6.420  0.000    0.089    0.167</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 51    pbc1 ~~    pbc1        0.159  0.022   7.366  0.000    0.117    0.202</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 52    pbc2 ~~    pbc2        0.136  0.020   6.902  0.000    0.097    0.174</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 53    pbc3 ~~    pbc3        0.164  0.017   9.731  0.000    0.131    0.197</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 54    int1 ~~    int1        0.171  0.018   9.659  0.000    0.136    0.206</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 55    int2 ~~    int2        0.140  0.015   9.511  0.000    0.111    0.169</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 56    int3 ~~    int3        0.174  0.015  11.905  0.000    0.146    0.203</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 57      b1 ~~      b1        0.815     NA      NA     NA       NA       NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 58      b1 ~~      b2        0.605  0.008  80.524  0.000    0.590    0.619</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 58      b1 ~~      b2        0.605  0.007  82.140  0.000    0.590    0.619</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 59      b2 ~~      b2        0.716     NA      NA     NA       NA       NA</span>
 </code></pre></div>
     </div>

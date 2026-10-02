@@ -32,7 +32,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">plssem</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.1.5</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.2.0</span>
       </span>
     </div>
 
@@ -149,7 +149,7 @@ the <code>ordered</code> argument, or by making sure they are
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit_linear</span><span class="op">)</span></span>
-<span><span class="co">#&gt; plssem (0.1.5) ended normally after 1 iterations</span></span>
+<span><span class="co">#&gt; plssem (0.2.0) ended normally after 1 iterations</span></span>
 <span><span class="co">#&gt;   Estimator                                    OrdPLSc</span></span>
 <span><span class="co">#&gt;   Link                                          PROBIT</span></span>
 <span><span class="co">#&gt;                                                       </span></span>
@@ -263,8 +263,8 @@ automatically switches to the Monte-Carlo ordinal PLSc estimator.</p>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit_int</span><span class="op">)</span></span>
-<span><span class="co">#&gt; plssem (0.1.5) ended normally after 101 iterations</span></span>
-<span><span class="co">#&gt;   Estimator                                  MCOrdPLSc</span></span>
+<span><span class="co">#&gt; plssem (0.2.0) ended normally after 101 iterations</span></span>
+<span><span class="co">#&gt;   Estimator                                 MC-OrdPLSc</span></span>
 <span><span class="co">#&gt;   Link                                          PROBIT</span></span>
 <span><span class="co">#&gt;                                                       </span></span>
 <span><span class="co">#&gt;   Number of observations                           714</span></span>
@@ -284,25 +284,25 @@ automatically switches to the Monte-Carlo ordinal PLSc estimator.</p>
 <span><span class="co">#&gt; Regressions:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   Survived ~    </span></span>
-<span><span class="co">#&gt;     Age            -0.073      0.065   -1.132    0.258</span></span>
-<span><span class="co">#&gt;     Female          0.697      0.037   18.592    0.000</span></span>
-<span><span class="co">#&gt;     Age:Female      0.250      0.098    2.549    0.011</span></span>
+<span><span class="co">#&gt;     Age            -0.073      0.065   -1.118    0.264</span></span>
+<span><span class="co">#&gt;     Female          0.697      0.039   17.856    0.000</span></span>
+<span><span class="co">#&gt;     Age:Female      0.250      0.099    2.518    0.012</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Covariances:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   Age ~~        </span></span>
-<span><span class="co">#&gt;     Female         -0.092      0.036   -2.582    0.010</span></span>
+<span><span class="co">#&gt;     Female         -0.092      0.035   -2.613    0.009</span></span>
 <span><span class="co">#&gt;     Age:Female     -0.004                             </span></span>
 <span><span class="co">#&gt;   Female ~~     </span></span>
 <span><span class="co">#&gt;     Age:Female      0.000                             </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Thresholds:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;     Survivd|t1      0.254      0.054    4.720    0.000</span></span>
+<span><span class="co">#&gt;     Survivd|t1      0.254      0.055    4.627    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Variances:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;    .Survived        0.436      0.089    4.914    0.000</span></span>
+<span><span class="co">#&gt;    .Survived        0.436      0.092    4.742    0.000</span></span>
 <span><span class="co">#&gt;     Age             1.000                             </span></span>
 <span><span class="co">#&gt;     Female          1.000                             </span></span>
 <span><span class="co">#&gt;     Age:Female      1.014</span></span></code></pre></div>

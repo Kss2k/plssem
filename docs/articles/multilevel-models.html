@@ -32,7 +32,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">plssem</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.1.5</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.2.0</span>
       </span>
     </div>
 
@@ -111,540 +111,594 @@
 
     
     
-<p>This vignette shows examples of multilevel random slopes and
-intercept models, with both continuous and ordinal data.</p>
+<p>This vignette shows examples of two-level (multilevel) models, with
+and without random slopes, with both continuous and ordinal data.
+Two-level models are specified with separate models for the within
+(<code>level: 1</code>) and between (<code>level: 2</code>) levels, and
+the cluster variable is given by the <code>cluster</code> argument.</p>
 <div class="section level2">
-<h2 id="random-slopes-model">Random Slopes Model<a class="anchor" aria-label="anchor" href="#random-slopes-model"></a>
+<h2 id="two-level-model">Two-Level Model<a class="anchor" aria-label="anchor" href="#two-level-model"></a>
 </h2>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">slopes_model</span> <span class="op">&lt;-</span> <span class="st">"</span></span>
-<span><span class="st">  X =~ x1 + x2 + x3</span></span>
-<span><span class="st">  Z =~ z1 + z2 + z3</span></span>
-<span><span class="st">  Y =~ y1 + y2 + y3</span></span>
-<span><span class="st">  W =~ w1 + w2 + w3</span></span>
-<span><span class="st">  Y ~ X + Z + (1 + X + Z | cluster)</span></span>
-<span><span class="st">  W ~ X + Z + (1 + X + Z | cluster)</span></span>
+<code class="sourceCode R"><span><span class="va">two_level_model</span> <span class="op">&lt;-</span> <span class="st">"</span></span>
+<span><span class="st">  level: 1</span></span>
+<span><span class="st">    fw =~ y1 + y2 + y3</span></span>
+<span><span class="st">    fw ~ x1 + x2 + x3</span></span>
+<span><span class="st">  level: 2</span></span>
+<span><span class="st">    fb =~ y1 + y2 + y3</span></span>
+<span><span class="st">    fb ~ w1 + w2</span></span>
 <span><span class="st">"</span></span></code></pre></div>
 <div class="section level3">
 <h3 id="continuous-indicators">Continuous Indicators<a class="anchor" aria-label="anchor" href="#continuous-indicators"></a>
 </h3>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">fit_slopes_cont</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pls.html">pls</a></span><span class="op">(</span></span>
-<span>  <span class="va">slopes_model</span>,</span>
+<code class="sourceCode R"><span><span class="va">fit_two_level_cont</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pls.html">pls</a></span><span class="op">(</span></span>
+<span>  <span class="va">two_level_model</span>,</span>
 <span>  data      <span class="op">=</span> <span class="va">randomSlopes</span>,</span>
+<span>  cluster   <span class="op">=</span> <span class="st">"cluster"</span>,</span>
 <span>  bootstrap <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  boot.R    <span class="op">=</span> <span class="fl">50</span></span>
 <span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit_slopes_cont</span><span class="op">)</span></span>
-<span><span class="co">#&gt; plssem (0.1.5) ended normally after 66 iterations</span></span>
-<span><span class="co">#&gt;   Estimator                                 MCPLSc-MLM</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit_two_level_cont</span><span class="op">)</span></span>
+<span><span class="co">#&gt; plssem (0.2.0) ended normally after 68 iterations</span></span>
+<span><span class="co">#&gt;   Estimator                                MC-PLSc-MLM</span></span>
 <span><span class="co">#&gt;   Link                                          LINEAR</span></span>
+<span><span class="co">#&gt;   Standard errors            Delta (cluster bootstrap)</span></span>
 <span><span class="co">#&gt;                                                       </span></span>
-<span><span class="co">#&gt;   Number of observations                          5000</span></span>
-<span><span class="co">#&gt;   Number of iterations                              66</span></span>
-<span><span class="co">#&gt;   Number of latent variables                         4</span></span>
-<span><span class="co">#&gt;   Number of observed variables                      18</span></span>
+<span><span class="co">#&gt;   Number of observations                          3000</span></span>
+<span><span class="co">#&gt;   Number of clusters                               200</span></span>
+<span><span class="co">#&gt;   Number of iterations                              68</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Fit Measures:</span></span>
-<span><span class="co">#&gt;   Chi-Square                                    75.578</span></span>
-<span><span class="co">#&gt;   Degrees of Freedom                                49</span></span>
-<span><span class="co">#&gt;   SRMR                                           0.010</span></span>
-<span><span class="co">#&gt;   RMSEA                                          0.010</span></span>
+<span><span class="co">#&gt; Intraclass correlations:</span></span>
+<span><span class="co">#&gt;   y1                                             0.334</span></span>
+<span><span class="co">#&gt;   y2                                             0.196</span></span>
+<span><span class="co">#&gt;   y3                                             0.514</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Level 1 [within]:</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; R-squared (indicators):</span></span>
-<span><span class="co">#&gt;   x1                                             0.834</span></span>
-<span><span class="co">#&gt;   x2                                             0.710</span></span>
-<span><span class="co">#&gt;   x3                                             0.769</span></span>
-<span><span class="co">#&gt;   z1                                             0.836</span></span>
-<span><span class="co">#&gt;   z2                                             0.687</span></span>
-<span><span class="co">#&gt;   z3                                             0.769</span></span>
-<span><span class="co">#&gt;   y1                                             0.828</span></span>
-<span><span class="co">#&gt;   y2                                             0.723</span></span>
-<span><span class="co">#&gt;   y3                                             0.763</span></span>
-<span><span class="co">#&gt;   w1                                             0.825</span></span>
-<span><span class="co">#&gt;   w2                                             0.703</span></span>
-<span><span class="co">#&gt;   w3                                             0.778</span></span>
+<span><span class="co">#&gt;   y1                                             0.515</span></span>
+<span><span class="co">#&gt;   y2                                             0.339</span></span>
+<span><span class="co">#&gt;   y3                                             0.634</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; R-squared (latents):</span></span>
-<span><span class="co">#&gt;   Y                                              0.328</span></span>
-<span><span class="co">#&gt;   W                                              0.253</span></span>
+<span><span class="co">#&gt;   fw                                             0.427</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Latent Variables:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;   X =~          </span></span>
-<span><span class="co">#&gt;     x1              0.913      0.004  223.374    0.000</span></span>
-<span><span class="co">#&gt;     x2              0.843      0.005  178.965    0.000</span></span>
-<span><span class="co">#&gt;     x3              0.877      0.004  195.336    0.000</span></span>
-<span><span class="co">#&gt;   Z =~          </span></span>
-<span><span class="co">#&gt;     z1              0.915      0.004  243.345    0.000</span></span>
-<span><span class="co">#&gt;     z2              0.829      0.005  166.315    0.000</span></span>
-<span><span class="co">#&gt;     z3              0.877      0.005  194.666    0.000</span></span>
-<span><span class="co">#&gt;   Y =~          </span></span>
-<span><span class="co">#&gt;     y1              0.910      0.006  159.073    0.000</span></span>
-<span><span class="co">#&gt;     y2              0.850      0.009   91.679    0.000</span></span>
-<span><span class="co">#&gt;     y3              0.874      0.007  124.122    0.000</span></span>
-<span><span class="co">#&gt;   W =~          </span></span>
-<span><span class="co">#&gt;     w1              0.908      0.006  141.135    0.000</span></span>
-<span><span class="co">#&gt;     w2              0.838      0.009   89.175    0.000</span></span>
-<span><span class="co">#&gt;     w3              0.882      0.007  118.088    0.000</span></span>
+<span><span class="co">#&gt;   fw =~         </span></span>
+<span><span class="co">#&gt;     y1              0.717      0.014   51.760    0.000</span></span>
+<span><span class="co">#&gt;     y2              0.582      0.014   40.960    0.000</span></span>
+<span><span class="co">#&gt;     y3              0.797      0.013   63.569    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Regressions:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;   Y ~           </span></span>
-<span><span class="co">#&gt;     X               0.292      0.025   11.448    0.000</span></span>
-<span><span class="co">#&gt;     Z               0.444      0.043   10.310    0.000</span></span>
-<span><span class="co">#&gt;   W ~           </span></span>
-<span><span class="co">#&gt;     X               0.391      0.041    9.662    0.000</span></span>
-<span><span class="co">#&gt;     Z               0.253      0.050    5.113    0.000</span></span>
+<span><span class="co">#&gt;   fw ~          </span></span>
+<span><span class="co">#&gt;     x1              0.480      0.019   24.816    0.000</span></span>
+<span><span class="co">#&gt;     x2              0.393      0.021   18.735    0.000</span></span>
+<span><span class="co">#&gt;     x3              0.194      0.020    9.652    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Covariances:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;   X ~~          </span></span>
-<span><span class="co">#&gt;     Z               0.176      0.014   12.861    0.000</span></span>
-<span><span class="co">#&gt;   Y~X ~~        </span></span>
-<span><span class="co">#&gt;     Y~1            -0.004      0.005   -0.699    0.484</span></span>
-<span><span class="co">#&gt;   Y~Z ~~        </span></span>
-<span><span class="co">#&gt;     Y~1            -0.027      0.012   -2.219    0.026</span></span>
-<span><span class="co">#&gt;     Y~X             0.011      0.007    1.549    0.121</span></span>
-<span><span class="co">#&gt;   W~X ~~        </span></span>
-<span><span class="co">#&gt;     W~1             0.004      0.010    0.427    0.669</span></span>
-<span><span class="co">#&gt;   W~Z ~~        </span></span>
-<span><span class="co">#&gt;     W~1             0.008      0.014    0.584    0.559</span></span>
-<span><span class="co">#&gt;     W~X             0.010      0.011    0.852    0.394</span></span>
+<span><span class="co">#&gt;   x1 ~~         </span></span>
+<span><span class="co">#&gt;     x2             -0.022      0.014   -1.563    0.118</span></span>
+<span><span class="co">#&gt;     x3              0.012      0.020    0.596    0.551</span></span>
+<span><span class="co">#&gt;   x2 ~~         </span></span>
+<span><span class="co">#&gt;     x3              0.011      0.017    0.657    0.511</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Variances:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;     X               1.000                             </span></span>
-<span><span class="co">#&gt;     Z               1.000                             </span></span>
-<span><span class="co">#&gt;    .Y               0.672      0.049   13.783    0.000</span></span>
-<span><span class="co">#&gt;    .W               0.747      0.043   17.441    0.000</span></span>
-<span><span class="co">#&gt;    .x1              0.166      0.007   22.179    0.000</span></span>
-<span><span class="co">#&gt;    .x2              0.290      0.008   36.477    0.000</span></span>
-<span><span class="co">#&gt;    .x3              0.231      0.008   29.375    0.000</span></span>
-<span><span class="co">#&gt;    .z1              0.164      0.007   23.786    0.000</span></span>
-<span><span class="co">#&gt;    .z2              0.313      0.008   37.934    0.000</span></span>
-<span><span class="co">#&gt;    .z3              0.231      0.008   29.203    0.000</span></span>
-<span><span class="co">#&gt;    .y1              0.172      0.010   16.522    0.000</span></span>
-<span><span class="co">#&gt;    .y2              0.277      0.016   17.551    0.000</span></span>
-<span><span class="co">#&gt;    .y3              0.237      0.012   19.273    0.000</span></span>
-<span><span class="co">#&gt;    .w1              0.175      0.012   15.016    0.000</span></span>
-<span><span class="co">#&gt;    .w2              0.297      0.016   18.868    0.000</span></span>
-<span><span class="co">#&gt;    .w3              0.222      0.013   16.886    0.000</span></span>
-<span><span class="co">#&gt;     Y~1             0.086      0.020    4.370    0.000</span></span>
-<span><span class="co">#&gt;     Y~X             0.018      0.004    4.176    0.000</span></span>
-<span><span class="co">#&gt;     Y~Z             0.105      0.018    5.788    0.000</span></span>
-<span><span class="co">#&gt;     W~1             0.057      0.015    3.843    0.000</span></span>
-<span><span class="co">#&gt;     W~X             0.094      0.012    7.725    0.000</span></span>
-<span><span class="co">#&gt;     W~Z             0.149      0.024    6.290    0.000</span></span></code></pre></div>
+<span><span class="co">#&gt;    .fw              0.573      0.020   28.288    0.000</span></span>
+<span><span class="co">#&gt;     x1              1.000                             </span></span>
+<span><span class="co">#&gt;     x2              1.000                             </span></span>
+<span><span class="co">#&gt;     x3              1.000                             </span></span>
+<span><span class="co">#&gt;    .y1              0.485      0.020   24.410    0.000</span></span>
+<span><span class="co">#&gt;    .y2              0.661      0.017   39.950    0.000</span></span>
+<span><span class="co">#&gt;    .y3              0.366      0.020   18.314    0.000</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Level 2 [between]:</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; R-squared (indicators):</span></span>
+<span><span class="co">#&gt;   y1                                             0.825</span></span>
+<span><span class="co">#&gt;   y2                                             0.656</span></span>
+<span><span class="co">#&gt;   y3                                             0.830</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; R-squared (latents):</span></span>
+<span><span class="co">#&gt;   fb                                            -0.028</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Latent Variables:</span></span>
+<span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
+<span><span class="co">#&gt;   fb =~         </span></span>
+<span><span class="co">#&gt;     y1              0.908      0.026   34.274    0.000</span></span>
+<span><span class="co">#&gt;     y2              0.810      0.052   15.537    0.000</span></span>
+<span><span class="co">#&gt;     y3              0.911      0.024   37.721    0.000</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Regressions:</span></span>
+<span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
+<span><span class="co">#&gt;   fb ~          </span></span>
+<span><span class="co">#&gt;     w1              0.169      0.073    2.312    0.021</span></span>
+<span><span class="co">#&gt;     w2              0.131      0.083    1.578    0.114</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Covariances:</span></span>
+<span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
+<span><span class="co">#&gt;   w1 ~~         </span></span>
+<span><span class="co">#&gt;     w2              0.004      0.082    0.050    0.960</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Variances:</span></span>
+<span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
+<span><span class="co">#&gt;    .fb              1.028      0.034   30.378    0.000</span></span>
+<span><span class="co">#&gt;     w1              1.000                             </span></span>
+<span><span class="co">#&gt;     w2              1.000                             </span></span>
+<span><span class="co">#&gt;    .y1              0.175      0.048    3.640    0.000</span></span>
+<span><span class="co">#&gt;    .y2              0.344      0.084    4.076    0.000</span></span>
+<span><span class="co">#&gt;    .y3              0.170      0.044    3.850    0.000</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="ordered-indicators">Ordered Indicators<a class="anchor" aria-label="anchor" href="#ordered-indicators"></a>
 </h3>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">fit_slopes_ord</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pls.html">pls</a></span><span class="op">(</span></span>
-<span>  <span class="va">slopes_model</span>,</span>
+<code class="sourceCode R"><span><span class="va">fit_two_level_ord</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pls.html">pls</a></span><span class="op">(</span></span>
+<span>  <span class="va">two_level_model</span>,</span>
 <span>  data      <span class="op">=</span> <span class="va">randomSlopesOrdered</span>,</span>
+<span>  cluster   <span class="op">=</span> <span class="st">"cluster"</span>,</span>
 <span>  bootstrap <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  boot.R    <span class="op">=</span> <span class="fl">50</span>,</span>
 <span>  ordered   <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">randomSlopesOrdered</span><span class="op">)</span> <span class="co"># explicitly specify variables as ordered</span></span>
 <span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit_slopes_ord</span><span class="op">)</span></span>
-<span><span class="co">#&gt; plssem (0.1.5) ended normally after 67 iterations</span></span>
-<span><span class="co">#&gt;   Estimator                              MCOrdPLSc-MLM</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit_two_level_ord</span><span class="op">)</span></span>
+<span><span class="co">#&gt; plssem (0.2.0) ended normally after 70 iterations</span></span>
+<span><span class="co">#&gt;   Estimator                             MC-OrdPLSc-MLM</span></span>
 <span><span class="co">#&gt;   Link                                          PROBIT</span></span>
+<span><span class="co">#&gt;   Standard errors            Delta (cluster bootstrap)</span></span>
 <span><span class="co">#&gt;                                                       </span></span>
-<span><span class="co">#&gt;   Number of observations                          5000</span></span>
-<span><span class="co">#&gt;   Number of iterations                              67</span></span>
-<span><span class="co">#&gt;   Number of latent variables                         4</span></span>
-<span><span class="co">#&gt;   Number of observed variables                      18</span></span>
+<span><span class="co">#&gt;   Number of observations                          3000</span></span>
+<span><span class="co">#&gt;   Number of clusters                               200</span></span>
+<span><span class="co">#&gt;   Number of iterations                              70</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Fit Measures:</span></span>
-<span><span class="co">#&gt;   Chi-Square                                    74.457</span></span>
-<span><span class="co">#&gt;   Degrees of Freedom                                49</span></span>
-<span><span class="co">#&gt;   SRMR                                           0.011</span></span>
-<span><span class="co">#&gt;   RMSEA                                          0.010</span></span>
+<span><span class="co">#&gt; Intraclass correlations:</span></span>
+<span><span class="co">#&gt;   y1                                             0.342</span></span>
+<span><span class="co">#&gt;   y2                                             0.195</span></span>
+<span><span class="co">#&gt;   y3                                             0.515</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Level 1 [within]:</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; R-squared (indicators):</span></span>
-<span><span class="co">#&gt;   x1                                             0.839</span></span>
-<span><span class="co">#&gt;   x2                                             0.716</span></span>
-<span><span class="co">#&gt;   x3                                             0.772</span></span>
-<span><span class="co">#&gt;   z1                                             0.841</span></span>
-<span><span class="co">#&gt;   z2                                             0.704</span></span>
-<span><span class="co">#&gt;   z3                                             0.772</span></span>
-<span><span class="co">#&gt;   y1                                             0.837</span></span>
-<span><span class="co">#&gt;   y2                                             0.709</span></span>
-<span><span class="co">#&gt;   y3                                             0.766</span></span>
-<span><span class="co">#&gt;   w1                                             0.819</span></span>
-<span><span class="co">#&gt;   w2                                             0.699</span></span>
-<span><span class="co">#&gt;   w3                                             0.787</span></span>
+<span><span class="co">#&gt;   y1                                             0.504</span></span>
+<span><span class="co">#&gt;   y2                                             0.341</span></span>
+<span><span class="co">#&gt;   y3                                             0.622</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; R-squared (latents):</span></span>
-<span><span class="co">#&gt;   Y                                              0.338</span></span>
-<span><span class="co">#&gt;   W                                              0.249</span></span>
+<span><span class="co">#&gt;   fw                                             0.393</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Latent Variables:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;   X =~          </span></span>
-<span><span class="co">#&gt;     x1              0.916      0.004  204.146    0.000</span></span>
-<span><span class="co">#&gt;     x2              0.846      0.005  163.405    0.000</span></span>
-<span><span class="co">#&gt;     x3              0.879      0.006  147.784    0.000</span></span>
-<span><span class="co">#&gt;   Z =~          </span></span>
-<span><span class="co">#&gt;     z1              0.917      0.006  149.769    0.000</span></span>
-<span><span class="co">#&gt;     z2              0.839      0.006  152.305    0.000</span></span>
-<span><span class="co">#&gt;     z3              0.878      0.007  127.437    0.000</span></span>
-<span><span class="co">#&gt;   Y =~          </span></span>
-<span><span class="co">#&gt;     y1              0.915      0.009  103.326    0.000</span></span>
-<span><span class="co">#&gt;     y2              0.842      0.007  113.159    0.000</span></span>
-<span><span class="co">#&gt;     y3              0.875      0.009  102.846    0.000</span></span>
-<span><span class="co">#&gt;   W =~          </span></span>
-<span><span class="co">#&gt;     w1              0.905      0.014   65.011    0.000</span></span>
-<span><span class="co">#&gt;     w2              0.836      0.015   56.649    0.000</span></span>
-<span><span class="co">#&gt;     w3              0.887      0.008  107.761    0.000</span></span>
+<span><span class="co">#&gt;   fw =~         </span></span>
+<span><span class="co">#&gt;     y1              0.710      0.016   43.156    0.000</span></span>
+<span><span class="co">#&gt;     y2              0.584      0.023   24.872    0.000</span></span>
+<span><span class="co">#&gt;     y3              0.789      0.028   28.251    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Regressions:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;   Y ~           </span></span>
-<span><span class="co">#&gt;     X               0.291      0.022   13.465    0.000</span></span>
-<span><span class="co">#&gt;     Z               0.456      0.048    9.548    0.000</span></span>
-<span><span class="co">#&gt;   W ~           </span></span>
-<span><span class="co">#&gt;     X               0.394      0.042    9.285    0.000</span></span>
-<span><span class="co">#&gt;     Z               0.246      0.046    5.307    0.000</span></span>
+<span><span class="co">#&gt;   fw ~          </span></span>
+<span><span class="co">#&gt;     x1              0.468      0.021   21.990    0.000</span></span>
+<span><span class="co">#&gt;     x2              0.379      0.022   17.235    0.000</span></span>
+<span><span class="co">#&gt;     x3              0.200      0.020    9.823    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Covariances:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;   X ~~          </span></span>
-<span><span class="co">#&gt;     Z               0.168      0.015   11.251    0.000</span></span>
-<span><span class="co">#&gt;   Y~X ~~        </span></span>
-<span><span class="co">#&gt;     Y~1            -0.006      0.006   -1.055    0.291</span></span>
-<span><span class="co">#&gt;   Y~Z ~~        </span></span>
-<span><span class="co">#&gt;     Y~1            -0.024      0.015   -1.612    0.107</span></span>
-<span><span class="co">#&gt;     Y~X             0.010      0.008    1.243    0.214</span></span>
-<span><span class="co">#&gt;   W~X ~~        </span></span>
-<span><span class="co">#&gt;     W~1             0.002      0.012    0.179    0.858</span></span>
-<span><span class="co">#&gt;   W~Z ~~        </span></span>
-<span><span class="co">#&gt;     W~1             0.011      0.011    1.013    0.311</span></span>
-<span><span class="co">#&gt;     W~X             0.011      0.016    0.724    0.469</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Thresholds:</span></span>
-<span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;     x1|t1          -2.851      0.035  -81.675    0.000</span></span>
-<span><span class="co">#&gt;     x1|t2          -2.016      0.037  -54.632    0.000</span></span>
-<span><span class="co">#&gt;     x1|t3          -0.949      0.017  -55.967    0.000</span></span>
-<span><span class="co">#&gt;     x1|t4           0.135      0.018    7.350    0.000</span></span>
-<span><span class="co">#&gt;     x1|t5           1.088      0.021   52.890    0.000</span></span>
-<span><span class="co">#&gt;     x1|t6           2.186      0.044   49.390    0.000</span></span>
-<span><span class="co">#&gt;     x2|t1          -1.939      0.045  -43.503    0.000</span></span>
-<span><span class="co">#&gt;     x2|t2          -0.980      0.017  -57.527    0.000</span></span>
-<span><span class="co">#&gt;     x2|t3           0.266      0.020   13.318    0.000</span></span>
-<span><span class="co">#&gt;     x2|t4           0.984      0.020   48.971    0.000</span></span>
-<span><span class="co">#&gt;     x2|t5           2.234      0.085   26.311    0.000</span></span>
-<span><span class="co">#&gt;     x2|t6           2.957      0.043   69.549    0.000</span></span>
-<span><span class="co">#&gt;     x3|t1          -2.024      0.042  -47.778    0.000</span></span>
-<span><span class="co">#&gt;     x3|t2          -1.142      0.024  -47.357    0.000</span></span>
-<span><span class="co">#&gt;     x3|t3          -0.175      0.016  -10.667    0.000</span></span>
-<span><span class="co">#&gt;     x3|t4           0.673      0.022   30.181    0.000</span></span>
-<span><span class="co">#&gt;     x3|t5           1.862      0.039   48.340    0.000</span></span>
-<span><span class="co">#&gt;     x3|t6           2.747      0.041   67.541    0.000</span></span>
-<span><span class="co">#&gt;     z1|t1          -2.146      0.037  -58.226    0.000</span></span>
-<span><span class="co">#&gt;     z1|t2          -1.326      0.026  -50.271    0.000</span></span>
-<span><span class="co">#&gt;     z1|t3          -0.214      0.016  -13.738    0.000</span></span>
-<span><span class="co">#&gt;     z1|t4           0.847      0.021   41.097    0.000</span></span>
-<span><span class="co">#&gt;     z1|t5           1.867      0.033   56.683    0.000</span></span>
-<span><span class="co">#&gt;     z1|t6           2.622      0.033   78.476    0.000</span></span>
-<span><span class="co">#&gt;     z2|t1          -2.478      0.047  -53.105    0.000</span></span>
-<span><span class="co">#&gt;     z2|t2          -1.433      0.023  -62.279    0.000</span></span>
-<span><span class="co">#&gt;     z2|t3          -0.272      0.020  -13.873    0.000</span></span>
-<span><span class="co">#&gt;     z2|t4           0.809      0.016   51.360    0.000</span></span>
-<span><span class="co">#&gt;     z2|t5           1.526      0.024   62.554    0.000</span></span>
-<span><span class="co">#&gt;     z2|t6           2.638      0.051   51.376    0.000</span></span>
-<span><span class="co">#&gt;     z3|t1          -2.731      0.054  -50.555    0.000</span></span>
-<span><span class="co">#&gt;     z3|t2          -2.110      0.037  -56.896    0.000</span></span>
-<span><span class="co">#&gt;     z3|t3          -1.158      0.027  -42.527    0.000</span></span>
-<span><span class="co">#&gt;     z3|t4           0.098      0.018    5.381    0.000</span></span>
-<span><span class="co">#&gt;     z3|t5           0.974      0.020   48.061    0.000</span></span>
-<span><span class="co">#&gt;     z3|t6           1.953      0.044   44.126    0.000</span></span>
-<span><span class="co">#&gt;     y1|t1          -2.653      0.059  -45.349    0.000</span></span>
-<span><span class="co">#&gt;     y1|t2          -1.764      0.063  -27.996    0.000</span></span>
-<span><span class="co">#&gt;     y1|t3          -0.655      0.059  -11.029    0.000</span></span>
-<span><span class="co">#&gt;     y1|t4           0.402      0.043    9.315    0.000</span></span>
-<span><span class="co">#&gt;     y1|t5           1.419      0.061   23.172    0.000</span></span>
-<span><span class="co">#&gt;     y1|t6           2.422      0.080   30.274    0.000</span></span>
-<span><span class="co">#&gt;     y2|t1          -2.524      0.059  -42.544    0.000</span></span>
-<span><span class="co">#&gt;     y2|t2          -1.698      0.061  -27.727    0.000</span></span>
-<span><span class="co">#&gt;     y2|t3          -0.558      0.044  -12.771    0.000</span></span>
-<span><span class="co">#&gt;     y2|t4           0.234      0.037    6.270    0.000</span></span>
-<span><span class="co">#&gt;     y2|t5           1.386      0.053   26.366    0.000</span></span>
-<span><span class="co">#&gt;     y2|t6           2.361      0.083   28.453    0.000</span></span>
-<span><span class="co">#&gt;     y3|t1          -1.914      0.057  -33.361    0.000</span></span>
-<span><span class="co">#&gt;     y3|t2          -0.943      0.057  -16.629    0.000</span></span>
-<span><span class="co">#&gt;     y3|t3          -0.097      0.040   -2.423    0.015</span></span>
-<span><span class="co">#&gt;     y3|t4           1.107      0.044   25.032    0.000</span></span>
-<span><span class="co">#&gt;     y3|t5           1.951      0.096   20.327    0.000</span></span>
-<span><span class="co">#&gt;     y3|t6           3.316      0.120   27.675    0.000</span></span>
-<span><span class="co">#&gt;     w1|t1          -2.749      0.064  -43.083    0.000</span></span>
-<span><span class="co">#&gt;     w1|t2          -1.677      0.070  -23.925    0.000</span></span>
-<span><span class="co">#&gt;     w1|t3          -0.779      0.059  -13.300    0.000</span></span>
-<span><span class="co">#&gt;     w1|t4           0.280      0.042    6.713    0.000</span></span>
-<span><span class="co">#&gt;     w1|t5           1.073      0.047   22.758    0.000</span></span>
-<span><span class="co">#&gt;     w1|t6           2.310      0.168   13.779    0.000</span></span>
-<span><span class="co">#&gt;     w2|t1          -2.488      0.070  -35.582    0.000</span></span>
-<span><span class="co">#&gt;     w2|t2          -1.640      0.073  -22.552    0.000</span></span>
-<span><span class="co">#&gt;     w2|t3          -0.612      0.047  -12.978    0.000</span></span>
-<span><span class="co">#&gt;     w2|t4           0.565      0.036   15.549    0.000</span></span>
-<span><span class="co">#&gt;     w2|t5           1.416      0.063   22.334    0.000</span></span>
-<span><span class="co">#&gt;     w2|t6           2.452      0.051   47.994    0.000</span></span>
-<span><span class="co">#&gt;     w3|t1          -2.371      0.111  -21.294    0.000</span></span>
-<span><span class="co">#&gt;     w3|t2          -1.412      0.058  -24.428    0.000</span></span>
-<span><span class="co">#&gt;     w3|t3          -0.708      0.054  -13.207    0.000</span></span>
-<span><span class="co">#&gt;     w3|t4           0.570      0.040   14.165    0.000</span></span>
-<span><span class="co">#&gt;     w3|t5           1.524      0.060   25.569    0.000</span></span>
-<span><span class="co">#&gt;     w3|t6           2.248      0.103   21.862    0.000</span></span>
+<span><span class="co">#&gt;   x1 ~~         </span></span>
+<span><span class="co">#&gt;     x2             -0.015      0.022   -0.694    0.487</span></span>
+<span><span class="co">#&gt;     x3              0.006      0.016    0.364    0.716</span></span>
+<span><span class="co">#&gt;   x2 ~~         </span></span>
+<span><span class="co">#&gt;     x3              0.009      0.019    0.484    0.628</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Variances:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;     X               1.000                             </span></span>
-<span><span class="co">#&gt;     Z               1.000                             </span></span>
-<span><span class="co">#&gt;    .Y               0.662      0.049   13.473    0.000</span></span>
-<span><span class="co">#&gt;    .W               0.751      0.040   18.907    0.000</span></span>
-<span><span class="co">#&gt;    .x1              0.161      0.008   19.594    0.000</span></span>
-<span><span class="co">#&gt;    .x2              0.284      0.009   32.465    0.000</span></span>
-<span><span class="co">#&gt;    .x3              0.228      0.010   21.852    0.000</span></span>
-<span><span class="co">#&gt;    .z1              0.159      0.011   14.176    0.000</span></span>
-<span><span class="co">#&gt;    .z2              0.296      0.009   31.981    0.000</span></span>
-<span><span class="co">#&gt;    .z3              0.228      0.012   18.847    0.000</span></span>
-<span><span class="co">#&gt;    .y1              0.163      0.016   10.078    0.000</span></span>
-<span><span class="co">#&gt;    .y2              0.291      0.013   23.221    0.000</span></span>
-<span><span class="co">#&gt;    .y3              0.234      0.015   15.690    0.000</span></span>
-<span><span class="co">#&gt;    .w1              0.181      0.025    7.168    0.000</span></span>
-<span><span class="co">#&gt;    .w2              0.301      0.025   12.222    0.000</span></span>
-<span><span class="co">#&gt;    .w3              0.213      0.015   14.560    0.000</span></span>
-<span><span class="co">#&gt;     Y~1             0.086      0.025    3.476    0.001</span></span>
-<span><span class="co">#&gt;     Y~X             0.019      0.005    4.035    0.000</span></span>
-<span><span class="co">#&gt;     Y~Z             0.107      0.012    8.586    0.000</span></span>
-<span><span class="co">#&gt;     W~1             0.059      0.015    4.014    0.000</span></span>
-<span><span class="co">#&gt;     W~X             0.099      0.019    5.272    0.000</span></span>
-<span><span class="co">#&gt;     W~Z             0.152      0.039    3.845    0.000</span></span></code></pre></div>
+<span><span class="co">#&gt;    .fw              0.607      0.026   23.730    0.000</span></span>
+<span><span class="co">#&gt;     x1              1.000                             </span></span>
+<span><span class="co">#&gt;     x2              1.000                             </span></span>
+<span><span class="co">#&gt;     x3              1.000                             </span></span>
+<span><span class="co">#&gt;    .y1              0.496      0.023   21.208    0.000</span></span>
+<span><span class="co">#&gt;    .y2              0.659      0.027   24.062    0.000</span></span>
+<span><span class="co">#&gt;    .y3              0.378      0.044    8.571    0.000</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Level 2 [between]:</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; R-squared (indicators):</span></span>
+<span><span class="co">#&gt;   y1                                             0.811</span></span>
+<span><span class="co">#&gt;   y2                                             0.657</span></span>
+<span><span class="co">#&gt;   y3                                             0.813</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; R-squared (latents):</span></span>
+<span><span class="co">#&gt;   fb                                             0.069</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Latent Variables:</span></span>
+<span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
+<span><span class="co">#&gt;   fb =~         </span></span>
+<span><span class="co">#&gt;     y1              0.900      0.023   38.938    0.000</span></span>
+<span><span class="co">#&gt;     y2              0.810      0.058   13.971    0.000</span></span>
+<span><span class="co">#&gt;     y3              0.902      0.034   26.635    0.000</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Regressions:</span></span>
+<span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
+<span><span class="co">#&gt;   fb ~          </span></span>
+<span><span class="co">#&gt;     w1              0.176      0.071    2.485    0.013</span></span>
+<span><span class="co">#&gt;     w2              0.118      0.068    1.734    0.083</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Covariances:</span></span>
+<span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
+<span><span class="co">#&gt;   w1 ~~         </span></span>
+<span><span class="co">#&gt;     w2              0.025      0.046    0.540    0.589</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Variances:</span></span>
+<span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
+<span><span class="co">#&gt;    .fb              0.931      0.032   28.689    0.000</span></span>
+<span><span class="co">#&gt;     w1              1.000                             </span></span>
+<span><span class="co">#&gt;     w2              1.000                             </span></span>
+<span><span class="co">#&gt;    .y1              0.189      0.042    4.543    0.000</span></span>
+<span><span class="co">#&gt;    .y2              0.343      0.094    3.649    0.000</span></span>
+<span><span class="co">#&gt;    .y3              0.187      0.061    3.055    0.002</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Thresholds:</span></span>
+<span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
+<span><span class="co">#&gt;     y1|t1          -2.786                             </span></span>
+<span><span class="co">#&gt;     y1|t2          -1.782                             </span></span>
+<span><span class="co">#&gt;     y1|t3          -0.462                             </span></span>
+<span><span class="co">#&gt;     y1|t4           0.312                             </span></span>
+<span><span class="co">#&gt;     y1|t5           1.278                             </span></span>
+<span><span class="co">#&gt;     y1|t6           2.294                             </span></span>
+<span><span class="co">#&gt;     y2|t1          -3.029                             </span></span>
+<span><span class="co">#&gt;     y2|t2          -1.952                             </span></span>
+<span><span class="co">#&gt;     y2|t3          -1.015                             </span></span>
+<span><span class="co">#&gt;     y2|t4           0.176                             </span></span>
+<span><span class="co">#&gt;     y2|t5           0.996                             </span></span>
+<span><span class="co">#&gt;     y2|t6           2.198                             </span></span>
+<span><span class="co">#&gt;     y3|t1          -2.223                             </span></span>
+<span><span class="co">#&gt;     y3|t2          -1.253                             </span></span>
+<span><span class="co">#&gt;     y3|t3           0.007                             </span></span>
+<span><span class="co">#&gt;     y3|t4           0.681                             </span></span>
+<span><span class="co">#&gt;     y3|t5           1.792                             </span></span>
+<span><span class="co">#&gt;     y3|t6           2.756                             </span></span>
+<span><span class="co">#&gt;     x1|t1          -2.343                             </span></span>
+<span><span class="co">#&gt;     x1|t2          -1.331                             </span></span>
+<span><span class="co">#&gt;     x1|t3          -0.666                             </span></span>
+<span><span class="co">#&gt;     x1|t4           0.477                             </span></span>
+<span><span class="co">#&gt;     x1|t5           1.513                             </span></span>
+<span><span class="co">#&gt;     x1|t6           2.736                             </span></span>
+<span><span class="co">#&gt;     x2|t1          -2.756                             </span></span>
+<span><span class="co">#&gt;     x2|t2          -1.969                             </span></span>
+<span><span class="co">#&gt;     x2|t3          -1.012                             </span></span>
+<span><span class="co">#&gt;     x2|t4          -0.131                             </span></span>
+<span><span class="co">#&gt;     x2|t5           0.798                             </span></span>
+<span><span class="co">#&gt;     x2|t6           2.029                             </span></span>
+<span><span class="co">#&gt;     x3|t1          -3.165                             </span></span>
+<span><span class="co">#&gt;     x3|t2          -2.040                             </span></span>
+<span><span class="co">#&gt;     x3|t3          -0.853                             </span></span>
+<span><span class="co">#&gt;     x3|t4          -0.139                             </span></span>
+<span><span class="co">#&gt;     x3|t5           1.003                             </span></span>
+<span><span class="co">#&gt;     x3|t6           2.169                             </span></span>
+<span><span class="co">#&gt;     w1|t1          -2.075                             </span></span>
+<span><span class="co">#&gt;     w1|t2          -0.873                             </span></span>
+<span><span class="co">#&gt;     w1|t3           0.081                             </span></span>
+<span><span class="co">#&gt;     w1|t4           1.234                             </span></span>
+<span><span class="co">#&gt;     w2|t1          -2.016                             </span></span>
+<span><span class="co">#&gt;     w2|t2          -0.931                             </span></span>
+<span><span class="co">#&gt;     w2|t3          -0.152                             </span></span>
+<span><span class="co">#&gt;     w2|t4           0.678                             </span></span>
+<span><span class="co">#&gt;     w2|t5           1.705</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
-<h2 id="random-intercepts-model">Random Intercepts Model<a class="anchor" aria-label="anchor" href="#random-intercepts-model"></a>
+<h2 id="random-slopes-model">Random Slopes Model<a class="anchor" aria-label="anchor" href="#random-slopes-model"></a>
 </h2>
+<p>Random slopes are specified with <code>rv()</code> modifiers at level
+1, where the random slopes (here <code>s1</code> and <code>s2</code>)
+are variables at level 2.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">intercepts_model</span> <span class="op">&lt;-</span> <span class="st">'</span></span>
-<span><span class="st">  f =~ y1 + y2 + y3</span></span>
-<span><span class="st">  f ~ x1 + x2 + x3 + w1 + w2 + (1 | cluster)</span></span>
+<code class="sourceCode R"><span><span class="va">slopes_model</span> <span class="op">&lt;-</span> <span class="st">'</span></span>
+<span><span class="st">  level: 1</span></span>
+<span><span class="st">    fw =~ y1 + y2 + y3</span></span>
+<span><span class="st">    fw ~ rv("s1")*x1 + rv("s2")*x2 + x3</span></span>
+<span><span class="st">  level: 2</span></span>
+<span><span class="st">    fb =~ y1 + y2 + y3</span></span>
+<span><span class="st">    fb ~ w1 + w2</span></span>
+<span><span class="st">    # the random slopes are latent variables at the between level</span></span>
+<span><span class="st">    s1 + s2 ~ w1 + w2</span></span>
 <span><span class="st">'</span></span></code></pre></div>
 <div class="section level3">
 <h3 id="continuous-indicators-1">Continuous Indicators<a class="anchor" aria-label="anchor" href="#continuous-indicators-1"></a>
 </h3>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">fit_intercepts_cont</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pls.html">pls</a></span><span class="op">(</span></span>
-<span>  <span class="va">intercepts_model</span>,</span>
-<span>  data      <span class="op">=</span> <span class="va">randomIntercepts</span>,</span>
+<code class="sourceCode R"><span><span class="va">fit_slopes_cont</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pls.html">pls</a></span><span class="op">(</span></span>
+<span>  <span class="va">slopes_model</span>,</span>
+<span>  data      <span class="op">=</span> <span class="va">randomSlopes</span>,</span>
+<span>  cluster   <span class="op">=</span> <span class="st">"cluster"</span>,</span>
 <span>  bootstrap <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  boot.R    <span class="op">=</span> <span class="fl">50</span></span>
 <span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit_intercepts_cont</span><span class="op">)</span></span>
-<span><span class="co">#&gt; plssem (0.1.5) ended normally after 61 iterations</span></span>
-<span><span class="co">#&gt;   Estimator                                 MCPLSc-MLM</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit_slopes_cont</span><span class="op">)</span></span>
+<span><span class="co">#&gt; plssem (0.2.0) ended normally after 100 iterations</span></span>
+<span><span class="co">#&gt;   Estimator                                MC-PLSc-MLM</span></span>
 <span><span class="co">#&gt;   Link                                          LINEAR</span></span>
+<span><span class="co">#&gt;   Standard errors            Delta (cluster bootstrap)</span></span>
 <span><span class="co">#&gt;                                                       </span></span>
-<span><span class="co">#&gt;   Number of observations                         10000</span></span>
-<span><span class="co">#&gt;   Number of iterations                              61</span></span>
-<span><span class="co">#&gt;   Number of latent variables                         1</span></span>
-<span><span class="co">#&gt;   Number of observed variables                       9</span></span>
+<span><span class="co">#&gt;   Number of observations                          3000</span></span>
+<span><span class="co">#&gt;   Number of clusters                               200</span></span>
+<span><span class="co">#&gt;   Number of iterations                             100</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Fit Measures:</span></span>
-<span><span class="co">#&gt;   Chi-Square                                    14.669</span></span>
-<span><span class="co">#&gt;   Degrees of Freedom                                10</span></span>
-<span><span class="co">#&gt;   SRMR                                           0.003</span></span>
-<span><span class="co">#&gt;   RMSEA                                          0.007</span></span>
+<span><span class="co">#&gt; Intraclass correlations:</span></span>
+<span><span class="co">#&gt;   y1                                             0.335</span></span>
+<span><span class="co">#&gt;   y2                                             0.196</span></span>
+<span><span class="co">#&gt;   y3                                             0.514</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Random slopes (standard deviations):</span></span>
+<span><span class="co">#&gt;   s1 (fw ~ x1)                                   0.188</span></span>
+<span><span class="co">#&gt;   s2 (fw ~ x2)                                   0.136</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Level 1 [within]:</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; R-squared (indicators):</span></span>
-<span><span class="co">#&gt;   y1                                             0.881</span></span>
-<span><span class="co">#&gt;   y2                                             0.788</span></span>
-<span><span class="co">#&gt;   y3                                             0.821</span></span>
+<span><span class="co">#&gt;   y1                                             0.515</span></span>
+<span><span class="co">#&gt;   y2                                             0.338</span></span>
+<span><span class="co">#&gt;   y3                                             0.633</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; R-squared (latents):</span></span>
-<span><span class="co">#&gt;   f                                              0.122</span></span>
+<span><span class="co">#&gt;   fw                                             0.427</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Latent Variables:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;   f =~          </span></span>
-<span><span class="co">#&gt;     y1              0.939      0.003  294.777    0.000</span></span>
-<span><span class="co">#&gt;     y2              0.888      0.006  156.293    0.000</span></span>
-<span><span class="co">#&gt;     y3              0.906      0.004  203.233    0.000</span></span>
+<span><span class="co">#&gt;   fw =~         </span></span>
+<span><span class="co">#&gt;     y1              0.717      0.013   54.628    0.000</span></span>
+<span><span class="co">#&gt;     y2              0.581      0.012   48.013    0.000</span></span>
+<span><span class="co">#&gt;     y3              0.795      0.012   64.310    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Regressions:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;   f ~           </span></span>
-<span><span class="co">#&gt;     x1              0.237      0.005   43.433    0.000</span></span>
-<span><span class="co">#&gt;     x2              0.161      0.005   30.420    0.000</span></span>
-<span><span class="co">#&gt;     x3              0.075      0.005   14.448    0.000</span></span>
-<span><span class="co">#&gt;     w1              0.128      0.037    3.453    0.001</span></span>
-<span><span class="co">#&gt;     w2              0.092      0.043    2.143    0.032</span></span>
+<span><span class="co">#&gt;   fw ~          </span></span>
+<span><span class="co">#&gt;     x1              0.485      0.021   23.209    0.000</span></span>
+<span><span class="co">#&gt;     x2              0.393      0.020   19.285    0.000</span></span>
+<span><span class="co">#&gt;     x3              0.190      0.020    9.553    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Covariances:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   x1 ~~         </span></span>
-<span><span class="co">#&gt;     x2              0.104      0.010    9.962    0.000</span></span>
-<span><span class="co">#&gt;     x3              0.006      0.012    0.482    0.630</span></span>
-<span><span class="co">#&gt;     w1              0.000      0.000  126.964    0.000</span></span>
-<span><span class="co">#&gt;     w2              0.000      0.001   -0.299    0.765</span></span>
+<span><span class="co">#&gt;     x2             -0.021      0.021   -1.016    0.310</span></span>
+<span><span class="co">#&gt;     x3              0.013      0.019    0.689    0.491</span></span>
 <span><span class="co">#&gt;   x2 ~~         </span></span>
-<span><span class="co">#&gt;     x3              0.097      0.010    9.325    0.000</span></span>
-<span><span class="co">#&gt;     w1              0.000      0.000   -0.458    0.647</span></span>
-<span><span class="co">#&gt;     w2              0.001      0.001    1.844    0.065</span></span>
-<span><span class="co">#&gt;   x3 ~~         </span></span>
-<span><span class="co">#&gt;     w1             -0.001      0.000   -5.885    0.000</span></span>
-<span><span class="co">#&gt;     w2             -0.001      0.000   -5.679    0.000</span></span>
-<span><span class="co">#&gt;   w1 ~~         </span></span>
-<span><span class="co">#&gt;     w2             -0.040      0.051   -0.775    0.439</span></span>
+<span><span class="co">#&gt;     x3              0.012      0.019    0.603    0.546</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Variances:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;    .f               0.878      0.011   81.721    0.000</span></span>
+<span><span class="co">#&gt;    .fw              0.573      0.022   26.351    0.000</span></span>
 <span><span class="co">#&gt;     x1              1.000                             </span></span>
 <span><span class="co">#&gt;     x2              1.000                             </span></span>
 <span><span class="co">#&gt;     x3              1.000                             </span></span>
+<span><span class="co">#&gt;    .y1              0.485      0.019   25.772    0.000</span></span>
+<span><span class="co">#&gt;    .y2              0.662      0.014   47.067    0.000</span></span>
+<span><span class="co">#&gt;    .y3              0.367      0.020   18.663    0.000</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Level 2 [between]:</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; R-squared (indicators):</span></span>
+<span><span class="co">#&gt;   y1                                             0.826</span></span>
+<span><span class="co">#&gt;   y2                                             0.657</span></span>
+<span><span class="co">#&gt;   y3                                             0.831</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; R-squared (latents):</span></span>
+<span><span class="co">#&gt;   fb                                             0.041</span></span>
+<span><span class="co">#&gt;   s1                                             0.217</span></span>
+<span><span class="co">#&gt;   s2                                             0.018</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Latent Variables:</span></span>
+<span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
+<span><span class="co">#&gt;   fb =~         </span></span>
+<span><span class="co">#&gt;     y1              0.909      0.025   36.470    0.000</span></span>
+<span><span class="co">#&gt;     y2              0.811      0.045   17.933    0.000</span></span>
+<span><span class="co">#&gt;     y3              0.912      0.027   33.709    0.000</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Regressions:</span></span>
+<span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
+<span><span class="co">#&gt;   fb ~          </span></span>
+<span><span class="co">#&gt;     w1              0.169      0.066    2.552    0.011</span></span>
+<span><span class="co">#&gt;     w2              0.131      0.084    1.564    0.118</span></span>
+<span><span class="co">#&gt;   s1 ~          </span></span>
+<span><span class="co">#&gt;     w1              0.158      0.097    1.631    0.103</span></span>
+<span><span class="co">#&gt;     w2              0.495      0.090    5.475    0.000</span></span>
+<span><span class="co">#&gt;   s2 ~          </span></span>
+<span><span class="co">#&gt;     w1             -0.159      0.162   -0.982    0.326</span></span>
+<span><span class="co">#&gt;     w2              0.134      0.141    0.947    0.343</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Covariances:</span></span>
+<span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
+<span><span class="co">#&gt;   w1 ~~         </span></span>
+<span><span class="co">#&gt;     w2              0.002      0.066    0.035    0.972</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Variances:</span></span>
+<span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
+<span><span class="co">#&gt;    .fb              0.959      0.037   25.898    0.000</span></span>
+<span><span class="co">#&gt;    .s1              0.783      0.089    8.829    0.000</span></span>
+<span><span class="co">#&gt;    .s2              0.982      0.069   14.143    0.000</span></span>
 <span><span class="co">#&gt;     w1              1.000                             </span></span>
 <span><span class="co">#&gt;     w2              1.000                             </span></span>
-<span><span class="co">#&gt;    .y1              0.119      0.006   19.823    0.000</span></span>
-<span><span class="co">#&gt;    .y2              0.212      0.010   21.014    0.000</span></span>
-<span><span class="co">#&gt;    .y3              0.179      0.008   22.126    0.000</span></span>
-<span><span class="co">#&gt;     f~1             0.616      0.042   14.780    0.000</span></span></code></pre></div>
+<span><span class="co">#&gt;    .y1              0.174      0.045    3.840    0.000</span></span>
+<span><span class="co">#&gt;    .y2              0.343      0.073    4.681    0.000</span></span>
+<span><span class="co">#&gt;    .y3              0.169      0.049    3.430    0.001</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="ordered-indicators-1">Ordered Indicators<a class="anchor" aria-label="anchor" href="#ordered-indicators-1"></a>
 </h3>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">fit_intercepts_ord</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pls.html">pls</a></span><span class="op">(</span></span>
-<span>  <span class="va">intercepts_model</span>,</span>
-<span>  data      <span class="op">=</span> <span class="va">randomInterceptsOrdered</span>,</span>
+<code class="sourceCode R"><span><span class="va">fit_slopes_ord</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pls.html">pls</a></span><span class="op">(</span></span>
+<span>  <span class="va">slopes_model</span>,</span>
+<span>  data      <span class="op">=</span> <span class="va">randomSlopesOrdered</span>,</span>
+<span>  cluster   <span class="op">=</span> <span class="st">"cluster"</span>,</span>
 <span>  bootstrap <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  boot.R    <span class="op">=</span> <span class="fl">50</span>,</span>
-<span>  ordered   <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">randomInterceptsOrdered</span><span class="op">)</span> <span class="co"># explicitly specify variables as ordered</span></span>
+<span>  ordered   <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">randomSlopesOrdered</span><span class="op">)</span> <span class="co"># explicitly specify variables as ordered</span></span>
 <span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit_intercepts_ord</span><span class="op">)</span></span>
-<span><span class="co">#&gt; plssem (0.1.5) ended normally after 54 iterations</span></span>
-<span><span class="co">#&gt;   Estimator                              MCOrdPLSc-MLM</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit_slopes_ord</span><span class="op">)</span></span>
+<span><span class="co">#&gt; plssem (0.2.0) ended normally after 97 iterations</span></span>
+<span><span class="co">#&gt;   Estimator                             MC-OrdPLSc-MLM</span></span>
 <span><span class="co">#&gt;   Link                                          PROBIT</span></span>
+<span><span class="co">#&gt;   Standard errors            Delta (cluster bootstrap)</span></span>
 <span><span class="co">#&gt;                                                       </span></span>
-<span><span class="co">#&gt;   Number of observations                         10000</span></span>
-<span><span class="co">#&gt;   Number of iterations                              54</span></span>
-<span><span class="co">#&gt;   Number of latent variables                         1</span></span>
-<span><span class="co">#&gt;   Number of observed variables                       9</span></span>
+<span><span class="co">#&gt;   Number of observations                          3000</span></span>
+<span><span class="co">#&gt;   Number of clusters                               200</span></span>
+<span><span class="co">#&gt;   Number of iterations                              97</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Fit Measures:</span></span>
-<span><span class="co">#&gt;   Chi-Square                                     9.853</span></span>
-<span><span class="co">#&gt;   Degrees of Freedom                                10</span></span>
-<span><span class="co">#&gt;   SRMR                                           0.003</span></span>
-<span><span class="co">#&gt;   RMSEA                                          0.000</span></span>
+<span><span class="co">#&gt; Intraclass correlations:</span></span>
+<span><span class="co">#&gt;   y1                                             0.343</span></span>
+<span><span class="co">#&gt;   y2                                             0.197</span></span>
+<span><span class="co">#&gt;   y3                                             0.517</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Random slopes (standard deviations):</span></span>
+<span><span class="co">#&gt;   s1 (fw ~ x1)                                   0.219</span></span>
+<span><span class="co">#&gt;   s2 (fw ~ x2)                                   0.145</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Level 1 [within]:</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; R-squared (indicators):</span></span>
-<span><span class="co">#&gt;   y1                                             0.877</span></span>
-<span><span class="co">#&gt;   y2                                             0.785</span></span>
-<span><span class="co">#&gt;   y3                                             0.821</span></span>
+<span><span class="co">#&gt;   y1                                             0.503</span></span>
+<span><span class="co">#&gt;   y2                                             0.340</span></span>
+<span><span class="co">#&gt;   y3                                             0.620</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; R-squared (latents):</span></span>
-<span><span class="co">#&gt;   f                                              0.121</span></span>
+<span><span class="co">#&gt;   fw                                             0.397</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Latent Variables:</span></span>
-<span><span class="co">#&gt;                  Estimate  Std.Error   z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;   f =~          </span></span>
-<span><span class="co">#&gt;     y1              0.937      0.005   198.151    0.000</span></span>
-<span><span class="co">#&gt;     y2              0.886      0.006   139.757    0.000</span></span>
-<span><span class="co">#&gt;     y3              0.906      0.009   106.414    0.000</span></span>
+<span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
+<span><span class="co">#&gt;   fw =~         </span></span>
+<span><span class="co">#&gt;     y1              0.709      0.023   30.527    0.000</span></span>
+<span><span class="co">#&gt;     y2              0.583      0.025   22.986    0.000</span></span>
+<span><span class="co">#&gt;     y3              0.787      0.032   24.282    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Regressions:</span></span>
-<span><span class="co">#&gt;                  Estimate  Std.Error   z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;   f ~           </span></span>
-<span><span class="co">#&gt;     x1              0.240      0.007    32.276    0.000</span></span>
-<span><span class="co">#&gt;     x2              0.161      0.008    20.772    0.000</span></span>
-<span><span class="co">#&gt;     x3              0.080      0.006    14.125    0.000</span></span>
-<span><span class="co">#&gt;     w1              0.123      0.039     3.135    0.002</span></span>
-<span><span class="co">#&gt;     w2              0.077      0.041     1.876    0.061</span></span>
+<span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
+<span><span class="co">#&gt;   fw ~          </span></span>
+<span><span class="co">#&gt;     x1              0.470      0.034   13.788    0.000</span></span>
+<span><span class="co">#&gt;     x2              0.379      0.029   13.003    0.000</span></span>
+<span><span class="co">#&gt;     x3              0.196      0.026    7.407    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Covariances:</span></span>
-<span><span class="co">#&gt;                  Estimate  Std.Error   z.value  P(&gt;|z|)</span></span>
+<span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   x1 ~~         </span></span>
-<span><span class="co">#&gt;     x2              0.109      0.008    13.371    0.000</span></span>
-<span><span class="co">#&gt;     x3              0.011      0.010     1.099    0.272</span></span>
-<span><span class="co">#&gt;     w1              0.001      0.008     0.127    0.899</span></span>
-<span><span class="co">#&gt;     w2              0.001      0.003     0.358    0.720</span></span>
+<span><span class="co">#&gt;     x2             -0.016      0.015   -1.061    0.289</span></span>
+<span><span class="co">#&gt;     x3              0.007      0.022    0.344    0.731</span></span>
 <span><span class="co">#&gt;   x2 ~~         </span></span>
-<span><span class="co">#&gt;     x3              0.098      0.013     7.810    0.000</span></span>
-<span><span class="co">#&gt;     w1             -0.001      0.006    -0.212    0.832</span></span>
-<span><span class="co">#&gt;     w2             -0.001      0.008    -0.091    0.927</span></span>
-<span><span class="co">#&gt;   x3 ~~         </span></span>
-<span><span class="co">#&gt;     w1             -0.004      0.007    -0.538    0.591</span></span>
-<span><span class="co">#&gt;     w2              0.004      0.006     0.637    0.524</span></span>
-<span><span class="co">#&gt;   w1 ~~         </span></span>
-<span><span class="co">#&gt;     w2             -0.024      0.059    -0.400    0.689</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Thresholds:</span></span>
-<span><span class="co">#&gt;                  Estimate  Std.Error   z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;     y1|t1          -2.601      0.047   -55.544    0.000</span></span>
-<span><span class="co">#&gt;     y1|t2          -1.775      0.046   -38.705    0.000</span></span>
-<span><span class="co">#&gt;     y1|t3          -0.421      0.044    -9.667    0.000</span></span>
-<span><span class="co">#&gt;     y1|t4           0.333      0.039     8.429    0.000</span></span>
-<span><span class="co">#&gt;     y1|t5           1.330      0.045    29.394    0.000</span></span>
-<span><span class="co">#&gt;     y1|t6           2.326      0.058    40.407    0.000</span></span>
-<span><span class="co">#&gt;     y2|t1          -2.845      0.042   -66.997    0.000</span></span>
-<span><span class="co">#&gt;     y2|t2          -1.915      0.063   -30.280    0.000</span></span>
-<span><span class="co">#&gt;     y2|t3          -0.978      0.046   -21.287    0.000</span></span>
-<span><span class="co">#&gt;     y2|t4           0.184      0.042     4.355    0.000</span></span>
-<span><span class="co">#&gt;     y2|t5           1.047      0.043    24.614    0.000</span></span>
-<span><span class="co">#&gt;     y2|t6           2.235      0.081    27.588    0.000</span></span>
-<span><span class="co">#&gt;     y3|t1          -2.204      0.107   -20.548    0.000</span></span>
-<span><span class="co">#&gt;     y3|t2          -1.274      0.045   -28.126    0.000</span></span>
-<span><span class="co">#&gt;     y3|t3           0.009      0.044     0.212    0.832</span></span>
-<span><span class="co">#&gt;     y3|t4           0.694      0.041    17.015    0.000</span></span>
-<span><span class="co">#&gt;     y3|t5           1.776      0.043    41.042    0.000</span></span>
-<span><span class="co">#&gt;     y3|t6           2.761      0.066    41.595    0.000</span></span>
-<span><span class="co">#&gt;     x1|t1          -2.378      0.025   -93.537    0.000</span></span>
-<span><span class="co">#&gt;     x1|t2          -1.337      0.012  -115.681    0.000</span></span>
-<span><span class="co">#&gt;     x1|t3          -0.672      0.008   -81.741    0.000</span></span>
-<span><span class="co">#&gt;     x1|t4           0.497      0.011    44.595    0.000</span></span>
-<span><span class="co">#&gt;     x1|t5           1.532      0.018    86.983    0.000</span></span>
-<span><span class="co">#&gt;     x1|t6           2.551      0.025   102.558    0.000</span></span>
-<span><span class="co">#&gt;     x2|t1          -2.971      0.021  -140.393    0.000</span></span>
-<span><span class="co">#&gt;     x2|t2          -2.032      0.030   -68.822    0.000</span></span>
-<span><span class="co">#&gt;     x2|t3          -1.011      0.010  -104.720    0.000</span></span>
-<span><span class="co">#&gt;     x2|t4          -0.109      0.007   -16.133    0.000</span></span>
-<span><span class="co">#&gt;     x2|t5           0.808      0.009    91.889    0.000</span></span>
-<span><span class="co">#&gt;     x2|t6           1.895      0.023    82.749    0.000</span></span>
-<span><span class="co">#&gt;     x3|t1          -2.859      0.035   -82.798    0.000</span></span>
-<span><span class="co">#&gt;     x3|t2          -1.943      0.022   -90.230    0.000</span></span>
-<span><span class="co">#&gt;     x3|t3          -0.838      0.009   -93.663    0.000</span></span>
-<span><span class="co">#&gt;     x3|t4          -0.149      0.008   -18.161    0.000</span></span>
-<span><span class="co">#&gt;     x3|t5           1.003      0.011    94.129    0.000</span></span>
-<span><span class="co">#&gt;     x3|t6           2.227      0.043    52.137    0.000</span></span>
-<span><span class="co">#&gt;     w1|t1          -2.733      0.136   -20.124    0.000</span></span>
-<span><span class="co">#&gt;     w1|t2          -2.036      0.145   -14.076    0.000</span></span>
-<span><span class="co">#&gt;     w1|t3          -0.950      0.088   -10.803    0.000</span></span>
-<span><span class="co">#&gt;     w1|t4           0.104      0.063     1.646    0.100</span></span>
-<span><span class="co">#&gt;     w1|t5           1.253      0.109    11.458    0.000</span></span>
-<span><span class="co">#&gt;     w1|t6           2.598      0.174    14.947    0.000</span></span>
-<span><span class="co">#&gt;     w2|t1          -1.966      0.146   -13.506    0.000</span></span>
-<span><span class="co">#&gt;     w2|t2          -0.956      0.089   -10.759    0.000</span></span>
-<span><span class="co">#&gt;     w2|t3          -0.131      0.068    -1.919    0.055</span></span>
-<span><span class="co">#&gt;     w2|t4           0.748      0.061    12.349    0.000</span></span>
-<span><span class="co">#&gt;     w2|t5           1.792      0.144    12.413    0.000</span></span>
-<span><span class="co">#&gt;     w2|t6           2.453      0.212    11.597    0.000</span></span>
+<span><span class="co">#&gt;     x3              0.012      0.018    0.643    0.520</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Variances:</span></span>
-<span><span class="co">#&gt;                  Estimate  Std.Error   z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;    .f               0.879      0.012    70.514    0.000</span></span>
-<span><span class="co">#&gt;     x1              1.000                              </span></span>
-<span><span class="co">#&gt;     x2              1.000                              </span></span>
-<span><span class="co">#&gt;     x3              1.000                              </span></span>
-<span><span class="co">#&gt;     w1              1.000                              </span></span>
-<span><span class="co">#&gt;     w2              1.000                              </span></span>
-<span><span class="co">#&gt;    .y1              0.123      0.009    13.861    0.000</span></span>
-<span><span class="co">#&gt;    .y2              0.215      0.011    19.129    0.000</span></span>
-<span><span class="co">#&gt;    .y3              0.179      0.015    11.604    0.000</span></span>
-<span><span class="co">#&gt;     f~1             0.626      0.030    20.791    0.000</span></span></code></pre></div>
+<span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
+<span><span class="co">#&gt;    .fw              0.603      0.033   18.402    0.000</span></span>
+<span><span class="co">#&gt;     x1              1.000                             </span></span>
+<span><span class="co">#&gt;     x2              1.000                             </span></span>
+<span><span class="co">#&gt;     x3              1.000                             </span></span>
+<span><span class="co">#&gt;    .y1              0.497      0.033   15.066    0.000</span></span>
+<span><span class="co">#&gt;    .y2              0.660      0.030   22.278    0.000</span></span>
+<span><span class="co">#&gt;    .y3              0.380      0.051    7.441    0.000</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Level 2 [between]:</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; R-squared (indicators):</span></span>
+<span><span class="co">#&gt;   y1                                             0.815</span></span>
+<span><span class="co">#&gt;   y2                                             0.659</span></span>
+<span><span class="co">#&gt;   y3                                             0.817</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; R-squared (latents):</span></span>
+<span><span class="co">#&gt;   fb                                             0.078</span></span>
+<span><span class="co">#&gt;   s1                                             0.252</span></span>
+<span><span class="co">#&gt;   s2                                             0.046</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Latent Variables:</span></span>
+<span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
+<span><span class="co">#&gt;   fb =~         </span></span>
+<span><span class="co">#&gt;     y1              0.903      0.047   19.074    0.000</span></span>
+<span><span class="co">#&gt;     y2              0.812      0.049   16.629    0.000</span></span>
+<span><span class="co">#&gt;     y3              0.904      0.043   21.236    0.000</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Regressions:</span></span>
+<span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
+<span><span class="co">#&gt;   fb ~          </span></span>
+<span><span class="co">#&gt;     w1              0.177      0.096    1.847    0.065</span></span>
+<span><span class="co">#&gt;     w2              0.117      0.112    1.039    0.299</span></span>
+<span><span class="co">#&gt;   s1 ~          </span></span>
+<span><span class="co">#&gt;     w1              0.065      0.229    0.284    0.776</span></span>
+<span><span class="co">#&gt;     w2              0.447      0.234    1.908    0.056</span></span>
+<span><span class="co">#&gt;   s2 ~          </span></span>
+<span><span class="co">#&gt;     w1             -0.246      0.314   -0.784    0.433</span></span>
+<span><span class="co">#&gt;     w2              0.030      0.364    0.082    0.935</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Covariances:</span></span>
+<span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
+<span><span class="co">#&gt;   w1 ~~         </span></span>
+<span><span class="co">#&gt;     w2              0.018      0.057    0.323    0.746</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Variances:</span></span>
+<span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
+<span><span class="co">#&gt;    .fb              0.922      0.040   23.113    0.000</span></span>
+<span><span class="co">#&gt;    .s1              0.748      0.195    3.833    0.000</span></span>
+<span><span class="co">#&gt;    .s2              0.954      0.193    4.930    0.000</span></span>
+<span><span class="co">#&gt;     w1              1.000                             </span></span>
+<span><span class="co">#&gt;     w2              1.000                             </span></span>
+<span><span class="co">#&gt;    .y1              0.185      0.085    2.163    0.031</span></span>
+<span><span class="co">#&gt;    .y2              0.341      0.079    4.306    0.000</span></span>
+<span><span class="co">#&gt;    .y3              0.183      0.077    2.375    0.018</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Thresholds:</span></span>
+<span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
+<span><span class="co">#&gt;     y1|t1          -2.602                             </span></span>
+<span><span class="co">#&gt;     y1|t2          -1.720                             </span></span>
+<span><span class="co">#&gt;     y1|t3          -0.418                             </span></span>
+<span><span class="co">#&gt;     y1|t4           0.359                             </span></span>
+<span><span class="co">#&gt;     y1|t5           1.319                             </span></span>
+<span><span class="co">#&gt;     y1|t6           2.447                             </span></span>
+<span><span class="co">#&gt;     y2|t1          -2.930                             </span></span>
+<span><span class="co">#&gt;     y2|t2          -1.868                             </span></span>
+<span><span class="co">#&gt;     y2|t3          -0.956                             </span></span>
+<span><span class="co">#&gt;     y2|t4           0.232                             </span></span>
+<span><span class="co">#&gt;     y2|t5           1.060                             </span></span>
+<span><span class="co">#&gt;     y2|t6           2.244                             </span></span>
+<span><span class="co">#&gt;     y3|t1          -2.121                             </span></span>
+<span><span class="co">#&gt;     y3|t2          -1.212                             </span></span>
+<span><span class="co">#&gt;     y3|t3           0.042                             </span></span>
+<span><span class="co">#&gt;     y3|t4           0.730                             </span></span>
+<span><span class="co">#&gt;     y3|t5           1.850                             </span></span>
+<span><span class="co">#&gt;     y3|t6           2.703                             </span></span>
+<span><span class="co">#&gt;     x1|t1          -2.353                             </span></span>
+<span><span class="co">#&gt;     x1|t2          -1.344                             </span></span>
+<span><span class="co">#&gt;     x1|t3          -0.660                             </span></span>
+<span><span class="co">#&gt;     x1|t4           0.486                             </span></span>
+<span><span class="co">#&gt;     x1|t5           1.498                             </span></span>
+<span><span class="co">#&gt;     x1|t6           2.719                             </span></span>
+<span><span class="co">#&gt;     x2|t1          -2.719                             </span></span>
+<span><span class="co">#&gt;     x2|t2          -1.940                             </span></span>
+<span><span class="co">#&gt;     x2|t3          -1.021                             </span></span>
+<span><span class="co">#&gt;     x2|t4          -0.122                             </span></span>
+<span><span class="co">#&gt;     x2|t5           0.798                             </span></span>
+<span><span class="co">#&gt;     x2|t6           1.995                             </span></span>
+<span><span class="co">#&gt;     x3|t1          -3.328                             </span></span>
+<span><span class="co">#&gt;     x3|t2          -2.039                             </span></span>
+<span><span class="co">#&gt;     x3|t3          -0.844                             </span></span>
+<span><span class="co">#&gt;     x3|t4          -0.146                             </span></span>
+<span><span class="co">#&gt;     x3|t5           1.004                             </span></span>
+<span><span class="co">#&gt;     x3|t6           2.168                             </span></span>
+<span><span class="co">#&gt;     w1|t1          -2.083                             </span></span>
+<span><span class="co">#&gt;     w1|t2          -0.887                             </span></span>
+<span><span class="co">#&gt;     w1|t3           0.106                             </span></span>
+<span><span class="co">#&gt;     w1|t4           1.264                             </span></span>
+<span><span class="co">#&gt;     w2|t1          -2.036                             </span></span>
+<span><span class="co">#&gt;     w2|t2          -0.974                             </span></span>
+<span><span class="co">#&gt;     w2|t3          -0.149                             </span></span>
+<span><span class="co">#&gt;     w2|t4           0.731                             </span></span>
+<span><span class="co">#&gt;     w2|t5           1.621</span></span></code></pre></div>
 </div>
 </div>
   </div>

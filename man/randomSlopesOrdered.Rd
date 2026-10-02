@@ -10,17 +10,12 @@ A simulated dataset.
 \examples{
 
 \donttest{
-syntax <- "
-  X =~ x1 + x2 + x3
-  Z =~ z1 + z2 + z3
-  Y =~ y1 + y2 + y3
-  W =~ w1 + w2 + w3
-  Y ~ X + Z + (1 + X + Z | cluster)
-  W ~ X + Z + (1 + X + Z | cluster)
-"
+syntax <- '
+  f =~ y1 + y2 + y3
+  f ~ rv(s1)*x1 + rv(s2)*x2 + x3
+'
 
-fit <- pls(syntax, data = randomSlopesOrdered)
-fit
+fit <- pls(syntax, data = randomSlopesOrdered, cluster = "cluster")
 summary(fit)
 }
 }

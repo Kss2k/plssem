@@ -7,7 +7,7 @@
 \usage{
 \S4method{coef}{PlsModel}(object, use.labels = TRUE, ...)
 
-\S4method{coefficients}{PlsModel}(object, ...)
+\S4method{coefficients}{PlsModel}(object, use.labels = TRUE, ...)
 }
 \arguments{
 \item{object}{A \code{PlsModel} object.}

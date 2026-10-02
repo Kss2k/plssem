@@ -32,7 +32,8 @@ Rcpp::List estimatePLS_Step0_5_Cpp(
   const arma::umat& preds, // model@matrices$preds.cfa for CFA models
   const arma::umat& succs, // model@matrices$succs.cfa for CFA models
   const double tolerance,
-  const int maxiter
+  const int maxiter,
+  const bool centroid = false // use the signs of the correlations (centroid scheme)
 ) {
 
   const arma::uword p = S.n_rows, k = lambda.n_cols, nlin = lvColIdx.n_elem;
@@ -75,7 +76,8 @@ Rcpp::List estimatePLS_Step0_5_Cpp(
       const arma::uvec sj = arma::find(succs.col(l) > 0);
 
       for (arma::uword i = 0; i < sj.n_elem; i++) {
-        gamma(sj[i], l) = C(l, sj[i]);
+        const double c = C(l, sj[i]);
+        gamma(sj[i], l) = centroid ? static_cast<double>((c > 0) - (c < 0)) : c;
       }
 
       if (pj.n_elem) {

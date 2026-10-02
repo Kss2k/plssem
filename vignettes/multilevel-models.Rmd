@@ -17,20 +17,67 @@ knitr::opts_chunk$set(
 library(plssem)
 ```
 
-This vignette shows examples of multilevel random slopes and intercept models,
-with both continuous and ordinal data.
+This vignette shows examples of two-level (multilevel) models, with and without
+random slopes, with both continuous and ordinal data. Two-level models are
+specified with separate models for the within (`level: 1`) and between
+(`level: 2`) levels, and the cluster variable is given by the `cluster` argument.
+
+## Two-Level Model
+
+```{r two-level-syntax}
+two_level_model <- "
+  level: 1
+    fw =~ y1 + y2 + y3
+    fw ~ x1 + x2 + x3
+  level: 2
+    fb =~ y1 + y2 + y3
+    fb ~ w1 + w2
+"
+```
+
+### Continuous Indicators
+
+```{r two-level-continuous, message=FALSE, warning=FALSE}
+fit_two_level_cont <- pls(
+  two_level_model,
+  data      = randomSlopes,
+  cluster   = "cluster",
+  bootstrap = TRUE,
+  boot.R    = 50
+)
+summary(fit_two_level_cont)
+```
+
+### Ordered Indicators
+
+```{r two-level-ordered, message=FALSE, warning=FALSE}
+fit_two_level_ord <- pls(
+  two_level_model,
+  data      = randomSlopesOrdered,
+  cluster   = "cluster",
+  bootstrap = TRUE,
+  boot.R    = 50,
+  ordered   = colnames(randomSlopesOrdered) # explicitly specify variables as ordered
+)
+summary(fit_two_level_ord)
+```
 
 ## Random Slopes Model
 
+Random slopes are specified with `rv()` modifiers at level 1, where the random
+slopes (here `s1` and `s2`) are variables at level 2.
+
 ```{r slopes-syntax}
-slopes_model <- "
-  X =~ x1 + x2 + x3
-  Z =~ z1 + z2 + z3
-  Y =~ y1 + y2 + y3
-  W =~ w1 + w2 + w3
-  Y ~ X + Z + (1 + X + Z | cluster)
-  W ~ X + Z + (1 + X + Z | cluster)
-"
+slopes_model <- '
+  level: 1
+    fw =~ y1 + y2 + y3
+    fw ~ rv("s1")*x1 + rv("s2")*x2 + x3
+  level: 2
+    fb =~ y1 + y2 + y3
+    fb ~ w1 + w2
+    # the random slopes are latent variables at the between level
+    s1 + s2 ~ w1 + w2
+'
 ```
 
 ### Continuous Indicators
@@ -39,6 +86,7 @@ slopes_model <- "
 fit_slopes_cont <- pls(
   slopes_model,
   data      = randomSlopes,
+  cluster   = "cluster",
   bootstrap = TRUE,
   boot.R    = 50
 )
@@ -51,43 +99,10 @@ summary(fit_slopes_cont)
 fit_slopes_ord <- pls(
   slopes_model,
   data      = randomSlopesOrdered,
+  cluster   = "cluster",
   bootstrap = TRUE,
   boot.R    = 50,
   ordered   = colnames(randomSlopesOrdered) # explicitly specify variables as ordered
 )
 summary(fit_slopes_ord)
-```
-
-## Random Intercepts Model
-
-```{r intercepts-syntax}
-intercepts_model <- '
-  f =~ y1 + y2 + y3
-  f ~ x1 + x2 + x3 + w1 + w2 + (1 | cluster)
-'
-```
-
-### Continuous Indicators
-
-```{r intercepts-continuous, message=FALSE, warning=FALSE}
-fit_intercepts_cont <- pls(
-  intercepts_model,
-  data      = randomIntercepts,
-  bootstrap = TRUE,
-  boot.R    = 50
-)
-summary(fit_intercepts_cont)
-```
-
-### Ordered Indicators
-
-```{r intercepts-ordered, message=FALSE, warning=FALSE}
-fit_intercepts_ord <- pls(
-  intercepts_model,
-  data      = randomInterceptsOrdered,
-  bootstrap = TRUE,
-  boot.R    = 50,
-  ordered   = colnames(randomInterceptsOrdered) # explicitly specify variables as ordered
-)
-summary(fit_intercepts_ord)
 ```

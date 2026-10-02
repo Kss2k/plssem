@@ -73,55 +73,67 @@ fit <- pls(tpb, TPB_Ordered, bootstrap = TRUE)
 summary(fit)
 ```
 
+### Multilevel Model with Continuous Data
+```r
+syntax <- '
+  level: 1
+    fw =~ y1 + y2 + y3
+    fw ~ x1 + x2 + x3
+  level: 2
+    fb =~ y1 + y2 + y3
+    fb ~ w1 + w2
+'
+
+fit <- pls(syntax, data = randomSlopes, cluster = "cluster", bootstrap = TRUE)
+summary(fit)
+```
+
+### Multilevel Model with Ordered Data
+```r
+syntax <- '
+  level: 1
+    fw =~ y1 + y2 + y3
+    fw ~ x1 + x2 + x3
+  level: 2
+    fb =~ y1 + y2 + y3
+    fb ~ w1 + w2
+'
+
+fit <- pls(syntax, data = randomSlopesOrdered, cluster = "cluster", bootstrap = TRUE)
+summary(fit)
+```
+
 ### Multilevel Random Slopes Model with Continuous Data
 ```r
-syntax <- "
-  X =~ x1 + x2 + x3
-  Z =~ z1 + z2 + z3
-  Y =~ y1 + y2 + y3
-  W =~ w1 + w2 + w3
-  Y ~ X + Z + (1 + X + Z | cluster)
-  W ~ X + Z + (1 + X + Z | cluster)
-"
+syntax <- '
+  level: 1
+    fw =~ y1 + y2 + y3
+    fw ~ rv("s1")*x1 + rv("s2")*x2 + x3
+  level: 2
+    fb =~ y1 + y2 + y3
+    fb ~ w1 + w2
+    # the random slopes are latent variables at the between level
+    s1 + s2 ~ w1 + w2
+'
 
-fit <- pls(syntax, data = randomSlopes, bootstrap = TRUE)
+fit <- pls(syntax, data = randomSlopes, cluster = "cluster", bootstrap = TRUE)
 summary(fit)
 ```
 
 ### Multilevel Random Slopes Model with Ordered Data
 ```r
-syntax <- "
-  X =~ x1 + x2 + x3
-  Z =~ z1 + z2 + z3
-  Y =~ y1 + y2 + y3
-  W =~ w1 + w2 + w3
-  Y ~ X + Z + (1 + X + Z | cluster)
-  W ~ X + Z + (1 + X + Z | cluster)
-"
-
-fit <- pls(syntax, data = randomSlopesOrdered, bootstrap = TRUE)
-summary(fit)
-```
-
-### Multilevel Random Intercepts Model with Continuous Data
-```r
 syntax <- '
-  f =~ y1 + y2 + y3
-  f ~ x1 + x2 + x3 + w1 + w2 + (1 | cluster)
+  level: 1
+    fw =~ y1 + y2 + y3
+    fw ~ rv("s1")*x1 + rv("s2")*x2 + x3
+  level: 2
+    fb =~ y1 + y2 + y3
+    fb ~ w1 + w2
+    # the random slopes are latent variables at the between level
+    s1 + s2 ~ w1 + w2
 '
 
-fit <- pls(syntax, data = randomIntercepts, bootstrap = TRUE)
-summary(fit)
-```
-
-### Multilevel Random Intercepts Model with Ordered Data
-```r
-syntax <- '
-  f =~ y1 + y2 + y3
-  f ~ x1 + x2 + x3 + w1 + w2 + (1 | cluster)
-'
-
-fit <- pls(syntax, data = randomInterceptsOrdered, bootstrap = TRUE)
+fit <- pls(syntax, data = randomSlopesOrdered, cluster = "cluster", bootstrap = TRUE)
 summary(fit)
 ```
 
@@ -150,21 +162,6 @@ m <- '
 '
 
 fit <- pls(m, oneIntOrdered, bootstrap = TRUE)
-summary(fit)
-```
-
-### Multilevel Random Slopes Interaction Model with Continuous Data
-```r
-syntax <- "
-  X =~ x1 + x2 + x3
-  Z =~ z1 + z2 + z3
-  Y =~ y1 + y2 + y3
-  W =~ w1 + w2 + w3
-  Y ~ X + Z + X:Z + (1 + X + Z + X:Z | cluster)
-  W ~ X + Z + X:Z + (1 + X + Z + X:Z | cluster)
-"
-
-fit <- pls(syntax, randomSlopes, bootstrap = TRUE)
 summary(fit)
 ```
 

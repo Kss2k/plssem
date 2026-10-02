@@ -25,8 +25,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // estimatePLS_Step0_5_Cpp
-Rcpp::List estimatePLS_Step0_5_Cpp(arma::mat lambda, arma::mat gamma, arma::mat S, arma::mat C, arma::mat SC, const Rcpp::List& R_IndsIdxLVs, const arma::uvec& lvColIdx, const arma::uvec& modeB, const arma::umat& preds, const arma::umat& succs, const double tolerance, const int maxiter);
-RcppExport SEXP _plssem_estimatePLS_Step0_5_Cpp(SEXP lambdaSEXP, SEXP gammaSEXP, SEXP SSEXP, SEXP CSEXP, SEXP SCSEXP, SEXP R_IndsIdxLVsSEXP, SEXP lvColIdxSEXP, SEXP modeBSEXP, SEXP predsSEXP, SEXP succsSEXP, SEXP toleranceSEXP, SEXP maxiterSEXP) {
+Rcpp::List estimatePLS_Step0_5_Cpp(arma::mat lambda, arma::mat gamma, arma::mat S, arma::mat C, arma::mat SC, const Rcpp::List& R_IndsIdxLVs, const arma::uvec& lvColIdx, const arma::uvec& modeB, const arma::umat& preds, const arma::umat& succs, const double tolerance, const int maxiter, const bool centroid);
+RcppExport SEXP _plssem_estimatePLS_Step0_5_Cpp(SEXP lambdaSEXP, SEXP gammaSEXP, SEXP SSEXP, SEXP CSEXP, SEXP SCSEXP, SEXP R_IndsIdxLVsSEXP, SEXP lvColIdxSEXP, SEXP modeBSEXP, SEXP predsSEXP, SEXP succsSEXP, SEXP toleranceSEXP, SEXP maxiterSEXP, SEXP centroidSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -42,7 +42,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const arma::umat& >::type succs(succsSEXP);
     Rcpp::traits::input_parameter< const double >::type tolerance(toleranceSEXP);
     Rcpp::traits::input_parameter< const int >::type maxiter(maxiterSEXP);
-    rcpp_result_gen = Rcpp::wrap(estimatePLS_Step0_5_Cpp(lambda, gamma, S, C, SC, R_IndsIdxLVs, lvColIdx, modeB, preds, succs, tolerance, maxiter));
+    Rcpp::traits::input_parameter< const bool >::type centroid(centroidSEXP);
+    rcpp_result_gen = Rcpp::wrap(estimatePLS_Step0_5_Cpp(lambda, gamma, S, C, SC, R_IndsIdxLVs, lvColIdx, modeB, preds, succs, tolerance, maxiter, centroid));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -64,7 +65,7 @@ END_RCPP
 
 static const R_CallMethodDef CallEntries[] = {
     {"_plssem_ordinalizeVectorCpp", (DL_FUNC) &_plssem_ordinalizeVectorCpp, 3},
-    {"_plssem_estimatePLS_Step0_5_Cpp", (DL_FUNC) &_plssem_estimatePLS_Step0_5_Cpp, 12},
+    {"_plssem_estimatePLS_Step0_5_Cpp", (DL_FUNC) &_plssem_estimatePLS_Step0_5_Cpp, 13},
     {"_plssem_estimatePLS_Step6_Cpp", (DL_FUNC) &_plssem_estimatePLS_Step6_Cpp, 5},
     {NULL, NULL, 0}
 };

@@ -70,6 +70,7 @@ getFitPLSModel <- function(model, consistent = TRUE, quick = model@status$quick)
       fitCovRes  <- diag2(fitCov) - diag2(fitCovProj)
       fitCov[etas, etas]  <- fitCovRes[etas, etas]
       fitCov[etas, xis]   <- fitCov[xis, etas] <- 0
+      randef <- NULL
     },
 
     gls = {
@@ -110,6 +111,51 @@ getFitPLSModel <- function(model, consistent = TRUE, quick = model@status$quick)
       }
 
       fitCov <- gfit@matrices$psi[rownames(C), colnames(C)]
+      randef <- NULL
+    },
+
+    lmer = {
+
+      success <- TRUE
+      tryCatch({
+        lfit <- lmerEstimateParameters(
+          parTable = model@parTableInput,
+          data = model@factorScores,
+          cluster = model@info$cluster
+        )
+
+      }, error = function(e) {
+        success <<- FALSE
+        pls_msg_warn(
+          "Estimation of the structural model using lmer failed!",
+          "Attempting to use OLS instead!",
+          "Message:", conditionMessage(e)
+        )
+      })
+
+      if (!success) {
+        # switch to ols and mark as inadmissible
+        model@info$path.estimator  <- "ols"
+        model@status$is.admissible <- FALSE
+
+        return( # this is not computationally efficient, but it's simple
+          getFitPLSModel(model = model, consistent = consistent)
+        )
+      }
+
+      # paths (fixed effects)
+      pars <- lfit$pars
+      fitStructural[cbind(pars$rhs, pars$lhs)] <- pars$est
+
+      # (residual) covariances. Like with OLS, the residuals of the etas are
+      # uncorrelated with each other and the xis. The residual variances are
+      # the (level 1) residual variances from the lmer/lm fits.
+      fitCov <- C
+      fitCov[etas, ] <- 0
+      fitCov[, etas] <- 0
+      fitCov[cbind(etas, etas)] <- lfit$resvar[etas]
+
+      randef <- lfit$randef
     },
 
     # Shouldn't happen
@@ -160,6 +206,7 @@ getFitPLSModel <- function(model, consistent = TRUE, quick = model@status$quick)
       fitLambda         = fitLambda,
       fitC              = C,
       Q                 = Q,
+      randef            = randef,
       status.admissible = model@status$is.admissible
     ))
   }
@@ -173,6 +220,7 @@ getFitPLSModel <- function(model, consistent = TRUE, quick = model@status$quick)
     fitLambda         = plssemMatrix(fitLambda,      symmetric = FALSE),
     fitC              = plssemMatrix(C,              symmetric = FALSE),
     Q                 = plssemVector(Q),
+    randef            = randef,
     status.admissible = model@status$is.admissible
   )
 }
@@ -275,6 +323,7 @@ getFitPLSModelUncorrected <- function(model, quick = model@status$quick) {
       fitLambda         = fitLambda,
       fitC              = C,
       Q                 = Q,
+      randef            = NULL,
       status.admissible = model@status$is.admissible
     ))
   }
@@ -288,6 +337,7 @@ getFitPLSModelUncorrected <- function(model, quick = model@status$quick) {
     fitLambda         = plssemMatrix(fitLambda,      symmetric = FALSE),
     fitC              = plssemMatrix(C,              symmetric = FALSE),
     Q                 = plssemVector(Q),
+    randef            = NULL,
     status.admissible = model@status$is.admissible
   )
 }
@@ -425,6 +475,7 @@ computeFactorScores <- function(model) {
   if (!model@info$standardized || model@info$is.probit)
     F <- Rfast::standardise(F)
 
+  attr(F, "cluster") <- attr(X, "cluster")
   F
 }
 
@@ -432,12 +483,10 @@ computeFactorScores <- function(model) {
 getEstimatorFromInfo <- function(info) {
   consistent <- info$consistent
   is.mcpls   <- info$is.mcpls
-  is.mlm     <- info$is.mlm
   is.ord     <- info$is.probit || (info$is.mcpls && length(info$ordered))
 
   estimator <- "PLS"
   if (consistent || is.mcpls) estimator <- paste0(estimator, "c")
-  if (is.mlm)                 estimator <- paste0(estimator, "-MLM")
   if (is.ord)                 estimator <- paste0("Ord", estimator)
   if (is.mcpls)               estimator <- paste0("MC-", estimator)
 
@@ -455,32 +504,6 @@ refreshModelParams <- function(model, update.names = TRUE) {
   # Single level params
   model@params$values <- extractCoefs(model)
   model@params$se     <- rep(NA_real_, length(model@params$values))
-
-  # Multilevel/Mixed-Effect params
-  if (isMLM(model))
-    model <- refreshLmerParams(model)
-
-  model
-}
-
-
-refreshLmerParams <- function(model) {
-  lmerFit <- modelFitLmer(model)
-
-  if (!isMLM(model) || is.null(lmerFit))
-    return(model)
-
-  coefs.x <- model@params$values
-  coefs.y <- lmerFit$values
-
-  common  <- intersect(names(coefs.x), names(coefs.y))
-  new     <- setdiff(names(coefs.y),   names(coefs.x))
-
-  coefs.x[common] <- coefs.y[common]
-  coefs.all       <- c(coefs.x, coefs.y[new])
-
-  model@params$values <- plssemVector(coefs.all)
-  model@params$se     <- rep(NA_real_, length(coefs.all))
 
   model
 }

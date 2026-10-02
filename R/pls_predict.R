@@ -31,10 +31,6 @@ setMethod("pls_predict", "PlsModel", function(object,
                                               ...) {
   combined <- combinedModel(object)
 
-  pls_stopif(isMLM(combined),
-    "`pls_predict()` is not implemented for multilevel/mixed-effects models (yet)!"
-  )
-
   # TODO:
   #  1. Allow the user to pass only indicators of exogenous variables, if
   #     approach='earliest'.
@@ -59,19 +55,25 @@ setMethod("pls_predict", "PlsModel", function(object,
 
   Y <- X.cont %*% W
 
+  parTable <- getParTableEstimates(
+    combined,
+    rm.tmp.ov = FALSE,
+    clean.tmp.ind = FALSE,
+    clean.tmp.mimic = FALSE
+  )
+
+  if (isTRUE(info$is.high.ord))
+    parTable <- highOrdMeasrAsStructParTable(parTable)
+
+  etas <- getSortedEtas(parTable, checkAny = FALSE)
+
+  pls_stopif(!length(etas),
+    "`pls_predict()` requires a structural model, i.e., at least one",
+    "endogenous construct, whose indicators can be predicted!"
+  )
+
   if (approach == "earliest") {
-    parTable <- getParTableEstimates(
-      combined,
-      rm.tmp.ov = FALSE,
-      clean.tmp.ind = FALSE,
-      clean.tmp.mimic = FALSE
-    )
-
-    if (isTRUE(info$is.high.ord))
-      parTable <- highOrdMeasrAsStructParTable(parTable)
-
-    xis  <- getXis(parTable, isLV = !isTRUE(info$is.high.ord))
-    etas <- getSortedEtas(parTable)
+    xis <- getXis(parTable, isLV = !isTRUE(info$is.high.ord))
 
     undefIntTerms <- getIntTerms(parTable)
     elemsIntTerms <- stringr::str_split(undefIntTerms, pattern = ":")

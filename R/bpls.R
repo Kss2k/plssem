@@ -8,8 +8,7 @@ PRIOR_OP <- ":~"
 #' specified on parameter labels with the `:~` operator.
 #'
 #' @param syntax Character string with \code{lavaan}-style model syntax describing
-#'   both measurement (\code{=~}) and structural (\code{~}) relations. Random effects are
-#'   specified with \code{(term | cluster)} statements.
+#'   both measurement (\code{=~}) and structural (\code{~}) relations.
 #'
 #' @param data A \code{data.frame} or coercible object containing the manifest
 #'   indicators referenced in \code{syntax}. Ordered factors are automatically
@@ -149,6 +148,10 @@ bpls <- function(syntax,
   point.estimate <- match.arg(tolower(point.estimate), c("median", "mean"))
   sampler <- match.arg(tolower(sampler), c("metropolis-hastings", "gibbs"))
 
+  pls_stopif(isMultilevelSyntax(syntax),
+    "Two-level (multilevel) models are not (yet) supported by `bpls()`!"
+  )
+
   # Parse priors specified in the model syntax.
   input <- modsem::modsemify(syntax, parentheses.as.string = TRUE)
 
@@ -181,14 +184,6 @@ bpls <- function(syntax,
   data <- modelData(fit0)
   vars <- colnames(data)
 
-  if (isMLM(fit0)) {
-    clusterSizes <- as.numeric(table(attr(data, "cluster")))
-    clusterName  <- colnames(attr(data, "cluster"))
-  } else {
-    clusterSizes <- NULL
-    clusterName  <- NULL
-  }
-
   parTableAll <- getParTableEstimates(fit0)
   parTable <- getFreeParamsTable(fit0)
 
@@ -200,9 +195,7 @@ bpls <- function(syntax,
 
   empirical.vpars <- intersect(
     getParNamesFromParTable(parTableAll),
-    getEmpiricalVarParsParTable(
-      parTable, clusterSizes = clusterSizes, clusterName = clusterName
-    )
+    getEmpiricalVarParsParTable(parTable)
   )
 
   boot.probs <- fit.mc@boot$boot.probs
@@ -261,8 +254,6 @@ bpls <- function(syntax,
       parTable                = parTablex,
       N                       = mc.reps,
       check.hi.ord            = is.hi.ord,
-      clusterSizes            = clusterSizes,
-      clusterName             = clusterName,
       collect.empirical.vpars = TRUE,
       innovations             = innovations,
       return.innovations      = TRUE,
@@ -296,9 +287,6 @@ bpls <- function(syntax,
 
     Y <- Rfast::standardise(as.matrix(sim.ov[vars]))
     S <- Rfast::cova(Y)
-
-    if (!is.null(sim$cluster))
-      attr(Y, "cluster") <- sim$cluster
 
     # Update observed-data (lowest-order) model input
     modelData(fit.sim)  <- Y
@@ -664,8 +652,6 @@ bpls <- function(syntax,
     thresholdStruct = thresholdStruct0,
     ordered         = ordered,
     seed            = NULL,
-    clusterSizes    = clusterSizes,
-    clusterName     = clusterName,
     full            = TRUE,
     retry           = TRUE
   )

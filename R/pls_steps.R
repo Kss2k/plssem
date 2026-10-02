@@ -5,7 +5,18 @@ estimatePLS_Step0_5 <- function(model) {
 
   matrices <- model@matrices
 
-  if (model@info$is.cfa) {
+  approach <- model@info$approach.weights
+  scheme   <- model@info$inner.weights
+  centroid <- FALSE
+
+  if (identical(approach, "pca")) {
+    succs <- matrices$succs.pca
+    preds <- matrices$preds.pca
+  } else if (scheme %in% c("centroid", "factorial")) {
+    succs    <- matrices$succs.factorial
+    preds    <- matrices$preds.factorial
+    centroid <- scheme == "centroid"
+  } else if (model@info$is.cfa) {
     succs <- matrices$succs.cfa
     preds <- matrices$preds.cfa
   } else {
@@ -25,7 +36,8 @@ estimatePLS_Step0_5 <- function(model) {
     preds        = preds,
     succs        = succs,
     tolerance    = model@status$tolerance,
-    maxiter      = model@status$max.iter.0_5
+    maxiter      = model@status$max.iter.0_5,
+    centroid     = centroid
   )
 
   if (!result$convergence) {
@@ -68,6 +80,8 @@ estimatePLS_Step6 <- function(model, cpp = TRUE) {
     colnames(F) <- colnames(model@matrices$C)
     dimnames(C) <- dimnames(model@matrices$C)
 
+    attr(F, "cluster") <- attr(model@data, "cluster")
+
     model@factorScores          <- F
     model@matrices$C[par, par]  <- C
     model@matrices$SC[par, par] <- C
@@ -102,38 +116,15 @@ estimatePLS_Step6 <- function(model, cpp = TRUE) {
 estimatePLS_Step7 <- function(model) {
   force(model)
 
-  is.mlm     <- model@info$is.mlm
-  is.mcpls   <- model@info$is.mcpls
-  consistent <- model@info$consistent
-  is.probit  <- model@info$is.probit
-
-  if (!is.mlm) {
-    if (consistent) {
-      modelFitConsistent(model)  <- getFitPLSModel(model, consistent = TRUE)
-      modelFitUncorrected(model) <- list(NULL)
-      modelFit(model)            <- modelFitConsistent(model)
-    } else {
-      modelFitConsistent(model)  <- list(NULL)
-      modelFitUncorrected(model) <- getFitPLSModel(model, consistent = FALSE)
-      modelFit(model)            <- modelFitUncorrected(model)
-    }
-
-    model@matrices$C <- model@fit$fitC
-    return(model)
+  if (model@info$consistent) {
+    modelFitConsistent(model)  <- getFitPLSModel(model, consistent = TRUE)
+    modelFitUncorrected(model) <- list(NULL)
+    modelFit(model)            <- modelFitConsistent(model)
+  } else {
+    modelFitConsistent(model)  <- list(NULL)
+    modelFitUncorrected(model) <- getFitPLSModel(model, consistent = FALSE)
+    modelFit(model)            <- modelFitUncorrected(model)
   }
-
-  model.c <- model
-  model.u <- model
-
-  if (is.probit || is.mcpls) {
-    model.u <- updateModelInfo(model.u, is.probit = FALSE, is.mcpls = FALSE)
-    model.u@matrices$S <- getCorrMat(model.u@data, probit = FALSE)
-    model.u <- updateOuterWeights(model.u) |> updateFactorScores()
-  }
-
-  modelFitConsistent(model)  <- getFitPLSModel(model.c, consistent = consistent)
-  modelFitUncorrected(model) <- getFitPLSModel(model.u, consistent = FALSE)
-  modelFit(model)            <- modelFitConsistent(model)
 
   model@matrices$C <- model@fit$fitC
   model
@@ -146,12 +137,5 @@ estimatePLS_Step8 <- function(model) {
   model@params$values <- extractCoefs(model)
   model@params$se     <- rep(NA_real_, length(model@params$values))
 
-  if (!isMLM(model))
-    return(model)
-
-  modelFitLmer(model) <- plslmer(
-    plsModel = model, fast = isTRUE(model@info$mc.fast.lmer)
-  )
-
-  refreshLmerParams(model) # Update params with Mixed-Effects coefficients
+  model
 }

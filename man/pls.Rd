@@ -8,13 +8,12 @@ pls(
   syntax,
   data,
   standardize = TRUE,
-  consistent = TRUE,
+  consistent = NULL,
   bootstrap = FALSE,
   ordered = NULL,
   missing = c("listwise", "mean", "kNN"),
   knn.k = 5,
   mcpls = NULL,
-  mc.fast.lmer = mcpls,
   probit = NULL,
   tolerance = 1e-05,
   max.iter.0_5 = 500L,
@@ -37,7 +36,8 @@ pls(
   mc.rescov = c("auto", "reduced", "full"),
   mc.diag.secant = FALSE,
   mc.small.sample = FALSE,
-  mc.small.sample.max.k = 50L,
+  mc.small.sample.max.k = 100L,
+  mc.small.sample.point.estimate = c("median", "mean"),
   verbose = interactive(),
   boot.optimize = TRUE,
   boot.drop.inadmissible = FALSE,
@@ -45,14 +45,23 @@ pls(
     floor(0.5 * mc.reps), tol = mc.tol, polyak.juditsky = mc.polyak.juditsky,
     pj.extrapolate = FALSE, verbose = FALSE, fixed.seed = TRUE, reuse.p.start = TRUE),
   reliabilities = NULL,
-  default.path.estimator = c("ols", "gls"),
+  default.path.estimator = c("ols", "gls", "lmer"),
+  cluster = NULL,
+  inner.weights = c("path", "centroid", "factorial"),
+  approach.weights = c("pls", "pca"),
+  mlm = NULL,
+  level2.cov = c("muml", "means"),
+  level2.approach.weights = c("pca", "pls"),
   ...
 )
 }
 \arguments{
 \item{syntax}{Character string with \code{lavaan}-style model syntax describing
-both measurement (\code{=~}) and structural (\code{~}) relations. Random effects are
-specified with \code{(term | cluster)} statements.}
+both measurement (\code{=~}) and structural (\code{~}) relations. Two-level
+models are specified with \code{level: 1} and \code{level: 2} blocks (see
+\code{mlm}), where random slopes are specified with \code{rv()} modifiers at
+level 1 (e.g., \code{fw ~ rv(s1)*x1}). The random slopes (e.g., \code{s1})
+are variables at level 2.}
 
 \item{data}{A \code{data.frame} or coercible object containing the manifest
 indicators referenced in \code{syntax}. Ordered factors are automatically
@@ -62,7 +71,9 @@ detected, but can also be supplied explicitly through \code{ordered}.}
 estimation so that factor scores have comparable scales.}
 
 \item{consistent}{Logical; \code{TRUE} requests PLSc corrections, whereas \code{FALSE}
-fits the traditional PLS model.}
+fits the traditional PLS model. If \code{NULL} (default), \code{FALSE} is
+used for MC-PLS (including two-level models) and for models using \code{lmer}
+as the path estimator, and \code{TRUE} otherwise.}
 
 \item{bootstrap}{Logical; if \code{TRUE}, nonparametric bootstrap standard errors
 are computed with \code{boot.R} resamples.}
@@ -78,17 +89,14 @@ with more than two categories, and the mode for binary ordered variables (two
 categories) or nominal variables.
 \code{"kNN"} (or \code{"knn"}) imputes missing indicator values using
 k-nearest neighbors imputation (kNN). When \code{missing = "kNN"}, rows with
-all indicators missing are removed prior to imputation, and rows with missing
-\code{cluster} values are removed for multilevel models.}
+all indicators missing are removed prior to imputation. Rows with missing
+\code{cluster} values are always removed.}
 
 \item{knn.k}{Integer specifying the number of neighbors (\code{k}) used when
 \code{missing = "kNN"}.}
 
 \item{mcpls}{Should the model be estimated using the Monte-Carlo Consistent
 Partial Least Squares (MC-PLSc) algorithm?}
-
-\item{mc.fast.lmer}{Should a faster (biased) GLS based estimator of the
-Mixed-Effects model be used in conjunction with the MC-PLS algorithm?}
 
 \item{probit}{Logical; overrides the automatic choice of probit factor scores
 that is based on whether ordered indicators are present.}
@@ -176,9 +184,23 @@ negligible finite sample bias. I.e., that the bias of the estimator is
 not affected by the sample size.}
 
 \item{mc.small.sample.max.k}{Maximum number of simulated samples to average
-when \code{mc.small.sample = TRUE}. Defaults to 50. The number of samples
+when \code{mc.small.sample = TRUE}. Defaults to 100. The number of samples
 is also limited by \code{mc.reps}, rounded down to a multiple of the
 observed sample size, with at least one sample.}
+
+\item{mc.small.sample.point.estimate}{Which point estimate of the simulated
+  auxiliary parameters the root equation matches to the observed ones, when
+  \code{mc.small.sample = TRUE}? \code{"mean"} solves
+  \eqn{E[\theta^{*}|\theta] = \hat{\theta}^{*}}. \code{"median"} (the default)
+  solves \eqn{median[\theta^{*}|\theta] = \hat{\theta}^{*}}.
+
+  The median commutes with the (monotone) binding function where the mean
+  does not, so median-matching targets a median-unbiased estimator. This
+  removes the finite-sample bias. which can be introduced by the curvature
+  size models, and when the indicators are uninformative (small loadings,
+  few categories, strongly assymetric thresholds). It makes the estimating
+  function somewhat noisier for a given number of simulated samples.
+  Ignored when \code{mc.small.sample = FALSE}.}
 
 \item{verbose}{Should verbose output be printed?}
 
@@ -202,25 +224,61 @@ used for the PLSc consistency correction.}
 
 \item{default.path.estimator}{Character string selecting the estimator used for
 the structural (path) model when the model does not require Generalized Least
-Squares (GLS). The default \code{"ols"} uses Ordinary Least Squares whenever
+Squares (GLS), or Linear Mixed-Effects Regression (LMER).
+The default \code{"ols"} uses Ordinary Least Squares whenever
 possible, falling back to GLS automatically when the model contains residual
 covariances. Setting \code{default.path.estimator = "gls"}
 forces GLS estimation of the structural model even when OLS would otherwise be
 used.}
 
+\item{cluster}{Optional character vector naming the cluster variable(s) in
+\code{data}. The cluster variables are stored alongside the (standardized)
+indicators, and bootstrapping resamples whole clusters instead of rows.
+Required for two-level models (a single cluster variable).}
+
+\item{inner.weights}{Character string selecting the inner weighting scheme
+used with \code{approach.weights = "pls"}. One of: \code{"centroid"},
+\code{"factorial"}, or \code{"path"}. Defaults to \code{"path"}.}
+
+\item{approach.weights}{Character string selecting the approach used to
+estimate the outer weights. \code{"pls"} (default) uses the PLS algorithm,
+with the inner weighting scheme given by \code{inner.weights}. \code{"pca"}
+forms the weights from each construct's own indicators only, ignoring the
+structural.}
+
+\item{mlm}{Should the model be estimated as a two-level (multilevel) model?
+If \code{NULL} (default), this is detected from \code{syntax}, i.e., whether
+it has \code{level: 1} and \code{level: 2} blocks. Two-level models are
+estimated using an extension of the MC-PLSc estimator.
+The \code{mc.*} arguments (e.g., \code{mc.max.iter}, \code{mc.reps}) are used when they are
+specified, whereas arguments like \code{standardize}
+are (currently) not supported. Standard errors (\code{bootstrap = TRUE})
+are computed using the delta method.}
+
+\item{level2.cov}{Two-level models only. How the (co-)variances of the
+variables at level 2 are computed. \code{"means"} uses the
+covariances of the cluster means. \code{"muml"} (default) uses Muthen's (1994)
+estimator of the between-cluster covariance matrix, which corrects for the
+within-cluster variation in the cluster means.}
+
+\item{level2.approach.weights}{Two-level models only. The approach used to
+estimate the outer weights of the level 2 model (\code{approach.weights}
+applies to the level 1 model). Defaults to \code{"pca"}.}
+
 \item{...}{Internal arguments. For advanced users only.}
 }
 \value{
-A \code{Plssem} object containing the estimated parameters, fit measures,
-  factor scores, and any bootstrap results. Methods such as \code{summary()},
-  \code{coef()}, and \code{parameter_estimates()} can be applied to inspect the fit.
+A \code{PlsModel} object containing the estimated parameters, fit measures,
+  factor scores, and any bootstrap results (a \code{PlsMultilevelModel} object
+  for two-level models). Methods such as \code{summary()}, \code{coef()}, and
+  \code{parameter_estimates()} can be applied to inspect the fit.
 }
 \description{
 \code{pls()} estimates Partial Least Squares Structural Equation Models (PLS-SEM)
 and their consistent (PLSc) variants. The function accepts \code{lavaan}-style
 syntax, handles ordered indicators through polychoric correlations and probit
-factor scores, and supports multilevel specifications expressed with
-\code{lme4}-style random effects terms inside the structural model.
+factor scores, and estimates two-level (multilevel) models, with separate
+models for the within (\code{level: 1}) and between (\code{level: 2}) levels.
 }
 \examples{
 \donttest{

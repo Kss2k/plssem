@@ -73,24 +73,26 @@ initModelMcArgs <- function(min.iter,
                             rescov = "reduced",
                             diag.secant = FALSE,
                             small.sample = FALSE,
-                            small.sample.max.k = 50L) {
+                            small.sample.max.k = 50L,
+                            small.sample.point.estimate = "median") {
   list(
-    min.iter         = min.iter,
-    max.iter         = max.iter,
-    mc.reps          = mc.reps,
-    tol              = tol,
-    fixed.seed       = fixed.seed,
-    polyak.juditsky  = polyak.juditsky,
-    pj.extrapolate   = pj.extrapolate,
-    delta.se         = delta.se,
-    delta.jacobian.k = delta.jacobian.k,
-    fn.args          = fn.args,
-    rescov           = rescov,
-    diag.secant      = diag.secant,
-    small.sample     = small.sample,
-    small.sample.max.k = small.sample.max.k,
-    rng.seed         = NULL,
-    p.start          = NULL
+    min.iter                    = min.iter,
+    max.iter                    = max.iter,
+    mc.reps                     = mc.reps,
+    tol                         = tol,
+    fixed.seed                  = fixed.seed,
+    polyak.juditsky             = polyak.juditsky,
+    pj.extrapolate              = pj.extrapolate,
+    delta.se                    = delta.se,
+    delta.jacobian.k            = delta.jacobian.k,
+    fn.args                     = fn.args,
+    rescov                      = rescov,
+    diag.secant                 = diag.secant,
+    small.sample                = small.sample,
+    small.sample.max.k          = small.sample.max.k,
+    small.sample.point.estimate = small.sample.point.estimate,
+    rng.seed                    = NULL,
+    p.start                     = NULL
   )
 }
 
@@ -127,7 +129,8 @@ initModelInfo <- function(baseInfo,
                           is.lower.order,
                           mc.args,
                           boot,
-                          scale) {
+                          scale,
+                          cluster = NULL) {
   stopifnot(is.list(baseInfo), is.list(parsed))
 
   info <- baseInfo
@@ -138,12 +141,9 @@ initModelInfo <- function(baseInfo,
   ordered.x <- intersect(inds.x, ordered)
   ordered.y <- intersect(inds.y, ordered)
 
-  info$lme4.syntax    <- parsed$lme4.syntax
-  info$is.mlm         <- parsed$is.mlm
   info$is.mcpls       <- parsed$is.mcpls
-  info$mc.fast.lmer   <- parsed$mc.fast.lmer
   info$is.probit      <- parsed$is.probit
-  info$cluster        <- parsed$cluster
+  info$cluster        <- cluster
   info$consistent     <- consistent
   info$ordered        <- ordered
   info$ordered.x      <- ordered.x

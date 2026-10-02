@@ -35,8 +35,7 @@ bpls(
 }
 \arguments{
 \item{syntax}{Character string with \code{lavaan}-style model syntax describing
-both measurement (\code{=~}) and structural (\code{~}) relations. Random effects are
-specified with \code{(term | cluster)} statements.}
+both measurement (\code{=~}) and structural (\code{~}) relations.}
 
 \item{data}{A \code{data.frame} or coercible object containing the manifest
 indicators referenced in \code{syntax}. Ordered factors are automatically

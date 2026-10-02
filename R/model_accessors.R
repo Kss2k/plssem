@@ -86,17 +86,6 @@ modelFitUncorrected <- function(object) {
 }
 
 
-modelFitLmer <- function(object) {
-  object@fitLmer
-}
-
-
-`modelFitLmer<-` <- function(object, value) {
-  object@fitLmer <- value
-  object
-}
-
-
 modelFactorScores <- function(object) {
   object@factorScores
 }
@@ -248,11 +237,6 @@ isAdmissible <- function(object) {
   }
 
   object
-}
-
-
-isMLM <- function(object) {
-  isTRUE(object@info$is.mlm)
 }
 
 

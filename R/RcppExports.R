@@ -5,8 +5,8 @@ ordinalizeVectorCpp <- function(x, probs, ztol = 0.001) {
     .Call(`_plssem_ordinalizeVectorCpp`, x, probs, ztol)
 }
 
-estimatePLS_Step0_5_Cpp <- function(lambda, gamma, S, C, SC, R_IndsIdxLVs, lvColIdx, modeB, preds, succs, tolerance, maxiter) {
-    .Call(`_plssem_estimatePLS_Step0_5_Cpp`, lambda, gamma, S, C, SC, R_IndsIdxLVs, lvColIdx, modeB, preds, succs, tolerance, maxiter)
+estimatePLS_Step0_5_Cpp <- function(lambda, gamma, S, C, SC, R_IndsIdxLVs, lvColIdx, modeB, preds, succs, tolerance, maxiter, centroid = FALSE) {
+    .Call(`_plssem_estimatePLS_Step0_5_Cpp`, lambda, gamma, S, C, SC, R_IndsIdxLVs, lvColIdx, modeB, preds, succs, tolerance, maxiter, centroid)
 }
 
 estimatePLS_Step6_Cpp <- function(X, W, prodElemsIdx, prodColIdx, standardize) {

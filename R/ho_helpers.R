@@ -248,8 +248,7 @@ computeCombinedModel <- function(model, lowerOrderAsEta = FALSE) {
   # MC-PLSc is an estimator choice, not merely the presence of ordered
   # indicators. A combined model should only be flagged MC-PLSc if any level
   # was actually fitted with MC-PLSc.
-  is.mcpls     <- isTRUE(info1$is.mcpls)     || isTRUE(info2$is.mcpls)
-  mc.fast.lmer <- isTRUE(info1$mc.fast.lmer) || isTRUE(info2$mc.fast.lmer)
+  is.mcpls <- isTRUE(info1$is.mcpls) || isTRUE(info2$is.mcpls)
 
   is.probit <- (
     (isTRUE(info1$is.probit) || isTRUE(info2$is.probit)) && !is.mcpls
@@ -277,9 +276,7 @@ computeCombinedModel <- function(model, lowerOrderAsEta = FALSE) {
     indsLvs      = namedListUnion(info1$indsLvs, info2$indsLvs),
     cluster      = info1$cluster,
     ordered      = ordered.base,
-    is.mlm       = isTRUE(info1$is.mlm) || isTRUE(info2$is.mlm),
     is.mcpls     = is.mcpls,
-    mc.fast.lmer = mc.fast.lmer,
     is.probit    = is.probit,
     is.cfa       = isTRUE(info1$is.cfa) && (is.null(info2$is.cfa) || info2$is.cfa),
     is.high.ord  = TRUE,
@@ -297,7 +294,6 @@ computeCombinedModel <- function(model, lowerOrderAsEta = FALSE) {
     intTermElems   = namedListUnion(info1$intTermElems, info2$intTermElems),
     intTermNames   = union(info1$intTermNames, info2$intTermNames),
     is.nlin        = isTRUE(info1$is.nlin) || isTRUE(info2$is.nlin),
-    lme4.syntax    = info1$lme4.syntax,
     consistent     = info1$consistent,
     reliabilities  = info1$reliabilities,
     rng.seed       = info1$rng.seed,

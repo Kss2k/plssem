@@ -35,6 +35,11 @@ mpls <- function(syntax,
 
   small.sample.point.estimate <- match.arg(small.sample.point.estimate)
   boot.parallel <- match.arg(boot.parallel)
+
+  # Check misspecified user arguments
+  if (bootstrap)
+    checkBootParallelArgs(parallel = boot.parallel, ncores = boot.ncores)
+
   level2.cov <- match.arg(level2.cov)
   missing <- match.arg(tolower(missing), c("listwise", "mean", "knn"))
   approach.weights <- match.arg(tolower(approach.weights), c("pls", "pca"))

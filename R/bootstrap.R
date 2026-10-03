@@ -20,17 +20,7 @@ bootstrap <- function(model,
   mc.delta.se <- model@info$mc.args$delta.se
 
   # Check misspecified user arguments
-  pls_warnif(
-    parallel != "no" && ncores <= 1L,
-    "The `boot.ncores` argument has to be larger than 1 for parallel\n",
-    "bootstrapping to be enabled! Try `boot.ncores = 2`"
-  )
-
-  pls_warnif(
-    parallel == "no" && ncores > 1L,
-    'The `boot.parallel` must be "multicore" or "multisession" for parallel\n',
-    'bootstrapping to be enabled! Try `boot.parallel="multisession"`'
-  )
+  checkBootParallelArgs(parallel = parallel, ncores = ncores)
 
   baseModel <- model
 
@@ -326,6 +316,21 @@ bootstrap <- function(model,
   se[se <= zero.tol] <- NA_real_
 
   list(se = se, boot = resultsMat[, par.names, drop = FALSE], vcov = vcov)
+}
+
+
+checkBootParallelArgs <- function(parallel, ncores) {
+  pls_warnif(
+    parallel != "no" && ncores <= 1L,
+    "The `boot.ncores` argument has to be larger than 1 for parallel",
+    "bootstrapping to be enabled! Try `boot.ncores = 2`"
+  )
+
+  pls_warnif(
+    parallel == "no" && ncores > 1L,
+    'The `boot.parallel` must be "multicore" or "multisession" for parallel',
+    'bootstrapping to be enabled! Try `boot.parallel="multisession"`'
+  )
 }
 
 

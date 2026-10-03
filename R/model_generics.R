@@ -9,17 +9,24 @@ printStatusHeader <- function(admissible, iterations) {
 }
 
 
-# Print a block of aligned name/value pairs (numeric values are formatted),
-# optionally with a title.
-printSummarySection <- function(values, title = NULL, width.out) {
+printSummarySection <- function(values, title = NULL, width.out, values.extra = NULL) {
   if (!length(values))
     return(invisible(NULL))
 
   rhs <- if (is.numeric(values)) formatNumeric(values) else values
 
-  if (!is.null(title)) cat(title, "\n", sep = "")
-  cat(allignLhsRhs(lhs = names(values), rhs = rhs, pad = "  ",
-                   width.out = width.out), "\n", sep = "")
+  if (!is.null(title))
+    cat(title, "\n", sep = "")
+
+  str <- allignLhsRhs(
+    lhs = names(values),
+    rhs = rhs,
+    pad = "  ",
+    width.out = width.out,
+    rhs.scaled = values.extra
+  )
+
+  cat(str, "\n", sep = "")
 }
 
 
@@ -97,7 +104,7 @@ setMethod("summary", "PlsModel", function(object, fit = TRUE, unstandardized = F
 
       idx0 <- paste0(parTable$lhs, parTable$op, parTable$rhs)
       idx1 <- paste0(parTableu$lhs, parTableu$op, parTableu$rhs)
-   
+
       parTable$Unstd <- parTableu$est[match(idx0, idx1)]
       extra.cols <- c(extra.cols, "Unstd")
 
@@ -185,8 +192,8 @@ print.SummaryPlsSem <- function(x, ...) {
     ))
   }
 
-  printSummarySection(x$r2$inds, title = "R-squared (indicators):", width.out = width.out)
-  printSummarySection(x$r2$etas, title = "R-squared (latents):",    width.out = width.out)
+  printSummarySection(x$r2$inds, title = "R-squared [indicators]:", width.out = width.out)
+  printSummarySection(x$r2$etas, title = "R-squared [latents]:",    width.out = width.out)
 
   plsPrintParTable(x$parTable, extra.cols = x$print$extra.cols)
   invisible(x)
@@ -585,7 +592,7 @@ setGeneric(
 )
 
 
-#' @rdname pls_rmsea 
+#' @rdname pls_rmsea
 #' @export
 setMethod("pls_rmsea", "PlsModel", function(object, saturated = FALSE, mc.reps = 1e6, ...) {
   fitMeasures(object, saturated = saturated, mc.reps = mc.reps)$rmsea
@@ -608,7 +615,7 @@ setGeneric(
 )
 
 
-#' @rdname pls_srmr 
+#' @rdname pls_srmr
 #' @export
 setMethod("pls_srmr", "PlsModel", function(object, saturated = FALSE, mc.reps = 1e6, ...) {
   fitMeasures(object, saturated = saturated, mc.reps = mc.reps)$srmr
@@ -631,7 +638,7 @@ setGeneric(
 )
 
 
-#' @rdname pls_chisq 
+#' @rdname pls_chisq
 #' @export
 setMethod("pls_chisq", "PlsModel", function(object, saturated = FALSE, mc.reps = 1e6, ...) {
   fitMeasures(object, saturated = saturated, mc.reps = mc.reps)$chisq
@@ -654,7 +661,7 @@ setGeneric(
 )
 
 
-#' @rdname pls_chisq 
+#' @rdname pls_chisq
 #' @export
 setMethod("pls_chisq_df", "PlsModel", function(object, saturated = FALSE, mc.reps = 1e6, ...) {
   fitMeasures(object, saturated = saturated, mc.reps = mc.reps)$chisq.df

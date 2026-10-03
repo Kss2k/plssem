@@ -53,9 +53,9 @@ setMethod("summary", "PlsMultilevelModel", function(object, fit = TRUE, ...) {
   }
 
   out <- list(
-    fit       = object,
-    levels    = levels,
-    agnostic  = parTable[is.na(parTable$level), , drop = FALSE], # e.g., thresholds
+    fit      = object,
+    levels   = levels,
+    agnostic = parTable[is.na(parTable$level), , drop = FALSE], # e.g., thresholds
     print  = list(width = plsGetWidthPrintedParTable(parTable)),
     info   = list(
       estimator  = info$estimator,
@@ -65,8 +65,9 @@ setMethod("summary", "PlsMultilevelModel", function(object, fit = TRUE, ...) {
       iterations = object@status$iterations,
       se         = if (length(object@boot)) "Delta (cluster bootstrap)" else "None"
     ),
-    icc        = icc,
-    rsd        = rsd
+    icc = icc,
+    rsd = rsd,
+    fit.measures = fit.measures
   )
 
   class(out) <- "SummaryPlsMultilevel"
@@ -96,24 +97,36 @@ print.SummaryPlsMultilevel <- function(x, ...) {
   printSummarySection(x$icc, title = "Intraclass correlations:", width.out = width.out)
   printSummarySection(x$rsd, title = "Random slopes (standard deviations):", width.out = width.out)
 
+  fm <- x$fit.measures
+  if (!is.null(fm)) {
+
+    .levelValues <- function(i) {
+      c(
+        "  "                 = c("Within", "Between")[[i]],
+        "Chi-Square"         = sprintf("%.3f", fm[[i]]$chisq),
+        "Degrees of Freedom" = sprintf("%d",   as.integer(fm[[i]]$chisq.df)),
+        "SRMR"               = sprintf("%.3f", fm[[i]]$srmr),
+        "RMSEA"              = sprintf("%.3f", fm[[i]]$rmsea)
+      )
+    }
+
+    printSummarySection(
+      title        = "Fit Measures:",
+      width.out    = width.out,
+      values       = .levelValues(1L),
+      values.extra = .levelValues(2L)
+    )
+  }
+
+
   titles <- c("Level 1 [within]:", "Level 2 [between]:")
 
   for (l in 1:2) {
     level <- x$levels[[l]]
     cat("\n", titles[[l]], "\n\n", sep = "")
 
-    fm <- level$fit.measures
-    if (!is.null(fm)) {
-      printSummarySection(title = "Fit Measures:", width.out = width.out, values = c(
-        "Chi-Square"         = sprintf("%.3f", fm$chisq),
-        "Degrees of Freedom" = sprintf("%d",   as.integer(fm$chisq.df)),
-        "SRMR"               = sprintf("%.3f", fm$srmr),
-        "RMSEA"              = sprintf("%.3f", fm$rmsea)
-      ))
-    }
-
-    printSummarySection(level$r2.inds, title = "R-squared (indicators):", width.out = width.out)
-    printSummarySection(level$r2.etas, title = "R-squared (latents):",    width.out = width.out)
+    printSummarySection(level$r2.inds, title = "R-squared [indicators]:", width.out = width.out)
+    printSummarySection(level$r2.etas, title = "R-squared [latents]:",    width.out = width.out)
 
     pt <- level$parTable
     pt$level <- NULL

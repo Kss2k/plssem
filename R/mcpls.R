@@ -842,7 +842,9 @@ calcMcJacobians <- function(.fg,
 
 
 calcMcThresholdJacobians <- function(.f, .simulate, p0, p1, thresholdStruct,
-                                     eps = 5e-3, seed = NULL) {
+                                     eps = 5e-3, seed = NULL,
+                                     sim = .simulate(p0, standardize = TRUE, seed = seed),
+                                     sim.cont = sim$ov) {
   probs0 <- thresholdStruct@proportions
 
   Jp <- matrix(
@@ -856,8 +858,6 @@ calcMcThresholdJacobians <- function(.f, .simulate, p0, p1, thresholdStruct,
     nrow = length(p1), ncol = length(probs0),
     dimnames = list(names(p1), names(probs0))
   )
-
-  sim0 <- .simulate(p0, standardize = TRUE, seed = seed)
 
   for (i in seq_along(probs0)) {
     points <- boundedProbabilityFiniteDiffPoints(probs0, i = i, eps = eps)
@@ -875,14 +875,14 @@ calcMcThresholdJacobians <- function(.f, .simulate, p0, p1, thresholdStruct,
     T0@proportions <- points$minus
 
     Jp[,i] <- (
-      .f(p0, thresholdStruct = T1, sim = sim0) -
-      .f(p0, thresholdStruct = T0, sim = sim0)
+      .f(p0, thresholdStruct = T1, sim = sim) -
+      .f(p0, thresholdStruct = T0, sim = sim)
     ) / points$denominator
   }
 
   # Jacobian probs->thresholds
   # use larger eps for better numerical stability
-  T <- thresholdJacobian(thresholdStruct, sim.cont = sim0$ov, eps = 2 * eps)
+  T <- thresholdJacobian(thresholdStruct, sim.cont = sim.cont, eps = 2 * eps)
 
   thr.rows  <- intersect(rownames(Gp), rownames(T))
   prob.cols <- intersect(colnames(Gp), colnames(T))

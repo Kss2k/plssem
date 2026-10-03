@@ -78,6 +78,7 @@ mpls <- function(syntax,
   # data must be sorted by the clusters
   data <- as.matrix(data[order(clusterIdx), vars.all,drop=FALSE])
   thresholdStruct0 <- ThresholdStruct(data, ordered = ordered)
+  data.ord <- data[, ordered, drop = FALSE] # (unstandardized) categories, see `.bootstrap()`
   data[,parsed$ovs.all] <- Rfast::standardise(data[,parsed$ovs.all])
   clusterIdx <- data[,cluster, drop=TRUE]
   n <- NROW(data)
@@ -246,13 +247,13 @@ mpls <- function(syntax,
     )
   }
 
-  .f <- function(p, sim = NULL, seed = rng.seed) {
+  .f <- function(p, sim = NULL, seed = rng.seed, thresholdStruct = thresholdStruct0) {
     if (is.null(sim))
       sim <- .simulate(p, seed = seed)
 
     sim.ov <- ordinalizeMultilevelData(
       ov              = sim$ov,
-      thresholdStruct = thresholdStruct0
+      thresholdStruct = thresholdStruct
     )
 
     .estimates <- function(rows = seq_len(NROW(sim.ov)), offset = 0L) {
@@ -390,17 +391,55 @@ mpls <- function(syntax,
   if (!bootstrap)
     return(model)
 
-  # Standard errors (delta method)
+  # Standard errors (delta method). The category proportions of the ordered
+  # variables are treated as additional (observed) statistics as in `mcpls()`
+  #   dp = J0^-1 (dT - Jp dc)
+  #   dy = J1 dp + Gp dc
+  probs0 <- thresholdStruct0@proportions
+
+  # (continuous) total scores of the separate simulations of the levels
+  .levelsOV <- function(p, sim) {
+    combineMultilevelData(
+      sim    = sim,
+      parsed = parsed,
+      icc    = .parStruct(p)$icc,
+      idx.l2 = seq_len(NROW(sim$sim.l1$all))
+    )
+  }
+
   .values <- function(p, sim) {
     parStruct <- .parStruct(p)
 
     l1 <- finalizeMultilevelLevel(baseFits$level.1, parStruct$level.1, sim$sim.l1, iterations = 0L)
     l2 <- finalizeMultilevelLevel(baseFits$level.2, parStruct$level.2, sim$sim.l2, iterations = 0L)
 
+    if (length(ordered)) {
+      thr <- updateThresholds(thr = thresholdStruct0, sim.cont = .levelsOV(p, sim))@thresholds
+    } else {
+      thr <- numeric(0L)
+    }
+
     c(
       getLevelParamValues(l1, l2),
+      thr,
       prefixNames(parStruct$icc, prefix = "icc."),
       prefixNames(parStruct$rsd, prefix = "rsd.")
+    )
+  }
+
+  # Jacobians of the root equation Jp and the parameter values Gp
+  # with respect to the category proportions
+  .probs <- function(seed) {
+    simL <- .simulateLevels(root, seed = seed)
+
+    calcMcThresholdJacobians(
+      .f              = \(p, thresholdStruct, sim) c(.f(p, sim = sim, thresholdStruct = thresholdStruct)),
+      .simulate       = NULL,
+      p0              = root,
+      p1              = values,
+      thresholdStruct = thresholdStruct0,
+      sim             = .simulate(root, seed = seed),
+      sim.cont        = .levelsOV(root, simL)
     )
   }
 
@@ -414,7 +453,7 @@ mpls <- function(syntax,
       Xb[, cluster] <- cl
       Xb[, parsed$ovs.all] <- Rfast::standardise(Xb[, parsed$ovs.all, drop = FALSE])
 
-      .stats(refitAuxiliaryMLM_PLS(
+      stats <- .stats(refitAuxiliaryMLM_PLS(
         fits           = baseFits,
         parsed         = parsed,
         data.sim       = Xb,
@@ -424,7 +463,16 @@ mpls <- function(syntax,
         level2.cov     = level2.cov
       ))
 
-    }, error = \(e) structure(rep(NA_real_, length(target)), error = conditionMessage(e)))
+      # the proportions are computed from the (unstandardized) categories
+      probs <- updateProportions(
+        thresholdStruct0,
+        data = data.ord[rows, , drop = FALSE]
+      )
+
+      c(stats, probs@proportions)
+
+    }, error = \(e) structure(rep(NA_real_, length(target) + length(probs0)),
+                              error = conditionMessage(e)))
   }
 
   .fg <- function(p, seed) {
@@ -463,6 +511,7 @@ mpls <- function(syntax,
     if (length(errors)) paste("First error:", errors[[1L]])
   )
 
+  colnames(T0) <- c(names(start), names(probs0))
   V0 <- stats::cov(T0, use = "complete.obs")
 
   if (verbose) pls_msg_note("Calculating Jacobian...")
@@ -470,23 +519,39 @@ mpls <- function(syntax,
   values <- .values(root, sim = .simulateLevels(root))
 
   JAC <- calcMcJacobians(
-    .fg      = .fg,
-    seeds    = seeds,
-    p0       = root,
-    p1       = values,
-    lower    = lower,
-    upper    = upper,
-    eps      = delta.eps,
-    parallel = boot.parallel,
-    ncores   = boot.ncores,
-    verbose  = verbose,
-    iseed    = boot.iseed
+    .fg         = .fg,
+    seeds       = seeds,
+    p0          = root,
+    p1          = values,
+    lower       = lower,
+    upper       = upper,
+    eps         = delta.eps,
+    parallel    = boot.parallel,
+    ncores      = boot.ncores,
+    verbose     = verbose,
+    iseed       = boot.iseed,
+    .probs      = if (length(probs0)) .probs else NULL,
+    probs.names = names(probs0)
   )
 
   J0 <- JAC$J0
   J1 <- JAC$J1
 
-  vcov <- deltaMcVcov(invertMcJacobian(J0), V = V0, J1 = J1)
+  if (length(probs0)) {
+    Jp <- JAC$Jp
+    Gp <- JAC$Gp
+  } else {
+    Jp <- Gp <- NULL
+  }
+
+  vcov <- deltaMcVcov(
+    J0.inv = invertMcJacobian(J0),
+    V      = V0,
+    J1     = J1,
+    Jp     = Jp,
+    Gp     = Gp
+  )
+
   se   <- sqrt(pmax(diag(vcov), 0))
   se[se <= 1e-10] <- NA_real_ # fixed/constant parameters
 
@@ -506,7 +571,9 @@ mpls <- function(syntax,
     naive     = T0,
     vcov.naive = V0,
     J0        = J0,
-    J1        = J1
+    J1        = J1,
+    Jp        = Jp,
+    Gp        = Gp
   )
 
   model
@@ -537,7 +604,7 @@ setParTableMultilevelSE <- function(parTable, se) {
   l2 <- which(parTable$level == 2L)
   nm[l2] <- paste0(nm[l2], ".l2")
 
-  parTable$se       <- unname(se[nm]) # NA for thresholds (not included)
+  parTable$se       <- unname(se[nm])
   parTable$z        <- parTable$est / parTable$se
   parTable$pvalue   <- 2 * stats::pnorm(-abs(parTable$z))
   parTable$ci.lower <- parTable$est - CI_QUANTILE * parTable$se

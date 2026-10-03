@@ -4,10 +4,12 @@
 \alias{summary,PlsMultilevelModel-method}
 \title{Summarize a fitted \code{PlsMultilevelModel} model}
 \usage{
-\S4method{summary}{PlsMultilevelModel}(object, ...)
+\S4method{summary}{PlsMultilevelModel}(object, fit = TRUE, ...)
 }
 \arguments{
 \item{object}{A \code{PlsMultilevelModel} object.}
+
+\item{fit}{Logical; Whether to compute fit measures (for each level).}
 
 \item{...}{Currently unused.}
 }

@@ -18,20 +18,25 @@ setMethod("show", "PlsMultilevelModel", function(object) {
 #' Summarize a fitted \code{PlsMultilevelModel} model
 #'
 #' @param object A \code{PlsMultilevelModel} object.
+#' @param fit Logical; Whether to compute fit measures (for each level).
 #' @param ... Currently unused.
 #' @return A \code{SummaryPlsMultilevel} list with formatted results.
 #' @export
-setMethod("summary", "PlsMultilevelModel", function(object, ...) {
+setMethod("summary", "PlsMultilevelModel", function(object, fit = TRUE, ...) {
   parTable <- parameter_estimates(object)
   info     <- object@info
+
+  if (fit) fit.measures <- fit_measures(object)
+  else fit.measures <- NULL
 
   levels <- lapply(1:2, FUN = \(l) {
     pt <- parTable[parTable$level %in% l, , drop = FALSE]
 
     list(
-      parTable = pt,
-      r2.etas  = getR2ParTable(getEtas(pt, checkAny = FALSE), parTable = pt),
-      r2.inds  = getR2ParTable(getReflectiveIndicators(pt), parTable = pt)
+      parTable     = pt,
+      r2.etas      = getR2ParTable(getEtas(pt, checkAny = FALSE), parTable = pt),
+      r2.inds      = getR2ParTable(getReflectiveIndicators(pt), parTable = pt),
+      fit.measures = fit.measures[[l]]
     )
   })
 
@@ -97,6 +102,16 @@ print.SummaryPlsMultilevel <- function(x, ...) {
     level <- x$levels[[l]]
     cat("\n", titles[[l]], "\n\n", sep = "")
 
+    fm <- level$fit.measures
+    if (!is.null(fm)) {
+      printSummarySection(title = "Fit Measures:", width.out = width.out, values = c(
+        "Chi-Square"         = sprintf("%.3f", fm$chisq),
+        "Degrees of Freedom" = sprintf("%d",   as.integer(fm$chisq.df)),
+        "SRMR"               = sprintf("%.3f", fm$srmr),
+        "RMSEA"              = sprintf("%.3f", fm$rmsea)
+      ))
+    }
+
     printSummarySection(level$r2.inds, title = "R-squared (indicators):", width.out = width.out)
     printSummarySection(level$r2.etas, title = "R-squared (latents):",    width.out = width.out)
 
@@ -122,6 +137,23 @@ print.SummaryPlsMultilevel <- function(x, ...) {
 
   invisible(x)
 }
+
+
+#' Fit measures for \code{PlsMultilevelModel} objects
+#'
+#' Computes the fit measures (chi-square, SRMR, RMSEA) for each level. The
+#' observed (auxiliary) correlation matrices of the levels are compared with
+#' the ones implied by the model.
+#'
+#' @param object A \code{PlsMultilevelModel} object.
+#' @param saturated Logical; if \code{TRUE}, compute the saturated fit.
+#' @param mc.reps Integer; number of observations in the simulated data.
+#' @param ... Currently unused.
+#' @return A list with the fit measures of each level (\code{level.1} and \code{level.2}).
+#' @export
+setMethod("fit_measures", "PlsMultilevelModel", function(object, saturated = FALSE, mc.reps = 1e6, ...) {
+  fitMeasuresMultilevel(object, saturated = saturated, mc.reps = mc.reps)
+})
 
 
 #' Extract coefficients from a \code{PlsMultilevelModel} model

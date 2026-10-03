@@ -168,6 +168,58 @@ fitMeasures <- function(model, saturated = FALSE, mc.reps = 1e6) {
 }
 
 
+fitMeasuresMultilevel <- function(model, saturated = FALSE, mc.reps = 1e6) {
+  failed <- list(chisq = NA_real_, chisq.df = NA_real_, rmsea = NA_real_, srmr = NA_real_)
+
+  tryCatch({
+    pls_msg_note(
+      "Fit measures for MC-PLSc models are under development!",
+      "Traditional fit criteria will likely be too strict."
+    )
+
+    pls_msg_note(sprintf(
+      "Resampling MC-PLSc-MLM Model (R = %d)...", mc.reps
+    ))
+
+    resampled <- resampleMPLS_Fit(model, mc.reps = mc.reps)
+    Expected  <- resampled@fit$S.expected
+    Observed  <- resampled@fit$S.observed
+
+    N      <- c(model@info$n, model@info$nclusters)
+    levels <- list(model@level.1, model@level.2)
+
+    out <- lapply(1:2, FUN = \(l) {
+      tryCatch({
+        O <- cov2cor(Observed[[l]])
+        E <- cov2cor(Expected[[l]][rownames(O), colnames(O), drop = FALSE])
+
+        chisq    <- calcChisq(Expected = E, Observed = O, N = N[[l]])
+        chisq.df <- calcChisqDf(levels[[l]], saturated = saturated)
+
+        list(
+          chisq    = chisq,
+          chisq.df = chisq.df,
+          rmsea    = calcRMSEA(chisq, df = chisq.df, N = N[[l]])$rmsea,
+          srmr     = calcSRMR(Expected = E, Observed = O, saturated = saturated)
+        )
+
+      }, error = function(e) {
+        pls_msg_warn(sprintf("Calculation of fit measures failed for level %d, message:\n%s",
+                             l, conditionMessage(e)))
+        failed
+      })
+    })
+
+    stats::setNames(out, nm = c("level.1", "level.2"))
+
+  }, error = function(e) {
+    pls_msg_warn(paste0("Calculation of fit measures failed, message:\n",
+                 conditionMessage(e)))
+    list(level.1 = failed, level.2 = failed)
+  })
+}
+
+
 calcSRMR <- function(Expected, Observed, saturated = FALSE, diagonal  = TRUE) {
   tryCatch({
     Diff <- cov2cor(Expected) - cov2cor(Observed)

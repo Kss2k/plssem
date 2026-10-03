@@ -96,10 +96,18 @@ mpls <- function(syntax,
     ...
   )
 
-  is.hi.ord.l1 <- isTRUE(combinedModel(baseFits$level.1)@info$is.high.ord)
-  is.hi.ord.l2 <- isTRUE(combinedModel(baseFits$level.2)@info$is.high.ord)
-  use.full.rescov.l1 <- combinedModel(baseFits$level.1)@info$path.estimator == "gls"
-  use.full.rescov.l2 <- combinedModel(baseFits$level.2)@info$path.estimator == "gls"
+  # (level 1, level 2)
+  is.hi.ord <- vapply(
+    X         = baseFits[c("level.1", "level.2")],
+    FUN       = \(fit) isTRUE(combinedModel(fit)@info$is.high.ord),
+    FUN.VALUE = logical(1L)
+  )
+
+  use.full.rescov <- vapply(
+    X = baseFits[c("level.1", "level.2")],
+    FUN = \(fit) combinedModel(fit)@info$path.estimator == "gls",
+    FUN.VALUE = logical(1L)
+  )
 
   # The simulated data consists of `times` replicates of the
   # observed cluster structure, stacked on top of each other. With
@@ -114,8 +122,6 @@ mpls <- function(syntax,
     times      <- min(times, max(round(small.sample.max.k), 1))
     mc.reps.l1 <- times * n
   }
-
-  mc.reps.l2 <- nclusters * times
 
   clusterSizes.sim <- rep(clusterSizes, times)
   clusterIdx.sim <- rep(seq_along(clusterSizes.sim), clusterSizes.sim)
@@ -189,100 +195,65 @@ mpls <- function(syntax,
     list(level.1 = parxL1, level.2 = parxL2, icc = iccx, rsd = rsdx)
   }
 
-  # The levels must use different seeds, otherwise a fixed seed yields
-  # identical draws (and thus correlated components) at both levels.
-  .simulate <- function(p, standardize = FALSE, seed = rng.seed) {
-    seed.l1   <- if (is.null(seed)) NULL else seed + 1L
+  # Clustered simulation, with `times` replicates of the observed cluster
+  # structure (used for the calibration)
+  .simulate <- function(p, seed = rng.seed) {
     parStruct <- .parStruct(p)
-    icc <- parStruct$icc
 
-    simL2 <- simulateDataParTable(
-      parTable     = parStruct$level.2,
-      N            = mc.reps.l2,
+    sim <- simulateMultilevelData(
+      parStruct    = parStruct,
+      parsed       = parsed,
+      clusterSizes = clusterSizes,
+      times        = times,
       seed         = seed,
-      check.hi.ord = is.hi.ord.l2,
-      standardize  = standardize,
-      full         = use.full.rescov.l2
+      is.hi.ord    = is.hi.ord,
+      full         = use.full.rescov
     )
 
-    parTableSimL1 <- parStruct$level.1
-    exogenous     <- NULL
-
-    if (NROW(rslopes)) {
-
-      # treat the random effect as an interaction term, where the coefficient
-      # is the standard deviation of the random effect
-      parTableSimL1 <- rbind(parTableSimL1, data.frame(
-        lhs     = rslopes$lhs,
-        op      = "~",
-        rhs     = paste0(rslopes$name, ":", rslopes$rhs),
-        est     = unname(parStruct$rsd[rslopes$name]),
-        is.free = FALSE
-      ))
-
-      exogenous <- as.data.frame(
-        simL2$all[clusterIdx.sim, rslopes$name, drop = FALSE]
-      )
-    }
-
-    simL1 <- simulateDataParTable(
-      parTable     = parTableSimL1,
-      N            = mc.reps.l1,
-      seed         = seed.l1,
-      check.hi.ord = is.hi.ord.l1,
-      standardize  = standardize,
-      full         = use.full.rescov.l1,
-      exogenous    = exogenous
-    )
-
-    sim.ov.l1 <- toOriginalNames(simL1$ov)
-    sim.ov.l2 <- toOriginalNames(simL2$ov)[clusterIdx.sim,,drop=FALSE]
-    mix <- parsed$ovs.both
-
-    if (length(mix)) {
-      ov <- cbind(
-        sim.ov.l1[,parsed$ovs.only.1,drop=FALSE],
-        sim.ov.l2[,parsed$ovs.only.2,drop=FALSE],
-        sweep(sim.ov.l1[,mix,drop=FALSE], MARGIN = 2, STATS = sqrt(1 - icc), FUN = "*") +
-        sweep(sim.ov.l2[,mix,drop=FALSE], MARGIN = 2, STATS = sqrt(icc), FUN = "*")
-      )
-
-    } else { # no variables with both a within and a between component
-      ov <- cbind(
-        sim.ov.l1[,parsed$ovs.only.1,drop=FALSE],
-        sim.ov.l2[,parsed$ovs.only.2,drop=FALSE]
-      )
-    }
+    simL1 <- sim$sim.l1
+    simL2 <- sim$sim.l2
 
     # the random slope rows are appended after the level 1 parameters
     nL1   <- NROW(parStruct$level.1)
     idxL1 <- seq_len(nL1)
     idxR  <- nL1 + seq_len(NROW(rslopes))
 
-    lower <- c(
+    sim$lower <- c(
       simL1$lower[idxL1][freeL1], simL2$lower[freeL2], lower.icc,
       pmax(simL1$lower[idxR], lower.rsd)
     )
 
-    upper <- c(
+    sim$upper <- c(
       simL1$upper[idxL1][freeL1], simL2$upper[freeL2], upper.icc,
       pmin(simL1$upper[idxR], upper.rsd)
     )
 
-    list(ov = ov, lower = lower, upper = upper, sim.l1 = simL1, sim.l2 = simL2)
+    sim
+  }
+
+  # Separate (standardized) simulations of the levels, without the cluster
+  # structure. Used for the final parameter values (see `updateMultilevelFit()`)
+  .simulateLevels <- function(p, seed = rng.seed) {
+    simulateMultilevelLevels(
+      parStruct   = .parStruct(p),
+      rslopes     = rslopes,
+      N.l1        = mc.reps,
+      N.l2        = mc.reps,
+      seed        = seed,
+      standardize = TRUE,
+      is.hi.ord   = is.hi.ord,
+      full        = use.full.rescov
+    )
   }
 
   .f <- function(p, sim = NULL, seed = rng.seed) {
     if (is.null(sim))
       sim <- .simulate(p, seed = seed)
 
-    if (length(ordered)) {
-      sim.ov <- ordinalizeDataFrame(
-        df = as.data.frame(sim$ov), thresholdStruct = thresholdStruct0
-      )
-    } else {
-      sim.ov <- sim$ov
-    }
+    sim.ov <- ordinalizeMultilevelData(
+      ov              = sim$ov,
+      thresholdStruct = thresholdStruct0
+    )
 
     .estimates <- function(rows = seq_len(NROW(sim.ov)), offset = 0L) {
       refit <- refitAuxiliaryMLM_PLS(
@@ -338,20 +309,29 @@ mpls <- function(syntax,
 
   root      <- c(mcfit$root)
   parStruct <- .parStruct(root)
-  simRoot   <- .simulate(root, standardize = TRUE) # as in `mcpls()`
 
-  level.1 <- finalizeMultilevelLevel(
-    model = baseFits$level.1, parTable = parStruct$level.1,
-    sim = simRoot$sim.l1, iterations = mcfit$iter
+  # The arguments needed for updating (and resampling) the fit at the root,
+  # see `updateMultilevelFit()` and `resampleMPLS_Fit()`
+  update.args <- list(
+    parStruct       = parStruct,
+    baseFits        = baseFits,
+    parsed          = parsed,
+    thresholdStruct = thresholdStruct0,
+    cluster         = cluster,
+    clusterSizes    = clusterSizes,
+    level2.cov      = level2.cov,
+    is.hi.ord       = is.hi.ord,
+    full            = use.full.rescov,
+    mc.reps         = mc.reps,
+    seed            = rng.seed,
+    iterations      = mcfit$iter,
+    params.only     = TRUE
   )
 
-  level.2 <- finalizeMultilevelLevel(
-    model = baseFits$level.2, parTable = parStruct$level.2,
-    sim = simRoot$sim.l2, iterations = mcfit$iter
-  )
-
-  # thresholds of the latent response (total) scores
-  thresholdStruct <- updateThresholds(thr = thresholdStruct0, sim.cont = simRoot$ov)
+  updated <- do.call(updateMultilevelFit, update.args)
+  level.1 <- updated$level.1
+  level.2 <- updated$level.2
+  thresholdStruct <- updated$thresholdStruct
 
   parTableInput <- rbind(
     cbind(parsed$level.1, level = 1L),
@@ -388,7 +368,8 @@ mpls <- function(syntax,
       iterations    = mcfit$iter,
       converged     = converged,
       diverged      = mcfit$diverged,
-      is.admissible = admissible
+      is.admissible = admissible,
+      mpls.update.args = update.args
     ),
     params          = list(
       icc        = parStruct$icc,
@@ -447,8 +428,12 @@ mpls <- function(syntax,
   }
 
   .fg <- function(p, seed) {
-    sim <- .simulate(p, standardize = TRUE, seed = seed)
-    list(f = c(.f(p, sim = sim)), g = .values(p, sim = sim))
+    # The (calibration) statistics require the cluster structure.
+    # The final parameter values are based on separate simulations of the levels.
+    list(
+      f = c(.f(p, sim = .simulate(p, seed = seed))),
+      g = .values(p, sim = .simulateLevels(p, seed = seed))
+    )
   }
 
   if (is.null(boot.iseed)) boot.iseed <- floor(stats::runif(1L, min = 0, max = 999999999))
@@ -482,7 +467,7 @@ mpls <- function(syntax,
 
   if (verbose) pls_msg_note("Calculating Jacobian...")
   seeds  <- floor(stats::runif(delta.jacobian.k, min = 0, max = 9999999))
-  values <- .values(root, sim = simRoot)
+  values <- .values(root, sim = .simulateLevels(root))
 
   JAC <- calcMcJacobians(
     .fg      = .fg,
@@ -586,6 +571,242 @@ finalizeMultilevelLevel <- function(model, parTable, sim, iterations) {
   }
 
   combined
+}
+
+
+# Simulate levels seperately
+simulateMultilevelLevels <- function(parStruct,
+                                     rslopes,
+                                     N.l1,
+                                     N.l2,
+                                     idx.l2 = seq_len(N.l1),
+                                     seed = NULL,
+                                     standardize = FALSE,
+                                     is.hi.ord = c(FALSE, FALSE),
+                                     full = c(FALSE, FALSE)) {
+  # The levels must use different seeds, otherwise a fixed seed yields
+  # identical draws (and thus correlated components) at both levels.
+  seed.l1 <- if (is.null(seed)) NULL else seed + 1L
+
+  simL2 <- simulateDataParTable(
+    parTable     = parStruct$level.2,
+    N            = N.l2,
+    seed         = seed,
+    check.hi.ord = is.hi.ord[[2L]],
+    standardize  = standardize,
+    full         = full[[2L]]
+  )
+
+  parTableSimL1 <- parStruct$level.1
+  exogenous     <- NULL
+
+  if (NROW(rslopes)) {
+
+    # treat the random effect as an interaction term, where the coefficient
+    # is the standard deviation of the random effect
+    parTableSimL1 <- rbind(parTableSimL1, data.frame(
+      lhs     = rslopes$lhs,
+      op      = "~",
+      rhs     = paste0(rslopes$name, ":", rslopes$rhs),
+      est     = unname(parStruct$rsd[rslopes$name]),
+      is.free = FALSE
+    ))
+
+    exogenous <- as.data.frame(
+      simL2$all[idx.l2, rslopes$name, drop = FALSE]
+    )
+  }
+
+  simL1 <- simulateDataParTable(
+    parTable     = parTableSimL1,
+    N            = N.l1,
+    seed         = seed.l1,
+    check.hi.ord = is.hi.ord[[1L]],
+    standardize  = standardize,
+    full         = full[[1L]],
+    exogenous    = exogenous
+  )
+
+  list(sim.l1 = simL1, sim.l2 = simL2)
+}
+
+
+# Simulate levels in conjunction (used for calibration)
+simulateMultilevelData <- function(parStruct,
+                                   parsed,
+                                   clusterSizes,
+                                   times,
+                                   seed = NULL,
+                                   standardize = FALSE,
+                                   is.hi.ord = c(FALSE, FALSE),
+                                   full = c(FALSE, FALSE)) {
+  sizes.sim <- rep(clusterSizes, times)
+  idx.sim   <- rep(seq_along(sizes.sim), sizes.sim)
+
+  sim <- simulateMultilevelLevels(
+    parStruct   = parStruct,
+    rslopes     = parsed$rslopes,
+    N.l1        = length(idx.sim),
+    N.l2        = length(sizes.sim),
+    idx.l2      = idx.sim,
+    seed        = seed,
+    standardize = standardize,
+    is.hi.ord   = is.hi.ord,
+    full        = full
+  )
+
+  sim$ov <- combineMultilevelData(
+    sim    = sim,
+    parsed = parsed,
+    icc    = parStruct$icc,
+    idx.l2 = idx.sim
+  )
+
+  sim$clusterIdx <- idx.sim
+  sim
+}
+
+
+# Combine the simulated levels into the (total) observed variables
+combineMultilevelData <- function(sim, parsed, icc, idx.l2) {
+  sim.ov.l1 <- toOriginalNames(sim$sim.l1$ov)
+  sim.ov.l2 <- toOriginalNames(sim$sim.l2$ov)[idx.l2, , drop = FALSE]
+  mix <- parsed$ovs.both
+
+  if (!length(mix)) { # no variables with both a within and a between component
+    return(cbind(
+      sim.ov.l1[, parsed$ovs.only.1, drop = FALSE],
+      sim.ov.l2[, parsed$ovs.only.2, drop = FALSE]
+    ))
+  }
+
+  cbind(
+    sim.ov.l1[, parsed$ovs.only.1, drop = FALSE],
+    sim.ov.l2[, parsed$ovs.only.2, drop = FALSE],
+    sweep(sim.ov.l1[, mix, drop = FALSE], MARGIN = 2, STATS = sqrt(1 - icc), FUN = "*") +
+    sweep(sim.ov.l2[, mix, drop = FALSE], MARGIN = 2, STATS = sqrt(icc), FUN = "*")
+  )
+}
+
+
+ordinalizeMultilevelData <- function(ov, thresholdStruct) {
+  if (!length(thresholdStruct@ordered))
+    return(ov)
+
+  ordinalizeDataFrame(df = as.data.frame(ov), thresholdStruct = thresholdStruct)
+}
+
+
+updateMultilevelFit <- function(parStruct,
+                                baseFits,
+                                parsed,
+                                thresholdStruct,
+                                cluster,
+                                clusterSizes,
+                                level2.cov = "means",
+                                is.hi.ord = c(FALSE, FALSE),
+                                full = c(FALSE, FALSE),
+                                mc.reps = 20000,
+                                seed = NULL,
+                                iterations = 0L,
+                                params.only = FALSE) {
+  sim <- simulateMultilevelLevels(
+    parStruct   = parStruct,
+    rslopes     = parsed$rslopes,
+    N.l1        = mc.reps,
+    N.l2        = mc.reps,
+    seed        = seed,
+    standardize = TRUE,
+    is.hi.ord   = is.hi.ord,
+    full        = full
+  )
+
+  level.1 <- finalizeMultilevelLevel(
+    model = baseFits$level.1, parTable = parStruct$level.1,
+    sim = sim$sim.l1, iterations = iterations
+  )
+
+  level.2 <- finalizeMultilevelLevel(
+    model = baseFits$level.2, parTable = parStruct$level.2,
+    sim = sim$sim.l2, iterations = iterations
+  )
+
+  # thresholds of the latent response (total) scores
+  ov <- combineMultilevelData(
+    sim    = sim,
+    parsed = parsed,
+    icc    = parStruct$icc,
+    idx.l2 = seq_len(mc.reps)
+  )
+
+  out <- list(
+    level.1         = level.1,
+    level.2         = level.2,
+    thresholdStruct = updateThresholds(thr = thresholdStruct, sim.cont = ov)
+  )
+
+  if (params.only)
+    return(out)
+
+  n    <- sum(clusterSizes)
+  simC <- simulateMultilevelData(
+    parStruct    = parStruct,
+    parsed       = parsed,
+    clusterSizes = clusterSizes,
+    times        = max(floor(mc.reps / n), 1L),
+    seed         = seed,
+    is.hi.ord    = is.hi.ord,
+    full         = full
+  )
+
+  refit <- refitAuxiliaryMLM_PLS(
+    fits           = baseFits,
+    parsed         = parsed,
+    data.sim       = ordinalizeMultilevelData(simC$ov, thresholdStruct = thresholdStruct),
+    rpar           = parsed$rpar,
+    cluster        = cluster,
+    clusterIdx.sim = simC$clusterIdx,
+    level2.cov     = level2.cov
+  )
+
+  out$S.expected <- list(
+    level.1 = indCorrMatrix(refit$level.1),
+    level.2 = indCorrMatrix(refit$level.2)
+  )
+
+  out$S.observed <- list(
+    level.1 = indCorrMatrix(baseFits$level.1),
+    level.2 = indCorrMatrix(baseFits$level.2)
+  )
+
+  out
+}
+
+
+# Resample the fit at the estimated parameters (e.g., with a larger `mc.reps`),
+# similar to `resampleMCPLS_Fit()`
+resampleMPLS_Fit <- function(model, ...) {
+  args     <- model@status$mpls.update.args
+  new.args <- list(...)
+  args[names(new.args)] <- new.args
+
+  # unless specified, we also compute the expected correlation matrices
+  if (is.null(new.args$params.only))
+    args$params.only <- FALSE
+
+  updated <- do.call(updateMultilevelFit, args)
+
+  model@level.1         <- updated$level.1
+  model@level.2         <- updated$level.2
+  model@thresholdStruct <- updated$thresholdStruct
+  model@params$thresholds <- updated$thresholdStruct@thresholds
+  model@fit$S.expected  <- updated$S.expected
+  model@fit$S.observed  <- updated$S.observed
+
+  model@parTable      <- getParTableMultilevel(model)
+  model@params$values <- getCoefsMultilevel(model)
+
+  model
 }
 
 

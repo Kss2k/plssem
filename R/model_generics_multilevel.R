@@ -214,6 +214,50 @@ setMethod("parameter_estimates", "PlsMultilevelModel", function(object, ...) {
 })
 
 
+#' Unstandardized estimates for \code{PlsMultilevelModel} objects
+#'
+#' Computes the unstandardized estimates of each level of a two-level model.
+#'
+#' @details
+#' The levels are unstandardized separately, using the (decomposed) scales of
+#' the variables at each level, i.e., \code{sqrt(1 - icc) * sd} at level 1, and
+#' \code{sqrt(icc) * sd} at level 2 for variables at both levels. The latent
+#' variables are scaled by their first indicators. The scales of the random
+#' slopes (\code{y ~ rv(s) * x}) are \code{rsd * sd(y) / sd(x)}, where
+#' \code{sd(y)} and \code{sd(x)} are the scales of \code{y} and \code{x} at
+#' level 1. For ordered variables, the latent responses are scaled such that
+#' their (total) residual variances are 1, i.e.,
+#' \code{(1 - icc) * theta_W + icc * theta_B = 1}, where \code{theta_W} and
+#' \code{theta_B} are the standardized residual variances at each level. The
+#' thresholds are rescaled accordingly.
+#'
+#' @inheritParams unstandardized_estimates
+#' @return A \code{PlsSemParTable} data frame, with a \code{level} column.
+#' @export
+setMethod("unstandardized_estimates", "PlsMultilevelModel",
+          function(model,
+                   unstandardized    = "all",
+                   se                = c("delta", "none"),
+                   scale.uncertainty = FALSE,
+                   eps               = 1e-4,
+                   zero.tol          = 1e-10,
+                   rm.tmp.ov         = TRUE,
+                   clean.tmp.ind     = TRUE,
+                   clean.tmp.mimic   = TRUE) {
+  plsUnstandardizedEstimatesMultilevel(
+    model             = model,
+    unstandardized    = unstandardized,
+    se                = se,
+    scale.uncertainty = scale.uncertainty,
+    eps               = eps,
+    zero.tol          = zero.tol,
+    rm.tmp.ov         = rm.tmp.ov,
+    clean.tmp.ind     = clean.tmp.ind,
+    clean.tmp.mimic   = clean.tmp.mimic
+  )
+})
+
+
 #' @rdname is_admissible
 #' @export
 setMethod("is_admissible", "PlsMultilevelModel", function(object) {

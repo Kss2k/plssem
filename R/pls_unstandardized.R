@@ -4,7 +4,9 @@ plsUnstandardizedEstimates <- function(model, unstandardized = "all",
                                        eps = 1e-4, zero.tol = 1e-10,
                                        rm.tmp.ov = TRUE,
                                        clean.tmp.ind = TRUE,
-                                       clean.tmp.mimic = TRUE) {
+                                       clean.tmp.mimic = TRUE,
+                                       vcov = modelParams(combinedModel(model))$vcov,
+                                       sds.override = NULL) {
   se <- tolower(se)
   se <- match.arg(se)
 
@@ -83,6 +85,9 @@ plsUnstandardizedEstimates <- function(model, unstandardized = "all",
   # if we don't know, we assume they are standard normal
   sds[is.na(sds)] <- 1
 
+  override <- intersect(names(sds.override), names(sds))
+  sds[override] <- sds.override[override]
+
   parTableUstd <- unstandardizedEstimatesInternal(
     parTable      = parTable,
     unstandardize = uvars,
@@ -92,8 +97,9 @@ plsUnstandardizedEstimates <- function(model, unstandardized = "all",
     sds           = sds
   )
 
+  sds.out <- attr(parTableUstd, "sds")
+
   # full vcov
-  vcov <- modelParams(combined)$vcov
   if (se == "delta" && NROW(vcov) && NCOL(vcov)) {
     # V[pars]
     pars <- paste0(parTable$lhs, parTable$op, parTable$rhs)
@@ -190,7 +196,132 @@ plsUnstandardizedEstimates <- function(model, unstandardized = "all",
   if (!is.null(Vstd))
     attr(parTableOut, "vcov") <- plssemMatrix(Vstd, is.public = TRUE)
 
+  attr(parTableOut, "sds") <- sds.out
   parTableOut
+}
+
+
+plsUnstandardizedEstimatesMultilevel <- function(model, unstandardized = "all",
+                                                 se = c("delta", "none"),
+                                                 ...) {
+  se <- match.arg(tolower(se), c("delta", "none"))
+  vcov <- model@params$vcov
+
+  parTable <- as.data.frame(model@parTable)
+  scale1   <- modelInfo(combinedModel(model@level.1))$scale
+  scale2   <- modelInfo(combinedModel(model@level.2))$scale
+
+  # (possibly temporary) names of a variable in the scales of a level
+  getScaleNames <- function(v, scale)
+    names(scale)[removeTempAffixes(names(scale)) == v]
+
+  # we fix the total residual variances for ordinals to 1, where
+  #   theta = (1 - icc) * theta_W + icc * theta_B
+  getStdResVar <- function(v, l) {
+    cond <- parTable$level %in% l & parTable$op == "~~" &
+            parTable$lhs == v & parTable$rhs == v
+    theta <- parTable$est[cond]
+    if (length(theta) && is.finite(theta[[1L]])) theta[[1L]] else 1
+  }
+
+  ordered   <- model@info$ordered
+  sds.ord   <- stats::setNames(rep(1, length(ordered)), nm = ordered)
+  override1 <- NULL
+  override2 <- NULL
+
+  for (v in ordered) {
+    nm1 <- getScaleNames(v, scale1)
+    nm2 <- getScaleNames(v, scale2)
+
+    is.l1 <- length(nm1) > 0
+    is.l2 <- length(nm2) > 0
+
+    icc   <- if (!is.l2) 0 else if (!is.l1) 1 else model@params$icc[[v]]
+    theta <- (1 - icc) * getStdResVar(v, l = 1L) + icc * getStdResVar(v, l = 2L)
+
+    sds.ord[[v]]   <- 1 / sqrt(max(theta, .Machine$double.eps))
+    override1[nm1] <- sqrt(1 - icc) * sds.ord[[v]]
+    override2[nm2] <- sqrt(icc) * sds.ord[[v]]
+  }
+
+  # standardize L1 first (L2 depends on L1 if there are random slopes)
+  pt1 <- plsUnstandardizedEstimates(
+    model          = model@level.1,
+    unstandardized = unstandardized,
+    se             = se,
+    vcov           = subsetVcovByLevel(vcov, l = 1L),
+    sds.override   = override1,
+    ...
+  )
+
+  # scales of the random slopes
+  sds1    <- attr(pt1, "sds")
+  rslopes <- model@info$rslopes
+  rsd     <- model@params$rsd
+
+  getStdDevL1 <- function(v) {
+    sd <- tryCatch(sds1[[v]], error = \(e) NA_real_)
+    if (is.null(sd) || !is.finite(sd)) 1 else sd
+  }
+
+  for (k in seq_len(NROW(rslopes))) {
+    rs <- rslopes$name[[k]]
+    nm <- getScaleNames(rs, scale2)
+
+    if (!length(nm) || !rs %in% names(rsd))
+      next
+
+    sdl <- getStdDevL1(rslopes$lhs[[k]])
+    sdr <- getStdDevL1(rslopes$rhs[[k]])
+
+    sd.s <- rsd[[rs]] * sdl / sdr
+    override2[nm] <- sd.s
+  }
+
+  pt2 <- plsUnstandardizedEstimates(
+    model          = model@level.2,
+    unstandardized = unstandardized,
+    se             = se,
+    vcov           = subsetVcovByLevel(vcov, l = 2L),
+    sds.override   = override2,
+    ...
+  )
+
+  pt1 <- as.data.frame(pt1)
+  pt2 <- as.data.frame(pt2)
+  pt1$level <- rep(1L, NROW(pt1))
+  pt2$level <- rep(2L, NROW(pt2))
+
+  # The thresholds are defined for the total latent responses
+  thr  <- parTable[is.na(parTable$level), , drop = FALSE]
+  cols <- union(colnames(pt1), colnames(pt2))
+  is.thr <- thr$op == "|" & thr$lhs %in% names(sds.ord)
+
+  if (any(is.thr)) {
+    target <- sds.ord[thr$lhs[is.thr]]
+    cols.thr <- intersect(
+      c("est", "se", "ci.lower", "ci.upper"),
+      colnames(thr)
+    )
+
+    for (col in cols.thr)
+      thr[is.thr, col] <- thr[is.thr, col] * target
+  }
+
+  for (col in setdiff(cols, colnames(thr)))
+    thr[[col]] <- NA
+
+  out <- rbind(pt1[cols], pt2[cols], thr[cols])
+  rownames(out) <- NULL
+
+  out <- plssemParTable(out)
+  attr(out, "sds") <- list(
+    level.1 = sds1,
+    level.2 = attr(pt2, "sds"),
+    total = sds.ord
+  )
+
+  out
 }
 
 
@@ -346,5 +477,6 @@ unstandardizedEstimatesInternal <- function(parTable,
     }
   }
 
+  attr(parTable, "sds") <- sds
   parTable
 }

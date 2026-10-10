@@ -19,12 +19,42 @@ setMethod("show", "PlsMultilevelModel", function(object) {
 #'
 #' @param object A \code{PlsMultilevelModel} object.
 #' @param fit Logical; Whether to compute fit measures (for each level).
-#' @param ... Currently unused.
+#' @param unstandardized Logical; Should unstandardized estimates be included?
+#' @param ci Logical; Should confidence intervals for parameter estimates be included?
+#' @param ... Arguments passed to \code{\link{unstandardized_estimates}}.
 #' @return A \code{SummaryPlsMultilevel} list with formatted results.
 #' @export
-setMethod("summary", "PlsMultilevelModel", function(object, fit = TRUE, ...) {
-  parTable <- parameter_estimates(object)
-  info     <- object@info
+setMethod("summary", "PlsMultilevelModel", function(object, fit = TRUE, unstandardized = FALSE,
+                                                    ci = FALSE, ...) {
+  parTable   <- parameter_estimates(object)
+  info       <- object@info
+  extra.cols <- NULL
+
+  if (unstandardized) {
+    tryCatch({
+
+      # we don't need any standard errors, so save the computation
+      parTableu <- unstandardized_estimates(object, se = "none", ...)
+
+      idx0 <- paste0(parTable$lhs, parTable$op, parTable$rhs, parTable$level)
+      idx1 <- paste0(parTableu$lhs, parTableu$op, parTableu$rhs, parTableu$level)
+
+      parTable$Unstd <- parTableu$est[match(idx0, idx1)]
+      extra.cols <- c(extra.cols, "Unstd")
+
+    }, error = function(e) {
+
+      pls_msg_warn(
+        "Calculation of unstandardized estimates failed!",
+        "Message:", conditionMessage(e)
+      )
+
+    })
+  }
+
+  if (ci) {
+    extra.cols <- c(extra.cols, "ci.lower", "ci.upper")
+  }
 
   if (fit) fit.measures <- fit_measures(object)
   else fit.measures <- NULL
@@ -56,7 +86,10 @@ setMethod("summary", "PlsMultilevelModel", function(object, fit = TRUE, ...) {
     fit      = object,
     levels   = levels,
     agnostic = parTable[is.na(parTable$level), , drop = FALSE], # e.g., thresholds
-    print  = list(width = plsGetWidthPrintedParTable(parTable)),
+    print  = list(
+      width      = plsGetWidthPrintedParTable(parTable),
+      extra.cols = extra.cols
+    ),
     info   = list(
       estimator  = info$estimator,
       link       = if (length(info$ordered)) "PROBIT" else "LINEAR",
@@ -131,8 +164,10 @@ print.SummaryPlsMultilevel <- function(x, ...) {
     pt <- level$parTable
     pt$level <- NULL
 
+    extra.cols <- x$print$extra.cols
+
     if (l < 2L || !NROW(x$agnostic)) {
-      plsPrintParTable(pt)
+      plsPrintParTable(pt, extra.cols = extra.cols)
       next
     }
 
@@ -143,9 +178,10 @@ print.SummaryPlsMultilevel <- function(x, ...) {
     agnostic$level <- NULL
     pt <- rbind(pt, agnostic)
 
-    plsPrintParTable(pt, thresholds = FALSE)
+    plsPrintParTable(pt, thresholds = FALSE, extra.cols = extra.cols)
     plsPrintParTable(pt, loadings = FALSE, regressions = FALSE, covariances = FALSE,
-                     intercepts = FALSE, variances = FALSE, thresholds = TRUE)
+                     intercepts = FALSE, variances = FALSE, thresholds = TRUE,
+                     extra.cols = extra.cols)
   }
 
   invisible(x)

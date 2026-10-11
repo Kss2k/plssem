@@ -203,6 +203,7 @@ plsUnstandardizedEstimates <- function(model, unstandardized = "all",
 
 plsUnstandardizedEstimatesMultilevel <- function(model, unstandardized = "all",
                                                  se = c("delta", "none"),
+                                                 icc.default = 0.5,
                                                  ...) {
   se <- match.arg(tolower(se), c("delta", "none"))
   vcov <- model@params$vcov
@@ -268,6 +269,10 @@ plsUnstandardizedEstimatesMultilevel <- function(model, unstandardized = "all",
     if (length(theta) && is.finite(theta[[1L]])) theta[[1L]] else 1
   }
 
+  # non-finite iccs?
+  icc.levels <- model@params$icc
+  icc.levels[!is.finite(icc.levels)] <- icc.default
+
   ordered   <- model@info$ordered
   sds.ord   <- stats::setNames(rep(1, length(ordered)), nm = ordered)
   override1 <- NULL
@@ -280,7 +285,7 @@ plsUnstandardizedEstimatesMultilevel <- function(model, unstandardized = "all",
     is.l1 <- length(nm1) > 0
     is.l2 <- length(nm2) > 0
 
-    icc   <- if (!is.l2) 0 else if (!is.l1) 1 else model@params$icc[[v]]
+    icc   <- if (!is.l2) 0 else if (!is.l1) 1 else icc.levels[[v]]
     theta <- (1 - icc) * getStdResVar(v, l = 1L) + icc * getStdResVar(v, l = 2L)
 
     sds.ord[[v]]   <- 1 / sqrt(max(theta, .Machine$double.eps))

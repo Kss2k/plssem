@@ -211,6 +211,50 @@ plsUnstandardizedEstimatesMultilevel <- function(model, unstandardized = "all",
   scale1   <- modelInfo(combinedModel(model@level.1))$scale
   scale2   <- modelInfo(combinedModel(model@level.2))$scale
 
+  # is unstandardized a set of variables?
+  ustd.is.vars <- !(
+    length(unstandardized) == 1L &&
+    tolower(unstandardized) %in% c("all", "lv", "ov")
+  )
+
+  # (clean) names of the variables of a level
+  getLevelVars <- function(level) {
+    info <- modelInfo(combinedModel(level))
+    unique(removeTempAffixes(c(info$lvs.linear, info$inds.a, info$inds.b)))
+  }
+
+  vars1 <- getLevelVars(model@level.1)
+  vars2 <- getLevelVars(model@level.2)
+
+  if (ustd.is.vars) {
+    # A variable might only exist at one of the levels, so we validate the
+    # selection against both levels, and pass each level its own variables
+    missing <- setdiff(unstandardized, union(vars1, vars2))
+    pls_stopif(length(missing),
+      "Unknown variables in `unstandardized`! Variables:",
+      paste0(missing, collapse = ", ")
+    )
+
+    unstandardized1 <- intersect(unstandardized, vars1)
+    unstandardized2 <- intersect(unstandardized, vars2)
+
+  } else {
+    unstandardized1 <- unstandardized2 <- unstandardized
+  }
+
+  # ordered (observed) variables which are unstandardized
+  if (!ustd.is.vars) {
+    ordered.ustd <- switch(tolower(unstandardized),
+      all = model@info$ordered,
+      ov  = model@info$ordered,
+      lv  = character(0L),
+      pls_msg_stop("unrecognized value of unstandardized!")
+    )
+
+  } else {
+    ordered.ustd <- intersect(unstandardized, model@info$ordered)
+  }
+
   # (possibly temporary) names of a variable in the scales of a level
   getScaleNames <- function(v, scale)
     names(scale)[removeTempAffixes(names(scale)) == v]
@@ -247,7 +291,7 @@ plsUnstandardizedEstimatesMultilevel <- function(model, unstandardized = "all",
   # standardize L1 first (L2 depends on L1 if there are random slopes)
   pt1 <- plsUnstandardizedEstimates(
     model          = model@level.1,
-    unstandardized = unstandardized,
+    unstandardized = unstandardized1,
     se             = se,
     vcov           = subsetVcovByLevel(vcov, l = 1L),
     sds.override   = override1,
@@ -280,7 +324,7 @@ plsUnstandardizedEstimatesMultilevel <- function(model, unstandardized = "all",
 
   pt2 <- plsUnstandardizedEstimates(
     model          = model@level.2,
-    unstandardized = unstandardized,
+    unstandardized = unstandardized2,
     se             = se,
     vcov           = subsetVcovByLevel(vcov, l = 2L),
     sds.override   = override2,
@@ -295,7 +339,17 @@ plsUnstandardizedEstimatesMultilevel <- function(model, unstandardized = "all",
   # The thresholds are defined for the total latent responses
   thr  <- parTable[is.na(parTable$level), , drop = FALSE]
   cols <- union(colnames(pt1), colnames(pt2))
-  is.thr <- thr$op == "|" & thr$lhs %in% names(sds.ord)
+  is.thr <- thr$op == "|" & thr$lhs %in% intersect(names(sds.ord), ordered.ustd)
+
+  if (se == "none" && NROW(thr)) {
+    # clear the (standardized) statistics, as for the levels
+    cols.stat <- intersect(
+      c("se", "z", "pvalue", "ci.lower", "ci.upper"),
+      colnames(thr)
+    )
+
+    thr[, cols.stat] <- NA_real_
+  }
 
   if (any(is.thr)) {
     target <- sds.ord[thr$lhs[is.thr]]

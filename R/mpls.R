@@ -1370,6 +1370,12 @@ getMultilevelStandardDeviations <- function(parStruct,
   sds1.within[wnm]  <- sds1.within[wnm]  * sds.total[wnm]
   sds1.between[bnm] <- sds1.between[bnm] * sds.total[bnm]
 
+  # Map across both temp and non-temp names
+  nmw.tmp   <- names(sds1.within)
+  nmb.tmp   <- names(sds1.between)
+  nmw.clean <- removeTempAffixes(nmw.tmp)
+  nmb.clean <- removeTempAffixes(nmb.tmp)
+
   # Variables at both levels are decomposed by their (estimated) iccs
   for (i in names(icc)) {
     sd.total.i <- tryCatch(sds.total[[i]], error = \(e) NA_real_)
@@ -1381,9 +1387,12 @@ getMultilevelStandardDeviations <- function(parStruct,
     sd.total.i <- max(sd.total.i, ztol)
     icc.i <- max(icc[[i]], ztol)
 
-    if (i %in% names(sds1.within) && i %in% names(sds1.between)) {
-      sds1.within[[i]] <- sqrt(1 - icc.i) * sd.total.i
-      sds1.between[[i]] <- sqrt(icc.i) * sd.total.i
+    widx <- which(nmw.tmp == i | nmw.clean == i)
+    bidx <- which(nmb.tmp == i | nmb.clean == i)
+
+    if (length(widx) && length(bidx)) {
+      sds1.within[widx]  <- sqrt(1 - icc.i) * sd.total.i
+      sds1.between[bidx] <- sqrt(icc.i) * sd.total.i
     }
   }
 

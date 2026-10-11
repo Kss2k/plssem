@@ -19,12 +19,42 @@ setMethod("show", "PlsMultilevelModel", function(object) {
 #'
 #' @param object A \code{PlsMultilevelModel} object.
 #' @param fit Logical; Whether to compute fit measures (for each level).
-#' @param ... Currently unused.
+#' @param unstandardized Logical; Should unstandardized estimates be included?
+#' @param ci Logical; Should confidence intervals for parameter estimates be included?
+#' @param ... Arguments passed to \code{\link{unstandardized_estimates}}.
 #' @return A \code{SummaryPlsMultilevel} list with formatted results.
 #' @export
-setMethod("summary", "PlsMultilevelModel", function(object, fit = TRUE, ...) {
-  parTable <- parameter_estimates(object)
-  info     <- object@info
+setMethod("summary", "PlsMultilevelModel", function(object, fit = TRUE, unstandardized = FALSE,
+                                                    ci = FALSE, ...) {
+  parTable   <- parameter_estimates(object)
+  info       <- object@info
+  extra.cols <- NULL
+
+  if (unstandardized) {
+    tryCatch({
+
+      # we don't need any standard errors, so save the computation
+      parTableu <- unstandardized_estimates(object, se = "none", ...)
+
+      idx0 <- paste0(parTable$lhs, parTable$op, parTable$rhs, parTable$level)
+      idx1 <- paste0(parTableu$lhs, parTableu$op, parTableu$rhs, parTableu$level)
+
+      parTable$Unstd <- parTableu$est[match(idx0, idx1)]
+      extra.cols <- c(extra.cols, "Unstd")
+
+    }, error = function(e) {
+
+      pls_msg_warn(
+        "Calculation of unstandardized estimates failed!",
+        "Message:", conditionMessage(e)
+      )
+
+    })
+  }
+
+  if (ci) {
+    extra.cols <- c(extra.cols, "ci.lower", "ci.upper")
+  }
 
   if (fit) fit.measures <- fit_measures(object)
   else fit.measures <- NULL
@@ -56,7 +86,10 @@ setMethod("summary", "PlsMultilevelModel", function(object, fit = TRUE, ...) {
     fit      = object,
     levels   = levels,
     agnostic = parTable[is.na(parTable$level), , drop = FALSE], # e.g., thresholds
-    print  = list(width = plsGetWidthPrintedParTable(parTable)),
+    print  = list(
+      width      = plsGetWidthPrintedParTable(parTable),
+      extra.cols = extra.cols
+    ),
     info   = list(
       estimator  = info$estimator,
       link       = if (length(info$ordered)) "PROBIT" else "LINEAR",
@@ -131,8 +164,10 @@ print.SummaryPlsMultilevel <- function(x, ...) {
     pt <- level$parTable
     pt$level <- NULL
 
+    extra.cols <- x$print$extra.cols
+
     if (l < 2L || !NROW(x$agnostic)) {
-      plsPrintParTable(pt)
+      plsPrintParTable(pt, extra.cols = extra.cols)
       next
     }
 
@@ -143,9 +178,10 @@ print.SummaryPlsMultilevel <- function(x, ...) {
     agnostic$level <- NULL
     pt <- rbind(pt, agnostic)
 
-    plsPrintParTable(pt, thresholds = FALSE)
+    plsPrintParTable(pt, thresholds = FALSE, extra.cols = extra.cols)
     plsPrintParTable(pt, loadings = FALSE, regressions = FALSE, covariances = FALSE,
-                     intercepts = FALSE, variances = FALSE, thresholds = TRUE)
+                     intercepts = FALSE, variances = FALSE, thresholds = TRUE,
+                     extra.cols = extra.cols)
   }
 
   invisible(x)
@@ -211,6 +247,50 @@ setMethod("vcov", "PlsMultilevelModel", function(object, ...) {
 #' @export
 setMethod("parameter_estimates", "PlsMultilevelModel", function(object, ...) {
   object@parTable
+})
+
+
+#' Unstandardized estimates for \code{PlsMultilevelModel} objects
+#'
+#' Computes the unstandardized estimates of each level of a two-level model.
+#'
+#' @details
+#' The levels are unstandardized separately, using the (decomposed) scales of
+#' the variables at each level, i.e., \code{sqrt(1 - icc) * sd} at level 1, and
+#' \code{sqrt(icc) * sd} at level 2 for variables at both levels. The latent
+#' variables are scaled by their first indicators. The scales of the random
+#' slopes (\code{y ~ rv(s) * x}) are \code{rsd * sd(y) / sd(x)}, where
+#' \code{sd(y)} and \code{sd(x)} are the scales of \code{y} and \code{x} at
+#' level 1. For ordered variables, the latent responses are scaled such that
+#' their (total) residual variances are 1, i.e.,
+#' \code{(1 - icc) * theta_W + icc * theta_B = 1}, where \code{theta_W} and
+#' \code{theta_B} are the standardized residual variances at each level. The
+#' thresholds are rescaled accordingly.
+#'
+#' @inheritParams unstandardized_estimates
+#' @return A \code{PlsSemParTable} data frame, with a \code{level} column.
+#' @export
+setMethod("unstandardized_estimates", "PlsMultilevelModel",
+          function(model,
+                   unstandardized    = "all",
+                   se                = c("delta", "none"),
+                   scale.uncertainty = FALSE,
+                   eps               = 1e-4,
+                   zero.tol          = 1e-10,
+                   rm.tmp.ov         = TRUE,
+                   clean.tmp.ind     = TRUE,
+                   clean.tmp.mimic   = TRUE) {
+  plsUnstandardizedEstimatesMultilevel(
+    model             = model,
+    unstandardized    = unstandardized,
+    se                = se,
+    scale.uncertainty = scale.uncertainty,
+    eps               = eps,
+    zero.tol          = zero.tol,
+    rm.tmp.ov         = rm.tmp.ov,
+    clean.tmp.ind     = clean.tmp.ind,
+    clean.tmp.mimic   = clean.tmp.mimic
+  )
 })
 
 

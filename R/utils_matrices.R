@@ -84,3 +84,18 @@ gradSymMat <- function(gX) {
 colMedians <- function(X, na.rm = FALSE) {
   apply(X = X, MARGIN = 2L, FUN = stats::median, na.rm = na.rm)
 }
+
+
+subsetVcovByLevel <- function(vcov, l) {
+  if (!NROW(vcov) || !NCOL(vcov))
+    return(NULL)
+
+  is.l2 <- endsWith(colnames(vcov), ".l2")
+  keep  <- if (l == 2L) is.l2 else !is.l2
+
+  V <- vcov[keep, keep, drop = FALSE]
+  nm <- if (l == 2L) sub("\\.l2$", "", colnames(V)) else colnames(V)
+  dimnames(V) <- list(nm, nm)
+  V
+}
+

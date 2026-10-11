@@ -73,3 +73,23 @@ testthat::test_that("pls() and lavaan give similar standardized estimates (rando
 
   testthat::expect_lt(max(abs(est$pls - est$lavaan)), 0.05)
 })
+
+# Unstandardized estimates (continuous data, random slopes)
+testthat::expect_no_error({
+  unstandardized_estimates(fit.pls)
+  unstandardized_estimates(fit.pls, se = "none")
+  unstandardized_estimates(fit.pls, unstandardized = "w1") # between-only variable
+  summary(fit.pls, unstandardized = TRUE)
+})
+
+# Unstandardized estimates (ordered data, random slopes)
+set.seed(9241)
+testthat::expect_no_error({
+  fit.ord <- pls(modelr, data = randomSlopesOrdered, cluster = "cluster",
+                 ordered = colnames(randomSlopesOrdered), bootstrap = TRUE, boot.R = 20)
+  unstandardized_estimates(fit.ord)
+  unstandardized_estimates(fit.ord, se = "none")
+  unstandardized_estimates(fit.ord, unstandardized = "lv")
+  unstandardized_estimates(fit.ord, unstandardized = c("fw", "y1", "w1"))
+  summary(fit.ord, unstandardized = TRUE)
+})

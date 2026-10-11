@@ -4,14 +4,18 @@
 \alias{summary,PlsMultilevelModel-method}
 \title{Summarize a fitted \code{PlsMultilevelModel} model}
 \usage{
-\S4method{summary}{PlsMultilevelModel}(object, fit = TRUE, ...)
+\S4method{summary}{PlsMultilevelModel}(object, fit = TRUE, unstandardized = FALSE, ci = FALSE, ...)
 }
 \arguments{
 \item{object}{A \code{PlsMultilevelModel} object.}
 
 \item{fit}{Logical; Whether to compute fit measures (for each level).}
 
-\item{...}{Currently unused.}
+\item{unstandardized}{Logical; Should unstandardized estimates be included?}
+
+\item{ci}{Logical; Should confidence intervals for parameter estimates be included?}
+
+\item{...}{Arguments passed to \code{\link{unstandardized_estimates}}.}
 }
 \value{
 A \code{SummaryPlsMultilevel} list with formatted results.

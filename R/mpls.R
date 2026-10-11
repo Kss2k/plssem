@@ -76,6 +76,13 @@ mpls <- function(syntax,
     ordered    = ordered
   )
 
+  # Get the total standard deviations (for the unstandardized solutions)
+  sds.total <- getMultilevelTotalStandardDeviations(
+    data    = data,
+    vars    = parsed$ovs.all,
+    ordered = ordered
+  )
+
   # index the clusters as 1, ..., G (rows, or whole clusters, might be removed)
   data[[cluster]] <- as.integer(as.factor(data[[cluster]]))
   clusterIdx      <- data[[cluster]]
@@ -316,6 +323,15 @@ mpls <- function(syntax,
   root      <- c(mcfit$root)
   parStruct <- .parStruct(root)
 
+  # Decompose scale at between and within level for unstandardized solutions
+  sds.levels <- getMultilevelStandardDeviations(
+    parStruct    = parStruct,
+    sds.total    = sds.total,
+    sds0.within  = combinedModel(baseFits$level.1)@info$scale,
+    sds0.between = combinedModel(baseFits$level.2)@info$scale,
+    rpar         = parsed$rpar
+  )
+
   # The arguments needed for updating (and resampling) the fit at the root,
   # see `updateMultilevelFit()` and `resampleMPLS_Fit()`
   update.args <- list(
@@ -331,6 +347,7 @@ mpls <- function(syntax,
     mc.reps         = mc.reps,
     seed            = rng.seed,
     iterations      = mcfit$iter,
+    sds.levels      = sds.levels,
     params.only     = TRUE
   )
 
@@ -621,7 +638,7 @@ setParTableMultilevelSE <- function(parTable, se) {
 
 # Update a level model with the calibrated parameters (similar to `mcpls()`),
 # and store its parameter table (similar to `pls()`).
-finalizeMultilevelLevel <- function(model, parTable, sim, iterations) {
+finalizeMultilevelLevel <- function(model, parTable, sim, iterations, sds.level = NULL) {
   combined <- combinedModel(model)
 
   combined <- updateModelFromFreeParTableMC(
@@ -633,6 +650,11 @@ finalizeMultilevelLevel <- function(model, parTable, sim, iterations) {
     sim             = sim,
     params.only     = TRUE
   )
+
+  if (!is.null(sds.level)) {
+    nm <- intersect(names(sds.level), names(combined@info$scale))
+    combined@info$scale[nm] <- sds.level[nm]
+  }
 
   combined@status$iterations <- iterations
   combined@parTable <- getParTableEstimates(combined)
@@ -781,6 +803,7 @@ updateMultilevelFit <- function(parStruct,
                                 mc.reps = 20000,
                                 seed = NULL,
                                 iterations = 0L,
+                                sds.levels = list(sds.within = NULL, sds.between = NULL),
                                 params.only = FALSE) {
   sim <- simulateMultilevelLevels(
     parStruct   = parStruct,
@@ -795,12 +818,14 @@ updateMultilevelFit <- function(parStruct,
 
   level.1 <- finalizeMultilevelLevel(
     model = baseFits$level.1, parTable = parStruct$level.1,
-    sim = sim$sim.l1, iterations = iterations
+    sim = sim$sim.l1, iterations = iterations,
+    sds.level = sds.levels$sds.within
   )
 
   level.2 <- finalizeMultilevelLevel(
     model = baseFits$level.2, parTable = parStruct$level.2,
-    sim = sim$sim.l2, iterations = iterations
+    sim = sim$sim.l2, iterations = iterations,
+    sds.level = sds.levels$sds.between
   )
 
   # thresholds of the latent response (total) scores
@@ -1287,6 +1312,103 @@ isMultilevelSyntax <- function(syntax) {
 }
 
 
+getMultilevelTotalStandardDeviations <- function(data, vars, ordered = NULL) {
+  sds <- stats::setNames(vapply(
+    X         = vars,
+    FUN.VALUE = numeric(1L),
+    FUN       = \(v) stats::sd(data[[v]], na.rm = TRUE)
+  ), nm = vars)
+
+  sds[intersect(ordered, vars)] <- 1
+  sds
+}
+
+
+getMultilevelStandardDeviations <- function(parStruct,
+                                            sds.total,
+                                            sds0.within,  # (naive) within scale estimate
+                                            sds0.between, # (naive) between scale estimate
+                                            rpar = NULL, # random slopes
+                                            icc.default = 0.5,
+                                            sd.default = 1.0,
+                                            ztol = 1e-8) {
+  icc <- parStruct$icc
+
+  if (any(!is.finite(icc))) {
+    pls_msg_warn(
+      "non-finite values in `icc`, model might not have converged!",
+      sprintf("assuming `icc=%.3f` for unstandardized solutions!", icc.default)
+    )
+
+    icc[!is.finite(icc)] <- icc.default
+  }
+
+  # The levels might use temporary names for some variables (e.g., observed
+  # variables in the structural model), which have the same total sds
+  tmp   <- unique(c(names(sds0.within), names(sds0.between)))
+  tmp   <- tmp[hasTempAffixes(tmp)]
+  clean <- removeTempAffixes(tmp)
+  keep  <- which(clean %in% names(sds.total))
+
+  if (length(keep)) {
+    sds.total <- c(
+      sds.total,
+      stats::setNames(sds.total[clean[keep]], nm = tmp[keep])
+    )
+  }
+
+  # Start with naive estimates. The total data is standardized before it is
+  # decomposed, so we need to rescale by the total sds. For variables which are
+  # purely within or purely between these are then the correct estimates
+  # (variables at level 2 are constant within the clusters, so the rescaled
+  # sds are over the clusters, rather than the observations).
+  sds1.within  <- sds0.within
+  sds1.between <- sds0.between
+
+  wnm <- intersect(names(sds1.within), names(sds.total))
+  bnm <- intersect(names(sds1.between), names(sds.total))
+  sds1.within[wnm]  <- sds1.within[wnm]  * sds.total[wnm]
+  sds1.between[bnm] <- sds1.between[bnm] * sds.total[bnm]
+
+  # Map across both temp and non-temp names
+  nmw.tmp   <- names(sds1.within)
+  nmb.tmp   <- names(sds1.between)
+  nmw.clean <- removeTempAffixes(nmw.tmp)
+  nmb.clean <- removeTempAffixes(nmb.tmp)
+
+  # Variables at both levels are decomposed by their (estimated) iccs
+  for (i in names(icc)) {
+    sd.total.i <- tryCatch(sds.total[[i]], error = \(e) NA_real_)
+
+    # fallback to default if we're unable to get the total variance
+    if (is.null(sd.total.i) || is.na(sd.total.i))
+      sd.total.i <- sd.default
+
+    sd.total.i <- max(sd.total.i, ztol)
+    icc.i <- max(icc[[i]], ztol)
+
+    widx <- which(nmw.tmp == i | nmw.clean == i)
+    bidx <- which(nmb.tmp == i | nmb.clean == i)
+
+    if (length(widx) && length(bidx)) {
+      sds1.within[widx]  <- sqrt(1 - icc.i) * sd.total.i
+      sds1.between[bidx] <- sqrt(icc.i) * sd.total.i
+    }
+  }
+
+  # The variance of the random slopes depend on the level 1
+  # So we first need to unstandardize level 1, then the random slopes
+  # at level 2. See `unstandardized_estimates()`
+  isRand <- removeTempAffixes(names(sds1.between)) %in% rpar
+  sds1.between[isRand] <- 1
+
+  list(
+    sds.within = sds1.within,
+    sds.between = sds1.between
+  )
+}
+
+
 MLM_PLS_ARGS <- c(
   consistent                     = "consistent",
   missing                        = "missing",
@@ -1316,4 +1438,3 @@ MLM_UNSUPPORTED_ARGS <- c(
   "reliabilities", "mc.rescov", "mc.delta.se", "boot.optimize",
   "boot.drop.inadmissible", "mc.boot.control"
 )
-

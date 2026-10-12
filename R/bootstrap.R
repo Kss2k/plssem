@@ -212,6 +212,7 @@ bootstrap <- function(model,
 
   vcov.joint <- stats::cov(resultsMat, use = "complete.obs")
   par.names <- names(combinedModel(model)@params$values)
+  prob.names <- intersect(names(probsTemplate), colnames(vcov.joint))
   vcov <- vcov.joint[par.names, par.names, drop = FALSE]
 
   if (mc.delta.se) {
@@ -245,7 +246,6 @@ bootstrap <- function(model,
           )
 
           J1 <- Jacobian1[pars.all, pars.free, drop = FALSE]
-          prob.names <- intersect(names(probsTemplate), colnames(vcov.joint))
 
           if (length(prob.names)) {
             Jp <- params$JacobianProbs0[pars.free, prob.names, drop = FALSE]
@@ -315,7 +315,11 @@ bootstrap <- function(model,
   se <- sqrt(diag(vcov))
   se[se <= zero.tol] <- NA_real_
 
-  list(se = se, boot = resultsMat[, par.names, drop = FALSE], vcov = vcov)
+  list(
+    se = se, boot = resultsMat[, par.names, drop = FALSE], vcov = vcov,
+    vcov.probs = vcov.joint[prob.names, prob.names],
+    boot.probs = resultsMat[,prob.names, drop = FALSE]
+  )
 }
 
 

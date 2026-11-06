@@ -755,7 +755,7 @@ calcMcJacobians <- function(.fg,
 
   k <- length(seeds)
 
-  if (is.null(probs.k)) probs.k <- max(1L, floor(probs.k / 2L))
+  if (is.null(probs.k)) probs.k <- max(1L, floor(k / 2L))
   else probs.k <- min(k, probs.k)
 
   J0 <- matrix(

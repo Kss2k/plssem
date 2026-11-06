@@ -748,11 +748,15 @@ calcMcJacobians <- function(.fg,
                             iseed,
                             lower       = -Inf,
                             upper       = Inf,
-                            eps         = 5e-3,
+                            eps         = 2e-2,
                             .probs      = NULL,
-                            probs.names = NULL) {
+                            probs.names = NULL,
+                            probs.k     = NULL) {
 
   k <- length(seeds)
+
+  if (is.null(probs.k)) probs.k <- max(1L, floor(probs.k / 2L))
+  else probs.k <- min(k, probs.k)
 
   J0 <- matrix(
     0,
@@ -784,7 +788,7 @@ calcMcJacobians <- function(.fg,
       FUN = \(i) list(k = k, type = "par", index = i)
     )
 
-    if (is.null(.probs) || !length(probs.names)) par.tasks
+    if (is.null(.probs) || !length(probs.names) || k > probs.k) par.tasks
     else c(par.tasks, list(list(k = k, type = "probs")))
   }
 
@@ -827,8 +831,8 @@ calcMcJacobians <- function(.fg,
     res  <- results[[j]]
 
     if (task$type == "probs") {
-      Jp <- Jp + res$Jp / k
-      Gp <- Gp + res$Gp / k
+      Jp <- Jp + res$Jp / probs.k
+      Gp <- Gp + res$Gp / probs.k
 
     } else {
       J0[, task$index] <- J0[, task$index] + res$J0 / k
@@ -842,7 +846,7 @@ calcMcJacobians <- function(.fg,
 
 
 calcMcThresholdJacobians <- function(.f, .simulate, p0, p1, thresholdStruct,
-                                     eps = 5e-3, seed = NULL,
+                                     eps = 1e-2, seed = NULL,
                                      sim = .simulate(p0, standardize = TRUE, seed = seed),
                                      sim.cont = sim$ov) {
   probs0 <- thresholdStruct@proportions
@@ -897,9 +901,15 @@ boundedParameterFiniteDiffPoints <- function(x, i, eps, lower = -Inf, upper = In
   lower <- rep_len(lower, length(x))
   upper <- rep_len(upper, length(x))
 
+  # Shrink the step symmetrically near a bound, such that the central
+  # difference stays centred at `x[i]`. Only fall back to a one-sided
+  # step if `x[i]` is (practically) at the bound.
+  h <- min(eps, x[i] - lower[i], upper[i] - x[i])
+  if (h <= .Machine$double.eps^0.5) h <- eps
+
   plus <- minus <- x
-  plus[i]  <- min(x[i] + eps, upper[i])
-  minus[i] <- max(x[i] - eps, lower[i])
+  plus[i]  <- min(x[i] + h, upper[i])
+  minus[i] <- max(x[i] - h, lower[i])
   denominator <- plus[i] - minus[i]
 
   pls_stopif(

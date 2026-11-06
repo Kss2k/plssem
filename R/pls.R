@@ -354,21 +354,27 @@ pls <- function(syntax,
     boot.parallel <- if (boot.parallel == "snow") "multisession" else boot.parallel
 
     args <- list(
-      syntax        = syntax,
-      data          = data,
-      cluster       = cluster,
-      ordered       = ordered,
-      verbose       = verbose,
-      bootstrap     = bootstrap,
-      boot.R        = boot.R,
-      boot.parallel = boot.parallel,
-      boot.ncores   = boot.ncores,
-      boot.iseed    = boot.iseed,
-      level2.cov    = level2.cov,
+      syntax                  = syntax,
+      data                    = data,
+      cluster                 = cluster,
+      ordered                 = ordered,
+      verbose                 = verbose,
+      bootstrap               = bootstrap,
+      boot.R                  = boot.R,
+      boot.parallel           = boot.parallel,
+      boot.ncores             = boot.ncores,
+      boot.iseed              = boot.iseed,
+      level2.cov              = level2.cov,
       level2.approach.weights = level2.approach.weights
     )
 
-    for (arg in intersect(supplied, names(MLM_PLS_ARGS)))
+    # Pass the (resolved) arguments explicitly, such that the defaults of `pls()`
+    # also apply to two-level models. `consistent = NULL` means "chosen based on
+    # the model" in `pls()`, so it is only passed if it was supplied.
+    forward <- setdiff(names(MLM_PLS_ARGS), "consistent")
+    if ("consistent" %in% supplied) forward <- c(forward, "consistent")
+
+    for (arg in forward)
       args[[MLM_PLS_ARGS[[arg]]]] <- get(arg)
 
     if (isTRUE(mc.fixed.seed))

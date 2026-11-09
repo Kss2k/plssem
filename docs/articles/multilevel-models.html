@@ -32,7 +32,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">plssem</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.2.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.2.1</span>
       </span>
     </div>
 
@@ -140,7 +140,7 @@ the cluster variable is given by the <code>cluster</code> argument.</p>
 <span>  boot.R    <span class="op">=</span> <span class="fl">50</span></span>
 <span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit_two_level_cont</span><span class="op">)</span></span>
-<span><span class="co">#&gt; plssem (0.2.0) ended normally after 68 iterations</span></span>
+<span><span class="co">#&gt; plssem (0.2.1) ended normally after 68 iterations</span></span>
 <span><span class="co">#&gt;   Estimator                                MC-PLSc-MLM</span></span>
 <span><span class="co">#&gt;   Link                                          LINEAR</span></span>
 <span><span class="co">#&gt;   Standard errors            Delta (cluster bootstrap)</span></span>
@@ -255,7 +255,7 @@ the cluster variable is given by the <code>cluster</code> argument.</p>
 <span>  ordered   <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">randomSlopesOrdered</span><span class="op">)</span> <span class="co"># explicitly specify variables as ordered</span></span>
 <span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit_two_level_ord</span><span class="op">)</span></span>
-<span><span class="co">#&gt; plssem (0.2.0) ended normally after 83 iterations</span></span>
+<span><span class="co">#&gt; plssem (0.2.1) ended normally after 83 iterations</span></span>
 <span><span class="co">#&gt;   Estimator                             MC-OrdPLSc-MLM</span></span>
 <span><span class="co">#&gt;   Link                                          PROBIT</span></span>
 <span><span class="co">#&gt;   Standard errors            Delta (cluster bootstrap)</span></span>
@@ -435,7 +435,7 @@ are variables at level 2.</p>
 <span>  boot.R    <span class="op">=</span> <span class="fl">50</span></span>
 <span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit_slopes_cont</span><span class="op">)</span></span>
-<span><span class="co">#&gt; plssem (0.2.0) ended normally after 107 iterations</span></span>
+<span><span class="co">#&gt; plssem (0.2.1) ended normally after 107 iterations</span></span>
 <span><span class="co">#&gt;   Estimator                                MC-PLSc-MLM</span></span>
 <span><span class="co">#&gt;   Link                                          LINEAR</span></span>
 <span><span class="co">#&gt;   Standard errors            Delta (cluster bootstrap)</span></span>
@@ -564,7 +564,7 @@ are variables at level 2.</p>
 <span>  ordered   <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">randomSlopesOrdered</span><span class="op">)</span> <span class="co"># explicitly specify variables as ordered</span></span>
 <span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit_slopes_ord</span><span class="op">)</span></span>
-<span><span class="co">#&gt; plssem (0.2.0) ended normally after 121 iterations</span></span>
+<span><span class="co">#&gt; plssem (0.2.1) ended normally after 121 iterations</span></span>
 <span><span class="co">#&gt;   Estimator                             MC-OrdPLSc-MLM</span></span>
 <span><span class="co">#&gt;   Link                                          PROBIT</span></span>
 <span><span class="co">#&gt;   Standard errors            Delta (cluster bootstrap)</span></span>
@@ -603,16 +603,16 @@ are variables at level 2.</p>
 <span><span class="co">#&gt; Latent Variables:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   fw =~         </span></span>
-<span><span class="co">#&gt;     y1              0.710      0.026   27.238    0.000</span></span>
+<span><span class="co">#&gt;     y1              0.710      0.026   27.239    0.000</span></span>
 <span><span class="co">#&gt;     y2              0.585      0.021   27.620    0.000</span></span>
-<span><span class="co">#&gt;     y3              0.789      0.025   31.990    0.000</span></span>
+<span><span class="co">#&gt;     y3              0.789      0.025   31.991    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Regressions:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   fw ~          </span></span>
-<span><span class="co">#&gt;     x1              0.470      0.027   17.718    0.000</span></span>
+<span><span class="co">#&gt;     x1              0.470      0.027   17.719    0.000</span></span>
 <span><span class="co">#&gt;     x2              0.379      0.036   10.623    0.000</span></span>
-<span><span class="co">#&gt;     x3              0.196      0.034    5.782    0.000</span></span>
+<span><span class="co">#&gt;     x3              0.196      0.034    5.781    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Covariances:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
@@ -624,13 +624,13 @@ are variables at level 2.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Variances:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;    .fw              0.600      0.025   23.804    0.000</span></span>
+<span><span class="co">#&gt;    .fw              0.600      0.025   23.800    0.000</span></span>
 <span><span class="co">#&gt;     x1              1.000                             </span></span>
 <span><span class="co">#&gt;     x2              1.000                             </span></span>
 <span><span class="co">#&gt;     x3              1.000                             </span></span>
 <span><span class="co">#&gt;    .y1              0.496      0.037   13.390    0.000</span></span>
 <span><span class="co">#&gt;    .y2              0.658      0.025   26.603    0.000</span></span>
-<span><span class="co">#&gt;    .y3              0.377      0.039    9.678    0.000</span></span>
+<span><span class="co">#&gt;    .y3              0.377      0.039    9.679    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Level 2 [between]:</span></span>
@@ -648,9 +648,9 @@ are variables at level 2.</p>
 <span><span class="co">#&gt; Latent Variables:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;   fb =~         </span></span>
-<span><span class="co">#&gt;     y1              0.901      0.044   20.482    0.000</span></span>
-<span><span class="co">#&gt;     y2              0.810      0.060   13.453    0.000</span></span>
-<span><span class="co">#&gt;     y3              0.904      0.038   24.107    0.000</span></span>
+<span><span class="co">#&gt;     y1              0.901      0.044   20.481    0.000</span></span>
+<span><span class="co">#&gt;     y2              0.810      0.060   13.454    0.000</span></span>
+<span><span class="co">#&gt;     y3              0.904      0.038   24.105    0.000</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Regressions:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
@@ -671,8 +671,8 @@ are variables at level 2.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Variances:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
-<span><span class="co">#&gt;    .fb              0.955      0.034   28.094    0.000</span></span>
-<span><span class="co">#&gt;    .s1              0.799      0.112    7.113    0.000</span></span>
+<span><span class="co">#&gt;    .fb              0.955      0.034   28.095    0.000</span></span>
+<span><span class="co">#&gt;    .s1              0.799      0.112    7.112    0.000</span></span>
 <span><span class="co">#&gt;    .s2              0.931      0.099    9.375    0.000</span></span>
 <span><span class="co">#&gt;     w1              1.000                             </span></span>
 <span><span class="co">#&gt;     w2              1.000                             </span></span>
@@ -683,19 +683,19 @@ are variables at level 2.</p>
 <span><span class="co">#&gt; Thresholds:</span></span>
 <span><span class="co">#&gt;                  Estimate  Std.Error  z.value  P(&gt;|z|)</span></span>
 <span><span class="co">#&gt;     y1|t1          -2.745      0.136  -20.242    0.000</span></span>
-<span><span class="co">#&gt;     y1|t2          -1.776      0.060  -29.669    0.000</span></span>
-<span><span class="co">#&gt;     y1|t3          -0.439      0.046   -9.541    0.000</span></span>
+<span><span class="co">#&gt;     y1|t2          -1.776      0.060  -29.671    0.000</span></span>
+<span><span class="co">#&gt;     y1|t3          -0.439      0.046   -9.542    0.000</span></span>
 <span><span class="co">#&gt;     y1|t4           0.335      0.048    6.924    0.000</span></span>
 <span><span class="co">#&gt;     y1|t5           1.334      0.054   24.628    0.000</span></span>
 <span><span class="co">#&gt;     y1|t6           2.419      0.139   17.374    0.000</span></span>
-<span><span class="co">#&gt;     y2|t1          -2.952      0.173  -17.056    0.000</span></span>
+<span><span class="co">#&gt;     y2|t1          -2.952      0.173  -17.058    0.000</span></span>
 <span><span class="co">#&gt;     y2|t2          -1.931      0.079  -24.308    0.000</span></span>
 <span><span class="co">#&gt;     y2|t3          -0.992      0.038  -25.878    0.000</span></span>
 <span><span class="co">#&gt;     y2|t4           0.215      0.039    5.539    0.000</span></span>
 <span><span class="co">#&gt;     y2|t5           1.028      0.044   23.429    0.000</span></span>
-<span><span class="co">#&gt;     y2|t6           2.189      0.078   27.973    0.000</span></span>
+<span><span class="co">#&gt;     y2|t6           2.189      0.078   27.977    0.000</span></span>
 <span><span class="co">#&gt;     y3|t1          -2.229      0.126  -17.705    0.000</span></span>
-<span><span class="co">#&gt;     y3|t2          -1.277      0.075  -17.002    0.000</span></span>
+<span><span class="co">#&gt;     y3|t2          -1.277      0.075  -17.004    0.000</span></span>
 <span><span class="co">#&gt;     y3|t3           0.015      0.054    0.271    0.786</span></span>
 <span><span class="co">#&gt;     y3|t4           0.710      0.059   12.000    0.000</span></span>
 <span><span class="co">#&gt;     y3|t5           1.828      0.118   15.514    0.000</span></span>

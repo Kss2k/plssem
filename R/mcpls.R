@@ -261,7 +261,7 @@ mcpls <- function(
   if (delta.jacobian) {
 
     if (is.null(delta.jacobian.k))
-      delta.jacobian.k <- floor(fit0@info$boot$R / 50)
+      delta.jacobian.k <- max(floor(fit0@info$boot$R / 100), 1)
 
     pls_stopif(
       !length(delta.jacobian.k) || !is.finite(delta.jacobian.k[1L]) ||
@@ -755,8 +755,8 @@ calcMcJacobians <- function(.fg,
 
   k <- length(seeds)
 
-  if (is.null(probs.k)) probs.k <- max(1L, floor(k / 2L))
-  else probs.k <- min(k, probs.k)
+  if (is.null(probs.k)) probs.k <- k
+  else probs.k <- max(1L, probs.k)
 
   J0 <- matrix(
     0,
@@ -846,9 +846,14 @@ calcMcJacobians <- function(.fg,
 
 
 calcMcThresholdJacobians <- function(.f, .simulate, p0, p1, thresholdStruct,
-                                     eps = 1e-2, seed = NULL,
+                                     eps = 5e-2, thr.eps = 2e-2, seed = NULL,
                                      sim = .simulate(p0, standardize = TRUE, seed = seed),
                                      sim.cont = sim$ov) {
+  # `eps` is the (maximum) step in the category proportions. A small `eps` is
+  # very noisy for coarse (e.g., binary) indicators. The step is still bounded by
+  # the neighbouring proportions (see `boundedProbabilityFiniteDiffPoints()`),
+  # and therefore automatically shrinks for categorical variables with many
+  # categories.
   probs0 <- thresholdStruct@proportions
 
   Jp <- matrix(
@@ -884,9 +889,10 @@ calcMcThresholdJacobians <- function(.f, .simulate, p0, p1, thresholdStruct,
     ) / points$denominator
   }
 
-  # Jacobian probs->thresholds
-  # use larger eps for better numerical stability
-  T <- thresholdJacobian(thresholdStruct, sim.cont = sim.cont, eps = 2 * eps)
+  # Jacobian probs->thresholds. This is the derivative of the empirical
+  # quantiles of `sim.cont`, which is much less noisy, so a smaller step
+  # (less bias) suffices
+  T <- thresholdJacobian(thresholdStruct, sim.cont = sim.cont, eps = thr.eps)
 
   thr.rows  <- intersect(rownames(Gp), rownames(T))
   prob.cols <- intersect(colnames(Gp), colnames(T))

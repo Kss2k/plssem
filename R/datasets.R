@@ -106,7 +106,7 @@ NULL
 #' \item{Female}{Dummy variable for \code{Sex="female"}}
 #' }
 #'
-#' @format A data frame with 1309 rows and 12 variables:
+#' @format A data frame with 1309 rows and 13 variables:
 #' @source https://www.kaggle.com/c/titanic/data
 #'
 #' @examples

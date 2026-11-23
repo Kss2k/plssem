@@ -5,7 +5,7 @@
 \alias{titanic}
 \title{Titanic Passenger Survival Data Set.}
 \format{
-A data frame with 1309 rows and 12 variables:
+A data frame with 1309 rows and 13 variables:
 }
 \source{
 https://www.kaggle.com/c/titanic/data
